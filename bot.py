@@ -79,11 +79,11 @@ CHARACTER_BUTTONS = [
 ]
 
 BLOCK_BUTTON = {
-    'text': 'Bloki', 'callback_data': 'block' 
+    'text': 'Bloki', 'callback_data': 'block'
 }
 
 CHALLENGE_BUTTON = {
-    'text': 'Defii', 'callback_data': 'challenge' 
+    'text': 'Defii', 'callback_data': 'challenge'
 }
 
 WAIT_TIME = 30
@@ -131,11 +131,11 @@ class Bot:
     def _cancel_block(self):
         self._pending_action = self._blocked_action
         self._blocking_player = None
-        self._blocked_action = None        
+        self._blocked_action = None
 
     def _reset_turn(self):
         self._blocking_player = None
-        self._blocked_action = None        
+        self._blocked_action = None
         self._pending_action = None
         self._pending_action_time = None
         self._pending_target = None
@@ -162,7 +162,7 @@ class Bot:
 
         if timeout < 0:
             timeout = 0
-            
+
         args = {
             'allowed_updates': ['message', 'callback_query'],
             'timeout': timeout
@@ -386,7 +386,7 @@ class Bot:
 
     def _process_command(self, message, command, args):
         chat = message['chat']
-        
+
         if 'type' in chat and chat['type'] == 'private':
             if command == '/start':
                 self._send_reply(message,
@@ -539,7 +539,7 @@ class Bot:
 
         if target_num is None:
             buttons = self._get_targets('coup')
-                
+
             args = {
                 'chat_id': self._game_chat,
                 'text': "{}, kiun vi volas mortigi dum la puĉo?".format(
@@ -554,7 +554,7 @@ class Bot:
             target_num >= len(self._game.players) or
             target_num == self._game.current_player):
             return
-        
+
         target = self._game.players[target_num]
 
         if not target.is_alive():
@@ -615,7 +615,7 @@ class Bot:
 
         if target_num is None:
             buttons = self._get_targets('assassinate')
-                
+
             args = {
                 'chat_id': self._game_chat,
                 'text': "{}, kiun vi volas murdi?".format(
@@ -630,7 +630,7 @@ class Bot:
             target_num >= len(self._game.players) or
             target_num == self._game.current_player):
             return
-        
+
         target = self._game.players[target_num]
 
         if not target.is_alive():
@@ -748,7 +748,7 @@ class Bot:
 
         if target_num is None:
             buttons = self._get_targets('steal')
-                
+
             args = {
                 'chat_id': self._game_chat,
                 'text': "{}, de kiu vi volas ŝteli?".format(
@@ -763,7 +763,7 @@ class Bot:
             target_num >= len(self._game.players) or
             target_num == self._game.current_player):
             return
-        
+
         target = self._game.players[target_num]
 
         if not target.is_alive():
@@ -825,7 +825,7 @@ class Bot:
                 self._cancel_block()
         elif self._pending_action == self._do_tax:
             current_player = self._game.players[self._game.current_player]
-            
+
             if self._game.show_card(current_player, game.Character.DUKE):
                 self._game_note("{} defiis sed {} ja havis la dukon kaj {} "
                                 "perdas karton".format(
@@ -841,7 +841,7 @@ class Bot:
                                     player.name,
                                     current_player.name))
                 self._lose_card(current_player)
-                self._turn_over()            
+                self._turn_over()
         elif self._blocked_action == self._do_assassinate:
             if self._game.show_card(self._pending_target,
                                     game.Character.CONTESSA):
