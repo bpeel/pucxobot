@@ -81,3 +81,20 @@ class Game:
 
         if len(self.players) == 2:
             self.players[self.current_player].coins -= 1
+
+    def next_player(self):
+        next_player = self.current_player
+
+        while True:
+            next_player = (next_player + 1) % len(self.players)
+            if (next_player == self.current_player or
+                self.players[next_player].is_alive()):
+                self.current_player = next_player
+                break
+
+    def is_finished(self):
+        num_players = 0
+        for player in self.players:
+            if player.is_alive():
+                num_players += 1
+        return num_players <= 1

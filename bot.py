@@ -40,6 +40,13 @@ class HandleMessageException(BotException):
 class ProcessCommandException(BotException):
     pass
 
+CHARACTER_BUTTONS = [
+    { 'text': 'Imposto (Duko)', 'callback_data': 'tax' },
+    { 'text': 'Murdi (Murdisto)', 'callback_data': 'assassinate' },
+    { 'text': 'Interŝanĝi (Ambasadoro)', 'callback_data': 'exchange' },
+    { 'text': 'Ŝteli (Kapitano)', 'callback_data': 'steal' }
+]
+
 class Bot:
     def __init__(self):
         conf_dir = os.path.expanduser("~/.pucxobot")
@@ -79,23 +86,9 @@ class Bot:
 
         self._game = None
 
-    def _is_valid_update(self, update):
-        try:
-            if 'message' not in update:
-                return False
-
-            message = update['message']
-
-            if 'chat' not in message:
-                return False
-        except KeyError as e:
-            raise GetUpdatesException(e)
-
-        return True
-
     def _get_updates(self):
         args = {
-            'allowed_updates': ['message']
+            'allowed_updates': ['message', 'callback_query']
         }
 
         if self._last_update_id is not None:
@@ -128,8 +121,7 @@ class Bot:
                         update_id > self._last_update_id):
                         self._last_update_id = update_id
 
-        updates = [x for x in rep['result'] if self._is_valid_update(x)]
-        return updates
+        return rep['result']
 
     def _send_request(self, request, args):
         try:
@@ -161,7 +153,33 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
-    def show_stats(self):
+    def _get_buttons(self):
+        coup = {
+            'text': 'Puĉo',
+            'callback_data': 'coup'
+        }
+
+        player = self._game.players[self._game.current_player]
+
+        if player.coins >= 10:
+            return [coup]
+
+        buttons = [
+            { 'text': 'Enspezi', 'callback_data': 'income' },
+            { 'text': 'Eksterlanda helpo', 'callback_data': 'foreign_aid' }
+        ]
+
+        if player.coins >= 7:
+            buttons.append(coup)
+
+        buttons.extend(CHARACTER_BUTTONS)
+
+        return buttons
+
+    def _get_keyboard(self):
+        return list([x] for x in self._get_buttons())
+
+    def _show_stats(self):
         message = []
 
         for i, player in enumerate(self._game.players):
@@ -193,7 +211,8 @@ class Bot:
         args = {
             'chat_id': self._game_chat,
             'text': "".join(message),
-            'parse_mode': 'HTML'
+            'parse_mode': 'HTML',
+            'reply_markup': { 'inline_keyboard': self._get_keyboard() }
         }
 
         self._send_request('sendMessage', args)
@@ -213,7 +232,7 @@ class Bot:
                                  "Necesas almenaŭ 2 ludantoj por ludi")
             else:
                 self._game.start()
-                self.show_stats()
+                self._show_stats()
         else:
             self._join(message)
 
@@ -286,13 +305,129 @@ class Bot:
 
         return None
 
+    def _answer_bad_query(self, query):
+        args = {
+            'callback_query_id': query['id']
+        }
+        self._send_request('answerCallbackQuery', args)
+
+    def _game_note(self, message):
+            args = {
+                'chat_id': self._game_chat,
+                'text': message
+            }
+
+            self._send_request('sendMessage', args)
+
+    def _turn_over(self):
+        if self._game.is_finished():
+            try:
+                winner = next(x for x in self._game.players
+                              if x.is_alive()).name
+            except StopIteration:
+                winner = "Neniu"
+
+            self._game_note("{} venkis!".format(winner))
+            self._game = None
+
+        else:
+            self._game.next_player()
+            self._show_stats()
+
+    def _income(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} enspezas 1 moneron".format(player.name))
+        player.coins += 1
+
+        self._turn_over()
+
+    def _foreign_aid(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} prenas 2 monerojn per eksterlanda helpo".format(
+            player.name))
+        player.coins += 2
+
+        self._turn_over()
+
+    def _coup(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} faras puĉon".format(
+            player.name))
+
+        self._turn_over()
+
+    def _tax(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} prenas 3 monerojn pro imposto".format(
+            player.name))
+        player.coins += 3
+
+        self._turn_over()
+
+    def _assassinate(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} murdas".format(
+            player.name))
+
+        self._turn_over()
+
+    def _exchange(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} interŝanĝas".format(
+            player.name))
+
+        self._turn_over()
+
+    def _steal(self):
+        player = self._game.players[self._game.current_player]
+
+        self._game_note("{} ŝtelas".format(
+            player.name))
+
+        self._turn_over()
+
+    def _process_callback_query(self, query):
+        try:
+            from_id = query['from']['id']
+            data = query['data']
+        except KeyError:
+            self._answer_bad_query(query)
+            return
+
+        if (self._game is None or
+            not self._game.is_running or
+            self._game.players[self._game.current_player].id != from_id):
+            self._answer_bad_query(query)
+            return
+
+        if data == 'income':
+            self._income()
+        elif data == 'foreign_aid':
+            self._foreign_aid()
+        elif data == 'coup':
+            self._coup()
+        elif data == 'tax':
+            self._tax()
+        elif data == 'assassinate':
+            self._assassinate()
+        elif data == 'exchange':
+            self._exchange()
+        elif data == 'steal':
+            self._steal()
+        self._answer_bad_query(query)
+
     def run(self):
         while True:
             now = int(time.time())
 
             try:
                 updates = self._get_updates()
-
             except GetUpdatesException as e:
                 print("{}".format(e), file=sys.stderr)
                 # Delay for a bit before trying again to avoid DOSing the server
@@ -300,13 +435,20 @@ class Bot:
                 continue
 
             for update in updates:
-                message = update['message']
-                command = self._find_command(message)
+                try:
+                    if 'message' in update:
+                        message = update['message']
+                        if 'chat' not in message:
+                            continue
+                        command = self._find_command(message)
 
-                if command is not None:
-                    try:
+                        if command is None:
+                            continue
+
                         self._process_command(message,
                                               command[0],
                                               command[1])
-                    except BotException as e:
-                        print("{}".format(e), file=sys.stderr)
+                    elif 'callback_query' in update:
+                        self._process_callback_query(update['callback_query'])
+                except BotException as e:
+                    print("{}".format(e), file=sys.stderr)
