@@ -376,6 +376,8 @@ class Bot:
         return True
 
     def _join(self, message):
+        self._activity()
+
         if not self._can_join(message):
             return
 
@@ -407,6 +409,8 @@ class Bot:
             print("{}".format(e), file=sys.stderr)
 
     def _really_join(self, message, chat_id):
+        self._activity()
+
         if not self._can_join(message):
             return
 
@@ -421,7 +425,6 @@ class Bot:
         except KeyError:
             name = "Sr.{}".format(id)
 
-        self._activity()
         self._game.add_player(id, name, chat_id)
         ludantoj = ", ".join(x.name for x in self._game.players)
         self._send_reply(message,
