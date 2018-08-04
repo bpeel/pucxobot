@@ -320,8 +320,16 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
+    def _do_start_game(self):
+        self._game.start()
+        self._show_stats()
+        self._activity()
+        for player in self._game.players:
+            self._show_cards(player)
+
     def _start_game(self, message):
         id = message['from']['id']
+        self._activity()
 
         if self._game is not None:
             if self._game.is_running:
@@ -334,11 +342,7 @@ class Bot:
                 self._send_reply(message,
                                  "Necesas almenaŭ 2 ludantoj por ludi")
             else:
-                self._game.start()
-                self._show_stats()
-                self._activity()
-                for player in self._game.players:
-                    self._show_cards(player)
+                self._do_start_game()
         else:
             self._join(message)
 
@@ -1083,10 +1087,15 @@ class Bot:
             elif self._game is not None:
                 if (time.monotonic() - self._last_activity_time >=
                     INACTIVITY_TIMEOUT):
-                    self._game_note("La ludo estas senaktiva dum pli ol {} "
-                                    "minutoj kaj estos forlasita".format(
-                                        INACTIVITY_TIMEOUT // 60))
-                    self._reset_game()
+                    if self._game.is_running or len(self._game.players) < 2:
+                        self._game_note("La ludo estas senaktiva dum pli ol {} "
+                                        "minutoj kaj estos forlasita".format(
+                                            INACTIVITY_TIMEOUT // 60))
+                        self._reset_game()
+                    else:
+                        self._game_note("Atendis pli ol 5 minutoj sen novaj "
+                                        "aliĝoj. La ludo tuj komenciĝos.")
+                        self._do_start_game()
 
             for update in updates:
                 try:
