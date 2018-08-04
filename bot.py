@@ -28,6 +28,37 @@ import configparser
 import game
 import html
 
+REGULOJ = """\
+<b>RESUMO DE LA REGULOJ:</b>
+
+Puĉo estas kartludo de trompado kaj blufado.
+
+Ĉiu komence havas 2 kartojn (fackaŝitajn) kaj 2 monerojn. Se oni perdas vivon oni devas malkaŝi karton kaj oni ne plu povas uzi ĝin.
+
+Dum sia vico oni povas fari unu el la sevkaj agoj:
+
+<b>Enspezi</b>: gajni unu moneron kaj neniu povas malhelpi ĝin.
+
+<b>Eksterlanda helpo</b>: gajni du monerojn, sed se iu pretendas havi la dukon ri povas bloki ĝin.
+
+<b>Puĉo</b>: pagi 7 monerojn por mortigi iun. Neniu povas malhelpi tion. Se iu havas 10 monerojn ri nepre devas fari puĉon.
+
+Se oni havas unu el la sekvaj kartoj, aŭ pretendas havi ĝin, oni povas:
+
+<b>Imposto (Duko)</b>: Preni 3 monerojn.
+
+<b>Murdi (Murdisto)</b>: Pagi 3 monerojn kaj murdi iun. Se la viktimo pretendas havi la grafinon ri povas bloki ĝin.
+
+<b>Interŝanĝi (Ambasadoro)</b>: Interŝanĝi siajn kartojn por du novaj kartoj.
+
+<b>Ŝteli (Kapitano)</b>: Ŝteli 2 monerojn de alia ludanto. Se la viktimo pretendas havi la ambasadoron aŭ la kapitanon ri povas bloki ĝin.
+
+Ekzistas nur po 3 kartoj de ĉiu rolulo.
+
+Ĉiu pretendo de karto povas esti defiita de iu ajn alia ludanto. Se la defio estis prava, la defiito perdas karton, alikaze la defianto perdas karton.
+
+Tiu kiu restas vivanta venkas."""
+
 class BotException(Exception):
     pass
 
@@ -190,12 +221,15 @@ class Bot:
 
         return rep
 
-    def _send_reply(self, message, note):
+    def _send_reply(self, message, note, markup = False):
         args = {
             'chat_id' : message['chat']['id'],
             'text' : note,
             'reply_to_message_id' : message['message_id']
         }
+
+        if markup:
+            args['parse_mode'] = 'HTML'
 
         self._send_request('sendMessage', args)
 
@@ -359,11 +393,15 @@ class Bot:
                                  "Ĉi tiu roboto estas por ludi la ludon "
                                  "Puĉo. Tajpi la komandon /komenci en "
                                  "la taŭga grupo por ludi ĝin")
+            elif command == '/helpo':
+                self._send_reply(message, REGULOJ, True)
         elif 'id' in chat and chat['id'] == self._game_chat:
             if command == '/komenci':
                 self._start_game(message)
             elif command == '/aligxi':
                 self._join(message)
+            elif command == '/helpo':
+                self._send_reply(message, REGULOJ, True)
 
     def _find_command(self, message):
         if 'entities' not in message or 'text' not in message:
