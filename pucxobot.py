@@ -531,7 +531,7 @@ class Bot:
     def _income(self):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} enspezas 1 moneron".format(player.name))
+        self._game_note("💲 {} enspezas 1 moneron".format(player.name))
         player.coins += 1
 
         self._activity()
@@ -552,7 +552,7 @@ class Bot:
 
         args = {
             'chat_id': self._game_chat,
-            'text': ('{} prenas 2 monerojn per eksterlanda helpo.\n'
+            'text': ('💴 {} prenas 2 monerojn per eksterlanda helpo.\n'
                      'Ĉu iu volas pretendi havi la dukon kaj bloki rin?'.format(
                          player.name)),
             'reply_markup': { 'inline_keyboard': [[ BLOCK_BUTTON ]] }
@@ -603,7 +603,7 @@ class Bot:
         if not target.is_alive():
             return
 
-        self._game_note("{} faras puĉon kontraŭ {}".format(
+        self._game_note("💣 {} faras puĉon kontraŭ {}".format(
             player.name, target.name))
 
         self._lose_card(target)
@@ -628,7 +628,7 @@ class Bot:
 
         args = {
             'chat_id': self._game_chat,
-            'text': ('{} pretendas havi la dukon kaj prenas 3 monerojn per '
+            'text': ('💸 {} pretendas havi la dukon kaj prenas 3 monerojn per '
                      'imposto.\n'
                      'Ĉu iu volas defii rin?'.format(
                          player.name)),
@@ -681,7 +681,7 @@ class Bot:
 
         args = {
             'chat_id': self._game_chat,
-            'text': ("{} volas murdi {}\n"
+            'text': ("🗡 {} volas murdi {}\n"
                      "{}, ĉu vi volas bloki ĝin per grafino?\n"
                      "Aŭ ĉu iu volas defii?".format(
                          player.name, target.name, target.name)),
@@ -764,7 +764,7 @@ class Bot:
 
         args = {
             'chat_id': self._game_chat,
-            'text': ("{} pretendas havi la ambasadoron kaj volas interŝanĝi "
+            'text': ("🔄 {} pretendas havi la ambasadoron kaj volas interŝanĝi "
                      "kartojn, ĉu iu volas defii rin?".format(
                 player.name)),
             'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
@@ -814,7 +814,7 @@ class Bot:
 
         args = {
             'chat_id': self._game_chat,
-            'text': ("{} volas ŝteli de {}\n"
+            'text': ("💰 {} volas ŝteli de {}\n"
                      "{}, ĉu vi volas bloki ĝin per ambasadoro aŭ kapitano?\n"
                      "Aŭ ĉu iu volas defii?".format(
                          player.name, target.name, target.name)),
