@@ -115,6 +115,16 @@ class Bot:
             pass
 
         try:
+            self._announce_channel = config["setup"]["announce_channel"]
+        except KeyError:
+            self._announce_channel = None
+        else:
+            try:
+                self._announce_channel = int(self._announce_channel)
+            except ValueError:
+                pass
+
+        try:
             self._botname = config["setup"]["botname"]
         except KeyError:
             print("Missing botname option in [setup] section of config",
@@ -382,12 +392,28 @@ class Bot:
                 self._really_join(original_message, message['chat']['id'])
                 break
 
+    def _announce_game(self):
+        if self._announce_channel is None:
+            return
+
+        args = {
+            'chat_id': self._announce_channel,
+            'text': "Nova ludo atendas ludantojn!"
+        }
+
+        try:
+            self._send_request('sendMessage', args)
+        except BotException as e:
+            print("{}".format(e), file=sys.stderr)
+
     def _really_join(self, message, chat_id):
         if not self._can_join(message):
             return
 
         if self._game is None:
             self._game = game.Game()
+
+            self._announce_game()
 
         id = message['from']['id']
         try:
