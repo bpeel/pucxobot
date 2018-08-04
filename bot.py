@@ -671,13 +671,56 @@ class Bot:
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_exchange)
 
-    def _steal(self):
+    def _do_steal(self):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} ŝtelas".format(
-            player.name))
+        self._game_note("Neniu blokis aŭ defiis, {} ŝtelas de {}".format(
+            player.name, self._pending_target.name))
+        amount = min(2, self._pending_target.coins)
+        player.coins += amount
+        self._pending_target.coins -= amount
 
         self._turn_over()
+
+    def _steal(self, target_num):
+        player = self._game.players[self._game.current_player]
+
+        if target_num is None:
+            buttons = self._get_targets('steal')
+                
+            args = {
+                'chat_id': self._game_chat,
+                'text': "{}, de kiu vi volas ŝteli?".format(
+                    player.name),
+                'reply_markup': { 'inline_keyboard': buttons }
+            }
+
+            self._send_request('sendMessage', args)
+            return
+
+        if (target_num < 0 or
+            target_num >= len(self._game.players) or
+            target_num == self._game.current_player):
+            return
+        
+        target = self._game.players[target_num]
+
+        if not target.is_alive():
+            return
+
+        args = {
+            'chat_id': self._game_chat,
+            'text': ("{} volas ŝteli de {}\n"
+                     "{}, ĉu vi volas bloki ĝin per ambasadoro aŭ kapitano?\n"
+                     "Aŭ ĉu iu volas defii?".format(
+                         player.name, target.name, target.name)),
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                  [ BLOCK_BUTTON ]] }
+        }
+
+        self._send_request('sendMessage', args)
+        self._pending_target = target
+        self._set_pending_action(self._do_steal)
 
     def _do_block(self):
         self._game_note("Neniu defiis kaj la ago estis blokita")
@@ -767,6 +810,43 @@ class Bot:
                                     current_player.name))
                 self._lose_card(current_player)
                 self._turn_over()
+        elif self._blocked_action == self._do_steal:
+            card = self._game.show_card(self._pending_target,
+                                        game.Character.AMBASSADOR,
+                                        game.Character.CAPTAIN)
+            if card is not None:
+                self._game_note("{} defiis sed {} ja havis la {}n kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    self._pending_target.name,
+                                    card.value,
+                                    player.name))
+                self._lose_card(player)
+                self._turn_over()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la ambasadoron "
+                                "nek la kapitanon kaj perdas karton".format(
+                                    player.name,
+                                    self._pending_target.name))
+                self._lose_card(self._pending_target)
+                self._do_steal()
+        elif self._pending_action == self._do_steal:
+            current_player = self._game.players[self._game.current_player]
+            if self._game.show_card(current_player, game.Character.CAPTAIN):
+                self._game_note("{} defiis sed {} ja havis la kapitanon kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    current_player.name,
+                                    player.name))
+                self._lose_card(player)
+                self._do_steal()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la kapitanon "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    current_player.name))
+                self._lose_card(current_player)
+                self._turn_over()
         elif self._pending_action == self._do_exchange:
             current_player = self._game.players[self._game.current_player]
             if self._game.show_card(current_player,
@@ -830,6 +910,23 @@ class Bot:
             self._blocking_player = player
             self._blocked_action = self._pending_action
             self._set_pending_action(self._do_block_assassinate)
+        elif self._pending_action == self._do_steal:
+            if player != self._pending_target:
+                return
+
+            args = {
+                'chat_id': self._game_chat,
+                'text': ('{} pretendas havi la kapitanon aŭ la ambasadoron '
+                         'kaj blokas la ŝtelon. Ĉu iu volis defii '
+                         'rin?'.format(player.name)),
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+            }
+
+            self._send_request('sendMessage', args)
+
+            self._blocking_player = player
+            self._blocked_action = self._pending_action
+            self._set_pending_action(self._do_block)
 
     def _process_callback_query(self, query):
         try:
@@ -879,7 +976,7 @@ class Bot:
                     elif data == 'exchange':
                         self._exchange()
                     elif data == 'steal':
-                        self._steal()
+                        self._steal(extra_data)
 
         self._answer_bad_query(query)
 

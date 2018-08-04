@@ -100,15 +100,18 @@ class Game:
                 num_players += 1
         return num_players <= 1
 
-    def show_card(self, player, character):
+    def show_card(self, player, *characters):
         for card in player.cards:
-            if card.character == character and not card.visible:
+            if card.visible:
+                continue
+            character = card.character
+            if character in characters:
                 self.deck.append(character)
                 random.shuffle(self.deck)
                 card.character = self.deck.pop()
-                return True
+                return character
 
-        return False
+        return None
 
     def lose_card(self, player):
         for card in player.cards:
