@@ -1086,12 +1086,12 @@ class Bot:
                             continue
                         chat = message['chat']
 
-                        command = self._find_command(message)
 
-                        if command is None:
-                            if 'type' in chat and chat['type'] == 'private':
-                                self._handle_private_message(message)
-                        else:
+                        if 'type' in chat and chat['type'] == 'private':
+                            self._handle_private_message(message)
+
+                        command = self._find_command(message)
+                        if command is not None:
                             self._process_command(message,
                                                   command[0],
                                                   command[1])
