@@ -93,9 +93,7 @@ class Bot:
         self._get_updates_url = self._urlbase + "getUpdates"
 
         self._last_update_id = None
-        self._game = None
-
-        self._reset_turn()
+        self._reset_game()
 
     def _cancel_block(self):
         self._pending_action = self._blocked_action
@@ -107,6 +105,11 @@ class Bot:
         self._blocked_action = None        
         self._pending_action = None
         self._pending_action_time = None
+
+    def _reset_game(self):
+        self._game = None
+        self._pending_joins = []
+        self._reset_turn()
 
     def _get_updates(self):
         if self._pending_action_time is not None:
@@ -263,10 +266,51 @@ class Bot:
             else:
                 self._game.start()
                 self._show_stats()
+                for player in self._game.players:
+                    self._show_cards(player)
         else:
             self._join(message)
 
+    def _can_join(self, message):
+        if self._game is None:
+            return True
+
+        id = message['from']['id']
+
+        if self._game.is_running:
+            self._send_reply(message,
+                             "La ludo jam komenciĝis kaj ne plu eblas aliĝi")
+            return False
+        if self._game.has_player(id):
+            self._send_reply(message, "Vi jam estas en la ludo")
+            return False
+        if len(self._game.players) >= game.MAX_PLAYERS:
+            self._send_reply(message, "Jam estas tro da ludantoj")
+            return False
+
+        return True
+
     def _join(self, message):
+        if not self._can_join(message):
+            return
+
+        self._send_reply(message,
+                         "Sendu al mi privatan mesaĝon ĉe @{} por ke mi povu "
+                         "sendi al vi viajn kartojn sekrete".format(
+                             self._botname))
+        self._pending_joins.append(message)
+
+    def _handle_private_message(self, message):
+        for i, original_message in enumerate(self._pending_joins):
+            if original_message['from']['id'] == message['from']['id']:
+                del self._pending_joins[i]
+                self._really_join(original_message, message['chat']['id'])
+                break
+
+    def _really_join(self, message, chat_id):
+        if not self._can_join(message):
+            return
+
         if self._game is None:
             self._game = game.Game()
 
@@ -276,22 +320,14 @@ class Bot:
         except KeyError:
             name = "Sr.{}".format(id)
 
-        if self._game.is_running:
-            self._send_reply(message,
-                             "La ludo jam komenciĝis kaj ne plu eblas aliĝi")
-        elif self._game.has_player(id):
-            self._send_reply(message, "Vi jam estas en la ludo")
-        elif len(self._game.players) >= game.MAX_PLAYERS:
-            self._send_reply(message, "Jam estas tro da ludantoj")
-        else:
-            self._game.add_player(id, name)
-            ludantoj = ", ".join(x.name for x in self._game.players)
-            self._send_reply(message,
-                             "Bonvenon. Aliaj ludantoj tajpu "
-                             "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
-                             "por komenci la ludon. La aktualaj ludantoj "
-                             "estas:\n"
-                             "{}".format(ludantoj))
+        self._game.add_player(id, name, chat_id)
+        ludantoj = ", ".join(x.name for x in self._game.players)
+        self._send_reply(message,
+                         "Bonvenon. Aliaj ludantoj tajpu "
+                         "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
+                         "por komenci la ludon. La aktualaj ludantoj "
+                         "estas:\n"
+                         "{}".format(ludantoj))
 
     def _process_command(self, message, command, args):
         chat = message['chat']
@@ -360,7 +396,7 @@ class Bot:
                 winner = "Neniu"
 
             self._game_note("{} venkis!".format(winner))
-            self._game = None
+            self._reset_game()
 
         else:
             self._game.next_player()
@@ -369,6 +405,26 @@ class Bot:
     def _set_pending_action(self, action):
         self._pending_action = action
         self._pending_action_time = time.monotonic()
+
+    def _show_cards(self, player):
+        message = ["Viaj kartoj estas:\n"]
+
+        for card in player.cards:
+            if card.visible:
+                message.append("☠{}☠\n".format(card.character.value))
+            else:
+                message.append("{}\n".format(card.character.value))
+
+        args = {
+            'chat_id': player.chat_id,
+            'text': "".join(message),
+        }
+
+        self._send_request('sendMessage', args)
+
+    def _lose_card(self, player):
+        self._game.lose_card(player)
+        self._show_cards(player)
 
     def _income(self):
         player = self._game.players[self._game.current_player]
@@ -466,14 +522,14 @@ class Bot:
                                     player.name,
                                     self._blocking_player.name,
                                     player.name))
-                self._game.lose_card(player)
+                self._lose_card(player)
                 self._turn_over()
             else:
                 self._game_note("{} defiis kaj {} ne havis la dukon "
                                 "kaj perdas karton".format(
                                     player.name,
                                     self._blocking_player.name))
-                self._game.lose_card(self._blocking_player)
+                self._lose_card(self._blocking_player)
                 self._cancel_block()                
 
     def _block(self, from_id):
@@ -568,14 +624,17 @@ class Bot:
                         message = update['message']
                         if 'chat' not in message:
                             continue
+                        chat = message['chat']
+
                         command = self._find_command(message)
 
                         if command is None:
-                            continue
-
-                        self._process_command(message,
-                                              command[0],
-                                              command[1])
+                            if 'type' in chat and chat['type'] == 'private':
+                                self._handle_private_message(message)
+                        else:
+                            self._process_command(message,
+                                                  command[0],
+                                                  command[1])
                     elif 'callback_query' in update:
                         self._process_callback_query(update['callback_query'])
                 except BotException as e:

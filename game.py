@@ -39,11 +39,12 @@ class Card:
         self.visible = False
 
 class Player:
-    def __init__(self, id, name):
+    def __init__(self, id, name, chat_id):
         self.id = id
         self.name = name
         self.coins = 2
         self.cards = []
+        self.chat_id = chat_id
 
     def is_alive(self):
         for card in self.cards:
@@ -67,8 +68,8 @@ class Game:
                 return True
         return False
 
-    def add_player(self, id, name):
-        player = Player(id, name)
+    def add_player(self, id, name, chat_id):
+        player = Player(id, name, chat_id)
 
         for i in range(2):
             player.cards.append(Card(self._deck.pop()))
