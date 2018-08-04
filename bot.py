@@ -105,6 +105,7 @@ class Bot:
         self._blocked_action = None        
         self._pending_action = None
         self._pending_action_time = None
+        self._pending_target = None
 
     def _reset_game(self):
         self._game = None
@@ -206,6 +207,12 @@ class Bot:
             buttons.append(coup)
 
         buttons.extend(CHARACTER_BUTTONS)
+
+        if player.coins < 3:
+            for i, button in enumerate(buttons):
+                if button['callback_data'] == 'assassinate':
+                    del buttons[i]
+                    break
 
         return buttons
 
@@ -457,6 +464,18 @@ class Bot:
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_foreign_aid)
 
+    def _get_targets(self, action):
+        buttons = []
+
+        for i, target in enumerate(self._game.players):
+            if (i == self._game.current_player or
+                not target.is_alive()):
+                continue
+            buttons.append([{'text': target.name,
+                             'callback_data': '{}:{}'.format(action, i)}])
+
+        return buttons
+
     def _coup(self, target_num):
         player = self._game.players[self._game.current_player]
 
@@ -464,14 +483,7 @@ class Bot:
             return
 
         if target_num is None:
-            buttons = []
-
-            for i, target in enumerate(self._game.players):
-                if (i == self._game.current_player or
-                    not target.is_alive()):
-                    continue
-                buttons.append([{'text': target.name,
-                                 'callback_data': 'coup:{}'.format(i)}])
+            buttons = self._get_targets('coup')
                 
             args = {
                 'chat_id': self._game_chat,
@@ -526,13 +538,58 @@ class Bot:
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_tax)
 
-    def _assassinate(self):
+    def _do_assassinate(self):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} murdas".format(
-            player.name))
+        self._game_note("Neniu blokis aŭ defiis, {} murdas {}".format(
+            player.name, self._pending_target.name))
+        player.coins -= 3
 
+        self._lose_card(self._pending_target)
         self._turn_over()
+
+    def _assassinate(self, target_num):
+        player = self._game.players[self._game.current_player]
+
+        if player.coins < 3:
+            return
+
+        if target_num is None:
+            buttons = self._get_targets('assassinate')
+                
+            args = {
+                'chat_id': self._game_chat,
+                'text': "{}, kiun vi volas murdi?".format(
+                    player.name),
+                'reply_markup': { 'inline_keyboard': buttons }
+            }
+
+            self._send_request('sendMessage', args)
+            return
+
+        if (target_num < 0 or
+            target_num >= len(self._game.players) or
+            target_num == self._game.current_player):
+            return
+        
+        target = self._game.players[target_num]
+
+        if not target.is_alive():
+            return
+
+        args = {
+            'chat_id': self._game_chat,
+            'text': ("{} volas murdi {}\n"
+                     "{}, ĉu vi volas bloki ĝin per grafino?\n"
+                     "Aŭ ĉu iu volas defii?".format(
+                         player.name, target.name, target.name)),
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                  [ BLOCK_BUTTON ]] }
+        }
+
+        self._send_request('sendMessage', args)
+        self._pending_target = target
+        self._set_pending_action(self._do_assassinate)
 
     def _exchange(self):
         player = self._game.players[self._game.current_player]
@@ -553,6 +610,10 @@ class Bot:
     def _do_block(self):
         self._game_note("Neniu defiis kaj la ago estis blokita")
         self._turn_over()
+
+    def _do_block_assassinate(self):
+        self._game.players[self._game.current_player].coins -= 3
+        self._do_block()
 
     def _challenge(self, from_id):
         try:
@@ -598,6 +659,42 @@ class Bot:
                                     current_player.name))
                 self._lose_card(current_player)
                 self._turn_over()            
+        elif self._blocked_action == self._do_assassinate:
+            if self._game.show_card(self._pending_target,
+                                    game.Character.CONTESSA):
+                self._game_note("{} defiis sed {} ja havis la grafinon kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    self._pending_target.name,
+                                    player.name))
+                self._game.players[self._game.current_player].coins -= 3
+                self._lose_card(player)
+                self._turn_over()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la grafinon "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    self._pending_target.name))
+                self._lose_card(self._pending_target)
+                self._do_assassinate()
+        elif self._pending_action == self._do_assassinate:
+            current_player = self._game.players[self._game.current_player]
+            if self._game.show_card(current_player,
+                                    game.Character.ASSASSIN):
+                self._game_note("{} defiis sed {} ja havis la murdiston kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    current_player.name,
+                                    player.name))
+                self._lose_card(player)
+                self._do_assassinate()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la murdiston "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    current_player.name))
+                self._lose_card(current_player)
+                self._turn_over()
 
     def _block(self, from_id):
         try:
@@ -626,6 +723,23 @@ class Bot:
             self._blocking_player = player
             self._blocked_action = self._pending_action
             self._set_pending_action(self._do_block)
+        elif self._pending_action == self._do_assassinate:
+            if player != self._pending_target:
+                return
+
+            args = {
+                'chat_id': self._game_chat,
+                'text': ('{} pretendas havi la grafinon kaj blokas '
+                         'la murdon. Ĉu iu volis defii '
+                         'rin?'.format(player.name)),
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+            }
+
+            self._send_request('sendMessage', args)
+
+            self._blocking_player = player
+            self._blocked_action = self._pending_action
+            self._set_pending_action(self._do_block_assassinate)
 
     def _process_callback_query(self, query):
         try:
@@ -669,7 +783,7 @@ class Bot:
                 elif data == 'tax':
                     self._tax()
                 elif data == 'assassinate':
-                    self._assassinate()
+                    self._assassinate(extra_data)
                 elif data == 'exchange':
                     self._exchange()
                 elif data == 'steal':
