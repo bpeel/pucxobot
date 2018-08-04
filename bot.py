@@ -47,6 +47,16 @@ CHARACTER_BUTTONS = [
     { 'text': 'Ŝteli (Kapitano)', 'callback_data': 'steal' }
 ]
 
+BLOCK_BUTTON = {
+    'text': 'Bloki', 'callback_data': 'block' 
+}
+
+CHALLENGE_BUTTON = {
+    'text': 'Defii', 'callback_data': 'challenge' 
+}
+
+WAIT_TIME = 30
+
 class Bot:
     def __init__(self):
         conf_dir = os.path.expanduser("~/.pucxobot")
@@ -83,12 +93,32 @@ class Bot:
         self._get_updates_url = self._urlbase + "getUpdates"
 
         self._last_update_id = None
-
         self._game = None
 
+        self._reset_turn()
+
+    def _cancel_block(self):
+        self._pending_action = self._blocked_action
+        self._blocking_player = None
+        self._blocked_action = None        
+
+    def _reset_turn(self):
+        self._blocking_player = None
+        self._blocked_action = None        
+        self._pending_action = None
+        self._pending_action_time = None
+
     def _get_updates(self):
+        if self._pending_action_time is not None:
+            timeout = WAIT_TIME + self._pending_action_time - time.monotonic()
+            if timeout < 0:
+                timeout = 0
+        else:
+            timeout = 300
+
         args = {
-            'allowed_updates': ['message', 'callback_query']
+            'allowed_updates': ['message', 'callback_query'],
+            'timeout': timeout
         }
 
         if self._last_update_id is not None:
@@ -320,6 +350,8 @@ class Bot:
             self._send_request('sendMessage', args)
 
     def _turn_over(self):
+        self._reset_turn()
+
         if self._game.is_finished():
             try:
                 winner = next(x for x in self._game.players
@@ -334,6 +366,10 @@ class Bot:
             self._game.next_player()
             self._show_stats()
 
+    def _set_pending_action(self, action):
+        self._pending_action = action
+        self._pending_action_time = time.monotonic()
+
     def _income(self):
         player = self._game.players[self._game.current_player]
 
@@ -342,14 +378,28 @@ class Bot:
 
         self._turn_over()
 
-    def _foreign_aid(self):
+    def _do_foreign_aid(self):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} prenas 2 monerojn per eksterlanda helpo".format(
+        self._game_note("Neniu blokis, {} prenas la 2 monerojn".format(
             player.name))
         player.coins += 2
 
         self._turn_over()
+
+    def _foreign_aid(self):
+        player = self._game.players[self._game.current_player]
+
+        args = {
+            'chat_id': self._game_chat,
+            'text': ('{} prenas 2 monerojn per eksterlanda helpo.\n'
+                     'Ĉu iu volas pretendi havi la dukon kaj bloki rin?'.format(
+                         player.name)),
+            'reply_markup': { 'inline_keyboard': [[ BLOCK_BUTTON ]] }
+        }
+
+        self._send_request('sendMessage', args)
+        self._set_pending_action(self._do_foreign_aid)
 
     def _coup(self):
         player = self._game.players[self._game.current_player]
@@ -392,6 +442,65 @@ class Bot:
 
         self._turn_over()
 
+    def _do_block(self):
+        self._game_note("Neniu defiis kaj la ago estis blokita")
+        self._turn_over()
+
+    def _challenge(self, from_id):
+        try:
+            (player_num, player) = next(x for x in enumerate(self._game.players)
+                                        if x[1].id == from_id)
+        except StopIteration:
+            return
+
+        if not player.is_alive():
+            return
+
+        if self._blocked_action == self._do_foreign_aid:
+            if self._game.show_card(self._blocking_player, game.Character.DUKE):
+                self._game_note("{} defiis sed {} ja havis la dukon kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    self._blocking_player.name,
+                                    player.name))
+                self._game.lose_card(player)
+                self._turn_over()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la dukon "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    self._blocking_player.name))
+                self._game.lose_card(self._blocking_player)
+                self._cancel_block()                
+
+    def _block(self, from_id):
+        try:
+            (player_num, player) = next(x for x in enumerate(self._game.players)
+                                        if x[1].id == from_id)
+        except StopIteration:
+            return
+
+        if not player.is_alive():
+            return
+
+        if self._pending_action == self._do_foreign_aid:
+            if player_num == self._game.current_player:
+                return
+
+            args = {
+                'chat_id': self._game_chat,
+                'text': ('{} pretendas havi la dukon kaj blokas '
+                         'la eksterlandan helpon. Ĉu iu volis defii '
+                         'rin?'.format(player.name)),
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+            }
+
+            self._send_request('sendMessage', args)
+
+            self._blocking_player = player
+            self._blocked_action = self._pending_action
+            self._set_pending_action(self._do_block)
+
     def _process_callback_query(self, query):
         try:
             from_id = query['from']['id']
@@ -402,24 +511,36 @@ class Bot:
 
         if (self._game is None or
             not self._game.is_running or
-            self._game.players[self._game.current_player].id != from_id):
-            self._answer_bad_query(query)
+            self._answer_bad_query(query)):
             return
 
-        if data == 'income':
-            self._income()
-        elif data == 'foreign_aid':
-            self._foreign_aid()
-        elif data == 'coup':
-            self._coup()
-        elif data == 'tax':
-            self._tax()
-        elif data == 'assassinate':
-            self._assassinate()
-        elif data == 'exchange':
-            self._exchange()
-        elif data == 'steal':
-            self._steal()
+        current_player = self._game.players[self._game.current_player]
+
+        if self._blocked_action:
+            if data == 'challenge':
+                self._challenge(from_id)
+        elif self._pending_action:
+            if data == 'block':
+                self._block(from_id)
+        elif current_player.id == from_id:
+            if data == 'coup':
+                self._coup()
+            elif current_player.coins < 10:
+                if data == 'income':
+                    self._income()
+                elif data == 'foreign_aid':
+                    self._foreign_aid()
+                elif data == 'coup':
+                    self._coup()
+                elif data == 'tax':
+                    self._tax()
+                elif data == 'assassinate':
+                    self._assassinate()
+                elif data == 'exchange':
+                    self._exchange()
+                elif data == 'steal':
+                    self._steal()
+
         self._answer_bad_query(query)
 
     def run(self):
@@ -433,6 +554,10 @@ class Bot:
                 # Delay for a bit before trying again to avoid DOSing the server
                 time.sleep(60)
                 continue
+
+            if (self._pending_action_time is not None and
+                time.monotonic() - self._pending_action_time >= WAIT_TIME):
+                self._pending_action()
 
             for update in updates:
                 try:

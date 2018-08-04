@@ -98,3 +98,19 @@ class Game:
             if player.is_alive():
                 num_players += 1
         return num_players <= 1
+
+    def show_card(self, player, character):
+        for card in player.cards:
+            if card.character == character and not card.visible:
+                self._deck.append(character)
+                random.shuffle(self._deck)
+                card.character = self._deck.pop()
+                return True
+
+        return False
+
+    def lose_card(self, player):
+        for card in player.cards:
+            if not card.visible:
+                card.visible = True
+                break
