@@ -458,12 +458,12 @@ class Bot:
         self._send_request('answerCallbackQuery', args)
 
     def _game_note(self, message):
-            args = {
-                'chat_id': self._game_chat,
-                'text': message
-            }
+        args = {
+            'chat_id': self._game_chat,
+            'text': message
+        }
 
-            self._send_request('sendMessage', args)
+        self._send_request('sendMessage', args)
 
     def _turn_over(self):
         self._reset_turn()
