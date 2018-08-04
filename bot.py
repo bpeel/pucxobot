@@ -268,8 +268,13 @@ class Bot:
     def _show_stats(self):
         message = []
 
+        is_finished = self._game.is_finished()
+
         for i, player in enumerate(self._game.players):
-            if i == self._game.current_player:
+            if is_finished:
+                if player.is_alive():
+                    message.append("🏆 ")
+            elif i == self._game.current_player:
                 message.append("👉 ")
 
             message.append(html.escape(player.name))
@@ -291,15 +296,27 @@ class Bot:
 
             message.append("\n\n")
 
-        message.append("{}, estas via vico, kion vi volas fari?".format(
-            html.escape(self._game.players[self._game.current_player].name)))
+        if is_finished:
+            try:
+                winner = next(x for x in self._game.players
+                              if x.is_alive()).name
+            except StopIteration:
+                winner = "Neniu"
+
+            message.append("{} venkis!".format(winner))
+        else:
+            current_player = self._game.players[self._game.current_player]
+            message.append("{}, estas via vico, kion vi volas fari?".format(
+                html.escape(current_player.name)))
 
         args = {
             'chat_id': self._game_chat,
             'text': "".join(message),
-            'parse_mode': 'HTML',
-            'reply_markup': { 'inline_keyboard': self._get_keyboard() }
+            'parse_mode': 'HTML'
         }
+
+        if not is_finished:
+            args['reply_markup'] = { 'inline_keyboard': self._get_keyboard() }
 
         self._send_request('sendMessage', args)
 
@@ -448,15 +465,8 @@ class Bot:
         self._reset_turn()
 
         if self._game.is_finished():
-            try:
-                winner = next(x for x in self._game.players
-                              if x.is_alive()).name
-            except StopIteration:
-                winner = "Neniu"
-
-            self._game_note("{} venkis!".format(winner))
+            self._show_stats()
             self._reset_game()
-
         else:
             self._game.next_player()
             self._show_stats()
