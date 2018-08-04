@@ -501,14 +501,30 @@ class Bot:
 
         self._turn_over()
 
-    def _tax(self):
+    def _do_tax(self, message=True):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} prenas 3 monerojn pro imposto".format(
-            player.name))
+        if message:
+            self._game_note("Neniu blokis, {} prenas la 3 monerojn".format(
+                player.name))
         player.coins += 3
 
         self._turn_over()
+
+    def _tax(self):
+        player = self._game.players[self._game.current_player]
+
+        args = {
+            'chat_id': self._game_chat,
+            'text': ('{} pretendas havi la dukon kaj prenas 3 monerojn per '
+                     'imposto.\n'
+                     'Ĉu iu volas defii rin?'.format(
+                         player.name)),
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+        }
+
+        self._send_request('sendMessage', args)
+        self._set_pending_action(self._do_tax)
 
     def _assassinate(self):
         player = self._game.players[self._game.current_player]
@@ -563,7 +579,25 @@ class Bot:
                                     player.name,
                                     self._blocking_player.name))
                 self._lose_card(self._blocking_player)
-                self._cancel_block()                
+                self._cancel_block()
+        elif self._pending_action == self._do_tax:
+            current_player = self._game.players[self._game.current_player]
+            
+            if self._game.show_card(current_player, game.Character.DUKE):
+                self._game_note("{} defiis sed {} ja havis la dukon kaj {} "
+                                "perdas karton".format(
+                                    player.name,
+                                    current_player.name,
+                                    player.name))
+                self._lose_card(player)
+                self._do_tax(message=False)
+            else:
+                self._game_note("{} defiis kaj {} ne havis la dukon "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    current_player.name))
+                self._lose_card(current_player)
+                self._turn_over()            
 
     def _block(self, from_id):
         try:
@@ -618,13 +652,13 @@ class Bot:
                 return
             data = data[0:colon]
 
-        if self._blocked_action:
-            if data == 'challenge':
-                self._challenge(from_id)
-        elif self._pending_action:
-            if data == 'block':
-                self._block(from_id)
-        elif current_player.id == from_id:
+        if data == 'challenge':
+            self._challenge(from_id)
+        elif data == 'block':
+            self._block(from_id)
+        elif (current_player.id == from_id and
+              not self._blocked_action and
+              not self._pending_action):
             if data == 'coup':
                 self._coup(extra_data)
             elif current_player.coins < 10:
