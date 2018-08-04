@@ -1022,8 +1022,8 @@ class Bot:
             return
 
         if (self._game is None or
-            not self._game.is_running or
-            self._answer_bad_query(query)):
+            not self._game.is_running):
+            self._answer_bad_query(query)
             return
 
         current_player = self._game.players[self._game.current_player]
