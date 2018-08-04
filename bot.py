@@ -748,6 +748,7 @@ class Bot:
                                     self._blocking_player.name,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(self._blocking_player)
                 self._turn_over()
             else:
                 self._game_note("{} defiis kaj {} ne havis la dukon "
@@ -766,6 +767,7 @@ class Bot:
                                     current_player.name,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(current_player)
                 self._do_tax(message=False)
             else:
                 self._game_note("{} defiis kaj {} ne havis la dukon "
@@ -784,6 +786,7 @@ class Bot:
                                     player.name))
                 self._game.players[self._game.current_player].coins -= 3
                 self._lose_card(player)
+                self._show_cards(self._pending_target)
                 self._turn_over()
             else:
                 self._game_note("{} defiis kaj {} ne havis la grafinon "
@@ -802,6 +805,7 @@ class Bot:
                                     current_player.name,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(current_player)
                 self._do_assassinate()
             else:
                 self._game_note("{} defiis kaj {} ne havis la murdiston "
@@ -822,6 +826,7 @@ class Bot:
                                     card.value,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(self._pending_target)
                 self._turn_over()
             else:
                 self._game_note("{} defiis kaj {} ne havis la ambasadoron "
@@ -839,6 +844,7 @@ class Bot:
                                     current_player.name,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(current_player)
                 self._do_steal()
             else:
                 self._game_note("{} defiis kaj {} ne havis la kapitanon "
@@ -857,6 +863,7 @@ class Bot:
                                     current_player.name,
                                     player.name))
                 self._lose_card(player)
+                self._show_cards(current_player)
                 self._do_exchange()
             else:
                 self._game_note("{} defiis kaj {} ne havis la ambasadoron "
