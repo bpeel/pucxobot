@@ -344,10 +344,10 @@ class Bot:
         
         if 'type' in chat and chat['type'] == 'private':
             if command == '/start':
-                send_reply(message,
-                           "Ĉi tiu roboto estas por ludi la ludon "
-                           "Puĉo. Tajpi la komandon /komenci en "
-                           "la taŭga grupo por ludi ĝin")
+                self._send_reply(message,
+                                 "Ĉi tiu roboto estas por ludi la ludon "
+                                 "Puĉo. Tajpi la komandon /komenci en "
+                                 "la taŭga grupo por ludi ĝin")
         elif 'id' in chat and chat['id'] == self._game_chat:
             if command == '/komenci':
                 self._start_game(message)
