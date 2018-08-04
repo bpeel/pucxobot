@@ -404,6 +404,9 @@ class Bot:
     def _coup(self):
         player = self._game.players[self._game.current_player]
 
+        if player.coins < 7:
+            return
+
         self._game_note("{} faras puĉon".format(
             player.name))
 
