@@ -16,27 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import random
-import enum
 import bot
-
-class Character(enum.Enum):
-    DUKE = "Duko"
-    ASSASSIN = "Murdisto"
-    CONTESSA = "Grafino"
-    CAPTAIN = "Kapitano"
-    AMBASSADOR = "Ambasadoro"
-
-class Player:
-    def __init__(self):
-        pass
-
-class Game:
-    def __init__(self):
-        self._deck = list(Character) * 3
-        random.shuffle(self._deck)
-
-        self._players = []
 
 if __name__ == "__main__":
     bot = bot.Bot()

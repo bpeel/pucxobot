@@ -25,14 +25,19 @@ import os
 import datetime
 import http
 import configparser
+import game
+import html
 
-class GetUpdatesException(Exception):
+class BotException(Exception):
     pass
 
-class HandleMessageException(Exception):
+class GetUpdatesException(BotException):
     pass
 
-class ProcessCommandException(Exception):
+class HandleMessageException(BotException):
+    pass
+
+class ProcessCommandException(BotException):
     pass
 
 class Bot:
@@ -50,20 +55,29 @@ class Bot:
             sys.exit(1)
 
         try:
-            self._game_room = config["setup"]["game_room"]
+            self._game_chat = config["setup"]["game_chat"]
         except KeyError:
-            print("Missing game_room option in [setup] section of config",
+            print("Missing game_chat option in [setup] section of config",
                   file=sys.stderr)
             sys.exit(1)
         try:
-            self._game_room = int(self._game_room)
+            self._game_chat = int(self._game_chat)
         except ValueError:
             pass
+
+        try:
+            self._botname = config["setup"]["botname"]
+        except KeyError:
+            print("Missing botname option in [setup] section of config",
+                  file=sys.stderr)
+            sys.exit(1)
 
         self._urlbase = "https://api.telegram.org/bot" + self._apikey + "/"
         self._get_updates_url = self._urlbase + "getUpdates"
 
         self._last_update_id = None
+
+        self._game = None
 
     def _is_valid_update(self, update):
         try:
@@ -147,10 +161,103 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
-    def _process_command(self, message, command, args):
-        if command == '/start':
+    def show_stats(self):
+        message = []
+
+        for i, player in enumerate(self._game.players):
+            if i == self._game.current_player:
+                message.append("👉 ")
+
+            message.append(html.escape(player.name))
+            message.append(":\n")
+
+            for card in player.cards:
+                if card.visible:
+                    message.append(" ☠{}☠".format(card.character.value))
+                else:
+                    message.append("🂠")
+
+            if player.is_alive():
+                message.append(", ")
+
+                if player.coins == 1:
+                    message.append("1 monero")
+                else:
+                    message.append("{} moneroj".format(player.coins))
+
+            message.append("\n\n")
+
+        message.append("{}, estas via vico, kion vi volas fari?".format(
+            html.escape(self._game.players[self._game.current_player].name)))
+
+        args = {
+            'chat_id': self._game_chat,
+            'text': "".join(message),
+            'parse_mode': 'HTML'
+        }
+
+        self._send_request('sendMessage', args)
+
+    def _start_game(self, message):
+        id = message['from']['id']
+
+        if self._game is not None:
+            if self._game.is_running:
+                self._send_reply(message, "La ludo jam komenciĝis")
+            elif not self._game.has_player(id):
+                self._send_reply(message,
+                                 "Unue aliĝu al la ludo por povi "
+                                 "komenci ĝin")
+            elif len(self._game.players) < 2:
+                self._send_reply(message,
+                                 "Necesas almenaŭ 2 ludantoj por ludi")
+            else:
+                self._game.start()
+                self.show_stats()
+        else:
+            self._join(message)
+
+    def _join(self, message):
+        if self._game is None:
+            self._game = game.Game()
+
+        id = message['from']['id']
+        try:
+            name = message['from']['first_name']
+        except KeyError:
+            name = "Sr.{}".format(id)
+
+        if self._game.is_running:
             self._send_reply(message,
-                             "Roboto por ludi Puĉo-n")
+                             "La ludo jam komenciĝis kaj ne plu eblas aliĝi")
+        elif self._game.has_player(id):
+            self._send_reply(message, "Vi jam estas en la ludo")
+        elif len(self._game.players) >= game.MAX_PLAYERS:
+            self._send_reply(message, "Jam estas tro da ludantoj")
+        else:
+            self._game.add_player(id, name)
+            ludantoj = ", ".join(x.name for x in self._game.players)
+            self._send_reply(message,
+                             "Bonvenon. Aliaj ludantoj tajpu "
+                             "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
+                             "por komenci la ludon. La aktualaj ludantoj "
+                             "estas:\n"
+                             "{}".format(ludantoj))
+
+    def _process_command(self, message, command, args):
+        chat = message['chat']
+        
+        if 'type' in chat and chat['type'] == 'private':
+            if command == '/start':
+                send_reply(message,
+                           "Ĉi tiu roboto estas por ludi la ludon "
+                           "Puĉo. Tajpi la komandon /komenci en "
+                           "la taŭga grupo por ludi ĝin")
+        elif 'id' in chat and chat['id'] == self._game_chat:
+            if command == '/komenci':
+                self._start_game(message)
+            elif command == '/aligxi':
+                self._join(message)
 
     def _find_command(self, message):
         if 'entities' not in message or 'text' not in message:
@@ -168,6 +275,12 @@ class Bot:
             command = command_utf16.decode('utf-16-le')
             remainder_utf16 = text_utf16[(start + length) * 2 :]
             remainder = remainder_utf16.decode('utf-16-le')
+
+            at = command.find('@')
+            if at != -1:
+                if command[at + 1:] != self._botname:
+                    return None
+                command = command[0:at]
 
             return (command, remainder)
 
@@ -188,15 +301,12 @@ class Bot:
 
             for update in updates:
                 message = update['message']
-                chat = message['chat']
+                command = self._find_command(message)
 
-                if 'type' in chat and chat['type'] == 'private':
-                    command = self._find_command(message)
-                    if command is not None:
-                        try:
-                            self._process_command(message,
-                                                  command[0],
-                                                  command[1])
-                        except ProcessCommandException as e:
-                            print("{}".format(e), file=sys.stderr)
-                    continue
+                if command is not None:
+                    try:
+                        self._process_command(message,
+                                              command[0],
+                                              command[1])
+                    except BotException as e:
+                        print("{}".format(e), file=sys.stderr)
