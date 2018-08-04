@@ -56,6 +56,7 @@ CHALLENGE_BUTTON = {
 }
 
 WAIT_TIME = 30
+INACTIVITY_TIMEOUT = 5 * 60
 
 class Bot:
     def __init__(self):
@@ -94,6 +95,7 @@ class Bot:
 
         self._last_update_id = None
         self._reset_game()
+        self._activity()
 
     def _cancel_block(self):
         self._pending_action = self._blocked_action
@@ -115,14 +117,21 @@ class Bot:
         self._pending_joins = []
         self._reset_turn()
 
+    def _activity(self):
+        self._last_activity_time = time.monotonic()
+
     def _get_updates(self):
         if self._pending_action_time is not None:
             timeout = WAIT_TIME + self._pending_action_time - time.monotonic()
-            if timeout < 0:
-                timeout = 0
+        elif self._game is not None:
+            timeout = (INACTIVITY_TIMEOUT + self._last_activity_time -
+                       time.monotonic())
         else:
             timeout = 300
 
+        if timeout < 0:
+            timeout = 0
+            
         args = {
             'allowed_updates': ['message', 'callback_query'],
             'timeout': timeout
@@ -276,6 +285,7 @@ class Bot:
             else:
                 self._game.start()
                 self._show_stats()
+                self._activity()
                 for player in self._game.players:
                     self._show_cards(player)
         else:
@@ -330,6 +340,7 @@ class Bot:
         except KeyError:
             name = "Sr.{}".format(id)
 
+        self._activity()
         self._game.add_player(id, name, chat_id)
         ludantoj = ", ".join(x.name for x in self._game.players)
         self._send_reply(message,
@@ -442,6 +453,7 @@ class Bot:
         self._game_note("{} enspezas 1 moneron".format(player.name))
         player.coins += 1
 
+        self._activity()
         self._turn_over()
 
     def _do_foreign_aid(self):
@@ -451,6 +463,7 @@ class Bot:
             player.name))
         player.coins += 2
 
+        self._activity()
         self._turn_over()
 
     def _foreign_aid(self):
@@ -464,6 +477,7 @@ class Bot:
             'reply_markup': { 'inline_keyboard': [[ BLOCK_BUTTON ]] }
         }
 
+        self._activity()
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_foreign_aid)
 
@@ -514,6 +528,7 @@ class Bot:
         self._lose_card(target)
         player.coins -= 7
 
+        self._activity()
         self._turn_over()
 
     def _do_tax(self, message=True):
@@ -524,6 +539,7 @@ class Bot:
                 player.name))
         player.coins += 3
 
+        self._activity()
         self._turn_over()
 
     def _tax(self):
@@ -538,6 +554,7 @@ class Bot:
             'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
         }
 
+        self._activity()
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_tax)
 
@@ -548,6 +565,7 @@ class Bot:
             player.name, self._pending_target.name))
         player.coins -= 3
 
+        self._activity()
         self._lose_card(self._pending_target)
         self._turn_over()
 
@@ -590,6 +608,7 @@ class Bot:
                                                   [ BLOCK_BUTTON ]] }
         }
 
+        self._activity()
         self._send_request('sendMessage', args)
         self._pending_target = target
         self._set_pending_action(self._do_assassinate)
@@ -605,6 +624,7 @@ class Bot:
         character = self._pending_exchange[extra_data]
         del self._pending_exchange[extra_data]
         player.cards.append(game.Card(character))
+        self._activity()
 
         if len(player.cards) >= 2:
             self._show_cards(player)
@@ -653,6 +673,7 @@ class Bot:
 
         player.cards = dead_cards
 
+        self._activity()
         self._pending_exchange_message = self._send_exchange_message()
         self._game_note('Neniu blokis, {} interŝanĝas kartojn'.format(
             player.name))
@@ -668,6 +689,7 @@ class Bot:
             'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
         }
 
+        self._activity()
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_exchange)
 
@@ -680,6 +702,7 @@ class Bot:
         player.coins += amount
         self._pending_target.coins -= amount
 
+        self._activity()
         self._turn_over()
 
     def _steal(self, target_num):
@@ -718,6 +741,7 @@ class Bot:
                                                   [ BLOCK_BUTTON ]] }
         }
 
+        self._activity()
         self._send_request('sendMessage', args)
         self._pending_target = target
         self._set_pending_action(self._do_steal)
@@ -725,10 +749,12 @@ class Bot:
     def _do_block(self):
         self._game_note("Neniu defiis kaj la ago estis blokita")
         self._turn_over()
+        self._activity()
 
     def _do_block_assassinate(self):
         self._game.players[self._game.current_player].coins -= 3
         self._do_block()
+        self._activity()
 
     def _challenge(self, from_id):
         try:
@@ -739,6 +765,8 @@ class Bot:
 
         if not player.is_alive():
             return
+
+        self._activity()
 
         if self._blocked_action == self._do_foreign_aid:
             if self._game.show_card(self._blocking_player, game.Character.DUKE):
@@ -883,6 +911,8 @@ class Bot:
         if not player.is_alive():
             return
 
+        self._activity()
+
         if self._pending_action == self._do_foreign_aid:
             if player_num == self._game.current_player:
                 return
@@ -999,9 +1029,16 @@ class Bot:
                 time.sleep(60)
                 continue
 
-            if (self._pending_action_time is not None and
-                time.monotonic() - self._pending_action_time >= WAIT_TIME):
-                self._pending_action()
+            if self._pending_action_time is not None:
+                if time.monotonic() - self._pending_action_time >= WAIT_TIME:
+                    self._pending_action()
+            elif self._game is not None:
+                if (time.monotonic() - self._last_activity_time >=
+                    INACTIVITY_TIMEOUT):
+                    self._game_note("La ludo estas senaktiva dum pli ol {} "
+                                    "minutoj kaj estos forlasita".format(
+                                        INACTIVITY_TIMEOUT // 60))
+                    self._reset_game()
 
             for update in updates:
                 try:
