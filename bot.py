@@ -457,14 +457,47 @@ class Bot:
         self._send_request('sendMessage', args)
         self._set_pending_action(self._do_foreign_aid)
 
-    def _coup(self):
+    def _coup(self, target_num):
         player = self._game.players[self._game.current_player]
 
         if player.coins < 7:
             return
 
-        self._game_note("{} faras puĉon".format(
-            player.name))
+        if target_num is None:
+            buttons = []
+
+            for i, target in enumerate(self._game.players):
+                if (i == self._game.current_player or
+                    not target.is_alive()):
+                    continue
+                buttons.append([{'text': target.name,
+                                 'callback_data': 'coup:{}'.format(i)}])
+                
+            args = {
+                'chat_id': self._game_chat,
+                'text': "{}, kiun vi volas mortigi dum la puĉo?".format(
+                    player.name),
+                'reply_markup': { 'inline_keyboard': buttons }
+            }
+
+            self._send_request('sendMessage', args)
+            return
+
+        if (target_num < 0 or
+            target_num >= len(self._game.players) or
+            target_num == self._game.current_player):
+            return
+        
+        target = self._game.players[target_num]
+
+        if not target.is_alive():
+            return
+
+        self._game_note("{} faras puĉon kontraŭ {}".format(
+            player.name, target.name))
+
+        self._lose_card(target)
+        player.coins -= 7
 
         self._turn_over()
 
@@ -575,6 +608,16 @@ class Bot:
 
         current_player = self._game.players[self._game.current_player]
 
+        colon = data.find(':')
+        if colon == -1:
+            extra_data = None
+        else:
+            try:
+                extra_data = int(data[colon + 1:])
+            except ValueError:
+                return
+            data = data[0:colon]
+
         if self._blocked_action:
             if data == 'challenge':
                 self._challenge(from_id)
@@ -583,14 +626,12 @@ class Bot:
                 self._block(from_id)
         elif current_player.id == from_id:
             if data == 'coup':
-                self._coup()
+                self._coup(extra_data)
             elif current_player.coins < 10:
                 if data == 'income':
                     self._income()
                 elif data == 'foreign_aid':
                     self._foreign_aid()
-                elif data == 'coup':
-                    self._coup()
                 elif data == 'tax':
                     self._tax()
                 elif data == 'assassinate':
