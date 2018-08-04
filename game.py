@@ -55,8 +55,8 @@ class Player:
 
 class Game:
     def __init__(self):
-        self._deck = list(Character) * 3
-        random.shuffle(self._deck)
+        self.deck = list(Character) * 3
+        random.shuffle(self.deck)
 
         self.players = []
         self.is_running = False
@@ -72,7 +72,7 @@ class Game:
         player = Player(id, name, chat_id)
 
         for i in range(2):
-            player.cards.append(Card(self._deck.pop()))
+            player.cards.append(Card(self.deck.pop()))
 
         self.players.append(player)
 
@@ -103,9 +103,9 @@ class Game:
     def show_card(self, player, character):
         for card in player.cards:
             if card.character == character and not card.visible:
-                self._deck.append(character)
-                random.shuffle(self._deck)
-                card.character = self._deck.pop()
+                self.deck.append(character)
+                random.shuffle(self.deck)
+                card.character = self.deck.pop()
                 return True
 
         return False

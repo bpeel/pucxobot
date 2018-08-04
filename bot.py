@@ -106,6 +106,9 @@ class Bot:
         self._pending_action = None
         self._pending_action_time = None
         self._pending_target = None
+        # Pending cards to pick
+        self._pending_exchange = None
+        self._pending_exchange_message = None
 
     def _reset_game(self):
         self._game = None
@@ -591,13 +594,82 @@ class Bot:
         self._pending_target = target
         self._set_pending_action(self._do_assassinate)
 
+    def _keep(self, extra_data):
+        player = self._game.players[self._game.current_player]
+
+        if (extra_data is None or
+            extra_data < 0 or
+            extra_data >= len(self._pending_exchange)):
+            return
+
+        character = self._pending_exchange[extra_data]
+        del self._pending_exchange[extra_data]
+        player.cards.append(game.Card(character))
+
+        if len(player.cards) >= 2:
+            self._show_cards(player)
+            self._turn_over()
+        else:
+            self._send_exchange_message()
+
+    def _send_exchange_message(self):
+        player = self._game.players[self._game.current_player]
+
+        buttons = [[ { 'text': x.value, 'callback_data': "keep:{}".format(i) } ]
+                   for i, x in enumerate(self._pending_exchange)]
+
+        args = {
+            'chat_id': player.chat_id,
+            'text': ("Kiujn kartojn vi volas konservi?".format(
+                player.name)),
+            'reply_markup': { 'inline_keyboard': buttons }
+        }
+
+        if self._pending_exchange_message is not None:
+            args['message_id'] = self._pending_exchange_message
+            rep = self._send_request('editMessageText', args)
+        else:
+            rep = self._send_request('sendMessage', args)
+
+        return rep['result']['message_id']
+
+    def _do_exchange(self):
+        player = self._game.players[self._game.current_player]
+
+        self._reset_turn()
+        self._pending_exchange = []
+        dead_cards = []
+
+        while (len(self._pending_exchange) < 2 and
+               len(self._game.deck) >= 1):
+            character = self._game.deck.pop()
+            self._pending_exchange.append(character)
+
+        for card in player.cards:
+            if card.visible:
+                dead_cards.append(card)
+            else:
+                self._pending_exchange.append(card.character)
+
+        player.cards = dead_cards
+
+        self._pending_exchange_message = self._send_exchange_message()
+        self._game_note('Neniu blokis, {} interŝanĝas kartojn'.format(
+            player.name))
+
     def _exchange(self):
         player = self._game.players[self._game.current_player]
 
-        self._game_note("{} interŝanĝas".format(
-            player.name))
+        args = {
+            'chat_id': self._game_chat,
+            'text': ("{} pretendas havi la ambasadoron kaj volas interŝanĝi "
+                     "kartojn, ĉu iu volas defii rin?".format(
+                player.name)),
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+        }
 
-        self._turn_over()
+        self._send_request('sendMessage', args)
+        self._set_pending_action(self._do_exchange)
 
     def _steal(self):
         player = self._game.players[self._game.current_player]
@@ -695,6 +767,24 @@ class Bot:
                                     current_player.name))
                 self._lose_card(current_player)
                 self._turn_over()
+        elif self._pending_action == self._do_exchange:
+            current_player = self._game.players[self._game.current_player]
+            if self._game.show_card(current_player,
+                                    game.Character.AMBASSADOR):
+                self._game_note("{} defiis sed {} ja havis la ambasadoron kaj "
+                                "{} perdas karton".format(
+                                    player.name,
+                                    current_player.name,
+                                    player.name))
+                self._lose_card(player)
+                self._do_exchange()
+            else:
+                self._game_note("{} defiis kaj {} ne havis la ambasadoron "
+                                "kaj perdas karton".format(
+                                    player.name,
+                                    current_player.name))
+                self._lose_card(current_player)
+                self._turn_over()
 
     def _block(self, from_id):
         try:
@@ -770,24 +860,26 @@ class Bot:
             self._challenge(from_id)
         elif data == 'block':
             self._block(from_id)
-        elif (current_player.id == from_id and
-              not self._blocked_action and
-              not self._pending_action):
-            if data == 'coup':
-                self._coup(extra_data)
-            elif current_player.coins < 10:
-                if data == 'income':
-                    self._income()
-                elif data == 'foreign_aid':
-                    self._foreign_aid()
-                elif data == 'tax':
-                    self._tax()
-                elif data == 'assassinate':
-                    self._assassinate(extra_data)
-                elif data == 'exchange':
-                    self._exchange()
-                elif data == 'steal':
-                    self._steal()
+        elif current_player.id == from_id:
+            if self._pending_exchange:
+                if data == 'keep':
+                    self._keep(extra_data)
+            elif not self._blocked_action and not self._pending_action:
+                if data == 'coup':
+                    self._coup(extra_data)
+                elif current_player.coins < 10:
+                    if data == 'income':
+                        self._income()
+                    elif data == 'foreign_aid':
+                        self._foreign_aid()
+                    elif data == 'tax':
+                        self._tax()
+                    elif data == 'assassinate':
+                        self._assassinate(extra_data)
+                    elif data == 'exchange':
+                        self._exchange()
+                    elif data == 'steal':
+                        self._steal()
 
         self._answer_bad_query(query)
 
