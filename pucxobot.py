@@ -747,6 +747,7 @@ class Bot:
         self._activity()
 
         if len(player.cards) >= 2:
+            self._game.deck.extend(self._pending_exchange)
             self._show_cards(player)
             self._turn_over()
         else:
