@@ -1127,7 +1127,9 @@ class Bot:
         elif player_num == self._game.current_player:
             return
 
-        if len(self._accepting) + 2 >= len(self._game.players):
+        n_alive_players = sum(1 for p in self._game.players if p.is_alive())
+
+        if len(self._accepting) + 2 >= n_alive_players:
             self._pending_action()
         else:
             self._accepting.append(player)
