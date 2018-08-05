@@ -178,6 +178,7 @@ class Bot:
         self._game = None
         self._pending_joins = []
         self._reset_turn()
+        self._announce_message = None
 
     def _activity(self):
         self._last_activity_time = time.monotonic()
@@ -432,13 +433,24 @@ class Bot:
 
         args = {
             'chat_id': self._announce_channel,
-            'text': "Nova ludo atendas ludantojn!"
+            'text': ("Nova ludo atendas ludantojn!\n\n"
+                     "Aktualaj ludantoj: {}".format(
+                         ", ".join(x.name for x in self._game.players)))
         }
 
         try:
-            self._send_request('sendMessage', args)
+            if self._announce_message is not None:
+                args['message_id'] = self._announce_message
+                rep = self._send_request('editMessageText', args)
+            else:
+                rep = self._send_request('sendMessage', args)
         except BotException as e:
             print("{}".format(e), file=sys.stderr)
+
+        try:
+            self._announce_message = rep['result']['message_id']
+        except KeyError:
+            pass
 
     def _really_join(self, message, chat_id):
         self._activity()
@@ -453,8 +465,6 @@ class Bot:
         if self._game is None:
             self._game = game.Game()
 
-            self._announce_game()
-
         try:
             name = message['from']['first_name']
         except KeyError:
@@ -468,6 +478,8 @@ class Bot:
                          "por komenci la ludon. La aktualaj ludantoj "
                          "estas:\n"
                          "{}".format(ludantoj))
+
+        self._announce_game()
 
     def _process_command(self, message, command, args):
         chat = message['chat']
