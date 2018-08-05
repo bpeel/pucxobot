@@ -86,6 +86,10 @@ CHALLENGE_BUTTON = {
     'text': 'Defii', 'callback_data': 'challenge'
 }
 
+ACCEPT_BUTTON = {
+    'text': 'Akcepti', 'callback_data': 'accept'
+}
+
 WAIT_TIME = 30
 INACTIVITY_TIMEOUT = 5 * 60
 
@@ -134,6 +138,8 @@ class Bot:
                   file=sys.stderr)
             sys.exit(1)
 
+        self._accepting = []
+
         self._urlbase = "https://api.telegram.org/bot" + self._apikey + "/"
         self._get_updates_url = self._urlbase + "getUpdates"
 
@@ -146,10 +152,15 @@ class Bot:
         self._reset_game()
         self._activity()
 
+    def _clear_accepting(self):
+        self._accepting.clear()
+        self._accepting_message = None
+
     def _cancel_block(self):
         self._pending_action = self._blocked_action
         self._blocking_player = None
         self._blocked_action = None
+        self._clear_accepting()
 
     def _reset_turn(self):
         self._blocking_player = None
@@ -157,6 +168,7 @@ class Bot:
         self._pending_action = None
         self._pending_action_time = None
         self._pending_target = None
+        self._clear_accepting()
         # Pending cards to pick
         self._pending_exchange = None
         self._pending_exchange_message = None
@@ -529,6 +541,7 @@ class Bot:
     def _set_pending_action(self, action):
         self._pending_action = action
         self._pending_action_time = time.monotonic()
+        self._clear_accepting()
 
     def _show_cards(self, player):
         message = ["Viaj kartoj estas:\n"]
@@ -577,7 +590,8 @@ class Bot:
             'text': ('💴 {} prenas 2 monerojn per eksterlanda helpo.\n'
                      'Ĉu iu volas pretendi havi la dukon kaj bloki rin?'.format(
                          player.name)),
-            'reply_markup': { 'inline_keyboard': [[ BLOCK_BUTTON ]] }
+            'reply_markup': { 'inline_keyboard': [[ BLOCK_BUTTON ],
+                                                  [ ACCEPT_BUTTON ]] }
         }
 
         self._activity()
@@ -654,7 +668,8 @@ class Bot:
                      'imposto.\n'
                      'Ĉu iu volas defii rin?'.format(
                          player.name)),
-            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                  [ ACCEPT_BUTTON ]] }
         }
 
         self._activity()
@@ -708,7 +723,8 @@ class Bot:
                      "Aŭ ĉu iu volas defii?".format(
                          player.name, target.name, target.name)),
             'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
-                                                  [ BLOCK_BUTTON ]] }
+                                                  [ BLOCK_BUTTON ],
+                                                  [ ACCEPT_BUTTON ]] }
         }
 
         self._activity()
@@ -789,7 +805,8 @@ class Bot:
             'text': ("🔄 {} pretendas havi la ambasadoron kaj volas interŝanĝi "
                      "kartojn, ĉu iu volas defii rin?".format(
                 player.name)),
-            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+            'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                  [ ACCEPT_BUTTON ]] }
         }
 
         self._activity()
@@ -841,7 +858,8 @@ class Bot:
                      "Aŭ ĉu iu volas defii?".format(
                          player.name, target.name, target.name)),
             'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
-                                                  [ BLOCK_BUTTON ]] }
+                                                  [ BLOCK_BUTTON ],
+                                                  [ ACCEPT_BUTTON ]] }
         }
 
         self._activity()
@@ -1025,7 +1043,8 @@ class Bot:
                 'text': ('{} pretendas havi la dukon kaj blokas '
                          'la eksterlandan helpon. Ĉu iu volis defii '
                          'rin?'.format(player.name)),
-                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                      [ ACCEPT_BUTTON ]] }
             }
 
             self._send_request('sendMessage', args)
@@ -1042,7 +1061,8 @@ class Bot:
                 'text': ('{} pretendas havi la grafinon kaj blokas '
                          'la murdon. Ĉu iu volis defii '
                          'rin?'.format(player.name)),
-                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                      [ ACCEPT_BUTTON ]] }
             }
 
             self._send_request('sendMessage', args)
@@ -1059,7 +1079,8 @@ class Bot:
                 'text': ('{} pretendas havi la kapitanon aŭ la ambasadoron '
                          'kaj blokas la ŝtelon. Ĉu iu volis defii '
                          'rin?'.format(player.name)),
-                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ]] }
+                'reply_markup': { 'inline_keyboard': [[ CHALLENGE_BUTTON ],
+                                                      [ ACCEPT_BUTTON ]] }
             }
 
             self._send_request('sendMessage', args)
@@ -1067,6 +1088,61 @@ class Bot:
             self._blocking_player = player
             self._blocked_action = self._pending_action
             self._set_pending_action(self._do_block)
+
+    def _accept(self, from_id):
+        try:
+            (player_num, player) = next(x for x in enumerate(self._game.players)
+                                        if x[1].id == from_id)
+        except StopIteration:
+            return
+
+        if (not player.is_alive() or
+            player in self._accepting or
+            self._pending_action is None):
+            return
+
+        self._activity()
+
+        if self._blocking_player is not None:
+            if player == self._blocking_player:
+                return
+        elif player_num == self._game.current_player:
+            return
+
+        if len(self._accepting) + 2 >= len(self._game.players):
+            self._pending_action()
+        else:
+            self._accepting.append(player)
+
+            if len(self._accepting) > 1:
+                others = ", ".join(x.name for x in self._accepting[0:-1])
+                player_list = "{} kaj {}".format(others,
+                                                 self._accepting[-1].name)
+            else:
+                player_list = self._accepting[-1].name
+
+            if self._blocking_player is None:
+                thing = "agon"
+            else:
+                thing = "blokon"
+
+            args = {
+                'chat_id': self._game_chat,
+                'text': "{} akceptas la {}".format(player_list, thing)
+            }
+
+            if self._accepting_message is not None:
+                args['message_id'] = self._accepting_message
+                command = 'editMessageText'
+            else:
+                command = 'sendMessage'
+
+            rep = self._send_request(command, args)
+
+            try:
+                self._accepting_message = rep['result']['message_id']
+            except KeyValue:
+                pass
 
     def _process_callback_query(self, query):
         try:
@@ -1097,6 +1173,8 @@ class Bot:
             self._challenge(from_id)
         elif data == 'block':
             self._block(from_id)
+        elif data == 'accept':
+            self._accept(from_id)
         elif current_player.id == from_id:
             if self._pending_exchange:
                 if data == 'keep':
