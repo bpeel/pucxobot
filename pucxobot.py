@@ -94,8 +94,8 @@ ACCEPT_BUTTON = {
 WAIT_TIME = 30
 INACTIVITY_TIMEOUT = 5 * 60
 
-# Forget cached chat IDs after 1 hour
-CHAT_ID_MAP_TIMEOUT = 1 * 60 * 60
+# Forget cached chat IDs after 24 hours
+CHAT_ID_MAP_TIMEOUT = 24 * 60 * 60
 
 class Bot:
     def __init__(self):
