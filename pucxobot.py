@@ -27,6 +27,7 @@ import http
 import configparser
 import game
 import html
+import random
 
 REGULOJ = """\
 <b>RESUMO DE LA REGULOJ:</b>
@@ -778,6 +779,10 @@ class Bot:
         self._reset_turn()
         self._pending_exchange = []
         dead_cards = []
+
+        # The rules say the player takes two “random” cards from the
+        # deck, so let’s shuffle it first
+        random.shuffle(self._game.deck)
 
         while (len(self._pending_exchange) < 2 and
                len(self._game.deck) >= 1):
