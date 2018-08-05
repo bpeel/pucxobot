@@ -89,6 +89,9 @@ CHALLENGE_BUTTON = {
 WAIT_TIME = 30
 INACTIVITY_TIMEOUT = 5 * 60
 
+# Forget cached chat IDs after 1 hour
+CHAT_ID_MAP_TIMEOUT = 1 * 60 * 60
+
 class Bot:
     def __init__(self):
         conf_dir = os.path.expanduser("~/.pucxobot")
@@ -133,6 +136,11 @@ class Bot:
 
         self._urlbase = "https://api.telegram.org/bot" + self._apikey + "/"
         self._get_updates_url = self._urlbase + "getUpdates"
+
+        # Mapping of user ID to chat ID. Each value is a tuple with a
+        # timestamp and the chat ID so that if the entry is too old
+        # then it can be abandoned.
+        self._chat_id_map = {}
 
         self._last_update_id = None
         self._reset_game()
@@ -378,6 +386,17 @@ class Bot:
     def _join(self, message):
         self._activity()
 
+        try:
+            from_id = message['from']['id']
+            timestamp, chat_id = self._chat_id_map[from_id]
+        except KeyError:
+            pass
+        else:
+            del self._chat_id_map[from_id]
+            if time.monotonic() - timestamp < CHAT_ID_MAP_TIMEOUT:
+                self._really_join(message, chat_id)
+                return
+
         if not self._can_join(message):
             return
 
@@ -411,6 +430,10 @@ class Bot:
     def _really_join(self, message, chat_id):
         self._activity()
 
+        id = message['from']['id']
+
+        self._chat_id_map[id] = (time.monotonic(), chat_id)
+
         if not self._can_join(message):
             return
 
@@ -419,7 +442,6 @@ class Bot:
 
             self._announce_game()
 
-        id = message['from']['id']
         try:
             name = message['from']['first_name']
         except KeyError:
