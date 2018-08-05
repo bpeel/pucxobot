@@ -78,7 +78,8 @@ class Game:
 
     def start(self):
         self.is_running = True
-        self.current_player = random.randrange(len(self.players))
+        random.shuffle(self.players)
+        self.current_player = 0
 
         if len(self.players) == 2:
             self.players[self.current_player].coins -= 1
