@@ -36,7 +36,7 @@ Puĉo estas kartludo de trompado kaj blufado.
 
 Ĉiu komence havas 2 kartojn (fackaŝitajn) kaj 2 monerojn. Se oni perdas vivon oni devas malkaŝi karton kaj oni ne plu povas uzi ĝin.
 
-Dum sia vico oni povas fari unu el la sevkaj agoj:
+Dum sia vico oni povas fari unu el la sekvaj agoj:
 
 <b>Enspezi</b>: gajni unu moneron kaj neniu povas malhelpi ĝin.
 
