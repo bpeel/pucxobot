@@ -905,6 +905,16 @@ class Bot:
         if not player.is_alive():
             return
 
+        current_player = self._game.players[self._game.current_player]
+
+        if self._blocking_player is not None:
+            challenged_player = self._blocking_player
+        else:
+            challenged_player = current_player
+
+        if player == challenged_player:
+            return
+
         self._activity()
 
         if self._blocked_action == self._do_foreign_aid:
@@ -925,8 +935,6 @@ class Bot:
                 self._lose_card(self._blocking_player)
                 self._cancel_block()
         elif self._pending_action == self._do_tax:
-            current_player = self._game.players[self._game.current_player]
-
             if self._game.show_card(current_player, game.Character.DUKE):
                 self._game_note("{} defiis sed {} ja havis la dukon kaj {} "
                                 "perdas karton".format(
@@ -963,7 +971,6 @@ class Bot:
                 self._lose_card(self._pending_target)
                 self._do_assassinate()
         elif self._pending_action == self._do_assassinate:
-            current_player = self._game.players[self._game.current_player]
             if self._game.show_card(current_player,
                                     game.Character.ASSASSIN):
                 self._game_note("{} defiis sed {} ja havis la murdiston kaj {} "
@@ -1003,7 +1010,6 @@ class Bot:
                 self._lose_card(self._pending_target)
                 self._do_steal()
         elif self._pending_action == self._do_steal:
-            current_player = self._game.players[self._game.current_player]
             if self._game.show_card(current_player, game.Character.CAPTAIN):
                 self._game_note("{} defiis sed {} ja havis la kapitanon kaj {} "
                                 "perdas karton".format(
@@ -1021,7 +1027,6 @@ class Bot:
                 self._lose_card(current_player)
                 self._turn_over()
         elif self._pending_action == self._do_exchange:
-            current_player = self._game.players[self._game.current_player]
             if self._game.show_card(current_player,
                                     game.Character.AMBASSADOR):
                 self._game_note("{} defiis sed {} ja havis la ambasadoron kaj "
