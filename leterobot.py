@@ -702,7 +702,8 @@ class Bot:
 
         if len(targets) == 0:
             self._game_note("{} forĵetas la gardiston sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.")
+                            "estas protektataj kaj ĝi ne havas efikon.".format(
+                                current_player.name))
             self._do_discard(GUARD)
         elif extra_data is None:
             self._choose_target("Kies karton vi volas diveni?", GUARD.keyword)
@@ -745,7 +746,8 @@ class Bot:
 
         if len(targets) == 0:
             self._game_note("{} forĵetas la spionon sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.")
+                            "estas protektataj kaj ĝi ne havas efikon.".format(
+                                current_player.name))
             self._do_discard(SPY)
         elif extra_data is None:
             self._choose_target("Kies karton vi volas vidi?", SPY.keyword)
@@ -776,7 +778,8 @@ class Bot:
 
         if len(targets) == 0:
             self._game_note("{} forĵetas la baronon sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.")
+                            "estas protektataj kaj ĝi ne havas efikon.".format(
+                                current_player.name))
             self._do_discard(BARON)
         elif extra_data is None:
             self._choose_target("Kun kies karto vi volas kompari?",
