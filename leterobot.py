@@ -738,6 +738,37 @@ class Bot:
 
             self._do_discard(GUARD)
 
+    def _discard_spy(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        targets = self._get_targets()
+
+        if len(targets) == 0:
+            self._game_note("{} forĵetas la spionon sed ĉiuj aliaj ludantoj "
+                            "estas protektataj kaj ĝi ne havas efikon.")
+            self._do_discard(SPY)
+        elif extra_data is None:
+            self._choose_target("Kies karton vi volas vidi?", SPY.keyword)
+        else:
+            player_num = extra_data
+            if player_num >= len(targets):
+                return
+            target = targets[player_num]
+
+            self._game_note("{} forĵetis la spionon kaj devigis {} "
+                            "sekrete montri sian karton.".format(
+                                    current_player.name,
+                                    target.name))
+
+            args = {
+                'chat_id': current_player.chat_id,
+                'text': '{} havas la {}n {}'.format(
+                    target.name, target.card.name, target.card.symbol)
+            }
+            self._send_request('sendMessage', args)
+
+            self._do_discard(SPY)
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}n {}".format(
@@ -778,6 +809,8 @@ class Bot:
                 if self._can_discard(card):
                     if card == GUARD:
                         self._discard_guard(extra_data)
+                    elif card == SPY:
+                        self._discard_spy(extra_data)
                     else:
                         self._discard(card)
 
