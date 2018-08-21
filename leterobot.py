@@ -27,7 +27,6 @@ import http
 import configparser
 import html
 import random
-from collections import namedtuple
 
 REGULOJ = """\
 <b>RESUMO DE LA REGULOJ:</b>"""
@@ -52,8 +51,27 @@ INACTIVITY_TIMEOUT = 5 * 60
 # Forget cached chat IDs after 24 hours
 CHAT_ID_MAP_TIMEOUT = 24 * 60 * 60
 
-Character = namedtuple("Character",
-                       "name symbol description value count keyword")
+class Character:
+    def __init__(self, name, symbol, description, value, count, keyword):
+        self.name = name
+        self.symbol = symbol
+        self.description = description
+        self.value = value
+        self.count = count
+        self.keyword = keyword
+
+    def value_symbol(self):
+        return "{}\ufe0f\u20e3".format(self.value)
+
+    def long_name(self, n=False):
+        if n:
+            n = "n"
+        else:
+            n = ""
+        return "{}{} {}{}".format(self.name,
+                                  n,
+                                  self.symbol,
+                                  self.value_symbol())
 
 GUARD = Character("Gardisto",
                   "👮️",
@@ -302,7 +320,7 @@ class Bot:
 
         # Discard the top card
         self._set_aside_card = self._deck.pop()
-        
+
         if len(self._players) == 2:
             self._visible_cards = []
             for _ in range(3):
@@ -594,8 +612,9 @@ class Bot:
         return True
 
     def _explain_card(self, message, buttons, card):
-        message.append("{} <b>{}</b>\n{}\n\n".format(
-            card.symbol, html.escape(card.name), html.escape(card.description)))
+        message.append("<b>{}</b>\n{}\n\n".format(
+            html.escape(card.long_name()),
+            html.escape(card.description)))
 
         if self._can_discard(card):
             buttons.append([{'text': card.name,
@@ -629,7 +648,7 @@ class Bot:
 
     def _show_card(self, player):
         card = player.card
-        message = "Via karto estas: {} {}".format(card.symbol, card.name)
+        message = "Via karto estas: {}".format(card.long_name())
 
         args = {
             'chat_id': player.chat_id,
@@ -693,7 +712,7 @@ class Bot:
     def _choose_card(self, note, keyword, extra_data):
         current_player = self._players[self._current_player]
 
-        buttons = [ [ { 'text': "{} {}".format(card.symbol, card.name),
+        buttons = [ [ { 'text': card.long_name(),
                         'callback_data': '{}:{}'.format(
                             keyword, 0x10000 | (i << 8) | extra_data) } ]
                     for i, card in enumerate(CHARACTERS) ]
@@ -712,9 +731,10 @@ class Bot:
         targets = self._get_targets()
 
         if len(targets) == 0:
-            self._game_note("{} forĵetas la gardiston sed ĉiuj aliaj ludantoj "
+            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
                             "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name))
+                                current_player.name,
+                                GUARD.long_name(n=True)))
             self._do_discard(GUARD)
         elif extra_data is None:
             self._choose_target("Kies karton vi volas diveni?", GUARD.keyword)
@@ -734,19 +754,21 @@ class Bot:
             card = CHARACTERS[card_num]
 
             if card is target.card:
-                self._game_note("{} forĵetis la gardiston kaj ĝuste divenis ke "
-                                "{} havis la {}n. {} perdas la raŭdon.".format(
+                self._game_note("{} forĵetis la {} kaj ĝuste divenis ke "
+                                "{} havis la {}. {} perdas la raŭdon.".format(
                                     current_player.name,
+                                    GUARD.long_name(n=True),
                                     target.name,
-                                    card.name,
+                                    card.long_name(n=True),
                                     target.name))
                 target.is_alive = False
             else:
-                self._game_note("{} forĵetis la gardiston kaj malĝuste divenis "
-                                "ke {} havas la {}n.".format(
+                self._game_note("{} forĵetis la {} kaj malĝuste divenis "
+                                "ke {} havas la {}.".format(
                                     current_player.name,
+                                    GUARD.long_name(n=True),
                                     target.name,
-                                    card.name))
+                                    card.long_name(n=True)))
 
             self._do_discard(GUARD)
 
@@ -756,9 +778,10 @@ class Bot:
         targets = self._get_targets()
 
         if len(targets) == 0:
-            self._game_note("{} forĵetas la spionon sed ĉiuj aliaj ludantoj "
+            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
                             "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name))
+                                current_player.name,
+                                SPY.long_name(n=True)))
             self._do_discard(SPY)
         elif extra_data is None:
             self._choose_target("Kies karton vi volas vidi?", SPY.keyword)
@@ -768,15 +791,16 @@ class Bot:
                 return
             target = targets[player_num]
 
-            self._game_note("{} forĵetis la spionon kaj devigis {} "
+            self._game_note("{} forĵetis la {} kaj devigis {} "
                             "sekrete montri sian karton.".format(
-                                    current_player.name,
-                                    target.name))
+                                current_player.name,
+                                SPY.long_name(n=True),
+                                target.name))
 
             args = {
                 'chat_id': current_player.chat_id,
-                'text': '{} havas la {}n {}'.format(
-                    target.name, target.card.name, target.card.symbol)
+                'text': '{} havas la {}'.format(
+                    target.name, target.card.long_name(n=True))
             }
             self._send_request('sendMessage', args)
 
@@ -788,9 +812,10 @@ class Bot:
         targets = self._get_targets()
 
         if len(targets) == 0:
-            self._game_note("{} forĵetas la baronon sed ĉiuj aliaj ludantoj "
+            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
                             "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name))
+                                current_player.name,
+                                BARON.long_name(n=True)))
             self._do_discard(BARON)
         elif extra_data is None:
             self._choose_target("Kun kies karto vi volas kompari?",
@@ -805,17 +830,18 @@ class Bot:
 
             args = {
                 'chat_id': current_player.chat_id,
-                'text': 'Vi havas la {}n {} kaj {} havas la {}n {}'.format(
-                    current_player.card.name, current_player.card.symbol,
-                    target.name, target.card.name, target.card.symbol)
+                'text': 'Vi havas la {} kaj {} havas la {}'.format(
+                    current_player.card.long_name(n=True),
+                    target.name, target.card.long_name(n=True))
             }
             self._send_request('sendMessage', args)
 
             if current_player.card.value == target.card.value:
-                self._game_note("{} forĵetis la baronon kaj komparis sian "
+                self._game_note("{} forĵetis la {} kaj komparis sian "
                                 "karton kun tiu de {}. La du kartoj estas "
                                 "egalaj kaj neniu perdas la raŭdon.".format(
                                     current_player.name,
+                                    BARON.long_name(n=True),
                                     target.name))
             else:
                 if current_player.card.value > target.card.value:
@@ -823,10 +849,11 @@ class Bot:
                 else:
                     loser = current_player
 
-                self._game_note("{} forĵetis la baronon kaj komparis sian "
+                self._game_note("{} forĵetis la {} kaj komparis sian "
                                 "karton kun tiu de {}. La karto de {} estas "
                                 "malpli alta kaj ri perdas la raŭdon.".format(
                                     current_player.name,
+                                    BARON.long_name(n=True),
                                     target.name,
                                     loser.name))
                 loser.is_alive = False
@@ -836,8 +863,9 @@ class Bot:
     def _discard_handmaid(self, extra_data):
         current_player = self._players[self._current_player]
 
-        self._game_note("{} forĵetas la servistinon kaj estos protektata ĝis "
-                        "sia sekva vico".format(current_player.name))
+        self._game_note("{} forĵetas la {} kaj estos protektata ĝis "
+                        "sia sekva vico".format(current_player.name,
+                                                HANDMAID.long_name(n=True)))
 
         current_player.is_protected = True
         self._do_discard(HANDMAID)
@@ -875,17 +903,20 @@ class Bot:
             target.discard_pile.append(discarded_card)
 
             if discarded_card == PRINCESS:
-                self._game_note("{} forĵetis la princon kaj devigis {} "
+                self._game_note("{} forĵetis la {} kaj devigis {} "
                                 "forĵeti sian princinon kaj tial ri perdas "
                                 "la raŭdon.".format(current_player.name,
+                                                    PRINCE.long_name(n=True),
                                                     target_name))
                 target.is_alive = False
             else:
-                self._game_note("{} forĵetis la princon kaj devigis {} "
-                                "forĵeti sian {}n kaj preni novan "
-                                "karton.".format(current_player.name,
-                                                 target_name,
-                                                 discarded_card.name))
+                self._game_note("{} forĵetis la {} kaj devigis {} "
+                                "forĵeti sian {} kaj preni novan "
+                                "karton."
+                                "".format(current_player.name,
+                                          PRINCE.long_name(n=True),
+                                          target_name,
+                                          discarded_card.long_name(n=True)))
                 if target != current_player:
                     self._show_card(target)
 
@@ -894,11 +925,11 @@ class Bot:
     def _exchange_note(self, player_a, player_b):
             args = {
                 'chat_id': player_a.chat_id,
-                'text': ('Vi fordonas la {}n {} al {} kaj '
-                         'ricevas la {}n {}'.format(
-                             player_a.card.name, player_a.card.symbol,
+                'text': ('Vi fordonas la {} al {} kaj '
+                         'ricevas la {}'.format(
+                             player_a.card.long_name(n=True),
                              player_b.name,
-                             player_b.card.name, player_b.card.symbol)),
+                             player_b.card.long_name(n=True))),
             }
             self._send_request('sendMessage', args)
         
@@ -908,9 +939,10 @@ class Bot:
         targets = self._get_targets()
 
         if len(targets) == 0:
-            self._game_note("{} forĵetas la reĝon sed ĉiuj aliaj ludantoj "
+            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
                             "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name))
+                                current_player.name,
+                                KING.long_name(n=True)))
             self._do_discard(KING)
         elif extra_data is None:
             self._choose_target("Kun kiu vi volas interŝanĝi manojn?",
@@ -939,8 +971,8 @@ class Bot:
 
     def _discard(self, card):
         current_player = self._players[self._current_player]
-        self._game_note("{} forĵetas la {}n {}".format(
-            current_player.name, card.name, card.symbol))
+        self._game_note("{} forĵetas la {}".format(
+            current_player.name, card.long_name(n=True)))
         self._do_discard(card)
 
     def _process_callback_query(self, query):
