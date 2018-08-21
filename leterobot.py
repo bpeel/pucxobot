@@ -55,6 +55,40 @@ CHAT_ID_MAP_TIMEOUT = 24 * 60 * 60
 Character = namedtuple("Character",
                        "name symbol description value count keyword")
 
+GUARD = Character("Gardisto",
+                  "👮️",
+                  "Nomu karton kiu ne estas gardisto, kaj elektu ludanton. "
+                  "Se tiu ludanto havas tiun karton, ri perdas la raŭndon.",
+                  1,
+                  5,
+                  "guard")
+SPY = Character("Spiono",
+                "🔎",
+                "Rigardu la manon de alia ludanto.",
+                2,
+                2,
+                "spy")
+BARON = Character("Barono",
+                  "⚔️",
+                  "Sekrete komparu manojn kun alia ludanto. Tiu de vi ambaŭ, "
+                  "kiu havas la malplej valoran karton, perdas la raŭndon.",
+                  3,
+                  2,
+                  "baron")
+HANDMAID = Character("Servistino",
+                     "💅",
+                     "Ĝis via sekva vico, ignoru efikojn de kartoj de ĉiuj "
+                     "aliaj ludantoj.",
+                     4,
+                     2,
+                     "handmaid")
+PRINCE = Character("Princo",
+                   "🤴",
+                   "Elektu ludanton (povas esti vi) kiu forĵetos sian manon "
+                   "kaj prenos novan karton.",
+                   5,
+                   2,
+                   "prince")
 KING = Character("Reĝo",
                  "👑",
                  "Elektu alian ludanton kaj interŝanĝu manojn kun ri.",
@@ -68,51 +102,22 @@ COMTESSE = Character("Grafino",
                      7,
                      1,
                      "comtesse")
-PRINCE = Character("Princo",
-                   "🤴",
-                   "Elektu ludanton (povas esti vi) kiu forĵetos sian manon "
-                   "kaj prenos novan karton.",
-                   5,
-                   2,
-                   "prince")
+PRINCESS = Character("Princino",
+                     "👸",
+                     "Se vi forĵetas ĉi tiun karton, vi perdas la raŭndon.",
+                     8,
+                     1,
+                     "princess")
 
 CHARACTERS = [
-    Character("Gardisto",
-              "👮️",
-              "Nomu karton kiu ne estas gardisto, kaj elektu ludanton. Se tiu "
-              "ludanto havas tiun karton, ri perdas la raŭndon.",
-              1,
-              5,
-              "guard"),
-    Character("Spiono",
-              "🔎",
-              "Rigardu la manon de alia ludanto.",
-              2,
-              2,
-              "spy"),
-    Character("Barono",
-              "⚔️",
-              "Sekrete komparu manojn kun alia ludanto. Tiu de vi ambaŭ, "
-              "kiu havas la malplej valoran karton, perdas la raŭndon.",
-              3,
-              2,
-              "baron"),
-    Character("Servistino",
-              "💅",
-              "Ĝis via sekva vico, ignoru efikojn de kartoj de ĉiuj aliaj "
-              "ludantoj.",
-              4,
-              2,
-              "handmaid"),
+    GUARD,
+    SPY,
+    BARON,
+    HANDMAID,
     PRINCE,
     KING,
     COMTESSE,
-    Character("Princino",
-              "👸",
-              "Se vi forĵetas ĉi tiun karton, vi perdas la raŭndon.",
-              8,
-              1,
-              "princess"),
+    PRINCESS,
 ]
 
 assert(sum(character.count for character in CHARACTERS) == 16)
@@ -126,6 +131,7 @@ class Player:
         self.chat_id = chat_id
         self.discard_pile = []
         self.is_alive = True
+        self.is_protected = False
 
     def get_score(self):
         return (self.card.value,
@@ -545,8 +551,11 @@ class Bot:
                 message.append("👉 ")
 
             message.append(html.escape(player.name))
+
             if not player.is_alive:
                 message.append("☠")
+            elif player.is_protected:
+                message.append(" <i>protektata</i>")
 
             if len(player.discard_pile) > 0:
                 message.append(":\n")
@@ -599,6 +608,7 @@ class Bot:
 
         current_player = self._players[self._current_player]
         self._pending_card = self._deck.pop()
+        current_player.is_protected = False
 
         message = ["Kiun karton vi volas forĵeti?\n\n"]
         buttons = []
@@ -627,15 +637,13 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
-    def _discard(self, card):
+    def _do_discard(self, card):
         current_player = self._players[self._current_player]
 
         if card is not self._pending_card:
             current_player.card = self._pending_card
         current_player.discard_pile.append(card)
 
-        self._game_note("{} forĵetas la {}n {}".format(
-            current_player.name, card.name, card.symbol))
         self._show_card(current_player)
 
         next_player = self._current_player
@@ -650,6 +658,91 @@ class Bot:
         self._current_player = next_player
 
         self._take_turn()
+
+    def _get_targets(self):
+        return [player for i, player in enumerate(self._players)
+                if (i != self._current_player and player.is_alive and
+                    not player.is_protected)]
+
+    def _choose_target(self, note, keyword):
+        current_player = self._players[self._current_player]
+
+        buttons = [ [ { 'text': player.name,
+                        'callback_data': '{}:{}'.format(keyword, i) }
+                      for i, player in enumerate(self._get_targets()) ] ]
+
+        args = {
+            'chat_id': current_player.chat_id,
+            'text': note,
+            'reply_markup': { 'inline_keyboard': buttons }
+        }
+
+        self._send_request('sendMessage', args)
+
+    def _choose_card(self, note, keyword, extra_data):
+        current_player = self._players[self._current_player]
+
+        buttons = [ [ { 'text': "{} {}".format(card.symbol, card.name),
+                        'callback_data': '{}:{}'.format(
+                            keyword, 0x10000 | (i << 8) | extra_data) } ]
+                    for i, card in enumerate(CHARACTERS) ]
+
+        args = {
+            'chat_id': current_player.chat_id,
+            'text': note,
+            'reply_markup': { 'inline_keyboard': buttons }
+        }
+
+        self._send_request('sendMessage', args)
+
+    def _discard_guard(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        targets = self._get_targets()
+
+        if len(targets) == 0:
+            self._game_note("{} forĵetas la gardiston sed ĉiuj aliaj ludantoj "
+                            "estas protektataj kaj ĝi ne havas efikon.")
+            self._do_discard(GUARD)
+        elif extra_data is None:
+            self._choose_target("Kies karton vi volas diveni?", GUARD.keyword)
+        elif extra_data < 0x100:
+            self._choose_card("Kiun karton vi divenas?",
+                              GUARD.keyword,
+                              extra_data)
+        else:
+            player_num = extra_data & 0xff
+            if player_num >= len(targets):
+                return
+            target = targets[player_num]
+
+            card_num = (extra_data >> 8) & 0xff
+            if card_num >= len(CHARACTERS):
+                return
+            card = CHARACTERS[card_num]
+
+            if card is target.card:
+                self._game_note("{} forĵetis la gardiston kaj ĝuste divenis ke "
+                                "{} havis la {}n. {} perdas la raŭdon.".format(
+                                    current_player.name,
+                                    target.name,
+                                    card.name,
+                                    target.name))
+                target.is_alive = False
+            else:
+                self._game_note("{} forĵetis la gardiston kaj malĝuste divenis "
+                                "ke {} havas la {}n.".format(
+                                    current_player.name,
+                                    target.name,
+                                    card.name))
+
+            self._do_discard(GUARD)
+
+    def _discard(self, card):
+        current_player = self._players[self._current_player]
+        self._game_note("{} forĵetas la {}n {}".format(
+            current_player.name, card.name, card.symbol))
+        self._do_discard(card)
 
     def _process_callback_query(self, query):
         try:
@@ -683,7 +776,10 @@ class Bot:
                 pass
             else:
                 if self._can_discard(card):
-                    self._discard(card)
+                    if card == GUARD:
+                        self._discard_guard(extra_data)
+                    else:
+                        self._discard(card)
 
         self._answer_query(query)
 
