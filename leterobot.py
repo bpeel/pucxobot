@@ -32,6 +32,7 @@ REGULOJ = """\
 <b>RESUMO DE LA REGULOJ:</b>"""
 
 MAX_PLAYERS = 4
+NUM_HEARTS = 13
 
 class BotException(Exception):
     pass
@@ -147,6 +148,10 @@ class Player:
         self.id = id
         self.name = name
         self.chat_id = chat_id
+        self.hearts = 0
+        self.reset_round()
+
+    def reset_round(self):
         self.discard_pile = []
         self.is_alive = True
         self.is_protected = False
@@ -211,6 +216,16 @@ class Bot:
         self._reset_game()
         self._activity()
 
+    def _reset_round(self):
+        self._deck = []
+        self._pending_card = None
+        self._set_aside_card = None
+        # Cards that are visible and set aside during a two-player game
+        self._visible_cards = None
+
+        for player in self._players:
+            player.reset_round()
+
     def _reset_game(self):
         self._in_game = False
         self._current_player = 0
@@ -218,11 +233,7 @@ class Bot:
         self._pending_joins = []
         self._players = []
         self._announce_message = None
-        self._deck = []
-        self._pending_card = None
-        self._set_aside_card = None
-        # Cards that are visible and set aside during a two-player game
-        self._visible_cards = None
+        self._reset_round()
 
     def _activity(self):
         self._last_activity_time = time.monotonic()
@@ -307,12 +318,7 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
-    def _do_start_game(self):
-        self._game_running = True
-        self._activity()
-
-        random.shuffle(self._players)
-
+    def _start_round(self):
         for character in CHARACTERS:
             for _ in range(character.count):
                 self._deck.append(character)
@@ -331,6 +337,14 @@ class Bot:
             self._show_card(player)
 
         self._take_turn()
+
+    def _do_start_game(self):
+        self._game_running = True
+        self._activity()
+
+        random.shuffle(self._players)
+
+        self._start_round()
 
     def _has_player(self, id):
         for player in self._players:
@@ -560,13 +574,8 @@ class Bot:
             message.append("Forĵetitaj kartoj: {}\n\n".format(
                 "".join(card.symbol for card in self._visible_cards)))
 
-        winner = self._get_winner()
-
         for i, player in enumerate(self._players):
-            if winner is not None:
-                if player == winner:
-                    message.append("🏆 ")
-            elif i == self._current_player:
+            if i == self._current_player:
                 message.append("👉 ")
 
             message.append(html.escape(player.name))
@@ -576,20 +585,20 @@ class Bot:
             elif player.is_protected:
                 message.append("🛡️")
 
-            if len(player.discard_pile) > 0:
-                message.append(":\n")
+            if player.hearts > 0:
+                message.append("\n")
+                message.append("❣️" * player.hearts)
 
+            if len(player.discard_pile) > 0:
+                message.append("\n")
                 message.append("".join(card.symbol
                                        for card in player.discard_pile))
                 
             message.append("\n\n")
 
-        if winner is not None:
-            message.append("{} venkis!".format(winner.name))
-        else:
-            current_player = self._players[self._current_player]
-            message.append("<b>{}</b>, estas via vico".format(
-                html.escape(current_player.name)))
+        current_player = self._players[self._current_player]
+        message.append("<b>{}</b>, estas via vico".format(
+            html.escape(current_player.name)))
 
         args = {
             'chat_id': self._game_chat,
@@ -621,9 +630,21 @@ class Bot:
                              'callback_data': card.keyword }])
 
     def _take_turn(self):
-        if self._get_winner() is not None:
-            self._show_stats()
-            self._reset_game()
+        winner = self._get_winner()
+
+        if winner is not None:
+            self._game_note("💘 {} gajnas la raŭndon kaj gajnas korinklinon "
+                            "de la princino".format(winner.name))
+            winner.hearts += 1
+
+            if winner.hearts > NUM_HEARTS // len(self._players):
+                self._game_note("🏆 {} havas {} korinklinojn kaj gajnas la "
+                                "partion!".format(winner.name, winner.hearts))
+                self._reset_game()
+            else:
+                self._current_player = self._players.index(winner)
+                self._reset_round()
+                self._start_round()
             return
 
         current_player = self._players[self._current_player]
