@@ -196,6 +196,8 @@ class Bot:
         self._announce_message = None
         self._deck = []
         self._pending_card = None
+        # Cards that are visible and set aside during a two-player game
+        self._visible_cards = None
 
     def _activity(self):
         self._last_activity_time = time.monotonic()
@@ -294,6 +296,11 @@ class Bot:
         # Discard the top card
         self._deck.pop()
         
+        if len(self._players) == 2:
+            self._visible_cards = []
+            for _ in range(3):
+                self._visible_cards.append(self._deck.pop())
+
         for player in self._players:
             player.card = self._deck.pop()
             self._show_card(player)
@@ -523,6 +530,10 @@ class Bot:
 
     def _show_stats(self):
         message = []
+
+        if self._visible_cards is not None:
+            message.append("Forĵetitaj kartoj: {}\n\n".format(
+                "".join(card.symbol for card in self._visible_cards)))
 
         winner = self._get_winner()
 
