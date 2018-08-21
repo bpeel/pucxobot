@@ -891,6 +891,52 @@ class Bot:
 
             self._finish_discard()
 
+    def _exchange_note(self, player_a, player_b):
+            args = {
+                'chat_id': player_a.chat_id,
+                'text': ('Vi fordonas la {}n {} al {} kaj '
+                         'ricevas la {}n {}'.format(
+                             player_a.card.name, player_a.card.symbol,
+                             player_b.name,
+                             player_b.card.name, player_b.card.symbol)),
+            }
+            self._send_request('sendMessage', args)
+        
+    def _discard_king(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        targets = self._get_targets()
+
+        if len(targets) == 0:
+            self._game_note("{} forĵetas la reĝon sed ĉiuj aliaj ludantoj "
+                            "estas protektataj kaj ĝi ne havas efikon.".format(
+                                current_player.name))
+            self._do_discard(KING)
+        elif extra_data is None:
+            self._choose_target("Kun kiu vi volas interŝanĝi manojn?",
+                                KING.keyword)
+        else:
+            player_num = extra_data
+            if player_num >= len(targets):
+                return
+            target = targets[player_num]
+
+            self._start_discard(KING)
+
+            self._exchange_note(current_player, target)
+            self._exchange_note(target, current_player)
+
+            (current_player.card, target.card) = (target.card,
+                                                  current_player.card)
+
+            self._game_note("{} forĵetis la reĝon kaj interŝanĝas la "
+                            "manon kun {}".format(
+                                current_player.name,
+                                target.name))
+
+            self._show_card(target)
+            self._finish_discard()
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}n {}".format(
@@ -939,6 +985,8 @@ class Bot:
                         self._discard_handmaid(extra_data)
                     elif card == PRINCE:
                         self._discard_prince(extra_data)
+                    elif card == KING:
+                        self._discard_king(extra_data)
                     else:
                         self._discard(card)
 
