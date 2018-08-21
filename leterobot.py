@@ -679,8 +679,8 @@ class Bot:
             targets = self._get_targets()
 
         buttons = [ [ { 'text': player.name,
-                        'callback_data': '{}:{}'.format(keyword, i) }
-                      for i, player in enumerate(targets) ] ]
+                        'callback_data': '{}:{}'.format(keyword, i) } ]
+                    for i, player in enumerate(targets) ]
 
         args = {
             'chat_id': current_player.chat_id,
