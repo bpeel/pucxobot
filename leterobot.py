@@ -769,6 +769,54 @@ class Bot:
 
             self._do_discard(SPY)
 
+    def _discard_baron(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        targets = self._get_targets()
+
+        if len(targets) == 0:
+            self._game_note("{} forĵetas la baronon sed ĉiuj aliaj ludantoj "
+                            "estas protektataj kaj ĝi ne havas efikon.")
+            self._do_discard(BARON)
+        elif extra_data is None:
+            self._choose_target("Kun kies karto vi volas kompari?",
+                                BARON.keyword)
+        else:
+            player_num = extra_data
+            if player_num >= len(targets):
+                return
+            target = targets[player_num]
+
+            args = {
+                'chat_id': current_player.chat_id,
+                'text': 'Vi havas la {}n {} kaj {} havas la {}n {}'.format(
+                    current_player.card.name, current_player.card.symbol,
+                    target.name, target.card.name, target.card.symbol)
+            }
+            self._send_request('sendMessage', args)
+
+            if current_player.card.value == target.card.value:
+                self._game_note("{} forĵetis la baronon kaj komparis sian "
+                                "karton kun tiu de {}. La du kartoj estas "
+                                "egalaj kaj neniu perdas la raŭdon.".format(
+                                    current_player.name,
+                                    target.name))
+            else:
+                if current_player.card.value > target.card.value:
+                    loser = target
+                else:
+                    loser = current_player
+
+                self._game_note("{} forĵetis la baronon kaj komparis sian "
+                                "karton kun tiu de {}. La karto de {} estas "
+                                "malpli alta kaj ri perdas la raŭdon.".format(
+                                    current_player.name,
+                                    target.name,
+                                    loser.name))
+                loser.is_alive = False
+
+            self._do_discard(BARON)
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}n {}".format(
@@ -811,6 +859,8 @@ class Bot:
                         self._discard_guard(extra_data)
                     elif card == SPY:
                         self._discard_spy(extra_data)
+                    elif card == BARON:
+                        self._discard_baron(extra_data)
                     else:
                         self._discard(card)
 
