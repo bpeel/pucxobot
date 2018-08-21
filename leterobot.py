@@ -860,7 +860,7 @@ class Bot:
 
             self._finish_discard()
 
-    def _discard_handmaid(self, extra_data):
+    def _discard_handmaid(self):
         current_player = self._players[self._current_player]
 
         self._game_note("{} forĵetas la {} kaj estos protektata ĝis "
@@ -1014,7 +1014,7 @@ class Bot:
                     elif card == BARON:
                         self._discard_baron(extra_data)
                     elif card == HANDMAID:
-                        self._discard_handmaid(extra_data)
+                        self._discard_handmaid()
                     elif card == PRINCE:
                         self._discard_prince(extra_data)
                     elif card == KING:
