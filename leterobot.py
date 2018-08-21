@@ -820,6 +820,15 @@ class Bot:
 
             self._do_discard(BARON)
 
+    def _discard_handmaid(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        self._game_note("{} forĵetas la servistinon kaj estos protektata ĝis "
+                        "sia sekva vico".format(current_player.name))
+
+        current_player.is_protected = True
+        self._do_discard(HANDMAID)
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}n {}".format(
@@ -864,6 +873,8 @@ class Bot:
                         self._discard_spy(extra_data)
                     elif card == BARON:
                         self._discard_baron(extra_data)
+                    elif card == HANDMAID:
+                        self._discard_handmaid(extra_data)
                     else:
                         self._discard(card)
 
