@@ -555,7 +555,7 @@ class Bot:
             if not player.is_alive:
                 message.append("☠")
             elif player.is_protected:
-                message.append(" <i>protektata</i>")
+                message.append("🛡️")
 
             if len(player.discard_pile) > 0:
                 message.append(":\n")
