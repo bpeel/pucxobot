@@ -638,11 +638,18 @@ class Bot:
         self._send_request('sendMessage', args)
 
     def _do_discard(self, card):
+        self._start_discard(card)
+        self._finish_discard()
+
+    def _start_discard(self, card):
         current_player = self._players[self._current_player]
 
         if card is not self._pending_card:
             current_player.card = self._pending_card
         current_player.discard_pile.append(card)
+
+    def _finish_discard(self):
+        current_player = self._players[self._current_player]
 
         self._show_card(current_player)
 
@@ -790,6 +797,8 @@ class Bot:
                 return
             target = targets[player_num]
 
+            self._start_discard(BARON)
+
             args = {
                 'chat_id': current_player.chat_id,
                 'text': 'Vi havas la {}n {} kaj {} havas la {}n {}'.format(
@@ -818,7 +827,7 @@ class Bot:
                                     loser.name))
                 loser.is_alive = False
 
-            self._do_discard(BARON)
+            self._finish_discard()
 
     def _discard_handmaid(self, extra_data):
         current_player = self._players[self._current_player]
