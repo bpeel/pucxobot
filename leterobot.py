@@ -969,6 +969,13 @@ class Bot:
             self._show_card(target)
             self._finish_discard()
 
+    def _discard_princess(self):
+        current_player = self._players[self._current_player]
+        self._game_note("{} forĵetas la {} kaj perdas la raŭndon".format(
+            current_player.name, PRINCESS.long_name(n=True)))
+        current_player.is_alive = False
+        self._do_discard(PRINCESS)
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}".format(
@@ -1019,6 +1026,8 @@ class Bot:
                         self._discard_prince(extra_data)
                     elif card == KING:
                         self._discard_king(extra_data)
+                    elif card == PRINCESS:
+                        self._discard_princess()
                     else:
                         self._discard(card)
 
