@@ -1034,6 +1034,8 @@ class Bot:
             except StopIteration:
                 pass
             else:
+                self._activity()
+
                 if self._can_discard(card):
                     if card == GUARD:
                         self._discard_guard(extra_data)
