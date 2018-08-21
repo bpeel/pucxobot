@@ -27,6 +27,7 @@ import http
 import configparser
 import html
 import random
+from collections import namedtuple
 
 REGULOJ = """\
 <b>RESUMO DE LA REGULOJ:</b>"""
@@ -51,11 +52,84 @@ INACTIVITY_TIMEOUT = 5 * 60
 # Forget cached chat IDs after 24 hours
 CHAT_ID_MAP_TIMEOUT = 24 * 60 * 60
 
+Character = namedtuple("Character",
+                       "name symbol description value count keyword")
+
+KING = Character("Reĝo",
+                 "👑",
+                 "Elektu alian ludanton kaj interŝanĝu manojn kun ri.",
+                 6,
+                 1,
+                 "king")
+COMTESSE = Character("Grafino",
+                     "👩‍💼",
+                     "Se vi havas ĉi tiun karton kun la reĝo aŭ la princo en "
+                     "via mano, vi devas forĵeti ĉi tiun karton.",
+                     7,
+                     1,
+                     "comtesse")
+PRINCE = Character("Princo",
+                   "🤴",
+                   "Elektu ludanton (povas esti vi) kiu forĵetos sian manon "
+                   "kaj prenos novan karton.",
+                   5,
+                   2,
+                   "prince")
+
+CHARACTERS = [
+    Character("Gardisto",
+              "👮️",
+              "Nomu karton kiu ne estas gardisto, kaj elektu ludanton. Se tiu "
+              "ludanto havas tiun karton, ri perdas la raŭndon.",
+              1,
+              5,
+              "guard"),
+    Character("Spiono",
+              "🔎",
+              "Rigardu la manon de alia ludanto.",
+              2,
+              2,
+              "spy"),
+    Character("Barono",
+              "⚔️",
+              "Sekrete komparu manojn kun alia ludanto. Tiu de vi ambaŭ, "
+              "kiu havas la malplej valoran karton, perdas la raŭndon.",
+              3,
+              2,
+              "baron"),
+    Character("Servistino",
+              "💅",
+              "Ĝis via sekva vico, ignoru efikojn de kartoj de ĉiuj aliaj "
+              "ludantoj.",
+              4,
+              2,
+              "handmaid"),
+    PRINCE,
+    KING,
+    COMTESSE,
+    Character("Princino",
+              "👸",
+              "Se vi forĵetas ĉi tiun karton, vi perdas la raŭndon.",
+              8,
+              1,
+              "princess"),
+]
+
+assert(sum(character.count for character in CHARACTERS) == 16)
+for i, character in enumerate(CHARACTERS):
+    assert(character.value == i + 1)
+
 class Player:
     def __init__(self, id, name, chat_id):
         self.id = id
         self.name = name
         self.chat_id = chat_id
+        self.discard_pile = []
+        self.is_alive = True
+
+    def get_score(self):
+        return (self.card.value,
+                sum(card.value for card in self.discard_pile))
 
 class Bot:
     def __init__(self):
@@ -120,6 +194,8 @@ class Bot:
         self._pending_joins = []
         self._players = []
         self._announce_message = None
+        self._deck = []
+        self._pending_card = None
 
     def _activity(self):
         self._last_activity_time = time.monotonic()
@@ -206,10 +282,23 @@ class Bot:
 
     def _do_start_game(self):
         self._game_running = True
-        self._show_stats()
         self._activity()
+
+        random.shuffle(self._players)
+
+        for character in CHARACTERS:
+            for _ in range(character.count):
+                self._deck.append(character)
+        random.shuffle(self._deck)
+
+        # Discard the top card
+        self._deck.pop()
+        
         for player in self._players:
+            player.card = self._deck.pop()
             self._show_card(player)
+
+        self._take_turn()
 
     def _has_player(self, id):
         for player in self._players:
@@ -398,15 +487,158 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
-    def _show_card(self, player):
-        message = "Via karto estas: {} {}".format("?", "?")
+    def _get_winner(self):
+        if len(self._deck) <= 0:
+            best_player = None
+            best_score = None
+            for player in self._players:
+                if not player.is_alive:
+                    continue
+                score = player.get_score()
+                if best_player is None or score > best_score:
+                    best_player = player
+                    best_score = score
+
+            return best_player
+
+        alive_player = None
+
+        for player in self._players:
+            if not player.is_alive:
+                continue
+
+            # It’s only a winner if there is only one alive player
+            if alive_player is not None:
+                return None
+
+            alive_player = player
+
+        # It probably shouldn’t happen that there are no alive
+        # players, but in order to fail safe we’ll just declare the
+        # first player the winner
+        if alive_player is None:
+            return self._players[0]
+        else:
+            return alive_player                      
+
+    def _show_stats(self):
+        message = []
+
+        winner = self._get_winner()
+
+        for i, player in enumerate(self._players):
+            if winner is not None:
+                if player == winner:
+                    message.append("🏆 ")
+            elif i == self._current_player:
+                message.append("👉 ")
+
+            message.append(html.escape(player.name))
+            if not player.is_alive:
+                message.append("☠")
+
+            if len(player.discard_pile) > 0:
+                message.append(":\n")
+
+                message.append("".join(card.symbol
+                                       for card in player.discard_pile))
+                
+            message.append("\n\n")
+
+        if winner is not None:
+            message.append("{} venkis!".format(winner.name))
+        else:
+            current_player = self._players[self._current_player]
+            message.append("<b>{}</b>, estas via vico".format(
+                html.escape(current_player.name)))
 
         args = {
-            'chat_id': player.chat_id,
-            'text': "".message,
+            'chat_id': self._game_chat,
+            'text': "".join(message),
+            'parse_mode': 'HTML'
         }
 
         self._send_request('sendMessage', args)
+
+    def _can_discard(self, card):
+        current_player = self._players[self._current_player]
+
+        if card is not current_player.card and card is not self._pending_card:
+            return False
+
+        if card is KING or card is PRINCE:
+            return (current_player.card is not COMTESSE and
+                    self._pending_card is not COMTESSE)
+
+        return True
+
+    def _explain_card(self, message, buttons, card):
+        message.append("{} <b>{}</b>\n{}\n\n".format(
+            card.symbol, html.escape(card.name), html.escape(card.description)))
+
+        if self._can_discard(card):
+            buttons.append([{'text': card.name,
+                             'callback_data': card.keyword }])
+
+    def _take_turn(self):
+        if self._get_winner() is not None:
+            self._show_stats()
+            self._reset_game()
+            return
+
+        current_player = self._players[self._current_player]
+        self._pending_card = self._deck.pop()
+
+        message = ["Kiun karton vi volas forĵeti?\n\n"]
+        buttons = []
+
+        self._explain_card(message, buttons, current_player.card)
+        self._explain_card(message, buttons, self._pending_card)
+
+        args = {
+            'chat_id': current_player.chat_id,
+            'text': "".join(message),
+            'parse_mode': 'HTML',
+            'reply_markup': { 'inline_keyboard': buttons }
+        }
+
+        self._send_request('sendMessage', args)
+        self._show_stats()
+
+    def _show_card(self, player):
+        card = player.card
+        message = "Via karto estas: {} {}".format(card.symbol, card.name)
+
+        args = {
+            'chat_id': player.chat_id,
+            'text': message,
+        }
+
+        self._send_request('sendMessage', args)
+
+    def _discard(self, card):
+        current_player = self._players[self._current_player]
+
+        if card is not self._pending_card:
+            current_player.card = self._pending_card
+        current_player.discard_pile.append(card)
+
+        self._game_note("{} forĵetas la {}n {}".format(
+            current_player.name, card.name, card.symbol))
+        self._show_card(current_player)
+
+        next_player = self._current_player
+
+        while True:
+            next_player = (next_player + 1) % len(self._players)
+
+            if (next_player == self._current_player or
+                self._players[next_player].is_alive):
+                break
+
+        self._current_player = next_player
+
+        self._take_turn()
 
     def _process_callback_query(self, query):
         try:
@@ -431,6 +663,16 @@ class Bot:
             except ValueError:
                 return
             data = data[0:colon]
+
+        if current_player.id == from_id:
+            try:
+                card = next(card for card in CHARACTERS
+                            if card.keyword == data)
+            except StopIteration:
+                pass
+            else:
+                if self._can_discard(card):
+                    self._discard(card)
 
         self._answer_query(query)
 
