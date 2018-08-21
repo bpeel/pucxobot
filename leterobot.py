@@ -202,6 +202,7 @@ class Bot:
         self._announce_message = None
         self._deck = []
         self._pending_card = None
+        self._set_aside_card = None
         # Cards that are visible and set aside during a two-player game
         self._visible_cards = None
 
@@ -300,7 +301,7 @@ class Bot:
         random.shuffle(self._deck)
 
         # Discard the top card
-        self._deck.pop()
+        self._set_aside_card = self._deck.pop()
         
         if len(self._players) == 2:
             self._visible_cards = []
@@ -671,12 +672,15 @@ class Bot:
                 if (i != self._current_player and player.is_alive and
                     not player.is_protected)]
 
-    def _choose_target(self, note, keyword):
+    def _choose_target(self, note, keyword, targets = None):
         current_player = self._players[self._current_player]
+
+        if targets is None:
+            targets = self._get_targets()
 
         buttons = [ [ { 'text': player.name,
                         'callback_data': '{}:{}'.format(keyword, i) }
-                      for i, player in enumerate(self._get_targets()) ] ]
+                      for i, player in enumerate(targets) ] ]
 
         args = {
             'chat_id': current_player.chat_id,
@@ -838,6 +842,55 @@ class Bot:
         current_player.is_protected = True
         self._do_discard(HANDMAID)
 
+    def _discard_prince(self, extra_data):
+        current_player = self._players[self._current_player]
+
+        targets = self._get_targets()
+        targets.append(current_player)
+
+        if extra_data is None:
+            self._choose_target("Kiun vi volas devigi forĵeti sian manon?",
+                                PRINCE.keyword,
+                                targets)
+        else:
+            player_num = extra_data
+            if player_num >= len(targets):
+                return
+            target = targets[player_num]
+
+            self._start_discard(PRINCE)
+
+            if target == current_player:
+                target_name = "sin mem"
+            else:
+                target_name = target.name
+
+            discarded_card = target.card
+
+            if len(self._deck) > 0:
+                target.card = self._deck.pop()
+            else:
+                target.card = self._set_aside_card
+
+            target.discard_pile.append(discarded_card)
+
+            if discarded_card == PRINCESS:
+                self._game_note("{} forĵetis la princon kaj devigis {} "
+                                "forĵeti sian princinon kaj tial ri perdas "
+                                "la raŭdon.".format(current_player.name,
+                                                    target_name))
+                target.is_alive = False
+            else:
+                self._game_note("{} forĵetis la princon kaj devigis {} "
+                                "forĵeti sian {}n kaj preni novan "
+                                "karton.".format(current_player.name,
+                                                 target_name,
+                                                 discarded_card.name))
+                if target != current_player:
+                    self._show_card(target)
+
+            self._finish_discard()
+
     def _discard(self, card):
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {}n {}".format(
@@ -884,6 +937,8 @@ class Bot:
                         self._discard_baron(extra_data)
                     elif card == HANDMAID:
                         self._discard_handmaid(extra_data)
+                    elif card == PRINCE:
+                        self._discard_prince(extra_data)
                     else:
                         self._discard(card)
 
