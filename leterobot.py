@@ -788,7 +788,7 @@ class Bot:
 
             if card is target.card:
                 self._game_note("{} forĵetis la {} kaj ĝuste divenis ke "
-                                "{} havis la {}. {} perdas la raŭdon.".format(
+                                "{} havis la {}. {} perdas la raŭndon.".format(
                                     current_player.name,
                                     GUARD.long_name(n=True),
                                     target.name,
@@ -876,7 +876,7 @@ class Bot:
             if current_player.card.value == target.card.value:
                 self._game_note("{} forĵetis la {} kaj komparis sian "
                                 "karton kun tiu de {}. La du kartoj estas "
-                                "egalaj kaj neniu perdas la raŭdon.".format(
+                                "egalaj kaj neniu perdas la raŭndon.".format(
                                     current_player.name,
                                     BARON.long_name(n=True),
                                     target.name))
@@ -888,7 +888,7 @@ class Bot:
 
                 self._game_note("{} forĵetis la {} kaj komparis sian "
                                 "karton kun tiu de {}. La karto de {} estas "
-                                "malpli alta kaj ri perdas la raŭdon.".format(
+                                "malpli alta kaj ri perdas la raŭndon.".format(
                                     current_player.name,
                                     BARON.long_name(n=True),
                                     target.name,
@@ -942,9 +942,9 @@ class Bot:
             if discarded_card == PRINCESS:
                 self._game_note("{} forĵetis la {} kaj devigis {} "
                                 "forĵeti sian princinon kaj tial ri perdas "
-                                "la raŭdon.".format(current_player.name,
-                                                    PRINCE.long_name(n=True),
-                                                    target_name))
+                                "la raŭndon.".format(current_player.name,
+                                                     PRINCE.long_name(n=True),
+                                                     target_name))
                 target.is_alive = False
             else:
                 self._game_note("{} forĵetis la {} kaj devigis {} "
