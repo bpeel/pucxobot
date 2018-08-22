@@ -633,8 +633,18 @@ class Bot:
         winner = self._get_winner()
 
         if winner is not None:
-            self._game_note("💘 {} gajnas la raŭndon kaj gajnas korinklinon "
-                            "de la princino".format(winner.name))
+            message = ["La raŭndo finiĝas kaj ĉiu montras sian karton:\n\n"]
+            for player in self._players:
+                if player.is_alive:
+                    message.append("{}: {}\n".format(player.name,
+                                                     player.card.long_name()))
+                else:
+                    message.append("{}: ☠\n".format(player.name))
+            message.append("\n"
+                           "💘 {} gajnas la raŭndon kaj gajnas korinklinon "
+                           "de la princino".format(winner.name))
+            self._game_note("".join(message))
+
             winner.hearts += 1
 
             if winner.hearts > NUM_HEARTS // len(self._players):
