@@ -571,8 +571,10 @@ class Bot:
         message = []
 
         if self._visible_cards is not None:
-            message.append("Forĵetitaj kartoj: {}\n\n".format(
+            message.append("Forĵetitaj kartoj: {}\n".format(
                 "".join(card.symbol for card in self._visible_cards)))
+
+        message.append("Kartaro: {}\n\n".format(len(self._deck)))
 
         for i, player in enumerate(self._players):
             if i == self._current_player:
