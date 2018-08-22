@@ -766,7 +766,7 @@ class Bot:
         buttons = [ [ { 'text': card.long_name(),
                         'callback_data': '{}:{}'.format(
                             keyword, 0x10000 | (i << 8) | extra_data) } ]
-                    for i, card in enumerate(CHARACTERS) ]
+                    for i, card in enumerate(CHARACTERS) if card is not GUARD ]
 
         args = {
             'chat_id': current_player.chat_id,
@@ -803,6 +803,8 @@ class Bot:
             if card_num >= len(CHARACTERS):
                 return
             card = CHARACTERS[card_num]
+            if card is GUARD:
+                return
 
             if card is target.card:
                 self._game_note("{} forĵetis la {} kaj ĝuste divenis ke "
