@@ -1061,6 +1061,8 @@ class Bot:
                 extra_data = int(data[colon + 1:])
             except ValueError:
                 return
+            if extra_data < 0:
+                return
             data = data[0:colon]
 
         if current_player.id == from_id:
