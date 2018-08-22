@@ -827,6 +827,15 @@ class Bot:
 
             self._do_discard(SPY)
 
+    def _compare_note(self, player_a, player_b):
+        args = {
+            'chat_id': player_a.chat_id,
+            'text': 'Vi havas la {} kaj {} havas la {}'.format(
+                player_a.card.long_name(n=True),
+                player_b.name, player_b.card.long_name(n=True))
+        }
+        self._send_request('sendMessage', args)
+
     def _discard_baron(self, extra_data):
         current_player = self._players[self._current_player]
 
@@ -849,13 +858,8 @@ class Bot:
 
             self._start_discard(BARON)
 
-            args = {
-                'chat_id': current_player.chat_id,
-                'text': 'Vi havas la {} kaj {} havas la {}'.format(
-                    current_player.card.long_name(n=True),
-                    target.name, target.card.long_name(n=True))
-            }
-            self._send_request('sendMessage', args)
+            self._compare_note(current_player, target)
+            self._compare_note(target, current_player)
 
             if current_player.card.value == target.card.value:
                 self._game_note("{} forĵetis la {} kaj komparis sian "
