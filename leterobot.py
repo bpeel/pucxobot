@@ -29,7 +29,16 @@ import html
 import random
 
 REGULOJ = """\
-<b>RESUMO DE LA REGULOJ:</b>"""
+<b>RESUMO DE LA REGULOJ:</b>
+
+Vi ĉiuj estas amindumantoj de la princino kaj volas sendi al ŝi amleteron. En via mano vi havas unu karton kiu reprezentas la homon kiu aktuale portas vian leteron. Ju pli alta ĝia numero, des pli proksima la homo estas al la princino. Je la fino de la raŭndo tiu kiu havas la plej valoran karton sendas sian leteron al la princino kaj gajnas unu poenton de korinklino.
+
+Je ĉiu vico, ludanto prenas karton de la kartaro kaj devas elekti unu el la du kartoj en sia mano por forĵeti. Ĉiu karto havas efikon kiam ĝi estas forĵetita:
+
+@CARDS@
+
+Kiam iu gajnas sufiĉe da korinklino de la princino ri gajnas la partion.
+"""
 
 MAX_PLAYERS = 4
 NUM_HEARTS = 13
@@ -142,6 +151,15 @@ CHARACTERS = [
 assert(sum(character.count for character in CHARACTERS) == 16)
 for i, character in enumerate(CHARACTERS):
     assert(character.value == i + 1)
+
+def get_reguloj():
+    cards = ("<b>{}</b> {} ekzemplero{}\n"
+             "{}".format(html.escape(card.long_name()),
+                         card.count,
+                         "" if card.count == 1 else "j",
+                         card.description)
+             for card in CHARACTERS)
+    return REGULOJ.replace("@CARDS@", "\n\n".join(cards))
 
 class Player:
     def __init__(self, id, name, chat_id):
@@ -483,14 +501,14 @@ class Bot:
                                  "Amletero. Tajpi la komandon /komenci en "
                                  "la taŭga grupo por ludi ĝin")
             elif command == '/helpo':
-                self._send_reply(message, REGULOJ, True)
+                self._send_reply(message, get_reguloj(), True)
         elif 'id' in chat and chat['id'] == self._game_chat:
             if command == '/komenci':
                 self._start_game(message)
             elif command == '/aligxi':
                 self._join(message)
             elif command == '/helpo':
-                self._send_reply(message, REGULOJ, True)
+                self._send_reply(message, get_reguloj(), True)
 
     def _find_command(self, message):
         if 'entities' not in message or 'text' not in message:
