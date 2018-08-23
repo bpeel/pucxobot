@@ -753,11 +753,8 @@ class Bot:
                 if (i != self._current_player and player.is_alive and
                     not player.is_protected)]
 
-    def _choose_target(self, note, keyword, targets = None):
+    def _choose_target(self, note, keyword, targets):
         current_player = self._players[self._current_player]
-
-        if targets is None:
-            targets = self._get_targets()
 
         buttons = [ [ { 'text': player.name,
                         'callback_data': '{}:{}'.format(keyword, i) } ]
@@ -770,6 +767,32 @@ class Bot:
         }
 
         self._send_request('sendMessage', args)
+
+    def _choose_target_for_discard(self,
+                                   card,
+                                   extra_data,
+                                   question,
+                                   targets = None):
+        current_player = self._players[self._current_player]
+
+        if targets is None:
+            targets = self._get_targets()
+
+        if len(targets) == 0:
+            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
+                            "estas protektataj kaj ĝi ne havas efikon.".format(
+                                current_player.name,
+                                card.long_name(n=True)))
+            self._do_discard(card)
+            return None
+        elif extra_data is None:
+            self._choose_target(question, card.keyword, targets)
+            return None
+        else:
+            player_num = extra_data & 0xff
+            if player_num >= len(targets):
+                return None
+            return targets[player_num]            
 
     def _choose_card(self, note, keyword, extra_data):
         current_player = self._players[self._current_player]
@@ -793,87 +816,71 @@ class Bot:
         player.is_alive = False
 
     def _discard_guard(self, extra_data):
-        current_player = self._players[self._current_player]
+        target = self._choose_target_for_discard(GUARD,
+                                                 extra_data,
+                                                 "Kies karton vi volas diveni?")
 
-        targets = self._get_targets()
-
-        if len(targets) == 0:
-            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name,
-                                GUARD.long_name(n=True)))
-            self._do_discard(GUARD)
-        elif extra_data is None:
-            self._choose_target("Kies karton vi volas diveni?", GUARD.keyword)
-        elif extra_data < 0x100:
+        if target is None:
+            return
+        
+        if extra_data < 0x100:
             self._choose_card("Kiun karton vi divenas?",
                               GUARD.keyword,
                               extra_data)
-        else:
-            player_num = extra_data & 0xff
-            if player_num >= len(targets):
-                return
-            target = targets[player_num]
+            return
 
-            card_num = (extra_data >> 8) & 0xff
-            if card_num >= len(CHARACTERS):
-                return
-            card = CHARACTERS[card_num]
-            if card is GUARD:
-                return
-
-            if card is target.card:
-                self._game_note("{} forĵetis la {} kaj ĝuste divenis ke "
-                                "{} havis la {}. {} perdas la raŭndon.".format(
-                                    current_player.name,
-                                    GUARD.long_name(n=True),
-                                    target.name,
-                                    card.long_name(n=True),
-                                    target.name))
-                self._kill_player(target)
-            else:
-                self._game_note("{} forĵetis la {} kaj malĝuste divenis "
-                                "ke {} havas la {}.".format(
-                                    current_player.name,
-                                    GUARD.long_name(n=True),
-                                    target.name,
-                                    card.long_name(n=True)))
-
-            self._do_discard(GUARD)
-
-    def _discard_spy(self, extra_data):
         current_player = self._players[self._current_player]
 
-        targets = self._get_targets()
+        card_num = (extra_data >> 8) & 0xff
+        if card_num >= len(CHARACTERS):
+            return
+        card = CHARACTERS[card_num]
+        if card is GUARD:
+            return
 
-        if len(targets) == 0:
-            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.".format(
+        if card is target.card:
+            self._game_note("{} forĵetis la {} kaj ĝuste divenis ke "
+                            "{} havis la {}. {} perdas la raŭndon.".format(
                                 current_player.name,
-                                SPY.long_name(n=True)))
-            self._do_discard(SPY)
-        elif extra_data is None:
-            self._choose_target("Kies karton vi volas vidi?", SPY.keyword)
-        else:
-            player_num = extra_data
-            if player_num >= len(targets):
-                return
-            target = targets[player_num]
-
-            self._game_note("{} forĵetis la {} kaj devigis {} "
-                            "sekrete montri sian karton.".format(
-                                current_player.name,
-                                SPY.long_name(n=True),
+                                GUARD.long_name(n=True),
+                                target.name,
+                                card.long_name(n=True),
                                 target.name))
+            self._kill_player(target)
+        else:
+            self._game_note("{} forĵetis la {} kaj malĝuste divenis "
+                            "ke {} havas la {}.".format(
+                                current_player.name,
+                                GUARD.long_name(n=True),
+                                target.name,
+                                card.long_name(n=True)))
 
-            args = {
-                'chat_id': current_player.chat_id,
-                'text': '{} havas la {}'.format(
-                    target.name, target.card.long_name(n=True))
-            }
-            self._send_request('sendMessage', args)
+        self._do_discard(GUARD)
 
-            self._do_discard(SPY)
+    def _discard_spy(self, extra_data):
+        target = self._choose_target_for_discard(SPY,
+                                                 extra_data,
+                                                 "Kies karton vi volas vidi?")
+
+        if target is None:
+            return
+        
+        current_player = self._players[self._current_player]
+
+        self._game_note("{} forĵetis la {} kaj devigis {} "
+                        "sekrete montri sian karton.".format(
+                            current_player.name,
+                            SPY.long_name(n=True),
+                            target.name))
+
+        args = {
+            'chat_id': current_player.chat_id,
+            'text': '{} havas la {}'.format(
+                target.name, target.card.long_name(n=True))
+        }
+        self._send_request('sendMessage', args)
+
+        self._do_discard(SPY)
 
     def _compare_note(self, player_a, player_b):
         args = {
@@ -885,53 +892,44 @@ class Bot:
         self._send_request('sendMessage', args)
 
     def _discard_baron(self, extra_data):
+        target = self._choose_target_for_discard(BARON,
+                                                 extra_data,
+                                                 "Kun kies karto vi volas "
+                                                 "kompari?")
+
+        if target is None:
+            return
+        
         current_player = self._players[self._current_player]
 
-        targets = self._get_targets()
+        self._start_discard(BARON)
 
-        if len(targets) == 0:
-            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.".format(
+        self._compare_note(current_player, target)
+        self._compare_note(target, current_player)
+
+        if current_player.card.value == target.card.value:
+            self._game_note("{} forĵetis la {} kaj komparis sian "
+                            "karton kun tiu de {}. La du kartoj estas "
+                            "egalaj kaj neniu perdas la raŭndon.".format(
                                 current_player.name,
-                                BARON.long_name(n=True)))
-            self._do_discard(BARON)
-        elif extra_data is None:
-            self._choose_target("Kun kies karto vi volas kompari?",
-                                BARON.keyword)
+                                BARON.long_name(n=True),
+                                target.name))
         else:
-            player_num = extra_data
-            if player_num >= len(targets):
-                return
-            target = targets[player_num]
-
-            self._start_discard(BARON)
-
-            self._compare_note(current_player, target)
-            self._compare_note(target, current_player)
-
-            if current_player.card.value == target.card.value:
-                self._game_note("{} forĵetis la {} kaj komparis sian "
-                                "karton kun tiu de {}. La du kartoj estas "
-                                "egalaj kaj neniu perdas la raŭndon.".format(
-                                    current_player.name,
-                                    BARON.long_name(n=True),
-                                    target.name))
+            if current_player.card.value > target.card.value:
+                loser = target
             else:
-                if current_player.card.value > target.card.value:
-                    loser = target
-                else:
-                    loser = current_player
+                loser = current_player
 
-                self._game_note("{} forĵetis la {} kaj komparis sian "
-                                "karton kun tiu de {}. La karto de {} estas "
-                                "malpli alta kaj ri perdas la raŭndon.".format(
-                                    current_player.name,
-                                    BARON.long_name(n=True),
-                                    target.name,
-                                    loser.name))
-                self._kill_player(loser)
+            self._game_note("{} forĵetis la {} kaj komparis sian "
+                            "karton kun tiu de {}. La karto de {} estas "
+                            "malpli alta kaj ri perdas la raŭndon.".format(
+                                current_player.name,
+                                BARON.long_name(n=True),
+                                target.name,
+                                loser.name))
+            self._kill_player(loser)
 
-            self._finish_discard()
+        self._finish_discard()
 
     def _discard_handmaid(self):
         current_player = self._players[self._current_player]
@@ -949,52 +947,51 @@ class Bot:
         targets = self._get_targets()
         targets.append(current_player)
 
-        if extra_data is None:
-            self._choose_target("Kiun vi volas devigi forĵeti sian manon?",
-                                PRINCE.keyword,
-                                targets)
+        target = self._choose_target_for_discard(PRINCE,
+                                                 extra_data,
+                                                 "Kiun vi volas devigi forĵeti "
+                                                 "sian manon?",
+                                                 targets = targets)
+
+        if target is None:
+            return
+        
+        self._start_discard(PRINCE)
+
+        if target == current_player:
+            target_name = "sin mem"
         else:
-            player_num = extra_data
-            if player_num >= len(targets):
-                return
-            target = targets[player_num]
+            target_name = target.name
 
-            self._start_discard(PRINCE)
+        discarded_card = target.card
 
-            if target == current_player:
-                target_name = "sin mem"
-            else:
-                target_name = target.name
+        if len(self._deck) > 0:
+            target.card = self._deck.pop()
+        else:
+            target.card = self._set_aside_card
+            self._set_aside_card = None
 
-            discarded_card = target.card
+        target.discard_pile.append(discarded_card)
 
-            if len(self._deck) > 0:
-                target.card = self._deck.pop()
-            else:
-                target.card = self._set_aside_card
-                self._set_aside_card = None
+        if discarded_card == PRINCESS:
+            self._game_note("{} forĵetis la {} kaj devigis {} "
+                            "forĵeti sian princinon kaj tial ri perdas "
+                            "la raŭndon.".format(current_player.name,
+                                                 PRINCE.long_name(n=True),
+                                                 target_name))
+            self._kill_player(target)
+        else:
+            self._game_note("{} forĵetis la {} kaj devigis {} "
+                            "forĵeti sian {} kaj preni novan "
+                            "karton."
+                            "".format(current_player.name,
+                                      PRINCE.long_name(n=True),
+                                      target_name,
+                                      discarded_card.long_name(n=True)))
+            if target != current_player:
+                self._show_card(target)
 
-            target.discard_pile.append(discarded_card)
-
-            if discarded_card == PRINCESS:
-                self._game_note("{} forĵetis la {} kaj devigis {} "
-                                "forĵeti sian princinon kaj tial ri perdas "
-                                "la raŭndon.".format(current_player.name,
-                                                     PRINCE.long_name(n=True),
-                                                     target_name))
-                self._kill_player(target)
-            else:
-                self._game_note("{} forĵetis la {} kaj devigis {} "
-                                "forĵeti sian {} kaj preni novan "
-                                "karton."
-                                "".format(current_player.name,
-                                          PRINCE.long_name(n=True),
-                                          target_name,
-                                          discarded_card.long_name(n=True)))
-                if target != current_player:
-                    self._show_card(target)
-
-            self._finish_discard()
+        self._finish_discard()
 
     def _exchange_note(self, player_a, player_b):
             args = {
@@ -1008,40 +1005,31 @@ class Bot:
             self._send_request('sendMessage', args)
         
     def _discard_king(self, extra_data):
+        target = self._choose_target_for_discard(KING,
+                                                 extra_data,
+                                                 "Kun kiu vi volas interŝanĝi "
+                                                 "manojn?")
+
+        if target is None:
+            return
+
         current_player = self._players[self._current_player]
 
-        targets = self._get_targets()
+        self._start_discard(KING)
 
-        if len(targets) == 0:
-            self._game_note("{} forĵetas la {} sed ĉiuj aliaj ludantoj "
-                            "estas protektataj kaj ĝi ne havas efikon.".format(
-                                current_player.name,
-                                KING.long_name(n=True)))
-            self._do_discard(KING)
-        elif extra_data is None:
-            self._choose_target("Kun kiu vi volas interŝanĝi manojn?",
-                                KING.keyword)
-        else:
-            player_num = extra_data
-            if player_num >= len(targets):
-                return
-            target = targets[player_num]
+        self._exchange_note(current_player, target)
+        self._exchange_note(target, current_player)
 
-            self._start_discard(KING)
+        (current_player.card, target.card) = (target.card,
+                                              current_player.card)
 
-            self._exchange_note(current_player, target)
-            self._exchange_note(target, current_player)
+        self._game_note("{} forĵetis la reĝon kaj interŝanĝas la "
+                        "manon kun {}".format(
+                            current_player.name,
+                            target.name))
 
-            (current_player.card, target.card) = (target.card,
-                                                  current_player.card)
-
-            self._game_note("{} forĵetis la reĝon kaj interŝanĝas la "
-                            "manon kun {}".format(
-                                current_player.name,
-                                target.name))
-
-            self._show_card(target)
-            self._finish_discard()
+        self._show_card(target)
+        self._finish_discard()
 
     def _discard_princess(self):
         current_player = self._players[self._current_player]
