@@ -583,7 +583,7 @@ class Bot:
         if alive_player is None:
             return self._players[0]
         else:
-            return alive_player                      
+            return alive_player
 
     def _show_stats(self):
         message = []
@@ -613,7 +613,7 @@ class Bot:
                 message.append("\n")
                 message.append("".join(card.symbol
                                        for card in player.discard_pile))
-                
+
             message.append("\n\n")
 
         current_player = self._players[self._current_player]
@@ -792,7 +792,7 @@ class Bot:
             player_num = extra_data & 0xff
             if player_num >= len(targets):
                 return None
-            return targets[player_num]            
+            return targets[player_num]
 
     def _choose_card(self, note, keyword, extra_data):
         current_player = self._players[self._current_player]
@@ -822,7 +822,7 @@ class Bot:
 
         if target is None:
             return
-        
+
         if extra_data < 0x100:
             self._choose_card("Kiun karton vi divenas?",
                               GUARD.keyword,
@@ -864,7 +864,7 @@ class Bot:
 
         if target is None:
             return
-        
+
         current_player = self._players[self._current_player]
 
         self._game_note("{} forĵetis la {} kaj devigis {} "
@@ -899,7 +899,7 @@ class Bot:
 
         if target is None:
             return
-        
+
         current_player = self._players[self._current_player]
 
         self._start_discard(BARON)
@@ -955,7 +955,7 @@ class Bot:
 
         if target is None:
             return
-        
+
         self._start_discard(PRINCE)
 
         if target == current_player:
@@ -1003,7 +1003,7 @@ class Bot:
                              player_b.card.long_name(n=True))),
             }
             self._send_request('sendMessage', args)
-        
+
     def _discard_king(self, extra_data):
         target = self._choose_target_for_discard(KING,
                                                  extra_data,
