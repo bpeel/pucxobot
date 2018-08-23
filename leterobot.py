@@ -660,6 +660,15 @@ class Bot:
                                                      player.card.long_name()))
                 else:
                     message.append("{}: ☠\n".format(player.name))
+                if len(player.discard_pile) > 0:
+                    message.append("".join(card.symbol
+                                           for card in player.discard_pile))
+                    message.append("\n")
+
+            if self._set_aside_card is not None:
+                message.append("\nLa kaŝita karto estis {}\n".format(
+                    self._set_aside_card.long_name()))
+
             message.append("\n"
                            "💘 {} gajnas la raŭndon kaj gajnas korinklinon "
                            "de la princino".format(winner.name))
@@ -698,6 +707,8 @@ class Bot:
         self._show_stats()
 
     def _show_card(self, player):
+        if not player.is_alive:
+            return
         card = player.card
         message = "Via karto estas: {}".format(card.long_name())
 
@@ -776,6 +787,11 @@ class Bot:
 
         self._send_request('sendMessage', args)
 
+    def _kill_player(self, player):
+        player.discard_pile.append(player.card)
+        player.card = None
+        player.is_alive = False
+
     def _discard_guard(self, extra_data):
         current_player = self._players[self._current_player]
 
@@ -814,7 +830,7 @@ class Bot:
                                     target.name,
                                     card.long_name(n=True),
                                     target.name))
-                target.is_alive = False
+                self._kill_player(target)
             else:
                 self._game_note("{} forĵetis la {} kaj malĝuste divenis "
                                 "ke {} havas la {}.".format(
@@ -913,7 +929,7 @@ class Bot:
                                     BARON.long_name(n=True),
                                     target.name,
                                     loser.name))
-                loser.is_alive = False
+                self._kill_player(loser)
 
             self._finish_discard()
 
@@ -956,6 +972,7 @@ class Bot:
                 target.card = self._deck.pop()
             else:
                 target.card = self._set_aside_card
+                self._set_aside_card = None
 
             target.discard_pile.append(discarded_card)
 
@@ -965,7 +982,7 @@ class Bot:
                                 "la raŭndon.".format(current_player.name,
                                                      PRINCE.long_name(n=True),
                                                      target_name))
-                target.is_alive = False
+                self._kill_player(target)
             else:
                 self._game_note("{} forĵetis la {} kaj devigis {} "
                                 "forĵeti sian {} kaj preni novan "
@@ -1030,8 +1047,9 @@ class Bot:
         current_player = self._players[self._current_player]
         self._game_note("{} forĵetas la {} kaj perdas la raŭndon".format(
             current_player.name, PRINCESS.long_name(n=True)))
-        current_player.is_alive = False
-        self._do_discard(PRINCESS)
+        self._start_discard(PRINCESS)
+        self._kill_player(current_player)
+        self._finish_discard()
 
     def _discard(self, card):
         current_player = self._players[self._current_player]
