@@ -104,6 +104,8 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                         card->dead = false;
                         card->character = take_card(game);
                 }
+
+                game->players[i].name = pcx_strdup(names[i]);
         }
 
         return game;
