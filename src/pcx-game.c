@@ -74,35 +74,35 @@ foreign_aid_button = {
 };
 
 static const struct pcx_game_button
-duke_button = {
+tax_button = {
         .text = "Imposto (Duko)",
         .data = "tax"
 };
 
 static const struct pcx_game_button
-assassin_button = {
+assassinate_button = {
         .text = "Murdi (Murdisto)",
         .data = "assassinate"
 };
 
 static const struct pcx_game_button
-ambassador_button = {
+exchange_button = {
         .text = "Interŝanĝi (Ambasadoro)",
         .data = "exchange"
 };
 
 static const struct pcx_game_button
-captain_button = {
+steal_button = {
         .text = "Ŝteli (Kapitano)",
         .data = "steal"
 };
 
 static const struct pcx_game_button *
 character_buttons[] = {
-        &duke_button,
-        &assassin_button,
-        &ambassador_button,
-        &captain_button,
+        &tax_button,
+        &assassinate_button,
+        &exchange_button,
+        &steal_button,
 };
 
 static void
