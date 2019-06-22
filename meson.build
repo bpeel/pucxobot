@@ -23,6 +23,7 @@ src = [
         'src/pcx-tty-game.c',
         'src/pcx-character.c',
         'src/pcx-http-game.c',
+        'src/pcx-key-value.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')
