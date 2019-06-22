@@ -40,13 +40,11 @@
 typedef void
 (* pcx_game_callback_data_func)(struct pcx_game *game,
                                 int player_num,
-                                int stack_data,
                                 const char *data,
                                 int extra_data);
 
 typedef void
-(* pcx_game_idle_func)(struct pcx_game *game,
-                       int stack_data);
+(* pcx_game_idle_func)(struct pcx_game *game);
 
 struct pcx_game_stack_entry {
         pcx_game_callback_data_func func;
@@ -173,7 +171,7 @@ do_idle(struct pcx_game *game)
                 if (entry->idle_func == NULL)
                         break;
 
-                entry->idle_func(game, entry->data);
+                entry->idle_func(game);
         }
 }
 
@@ -451,7 +449,6 @@ take_card(struct pcx_game *game)
 static void
 choose_card_to_lose(struct pcx_game *game,
                     int player_num,
-                    int stack_data,
                     const char *data,
                     int extra_data)
 {
@@ -504,9 +501,9 @@ is_losing_all_cards(struct pcx_game *game,
 }
 
 static void
-choose_card_to_lose_idle(struct pcx_game *game,
-                         int player_num)
+choose_card_to_lose_idle(struct pcx_game *game)
 {
+        int player_num = get_stack_data(game);
         struct pcx_game_player *player = game->players + player_num;
 
         /* Check if the stack contains enough lose card entries for
@@ -684,7 +681,6 @@ is_button(const char *data,
 static void
 choose_action(struct pcx_game *game,
               int player_num,
-              int stack_data,
               const char *data,
               int extra_data)
 {
@@ -710,8 +706,7 @@ choose_action(struct pcx_game *game,
 }
 
 static void
-choose_action_idle(struct pcx_game *game,
-                   int stack_data)
+choose_action_idle(struct pcx_game *game)
 {
         /* If the game becomes idle when the top of the stack is to
          * choose an action then the turn is over.
@@ -812,13 +807,10 @@ pcx_game_handle_callback_data(struct pcx_game *game,
 
         char *main_data = pcx_strndup(callback_data, colon - callback_data);
 
-        int pos = game->stack_pos - 1;
-
-        game->stack[pos].func(game,
-                              player_num,
-                              game->stack[pos].data,
-                              main_data,
-                              extra_data);
+        game->stack[game->stack_pos - 1].func(game,
+                                              player_num,
+                                              main_data,
+                                              extra_data);
 
         pcx_free(main_data);
 
