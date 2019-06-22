@@ -630,6 +630,28 @@ choose_action(struct pcx_game *game,
         }
 }
 
+static void
+choose_action_idle(struct pcx_game *game)
+{
+        /* If the game becomes idle when the top of the stack is to
+         * choose an action then the turn is over.
+         */
+
+        int next_player = game->current_player;
+
+        while (true) {
+                next_player = (next_player + 1) % game->n_players;
+
+                if (next_player == game->current_player ||
+                    is_alive(game->players + next_player))
+                        break;
+        }
+
+        game->current_player = next_player;
+
+        show_stats(game);
+}
+
 struct pcx_game *
 pcx_game_new(const struct pcx_game_callbacks *callbacks,
              void *user_data,
@@ -668,7 +690,7 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
 
         stack_push(game,
                    choose_action,
-                   NULL, /* idle_func */
+                   choose_action_idle,
                    0 /* data */);
 
         show_stats(game);
