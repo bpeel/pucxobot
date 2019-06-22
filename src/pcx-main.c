@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include "pcx-tty-game.h"
+#include "pcx-http-game.h"
 #include "pcx-game.h"
 #include "pcx-main-context.h"
 
@@ -35,21 +36,27 @@ quit_cb(struct pcx_main_context_source *source,
 int
 main(int argc, char **argv)
 {
-        if (argc < 2 || argc - 1 > PCX_GAME_MAX_PLAYERS) {
-                fprintf(stderr, "usage: pucxobot <tty_file>…\n");
-                return EXIT_FAILURE;
-        }
+        struct pcx_tty_game *tty_game = NULL;
+        struct pcx_http_game *http_game = NULL;
 
-        struct pcx_error *error = NULL;
-        struct pcx_tty_game *game =
-                pcx_tty_game_new(argc - 1,
-                                 (const char *const *) argv + 1,
-                                 &error);
+        if (argc > 1) {
+                if (argc - 1 > PCX_GAME_MAX_PLAYERS) {
+                        fprintf(stderr, "usage: pucxobot <tty_file>…\n");
+                        return EXIT_FAILURE;
+                }
 
-        if (game == NULL) {
-                fprintf(stderr, "%s\n", error->message);
-                pcx_error_free(error);
-                return EXIT_FAILURE;
+                struct pcx_error *error = NULL;
+                tty_game = pcx_tty_game_new(argc - 1,
+                                            (const char *const *) argv + 1,
+                                            &error);
+
+                if (tty_game == NULL) {
+                        fprintf(stderr, "%s\n", error->message);
+                        pcx_error_free(error);
+                        return EXIT_FAILURE;
+                }
+        } else {
+                http_game = pcx_http_game_new();
         }
 
         bool quit = false;
@@ -62,7 +69,10 @@ main(int argc, char **argv)
 
         pcx_main_context_remove_source(quit_source);
 
-        pcx_tty_game_free(game);
+        if (tty_game)
+                pcx_tty_game_free(tty_game);
+        if (http_game)
+                pcx_http_game_free(http_game);
 
         pcx_main_context_free(pcx_main_context_get_default());
 
