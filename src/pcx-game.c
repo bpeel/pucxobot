@@ -55,14 +55,103 @@ struct pcx_game {
         struct pcx_buffer buffer;
 };
 
+static const struct pcx_game_button
+coup_button = {
+        .text = "Puĉo",
+        .data = "coup"
+};
+
+static const struct pcx_game_button
+income_button = {
+        .text = "Enspezi",
+        .data = "income"
+};
+
+static const struct pcx_game_button
+foreign_aid_button = {
+        .text = "Eksterlanda helpo",
+        .data = "foreign_aid"
+};
+
+static const struct pcx_game_button
+duke_button = {
+        .text = "Imposto (Duko)",
+        .data = "tax"
+};
+
+static const struct pcx_game_button
+assassin_button = {
+        .text = "Murdi (Murdisto)",
+        .data = "assassinate"
+};
+
+static const struct pcx_game_button
+ambassador_button = {
+        .text = "Interŝanĝi (Ambasadoro)",
+        .data = "exchange"
+};
+
+static const struct pcx_game_button
+captain_button = {
+        .text = "Ŝteli (Kapitano)",
+        .data = "steal"
+};
+
+static const struct pcx_game_button *
+character_buttons[] = {
+        &duke_button,
+        &assassin_button,
+        &ambassador_button,
+        &captain_button,
+};
+
 static void
-send_buffer_message(struct pcx_game *game)
+send_buffer_message_with_buttons(struct pcx_game *game,
+                                 size_t n_buttons,
+                                 const struct pcx_game_button *buttons)
 {
         game->callbacks.send_message((const char *) game->buffer.data,
                                      PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                     0, /* n_buttons */
-                                     NULL, /* buttons */
+                                     n_buttons,
+                                     buttons,
                                      game->user_data);
+}
+
+static void
+send_buffer_message(struct pcx_game *game)
+{
+        send_buffer_message_with_buttons(game,
+                                         0, /* n_buttons */
+                                         NULL /* buttons */);
+}
+
+static void
+add_button(struct pcx_buffer *buffer,
+           const struct pcx_game_button *button)
+{
+        pcx_buffer_append(buffer, button, sizeof *button);
+}
+
+static void
+get_buttons(struct pcx_game *game,
+            struct pcx_buffer *buffer)
+{
+        const struct pcx_game_player *player =
+                game->players + game->current_player;
+
+        if (player->coins >= 10) {
+                add_button(buffer, &coup_button);
+                return;
+        }
+
+        add_button(buffer, &income_button);
+        add_button(buffer, &foreign_aid_button);
+
+        if (player->coins >= 7)
+                add_button(buffer, &coup_button);
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(character_buttons); i++)
+                add_button(buffer, character_buttons[i]);
 }
 
 static bool
@@ -163,7 +252,18 @@ show_stats(struct pcx_game *game)
                                          current->name);
         }
 
-        send_buffer_message(game);
+        struct pcx_buffer buttons = PCX_BUFFER_STATIC_INIT;
+
+        if (!finished)
+                get_buttons(game, &buttons);
+
+        send_buffer_message_with_buttons(game,
+                                         buttons.length /
+                                         sizeof (struct pcx_game_button),
+                                         (const struct pcx_game_button *)
+                                         buttons.data);
+
+        pcx_buffer_destroy(&buttons);
 }
 
 static void
