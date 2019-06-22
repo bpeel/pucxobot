@@ -62,5 +62,7 @@ main(int argc, char **argv)
 
         pcx_main_context_remove_source(quit_source);
 
+        pcx_tty_game_free(game);
+
         return EXIT_SUCCESS;
 }
