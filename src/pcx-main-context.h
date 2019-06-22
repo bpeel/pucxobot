@@ -27,21 +27,12 @@
 #include <stdint.h>
 
 #include "pcx-util.h"
-#include "pcx-error.h"
-
-enum pcx_main_context_error {
-        PCX_MAIN_CONTEXT_ERROR_UNSUPPORTED,
-        PCX_MAIN_CONTEXT_ERROR_UNKNOWN
-};
 
 enum pcx_main_context_poll_flags {
         PCX_MAIN_CONTEXT_POLL_IN = 1 << 0,
         PCX_MAIN_CONTEXT_POLL_OUT = 1 << 1,
         PCX_MAIN_CONTEXT_POLL_ERROR = 1 << 2,
 };
-
-extern struct pcx_error_domain
-pcx_main_context_error;
 
 struct pcx_main_context;
 struct pcx_main_context_source;

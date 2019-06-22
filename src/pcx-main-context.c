@@ -41,9 +41,6 @@
 #include "pcx-slice.h"
 #include "pcx-buffer.h"
 
-struct pcx_error_domain
-pcx_main_context_error;
-
 struct pcx_main_context_bucket;
 
 struct pcx_main_context {
