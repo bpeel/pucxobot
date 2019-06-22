@@ -150,14 +150,6 @@ block_button = {
         .data = "block"
 };
 
-static const struct pcx_game_button *
-character_buttons[] = {
-        &tax_button,
-        &assassinate_button,
-        &exchange_button,
-        &steal_button,
-};
-
 static struct pcx_game_stack_entry *
 get_stack_top(struct pcx_game *game)
 {
@@ -357,8 +349,11 @@ get_buttons(struct pcx_game *game,
         if (player->coins >= 7)
                 add_button(buffer, &coup_button);
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(character_buttons); i++)
-                add_button(buffer, character_buttons[i]);
+        add_button(buffer, &tax_button);
+        if (player->coins >= 3)
+                add_button(buffer, &assassinate_button);
+        add_button(buffer, &exchange_button);
+        add_button(buffer, &steal_button);
 }
 
 static bool
@@ -665,6 +660,8 @@ struct challenge_data {
 
         /* If CHALLENGE_FLAG_BLOCK is set */
         enum pcx_character blocking_character;
+        int target_player;
+        action_cb block_cb;
 };
 
 PCX_PRINTF_FORMAT(6, 7)
@@ -743,6 +740,11 @@ static void
 do_block(struct pcx_game *game,
          void *user_data)
 {
+        struct challenge_data *data = get_stack_data_pointer(game);
+
+        if (data->block_cb)
+                data->block_cb(game, data->user_data);
+
         game_note(game, "Neniu defiis. La ago estis blokita.");
         stack_pop(game);
         take_action(game);
@@ -802,6 +804,9 @@ check_challenge_callback_data(struct pcx_game *game,
                 if (player_num == data->player_num)
                         return;
                 if (!is_alive(game->players + player_num))
+                        return;
+                if (data->target_player != -1 &&
+                    player_num != data->target_player)
                         return;
 
                 remove_challenge_timeout(data);
@@ -898,6 +903,7 @@ check_challenge(struct pcx_game *game,
         data->cb = cb;
         data->user_data = user_data;
         data->accepted_players = UINT32_C(1) << player_num;
+        data->target_player = -1;
 
         pcx_buffer_set_length(&game->buffer, 0);
 
@@ -1072,8 +1078,73 @@ do_tax(struct pcx_game *game)
 }
 
 static void
-do_assassinate(struct pcx_game *game)
+block_assassinate(struct pcx_game *game,
+                  void *user_data)
 {
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        player->coins -= 3;
+}
+
+static void
+do_accepted_assassinate(struct pcx_game *game,
+                        void *user_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+        struct pcx_game_player *target = user_data;
+
+        game_note(game,
+                  "Neniu blokis aŭ defiis, %s murdas %s",
+                  player->name,
+                  target->name);
+
+        player->coins -= 3;
+        lose_card(game, target - game->players);
+
+        take_action(game);
+}
+
+static void
+do_assassinate(struct pcx_game *game,
+               int extra_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        if (player->coins < 3)
+                return;
+
+        if (extra_data == -1) {
+                send_select_target(game,
+                                   "%s, kiun vi volas murdi?",
+                                   assassinate_button.data);
+                return;
+        }
+
+        if (extra_data >= game->n_players || extra_data == game->current_player)
+                return;
+
+        struct pcx_game_player *target = game->players + extra_data;
+
+        if (!is_alive(target))
+                return;
+
+        struct challenge_data *data =
+                check_challenge(game,
+                                CHALLENGE_FLAG_CHALLENGE |
+                                CHALLENGE_FLAG_BLOCK,
+                                game->current_player,
+                                do_accepted_assassinate,
+                                target, /* user_data */
+                                "🗡 %s volas murdi %s\n"
+                                "%s, ĉu vi volas bloki ĝin per grafino?\n"
+                                "Aŭ ĉu iu volas defii?",
+                                player->name,
+                                target->name,
+                                target->name);
+
+        data->character = PCX_CHARACTER_ASSASSIN;
+        data->blocking_character = PCX_CHARACTER_CONTESSA;
+        data->block_cb = block_assassinate;
 }
 
 static void
@@ -1112,7 +1183,7 @@ choose_action(struct pcx_game *game,
                 else if (is_button(data, &tax_button))
                         do_tax(game);
                 else if (is_button(data, &assassinate_button))
-                        do_assassinate(game);
+                        do_assassinate(game, extra_data);
                 else if (is_button(data, &exchange_button))
                         do_exchange(game);
                 else if (is_button(data, &steal_button))
