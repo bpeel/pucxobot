@@ -27,7 +27,6 @@
 #include "pcx-util.h"
 
 #define PCX_GAME_CARDS_PER_CHARACTER 3
-#define PCX_GAME_MAX_PLAYERS 6
 #define PCX_GAME_CARDS_PER_PLAYER 2
 #define PCX_GAME_TOTAL_CARDS (PCX_CHARACTER_COUNT * \
                               PCX_GAME_CARDS_PER_CHARACTER)

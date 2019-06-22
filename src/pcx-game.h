@@ -21,6 +21,8 @@
 
 #include <stddef.h>
 
+#define PCX_GAME_MAX_PLAYERS 6
+
 struct pcx_game;
 
 enum pcx_game_message_format {
