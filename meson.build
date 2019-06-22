@@ -14,6 +14,12 @@ src = [
         'src/pcx-main.c',
         'src/pcx-game.c',
         'src/pcx-util.c',
+        'src/pcx-main-context.c',
+        'src/pcx-error.c',
+        'src/pcx-slice.c',
+        'src/pcx-slab.c',
+        'src/pcx-buffer.c',
+        'src/pcx-list.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')

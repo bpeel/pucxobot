@@ -22,6 +22,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
 
 void
 pcx_fatal(const char *format, ...)
@@ -37,6 +39,18 @@ pcx_fatal(const char *format, ...)
         fflush(stderr);
 
         abort();
+}
+
+void
+pcx_warning(const char *format, ...)
+{
+        va_list ap;
+
+        va_start(ap, format);
+        vfprintf(stderr, format, ap);
+        va_end(ap);
+
+        fputc('\n', stderr);
 }
 
 void *
@@ -135,4 +149,16 @@ pcx_free(void *ptr)
 {
         if (ptr)
                 free(ptr);
+}
+
+int
+pcx_close(int fd)
+{
+        int ret;
+
+        do {
+                ret = close(fd);
+        } while (ret == -1 && errno == EINTR);
+
+        return ret;
 }

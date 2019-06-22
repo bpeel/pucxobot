@@ -36,6 +36,9 @@
 #endif
 #endif
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 void *
 pcx_alloc(size_t size);
 
@@ -61,5 +64,11 @@ PCX_NO_RETURN
 PCX_PRINTF_FORMAT(1, 2)
 void
 pcx_fatal(const char *format, ...);
+
+PCX_PRINTF_FORMAT(1, 2) void
+pcx_warning(const char *format, ...);
+
+int
+pcx_close(int fd);
 
 #endif /* PCX_UTIL_H */
