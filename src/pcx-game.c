@@ -307,7 +307,7 @@ add_cards_status(struct pcx_buffer *buffer,
 
                 if (card->dead) {
                         const char *name = pcx_character_get_name(character);
-                        pcx_buffer_append_printf(buffer, "☠%s", name);
+                        pcx_buffer_append_printf(buffer, "☠%s☠", name);
                 } else {
                         pcx_buffer_append_string(buffer, "🂠");
                 }
