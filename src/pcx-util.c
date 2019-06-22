@@ -106,6 +106,23 @@ pcx_strdup(const char *str)
 }
 
 char *
+pcx_strndup(const char *str, size_t size)
+{
+        const char *end = str;
+
+        while (end - str < size && *end != '\0')
+                end++;
+
+        size = end - str;
+
+        char *ret = pcx_alloc(size + 1);
+        memcpy(ret, str, size);
+        ret[size] = '\0';
+
+        return ret;
+}
+
+char *
 pcx_strconcat(const char *string1, ...)
 {
         size_t string1_length;

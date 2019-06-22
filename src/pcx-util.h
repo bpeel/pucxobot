@@ -60,6 +60,9 @@ pcx_strconcat(const char *string1, ...);
 char *
 pcx_strdup(const char *str);
 
+char *
+pcx_strndup(const char *str, size_t size);
+
 void *
 pcx_memdup(const void *data, size_t size);
 
