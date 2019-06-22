@@ -110,8 +110,8 @@ send_buffer_message_with_buttons(struct pcx_game *game,
                                  size_t n_buttons,
                                  const struct pcx_game_button *buttons)
 {
-        game->callbacks.send_message((const char *) game->buffer.data,
-                                     PCX_GAME_MESSAGE_FORMAT_PLAIN,
+        game->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                     (const char *) game->buffer.data,
                                      n_buttons,
                                      buttons,
                                      game->user_data);

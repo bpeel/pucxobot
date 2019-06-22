@@ -42,8 +42,8 @@ struct pcx_game_callbacks {
                                       size_t n_buttons,
                                       const struct pcx_game_button *buttons,
                                       void *user_data);
-        void (* send_message)(const char *message,
-                              enum pcx_game_message_format format,
+        void (* send_message)(enum pcx_game_message_format format,
+                              const char *message,
                               size_t n_buttons,
                               const struct pcx_game_button *buttons,
                               void *user_data);

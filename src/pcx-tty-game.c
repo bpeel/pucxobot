@@ -102,8 +102,8 @@ send_private_message_cb(int user_num,
 }
 
 static void
-send_message_cb(const char *message,
-                enum pcx_game_message_format format,
+send_message_cb(enum pcx_game_message_format format,
+                const char *message,
                 size_t n_buttons,
                 const struct pcx_game_button *buttons,
                 void *user_data)
