@@ -48,6 +48,7 @@ struct pcx_game {
         struct pcx_game_player players[PCX_GAME_MAX_PLAYERS];
         int n_players;
         int n_cards;
+        int current_player;
         struct pcx_game_callbacks callbacks;
         void *user_data;
 };
@@ -96,6 +97,7 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
         shuffle_deck(game);
 
         game->n_players = n_players;
+        game->current_player = rand() % n_players;
 
         for (unsigned i = 0; i < n_players; i++) {
                 game->players[i].coins = PCX_GAME_START_COINS;
