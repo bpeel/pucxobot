@@ -46,10 +46,20 @@ typedef void
 typedef void
 (* pcx_game_idle_func)(struct pcx_game *game);
 
+/* Called just beforing popping the stack in order to clean up
+ * data.
+ */
+typedef void
+(* pcx_game_stack_destroy_func)(struct pcx_game *game);
+
 struct pcx_game_stack_entry {
         pcx_game_callback_data_func func;
         pcx_game_idle_func idle_func;
-        int data;
+        pcx_game_stack_destroy_func destroy_func;
+        union {
+                int i;
+                void *p;
+        } data;
 };
 
 struct pcx_game_card {
@@ -127,33 +137,82 @@ character_buttons[] = {
         &steal_button,
 };
 
-static void
+static struct pcx_game_stack_entry *
+get_stack_top(struct pcx_game *game)
+{
+        return game->stack + game->stack_pos - 1;
+}
+
+static struct pcx_game_stack_entry *
 stack_push(struct pcx_game *game,
            pcx_game_callback_data_func func,
-           pcx_game_idle_func idle_func,
-           int data)
+           pcx_game_idle_func idle_func)
 {
         assert(game->stack_pos < PCX_N_ELEMENTS(game->stack));
 
-        game->stack[game->stack_pos].func = func;
-        game->stack[game->stack_pos].idle_func = idle_func;
-        game->stack[game->stack_pos].data = data;
-
         game->stack_pos++;
+
+        struct pcx_game_stack_entry *entry = get_stack_top(game);
+
+        entry->func = func;
+        entry->idle_func = idle_func;
+        entry->destroy_func = NULL;
+        memset(&entry->data, 0, sizeof entry->data);
+
+        return entry;
+}
+
+static void
+stack_push_int(struct pcx_game *game,
+               pcx_game_callback_data_func func,
+               pcx_game_idle_func idle_func,
+               int data)
+{
+        struct pcx_game_stack_entry *entry = stack_push(game, func, idle_func);
+
+        entry->data.i = data;
+}
+
+static void
+stack_push_pointer(struct pcx_game *game,
+                   pcx_game_callback_data_func func,
+                   pcx_game_idle_func idle_func,
+                   pcx_game_stack_destroy_func destroy_func,
+                   void *data)
+{
+        struct pcx_game_stack_entry *entry = stack_push(game, func, idle_func);
+
+        entry->destroy_func = destroy_func;
+        entry->data.p = data;
 }
 
 static void
 stack_pop(struct pcx_game *game)
 {
         assert(game->stack_pos > 0);
+
+        struct pcx_game_stack_entry *entry = get_stack_top(game);
+
+        if (entry->destroy_func)
+                entry->destroy_func(game);
+
         game->stack_pos--;
 }
 
 static int
-get_stack_data(struct pcx_game *game)
+get_stack_data_int(struct pcx_game *game)
 {
         assert(game->stack_pos > 0);
-        return game->stack[game->stack_pos - 1].data;
+
+        return get_stack_top(game)->data.i;
+}
+
+static void *
+get_stack_data_pointer(struct pcx_game *game)
+{
+        assert(game->stack_pos > 0);
+
+        return get_stack_top(game)->data.p;
 }
 
 static void
@@ -165,8 +224,7 @@ do_idle(struct pcx_game *game)
                 if (game->stack_pos <= 0)
                         break;
 
-                struct pcx_game_stack_entry *entry =
-                        game->stack + game->stack_pos - 1;
+                struct pcx_game_stack_entry *entry = get_stack_top(game);
 
                 if (entry->idle_func == NULL)
                         break;
@@ -455,7 +513,7 @@ choose_card_to_lose(struct pcx_game *game,
         if (strcmp(data, "lose"))
                 return;
 
-        if (player_num != get_stack_data(game))
+        if (player_num != get_stack_data_int(game))
                 return;
 
         struct pcx_game_player *player = game->players + player_num;
@@ -493,7 +551,7 @@ is_losing_all_cards(struct pcx_game *game,
                 const struct pcx_game_stack_entry *entry = game->stack + i;
 
                 if (entry->func != choose_card_to_lose ||
-                    entry->data != player_num)
+                    entry->data.i != player_num)
                         return false;
         }
 
@@ -503,7 +561,7 @@ is_losing_all_cards(struct pcx_game *game,
 static void
 choose_card_to_lose_idle(struct pcx_game *game)
 {
-        int player_num = get_stack_data(game);
+        int player_num = get_stack_data_int(game);
         struct pcx_game_player *player = game->players + player_num;
 
         /* Check if the stack contains enough lose card entries for
@@ -557,10 +615,10 @@ static void
 lose_card(struct pcx_game *game,
           int player_num)
 {
-        stack_push(game,
-                   choose_card_to_lose,
-                   choose_card_to_lose_idle,
-                   player_num);
+        stack_push_int(game,
+                       choose_card_to_lose,
+                       choose_card_to_lose_idle,
+                       player_num);
 }
 
 static void
@@ -765,8 +823,7 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
 
         stack_push(game,
                    choose_action,
-                   choose_action_idle,
-                   0 /* data */);
+                   choose_action_idle);
 
         for (unsigned i = 0; i < n_players; i++)
                 show_cards(game, i);
@@ -806,11 +863,9 @@ pcx_game_handle_callback_data(struct pcx_game *game,
                 return;
 
         char *main_data = pcx_strndup(callback_data, colon - callback_data);
+        struct pcx_game_stack_entry *entry = get_stack_top(game);
 
-        game->stack[game->stack_pos - 1].func(game,
-                                              player_num,
-                                              main_data,
-                                              extra_data);
+        entry->func(game, player_num, main_data, extra_data);
 
         pcx_free(main_data);
 
@@ -820,6 +875,9 @@ pcx_game_handle_callback_data(struct pcx_game *game,
 void
 pcx_game_free(struct pcx_game *game)
 {
+        while (game->stack_pos > 0)
+                stack_pop(game);
+
         pcx_buffer_destroy(&game->buffer);
 
         for (int i = 0; i < game->n_players; i++)
