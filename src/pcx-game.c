@@ -22,6 +22,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
+#include <errno.h>
 
 #include "pcx-character.h"
 #include "pcx-util.h"
@@ -32,6 +34,20 @@
 #define PCX_GAME_TOTAL_CARDS (PCX_CHARACTER_COUNT * \
                               PCX_GAME_CARDS_PER_CHARACTER)
 #define PCX_GAME_START_COINS 2
+
+#define PCX_GAME_STACK_SIZE 8
+
+typedef void
+(* pcx_game_callback_data_func)(struct pcx_game *game,
+                                int player_num,
+                                int stack_data,
+                                const char *data,
+                                int extra_data);
+
+struct pcx_game_stack_entry {
+        pcx_game_callback_data_func func;
+        int data;
+};
 
 struct pcx_game_card {
         enum pcx_character character;
@@ -53,6 +69,8 @@ struct pcx_game {
         struct pcx_game_callbacks callbacks;
         void *user_data;
         struct pcx_buffer buffer;
+        struct pcx_game_stack_entry stack[PCX_GAME_STACK_SIZE];
+        int stack_pos;
 };
 
 static const struct pcx_game_button
@@ -106,15 +124,67 @@ character_buttons[] = {
 };
 
 static void
+stack_push(struct pcx_game *game,
+           pcx_game_callback_data_func func,
+           int data)
+{
+        assert(game->stack_pos < PCX_N_ELEMENTS(game->stack));
+
+        game->stack[game->stack_pos].func = func;
+        game->stack[game->stack_pos].data = data;
+
+        game->stack_pos++;
+}
+
+static void
+stack_pop(struct pcx_game *game)
+{
+        assert(game->stack_pos > 0);
+        game->stack_pos--;
+}
+
+static int
+get_stack_data(struct pcx_game *game)
+{
+        assert(game->stack_pos > 0);
+        return game->stack[game->stack_pos - 1].data;
+}
+
+static void
+send_buffer_message_with_buttons_to(struct pcx_game *game,
+                                    int target_player,
+                                    size_t n_buttons,
+                                    const struct pcx_game_button *buttons)
+{
+        const char *msg = (const char *) game->buffer.data;
+        enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+
+        if (target_player < 0) {
+                game->callbacks.send_message(format,
+                                             msg,
+                                             n_buttons,
+                                             buttons,
+                                             game->user_data);
+        } else {
+                assert(target_player < game->n_players);
+                game->callbacks.send_private_message(target_player,
+                                                     format,
+                                                     msg,
+                                                     n_buttons,
+                                                     buttons,
+                                                     game->user_data);
+        }
+}
+
+static void
 send_buffer_message_with_buttons(struct pcx_game *game,
                                  size_t n_buttons,
                                  const struct pcx_game_button *buttons)
 {
-        game->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                     (const char *) game->buffer.data,
-                                     n_buttons,
-                                     buttons,
-                                     game->user_data);
+        send_buffer_message_with_buttons_to(game,
+                                            -1, /* target_player */
+                                            n_buttons,
+                                            buttons);
 }
 
 static void
@@ -123,6 +193,23 @@ send_buffer_message(struct pcx_game *game)
         send_buffer_message_with_buttons(game,
                                          0, /* n_buttons */
                                          NULL /* buttons */);
+}
+
+PCX_PRINTF_FORMAT(2, 3)
+static void
+game_note(struct pcx_game *game,
+          const char *format,
+          ...)
+{
+        pcx_buffer_set_length(&game->buffer, 0);
+
+        va_list ap;
+
+        va_start(ap, format);
+        pcx_buffer_append_vprintf(&game->buffer, format, ap);
+        va_end(ap);
+
+        send_buffer_message(game);
 }
 
 static void
@@ -287,6 +374,214 @@ take_card(struct pcx_game *game)
         return game->deck[--game->n_cards];
 }
 
+static void
+choose_card_to_lose(struct pcx_game *game,
+                    int player_num,
+                    int stack_data,
+                    const char *data,
+                    int extra_data)
+{
+        if (strcmp(data, "lose"))
+                return;
+
+        if (player_num != get_stack_data(game))
+                return;
+
+        struct pcx_game_player *player = game->players + player_num;
+
+        if (extra_data < 0 ||
+            extra_data >= PCX_GAME_CARDS_PER_PLAYER ||
+            player->cards[extra_data].dead)
+                return;
+
+        player->cards[extra_data].dead = true;
+        stack_pop(game);
+}
+
+static void
+lose_card(struct pcx_game *game,
+          int player_num)
+{
+        struct pcx_game_player *player = game->players + player_num;
+        bool has_living = false;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                if (!player->cards[i].dead) {
+                        if (has_living)
+                                goto choose_card;
+                        has_living = true;
+                }
+        }
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++)
+                player->cards[i].dead = true;
+        return;
+
+choose_card: (void) 0;
+
+        struct pcx_game_button buttons[PCX_GAME_CARDS_PER_PLAYER];
+        size_t n_buttons = 0;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                if (player->cards[i].dead)
+                        continue;
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "lose:%u", i);
+
+                buttons[n_buttons].text =
+                        pcx_character_get_name(player->cards[i].character);
+                buttons[n_buttons].data = pcx_strdup((char *) buf.data);
+                n_buttons++;
+        }
+
+        pcx_buffer_set_length(&game->buffer, 0);
+        pcx_buffer_append_string(&game->buffer, "Kiun karton vi volas perdi?");
+
+        send_buffer_message_with_buttons_to(game,
+                                            player_num,
+                                            n_buttons,
+                                            buttons);
+
+        for (unsigned i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+
+        stack_push(game, choose_card_to_lose, player_num);
+}
+
+static void
+send_select_target(struct pcx_game *game,
+                   const char *message,
+                   const char *data)
+{
+        size_t n_buttons = 0;
+        struct pcx_game_button buttons[PCX_GAME_MAX_PLAYERS];
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (i == game->current_player || !is_alive(game->players + i))
+                        continue;
+
+                pcx_buffer_set_length(&buf, 0);
+                pcx_buffer_append_printf(&buf, "%s:%u", data, i);
+                buttons[n_buttons].text = game->players[i].name;
+                buttons[n_buttons].data = pcx_strdup((const char *) buf.data);
+                n_buttons++;
+        }
+
+        pcx_buffer_set_length(&game->buffer, 0);
+        pcx_buffer_append_printf(&game->buffer,
+                                 message,
+                                 game->players[game->current_player].name);
+
+        send_buffer_message_with_buttons(game,
+                                         n_buttons,
+                                         buttons);
+
+        for (unsigned i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+do_coup(struct pcx_game *game,
+        int extra_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        if (player->coins < 7)
+                return;
+
+        if (extra_data == -1) {
+                send_select_target(game,
+                                   "%s, kiun vi volas mortigi dum la puĉo?",
+                                   coup_button.data);
+                return;
+        }
+
+        if (extra_data >= game->n_players || extra_data == game->current_player)
+                return;
+
+        struct pcx_game_player *target = game->players + extra_data;
+
+        if (!is_alive(target))
+                return;
+
+        game_note(game,
+                  "💣 %s faras puĉon kontraŭ %s",
+                  player->name,
+                  target->name);
+
+        player->coins -= 7;
+        lose_card(game, extra_data);
+}
+
+static void
+do_income(struct pcx_game *game)
+{
+}
+
+static void
+do_foreign_add(struct pcx_game *game)
+{
+}
+
+static void
+do_tax(struct pcx_game *game)
+{
+}
+
+static void
+do_assassinate(struct pcx_game *game)
+{
+}
+
+static void
+do_exchange(struct pcx_game *game)
+{
+}
+
+static void
+do_steal(struct pcx_game *game)
+{
+}
+
+static bool
+is_button(const char *data,
+          const struct pcx_game_button *button)
+{
+        return !strcmp(data, button->data);
+}
+
+static void
+choose_action(struct pcx_game *game,
+              int player_num,
+              int stack_data,
+              const char *data,
+              int extra_data)
+{
+        if (player_num != game->current_player)
+                return;
+
+        if (is_button(data, &coup_button)) {
+                do_coup(game, extra_data);
+        } else if (game->players[player_num].coins < 10) {
+                if (is_button(data, &income_button))
+                        do_income(game);
+                else if (is_button(data, &foreign_aid_button))
+                        do_foreign_add(game);
+                else if (is_button(data, &tax_button))
+                        do_tax(game);
+                else if (is_button(data, &assassinate_button))
+                        do_assassinate(game);
+                else if (is_button(data, &exchange_button))
+                        do_exchange(game);
+                else if (is_button(data, &steal_button))
+                        do_steal(game);
+        }
+}
+
 struct pcx_game *
 pcx_game_new(const struct pcx_game_callbacks *callbacks,
              void *user_data,
@@ -323,6 +618,8 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                 game->players[i].name = pcx_strdup(names[i]);
         }
 
+        stack_push(game, choose_action, 0 /* data */);
+
         show_stats(game);
 
         return game;
@@ -335,7 +632,39 @@ pcx_game_handle_callback_data(struct pcx_game *game,
 {
         assert(player_num >= 0 && player_num < game->n_players);
 
-        printf("%i %s\n", player_num, callback_data);
+        if (game->stack_pos <= 0 || is_finished(game))
+                return;
+
+        int extra_data;
+        const char *colon = strchr(callback_data, ':');
+
+        if (colon == NULL) {
+                extra_data = -1;
+                colon = callback_data + strlen(callback_data);
+        } else {
+                char *tail;
+
+                errno = 0;
+                extra_data = strtol(colon + 1, &tail, 10);
+
+                if (*tail || errno || extra_data < 0)
+                        return;
+        }
+
+        if (colon <= callback_data)
+                return;
+
+        char *main_data = pcx_strndup(callback_data, colon - callback_data);
+
+        int pos = game->stack_pos - 1;
+
+        game->stack[pos].func(game,
+                              player_num,
+                              game->stack[pos].data,
+                              main_data,
+                              extra_data);
+
+        pcx_free(main_data);
 }
 
 void
