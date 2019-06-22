@@ -48,10 +48,6 @@ typedef void
                                      void *user_data);
 
 typedef void
-(* pcx_main_context_idle_callback) (struct pcx_main_context_source *source,
-                                    void *user_data);
-
-typedef void
 (* pcx_main_context_quit_callback) (struct pcx_main_context_source *source,
                                     void *user_data);
 
@@ -82,11 +78,6 @@ pcx_main_context_add_timer(struct pcx_main_context *mc,
                            int minutes,
                            pcx_main_context_timer_callback callback,
                            void *user_data);
-
-struct pcx_main_context_source *
-pcx_main_context_add_idle(struct pcx_main_context *mc,
-                          pcx_main_context_idle_callback callback,
-                          void *user_data);
 
 void
 pcx_main_context_remove_source(struct pcx_main_context_source *source);

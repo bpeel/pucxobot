@@ -32,7 +32,6 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <time.h>
-#include <pthread.h>
 #include <assert.h>
 
 #include "pcx-main-context.h"
@@ -44,15 +43,6 @@
 struct pcx_main_context_bucket;
 
 struct pcx_main_context {
-        /* This mutex the idle_sources list and the slice allocator so
-         * that idle sources can be added from other threads.
-         * Everything else should only be accessed from the main
-         * thread so it doesn't need to guarded. Removing an idle
-         * source can only happen in the main thread. That is
-         * necessary because it is difficult to cope with random idle
-         * sources being removed while we are iterating the list */
-        pthread_mutex_t idle_mutex;
-
         /* Array for receiving events */
         struct pcx_buffer poll_array;
         bool poll_array_dirty;
@@ -61,13 +51,10 @@ struct pcx_main_context {
            is received */
         struct pcx_list quit_sources;
 
-        struct pcx_list idle_sources;
-
         struct pcx_list poll_sources;
 
         struct pcx_main_context_source *async_pipe_source;
         int async_pipe[2];
-        pthread_t main_thread;
 
         void (* old_int_handler)(int);
         void (* old_term_handler)(int);
@@ -81,7 +68,6 @@ struct pcx_main_context {
         struct pcx_list buckets;
         int64_t last_timer_time;
 
-        /* This allocator is protected by the idle_mutex */
         struct pcx_slice_allocator source_allocator;
 };
 
@@ -89,7 +75,6 @@ struct pcx_main_context_source {
         enum {
                 PCX_MAIN_CONTEXT_POLL_SOURCE,
                 PCX_MAIN_CONTEXT_TIMER_SOURCE,
-                PCX_MAIN_CONTEXT_IDLE_SOURCE,
                 PCX_MAIN_CONTEXT_QUIT_SOURCE
         } type;
 
@@ -140,10 +125,8 @@ static void
 free_source(struct pcx_main_context *mc,
             struct pcx_main_context_source *source)
 {
-        pthread_mutex_lock(&mc->idle_mutex);
         pcx_list_remove(&source->link);
         pcx_slice_free(&mc->source_allocator, source);
-        pthread_mutex_unlock(&mc->idle_mutex);
 }
 
 static void
@@ -189,7 +172,6 @@ pcx_main_context_new(void)
 {
         struct pcx_main_context *mc = pcx_alloc(sizeof *mc);
 
-        pthread_mutex_init(&mc->idle_mutex, NULL /* attrs */);
         pcx_slice_allocator_init(&mc->source_allocator,
                                  sizeof(struct pcx_main_context_source),
                                  alignof(struct pcx_main_context_source));
@@ -198,7 +180,6 @@ pcx_main_context_new(void)
         mc->poll_array_dirty = true;
         pcx_buffer_init(&mc->poll_array);
         pcx_list_init(&mc->quit_sources);
-        pcx_list_init(&mc->idle_sources);
         pcx_list_init(&mc->poll_sources);
         pcx_list_init(&mc->buckets);
         mc->last_timer_time = pcx_main_context_get_monotonic_clock(mc);
@@ -217,8 +198,6 @@ pcx_main_context_new(void)
                                                     mc);
         }
 
-        mc->main_thread = pthread_self();
-
         return mc;
 }
 
@@ -234,9 +213,7 @@ pcx_main_context_add_poll(struct pcx_main_context *mc,
         if (mc == NULL)
                 mc = pcx_main_context_get_default();
 
-        pthread_mutex_lock(&mc->idle_mutex);
         source = pcx_slice_alloc(&mc->source_allocator);
-        pthread_mutex_unlock(&mc->idle_mutex);
 
         source->mc = mc;
         source->fd = fd;
@@ -274,9 +251,7 @@ pcx_main_context_add_quit(struct pcx_main_context *mc,
         if (mc == NULL)
                 mc = pcx_main_context_get_default();
 
-        pthread_mutex_lock(&mc->idle_mutex);
         source = pcx_slice_alloc(&mc->source_allocator);
-        pthread_mutex_unlock(&mc->idle_mutex);
 
         source->mc = mc;
         source->callback = callback;
@@ -318,9 +293,7 @@ pcx_main_context_add_timer(struct pcx_main_context *mc,
         if (mc == NULL)
                 mc = pcx_main_context_get_default();
 
-        pthread_mutex_lock(&mc->idle_mutex);
         source = pcx_slice_alloc(&mc->source_allocator);
-        pthread_mutex_unlock(&mc->idle_mutex);
 
         source->mc = mc;
         source->bucket = get_bucket(mc, minutes);
@@ -331,40 +304,6 @@ pcx_main_context_add_timer(struct pcx_main_context *mc,
         source->busy = false;
 
         pcx_list_insert(&source->bucket->sources, &source->link);
-
-        return source;
-}
-
-static void
-wakeup_main_loop(struct pcx_main_context *mc)
-{
-        if (!pthread_equal(pthread_self(), mc->main_thread))
-                send_async_byte(mc, 'W');
-}
-
-struct pcx_main_context_source *
-pcx_main_context_add_idle(struct pcx_main_context *mc,
-                          pcx_main_context_idle_callback callback,
-                          void *user_data)
-{
-        struct pcx_main_context_source *source;
-
-        if (mc == NULL)
-                mc = pcx_main_context_get_default();
-
-        /* This may be called from a thread other than the main one so
-         * we need to guard access to the idle sources lists */
-        pthread_mutex_lock(&mc->idle_mutex);
-        source = pcx_slice_alloc(&mc->source_allocator);
-        pcx_list_insert(&mc->idle_sources, &source->link);
-        pthread_mutex_unlock(&mc->idle_mutex);
-
-        source->mc = mc;
-        source->callback = callback;
-        source->type = PCX_MAIN_CONTEXT_IDLE_SOURCE;
-        source->user_data = user_data;
-
-        wakeup_main_loop(mc);
 
         return source;
 }
@@ -380,7 +319,6 @@ pcx_main_context_remove_source(struct pcx_main_context_source *source)
                 mc->poll_array_dirty = true;
                 break;
 
-        case PCX_MAIN_CONTEXT_IDLE_SOURCE:
         case PCX_MAIN_CONTEXT_QUIT_SOURCE:
                 free_source(mc, source);
                 break;
@@ -404,9 +342,6 @@ get_timeout(struct pcx_main_context *mc)
         struct pcx_main_context_bucket *bucket;
         int min_minutes, minutes_to_wait;
         int64_t elapsed, elapsed_minutes;
-
-        if (!pcx_list_empty(&mc->idle_sources))
-                return 0;
 
         if (pcx_list_empty(&mc->buckets))
                 return -1;
@@ -494,34 +429,6 @@ check_timer_sources(struct pcx_main_context *mc)
                         source->busy = false;
                 }
         }
-}
-
-static void
-emit_idle_sources(struct pcx_main_context *mc)
-{
-        struct pcx_main_context_source *source, *tmp_source;
-        pcx_main_context_timer_callback callback;
-
-        pthread_mutex_lock(&mc->idle_mutex);
-
-        /* This loop needs to cope with sources being added from other
-         * threads while iterating. It doesn't need to cope with
-         * sources being removed, apart from the one currently being
-         * executed. Any new sources would be added at the beginning
-         * of the list so they shouldn't cause any problems and they
-         * would just be missed by this loop */
-
-        pcx_list_for_each_safe(source, tmp_source,
-                               &mc->idle_sources,
-                               link) {
-                callback = source->callback;
-
-                pthread_mutex_unlock(&mc->idle_mutex);
-                callback(source, source->user_data);
-                pthread_mutex_lock(&mc->idle_mutex);
-        }
-
-        pthread_mutex_unlock(&mc->idle_mutex);
 }
 
 static struct pcx_main_context_source *
@@ -642,7 +549,6 @@ pcx_main_context_poll(struct pcx_main_context *mc)
                         handle_poll_result(mc, pollfds + i);
 
                 check_timer_sources(mc);
-                emit_idle_sources(mc);
         }
 }
 
@@ -711,12 +617,9 @@ pcx_main_context_free(struct pcx_main_context *mc)
         pcx_close(mc->async_pipe[1]);
 
         assert(pcx_list_empty(&mc->quit_sources));
-        assert(pcx_list_empty(&mc->idle_sources));
         assert(pcx_list_empty(&mc->poll_sources));
 
         free_buckets(mc);
-
-        pthread_mutex_destroy(&mc->idle_mutex);
 
         pcx_buffer_destroy(&mc->poll_array);
 
