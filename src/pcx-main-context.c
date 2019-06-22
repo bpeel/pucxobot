@@ -40,8 +40,6 @@
 #include "pcx-slice.h"
 #include "pcx-buffer.h"
 
-struct pcx_main_context_bucket;
-
 struct pcx_main_context {
         /* Array for receiving events */
         struct pcx_buffer poll_array;
@@ -51,6 +49,7 @@ struct pcx_main_context {
            is received */
         struct pcx_list quit_sources;
 
+        struct pcx_list timeout_sources;
         struct pcx_list poll_sources;
 
         struct pcx_main_context_source *async_pipe_source;
@@ -65,16 +64,13 @@ struct pcx_main_context {
         bool wall_time_valid;
         int64_t wall_time;
 
-        struct pcx_list buckets;
-        int64_t last_timer_time;
-
         struct pcx_slice_allocator source_allocator;
 };
 
 struct pcx_main_context_source {
         enum {
                 PCX_MAIN_CONTEXT_POLL_SOURCE,
-                PCX_MAIN_CONTEXT_TIMER_SOURCE,
+                PCX_MAIN_CONTEXT_TIMEOUT_SOURCE,
                 PCX_MAIN_CONTEXT_QUIT_SOURCE
         } type;
 
@@ -85,9 +81,9 @@ struct pcx_main_context_source {
                         enum pcx_main_context_poll_flags current_flags;
                 };
 
-                /* Timer sources */
+                /* Timeout sources */
                 struct {
-                        struct pcx_main_context_bucket *bucket;
+                        uint64_t end_time;
                         bool busy;
                         bool removed;
                 };
@@ -99,16 +95,6 @@ struct pcx_main_context_source {
 
         struct pcx_main_context *mc;
 };
-
-struct pcx_main_context_bucket {
-        struct pcx_list link;
-        struct pcx_list sources;
-        int minutes;
-        int minutes_passed;
-};
-
-PCX_SLICE_ALLOCATOR(struct pcx_main_context_bucket,
-                    pcx_main_context_bucket_allocator);
 
 static struct pcx_main_context *pcx_main_context_default = NULL;
 
@@ -181,8 +167,7 @@ pcx_main_context_new(void)
         pcx_buffer_init(&mc->poll_array);
         pcx_list_init(&mc->quit_sources);
         pcx_list_init(&mc->poll_sources);
-        pcx_list_init(&mc->buckets);
-        mc->last_timer_time = pcx_main_context_get_monotonic_clock(mc);
+        pcx_list_init(&mc->timeout_sources);
 
         mc->old_int_handler = signal(SIGINT, pcx_main_context_quit_signal_cb);
         mc->old_term_handler = signal(SIGTERM, pcx_main_context_quit_signal_cb);
@@ -263,30 +248,11 @@ pcx_main_context_add_quit(struct pcx_main_context *mc,
         return source;
 }
 
-static struct pcx_main_context_bucket *
-get_bucket(struct pcx_main_context *mc, int minutes)
-{
-        struct pcx_main_context_bucket *bucket;
-
-        pcx_list_for_each(bucket, &mc->buckets, link) {
-                if (bucket->minutes == minutes)
-                        return bucket;
-        }
-
-        bucket = pcx_slice_alloc(&pcx_main_context_bucket_allocator);
-        pcx_list_init(&bucket->sources);
-        bucket->minutes = minutes;
-        bucket->minutes_passed = 0;
-        pcx_list_insert(&mc->buckets, &bucket->link);
-
-        return bucket;
-}
-
 struct pcx_main_context_source *
-pcx_main_context_add_timer(struct pcx_main_context *mc,
-                           int minutes,
-                           pcx_main_context_timer_callback callback,
-                           void *user_data)
+pcx_main_context_add_timeout(struct pcx_main_context *mc,
+                             long ms,
+                             pcx_main_context_timeout_callback callback,
+                             void *user_data)
 {
         struct pcx_main_context_source *source;
 
@@ -296,14 +262,15 @@ pcx_main_context_add_timer(struct pcx_main_context *mc,
         source = pcx_slice_alloc(&mc->source_allocator);
 
         source->mc = mc;
-        source->bucket = get_bucket(mc, minutes);
         source->callback = callback;
-        source->type = PCX_MAIN_CONTEXT_TIMER_SOURCE;
+        source->type = PCX_MAIN_CONTEXT_TIMEOUT_SOURCE;
         source->user_data = user_data;
         source->removed = false;
         source->busy = false;
+        source->end_time = (pcx_main_context_get_monotonic_clock(mc) +
+                            ms * UINT64_C(1000));
 
-        pcx_list_insert(&source->bucket->sources, &source->link);
+        pcx_list_insert(&mc->timeout_sources, &source->link);
 
         return source;
 }
@@ -323,7 +290,7 @@ pcx_main_context_remove_source(struct pcx_main_context_source *source)
                 free_source(mc, source);
                 break;
 
-        case PCX_MAIN_CONTEXT_TIMER_SOURCE:
+        case PCX_MAIN_CONTEXT_TIMEOUT_SOURCE:
                 /* Timer sources need to be able to be removed while
                  * iterating the source list to emit, so we need to
                  * handle them specially during iteration. */
@@ -339,95 +306,65 @@ pcx_main_context_remove_source(struct pcx_main_context_source *source)
 static int
 get_timeout(struct pcx_main_context *mc)
 {
-        struct pcx_main_context_bucket *bucket;
-        int min_minutes, minutes_to_wait;
-        int64_t elapsed, elapsed_minutes;
-
-        if (pcx_list_empty(&mc->buckets))
+        if (pcx_list_empty(&mc->timeout_sources))
                 return -1;
 
-        min_minutes = INT_MAX;
+        uint64_t now = pcx_main_context_get_monotonic_clock(mc);
+        int min_ms = INT_MAX;
 
-        pcx_list_for_each(bucket, &mc->buckets, link) {
-                minutes_to_wait = bucket->minutes - bucket->minutes_passed;
+        struct pcx_main_context_source *source;
 
-                if (minutes_to_wait < min_minutes)
-                        min_minutes = minutes_to_wait;
+        pcx_list_for_each(source, &mc->timeout_sources, link) {
+                if (source->end_time <= now)
+                        return 0;
+                uint64_t ms_to_wait = (source->end_time - now) / 1000;
+
+                if (ms_to_wait < INT_MAX && (int) ms_to_wait < min_ms)
+                        min_ms = (int) ms_to_wait;
         }
 
-        elapsed =
-            pcx_main_context_get_monotonic_clock(mc) - mc->last_timer_time;
-        elapsed_minutes = elapsed / 60000000;
-
-        /* If we've already waited enough time then don't wait any
-         * further time */
-        if (elapsed_minutes >= min_minutes)
-                return 0;
-
-        /* Subtract the number of minutes we've already waited */
-        min_minutes -= (int) elapsed_minutes;
-
-        return (60000 - (elapsed / 1000 % 60000) + (min_minutes - 1) * 60000);
+        return min_ms;
 }
 
 static void
 check_timer_sources(struct pcx_main_context *mc)
 {
-        struct pcx_main_context_bucket *bucket;
-        int64_t now;
-        int64_t elapsed_minutes;
-
-        if (pcx_list_empty(&mc->buckets))
+        if (pcx_list_empty(&mc->timeout_sources))
                 return;
 
-        now = pcx_main_context_get_monotonic_clock(mc);
-        elapsed_minutes = (now - mc->last_timer_time) / 60000000;
-        mc->last_timer_time += elapsed_minutes * 60000000;
-
-        if (elapsed_minutes < 1)
-                return;
+        uint64_t now = pcx_main_context_get_monotonic_clock(mc);
 
         /* Collect all of the sources to emit into a list and mark
          * them as busy. That way if they are removed they will just
          * be marked as removed instead of actually modifying the
-         * bucket’s list. That way any timers can be removed as a
+         * timeout list. That way any timers can be removed as a
          * result of invoking any callback.
          */
         struct pcx_list to_emit;
         pcx_list_init(&to_emit);
 
-        pcx_list_for_each(bucket, &mc->buckets, link) {
-                if (bucket->minutes_passed + elapsed_minutes >=
-                    bucket->minutes) {
-                        pcx_list_insert_list(&to_emit, &bucket->sources);
-                        bucket->minutes_passed = 0;
-                        pcx_list_init(&bucket->sources);
-                } else {
-                        bucket->minutes_passed += elapsed_minutes;
-                }
-        }
-
         struct pcx_main_context_source *source, *tmp_source;
 
-        pcx_list_for_each(source, &to_emit, link) {
-                source->busy = true;
+        pcx_list_for_each_safe(source, tmp_source, &mc->timeout_sources, link) {
+                if (source->end_time <= now) {
+                        pcx_list_remove(&source->link);
+                        pcx_list_insert(&to_emit, &source->link);
+                        source->busy = true;
+                }
         }
 
         pcx_list_for_each(source, &to_emit, link) {
                 if (source->removed)
                         continue;
-                pcx_main_context_timer_callback callback = source->callback;
+                pcx_main_context_timeout_callback callback = source->callback;
                 callback(source, source->user_data);
         }
 
+        /* The timeouts are one-shot so we always remove all of them
+         * after emitting.
+         */
         pcx_list_for_each_safe(source, tmp_source, &to_emit, link) {
-                if (source->removed) {
-                        free_source(mc, source);
-                } else {
-                        pcx_list_insert(&source->bucket->sources,
-                                        &source->link);
-                        source->busy = false;
-                }
+                free_source(mc, source);
         }
 }
 
@@ -596,17 +533,6 @@ pcx_main_context_get_wall_clock(struct pcx_main_context *mc)
         return mc->wall_time;
 }
 
-static void
-free_buckets(struct pcx_main_context *mc)
-{
-        struct pcx_main_context_bucket *bucket, *tmp;
-
-        pcx_list_for_each_safe(bucket, tmp, &mc->buckets, link) {
-                assert(pcx_list_empty(&bucket->sources));
-                pcx_slice_free(&pcx_main_context_bucket_allocator, bucket);
-        }
-}
-
 void
 pcx_main_context_free(struct pcx_main_context *mc)
 {
@@ -618,8 +544,7 @@ pcx_main_context_free(struct pcx_main_context *mc)
 
         assert(pcx_list_empty(&mc->quit_sources));
         assert(pcx_list_empty(&mc->poll_sources));
-
-        free_buckets(mc);
+        assert(pcx_list_empty(&mc->timeout_sources));
 
         pcx_buffer_destroy(&mc->poll_array);
 
