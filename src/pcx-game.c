@@ -45,7 +45,8 @@ typedef void
                                 int extra_data);
 
 typedef void
-(* pcx_game_idle_func)(struct pcx_game *game);
+(* pcx_game_idle_func)(struct pcx_game *game,
+                       int stack_data);
 
 struct pcx_game_stack_entry {
         pcx_game_callback_data_func func;
@@ -160,20 +161,20 @@ get_stack_data(struct pcx_game *game)
 static void
 do_idle(struct pcx_game *game)
 {
-        if (!game->action_taken)
-                return;
+        while (game->action_taken) {
+                game->action_taken = false;
 
-        game->action_taken = false;
+                if (game->stack_pos <= 0)
+                        break;
 
-        if (game->stack_pos <= 0)
-                return;
+                struct pcx_game_stack_entry *entry =
+                        game->stack + game->stack_pos - 1;
 
-        struct pcx_game_stack_entry *entry = game->stack + game->stack_pos - 1;
+                if (entry->idle_func == NULL)
+                        break;
 
-        if (entry->idle_func == NULL)
-                return;
-
-        entry->idle_func(game);
+                entry->idle_func(game, entry->data);
+        }
 }
 
 static void
@@ -432,26 +433,51 @@ choose_card_to_lose(struct pcx_game *game,
         stack_pop(game);
 }
 
-static void
-lose_card(struct pcx_game *game,
-          int player_num)
+static bool
+is_losing_all_cards(struct pcx_game *game,
+                    int player_num)
 {
-        struct pcx_game_player *player = game->players + player_num;
-        bool has_living = false;
+        const struct pcx_game_player *player = game->players + player_num;
+        int n_living = 0;
 
         for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
-                if (!player->cards[i].dead) {
-                        if (has_living)
-                                goto choose_card;
-                        has_living = true;
-                }
+                if (!player->cards[i].dead)
+                        n_living++;
         }
 
-        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++)
-                player->cards[i].dead = true;
-        return;
+        if (game->stack_pos < n_living)
+                return false;
 
-choose_card: (void) 0;
+        for (unsigned i = game->stack_pos - n_living;
+             i < game->stack_pos;
+             i++) {
+                const struct pcx_game_stack_entry *entry = game->stack + i;
+
+                if (entry->func != choose_card_to_lose ||
+                    entry->data != player_num)
+                        return false;
+        }
+
+        return true;
+}
+
+static void
+choose_card_to_lose_idle(struct pcx_game *game,
+                         int player_num)
+{
+        struct pcx_game_player *player = game->players + player_num;
+
+        /* Check if the stack contains enough lose card entries for
+         * the player to lose of their cards. In that case they don’t
+         * need the message.
+         */
+        if (is_losing_all_cards(game, player_num)) {
+                take_action(game);
+                stack_pop(game);
+                for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++)
+                        player->cards[i].dead = true;
+                return;
+        }
 
         struct pcx_game_button buttons[PCX_GAME_CARDS_PER_PLAYER];
         size_t n_buttons = 0;
@@ -479,10 +505,15 @@ choose_card: (void) 0;
 
         for (unsigned i = 0; i < n_buttons; i++)
                 pcx_free((char *) buttons[i].data);
+}
 
+static void
+lose_card(struct pcx_game *game,
+          int player_num)
+{
         stack_push(game,
                    choose_card_to_lose,
-                   NULL, /* idle_func */
+                   choose_card_to_lose_idle,
                    player_num);
 }
 
@@ -622,7 +653,8 @@ choose_action(struct pcx_game *game,
 }
 
 static void
-choose_action_idle(struct pcx_game *game)
+choose_action_idle(struct pcx_game *game,
+                   int stack_data)
 {
         /* If the game becomes idle when the top of the stack is to
          * choose an action then the turn is over.
