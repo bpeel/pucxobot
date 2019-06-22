@@ -221,6 +221,16 @@ send_buffer_message_with_buttons(struct pcx_game *game,
 }
 
 static void
+send_buffer_message_to(struct pcx_game *game,
+                       int target_player)
+{
+        send_buffer_message_with_buttons_to(game,
+                                            target_player,
+                                            0, /* n_buttons */
+                                            NULL /* buttons */);
+}
+
+static void
 send_buffer_message(struct pcx_game *game)
 {
         send_buffer_message_with_buttons(game,
@@ -323,6 +333,37 @@ add_money_status(struct pcx_buffer *buffer,
                 pcx_buffer_append_string(buffer, "1 monero");
         else
                 pcx_buffer_append_printf(buffer, "%i moneroj", player->coins);
+}
+
+static void
+show_cards(struct pcx_game *game,
+           int player_num)
+{
+        const struct pcx_game_player *player = game->players + player_num;
+
+        if (!is_alive(player))
+                return;
+
+        pcx_buffer_set_length(&game->buffer, 0);
+        pcx_buffer_append_string(&game->buffer,
+                                 "Viaj kartoj estas:\n");
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                const struct pcx_game_card *card = player->cards + i;
+                const char *name = pcx_character_get_name(card->character);
+
+                if (card->dead) {
+                        pcx_buffer_append_printf(&game->buffer,
+                                                 "☠%s☠\n",
+                                                 name);
+                } else {
+                        pcx_buffer_append_printf(&game->buffer,
+                                                 "%s\n",
+                                                 name);
+                }
+        }
+
+        send_buffer_message_to(game, player_num);
 }
 
 static void
@@ -430,6 +471,7 @@ choose_card_to_lose(struct pcx_game *game,
         take_action(game);
 
         player->cards[extra_data].dead = true;
+        show_cards(game, player_num);
         stack_pop(game);
 }
 
@@ -474,8 +516,15 @@ choose_card_to_lose_idle(struct pcx_game *game,
         if (is_losing_all_cards(game, player_num)) {
                 take_action(game);
                 stack_pop(game);
-                for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++)
-                        player->cards[i].dead = true;
+                bool changed = false;
+                for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                        if (!player->cards[i].dead) {
+                                player->cards[i].dead = true;
+                                changed = true;
+                        }
+                }
+                if (changed)
+                        show_cards(game, player_num);
                 return;
         }
 
@@ -723,6 +772,9 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                    choose_action,
                    choose_action_idle,
                    0 /* data */);
+
+        for (unsigned i = 0; i < n_players; i++)
+                show_cards(game, i);
 
         show_stats(game);
 
