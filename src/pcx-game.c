@@ -1177,9 +1177,140 @@ do_assassinate(struct pcx_game *game,
         data->block_cb = block_assassinate;
 }
 
+#define CARDS_TAKEN_IN_EXCHANGE 2
+
+struct exchange_data {
+        int n_cards_chosen;
+        int n_cards_available;
+        enum pcx_character available_cards[CARDS_TAKEN_IN_EXCHANGE +
+                                           PCX_GAME_CARDS_PER_PLAYER];
+};
+
+static void
+exchange_callback_data(struct pcx_game *game,
+                       int player_num,
+                       const char *command,
+                       int extra_data)
+{
+        struct exchange_data *data = get_stack_data_pointer(game);
+
+        if (strcmp(command, "keep") ||
+            extra_data < 0 || extra_data >= data->n_cards_available)
+                return;
+
+        take_action(game);
+
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        player->cards[data->n_cards_chosen].character =
+                data->available_cards[extra_data];
+        player->cards[data->n_cards_chosen].dead = false;
+        data->n_cards_chosen++;
+
+        memmove(data->available_cards + extra_data,
+                data->available_cards + extra_data + 1,
+                (data->n_cards_available - extra_data - 1) *
+                sizeof data->available_cards[0]);
+        data->n_cards_available--;
+
+        if (data->n_cards_chosen >= PCX_GAME_CARDS_PER_PLAYER) {
+                for (unsigned i = 0; i < data->n_cards_available; i++)
+                        game->deck[game->n_cards++] = data->available_cards[i];
+                shuffle_deck(game);
+                stack_pop(game);
+                show_cards(game, game->current_player);
+        }
+}
+
+static void
+exchange_idle(struct pcx_game *game)
+{
+        struct exchange_data *data = get_stack_data_pointer(game);
+        struct pcx_game_button buttons[CARDS_TAKEN_IN_EXCHANGE +
+                                       PCX_GAME_CARDS_PER_PLAYER];
+
+        for (unsigned i = 0; i < data->n_cards_available; i++) {
+                enum pcx_character character = data->available_cards[i];
+                buttons[i].text = pcx_character_get_name(character);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "keep:%u", i);
+                buttons[i].data = (char *) buf.data;
+        }
+
+        pcx_buffer_set_length(&game->buffer, 0);
+        pcx_buffer_append_string(&game->buffer,
+                                 "Kiujn kartojn vi volas konservi?");
+
+        send_buffer_message_with_buttons_to(game,
+                                            game->current_player,
+                                            data->n_cards_available,
+                                            buttons);
+
+        for (unsigned i = 0; i < data->n_cards_available; i++)
+                pcx_free((char *) buttons[i].data);
+}
+
+
+static void
+exchange_destroy(struct pcx_game *game)
+{
+        pcx_free(get_stack_data_pointer(game));
+}
+
+static void
+do_accepted_exchange(struct pcx_game *game,
+                     void *user_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        game_note(game,
+                  "Neniu blokis aŭ defiis, %s interŝanĝas kartojn",
+                  player->name);
+
+        struct exchange_data *data = pcx_calloc(sizeof *data);
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                const struct pcx_game_card *card = player->cards + i;
+
+                if (card->dead) {
+                        player->cards[data->n_cards_chosen++] = *card;
+                } else {
+                        data->available_cards[data->n_cards_available++] =
+                                card->character;
+                }
+        }
+
+        for (unsigned i = 0; i < CARDS_TAKEN_IN_EXCHANGE; i++) {
+                data->available_cards[data->n_cards_available++] =
+                        take_card(game);
+        }
+
+        stack_push_pointer(game,
+                           exchange_callback_data,
+                           exchange_idle,
+                           exchange_destroy,
+                           data);
+
+        take_action(game);
+}
+
 static void
 do_exchange(struct pcx_game *game)
 {
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        struct challenge_data *data =
+                check_challenge(game,
+                                CHALLENGE_FLAG_CHALLENGE,
+                                game->current_player,
+                                do_accepted_exchange,
+                                NULL, /* user_data */
+                                "🔄 %s pretendas havi la ambasadoron kaj volas "
+                                "interŝanĝi kartojn, ĉu iu volas defii rin?",
+                                player->name);
+
+        data->character = PCX_CHARACTER_AMBASSADOR;
 }
 
 static void
