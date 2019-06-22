@@ -1348,8 +1348,64 @@ do_exchange(struct pcx_game *game)
 }
 
 static void
-do_steal(struct pcx_game *game)
+do_accepted_steal(struct pcx_game *game,
+                  void *user_data)
 {
+        struct pcx_game_player *player = game->players + game->current_player;
+        struct pcx_game_player *target = user_data;
+
+        game_note(game,
+                  "Neniu blokis aŭ defiis, %s ŝtelas de %s",
+                  player->name,
+                  target->name);
+
+        int amount = MIN(2, target->coins);
+        player->coins += amount;
+        target->coins -= amount;
+
+        take_action(game);
+}
+
+static void
+do_steal(struct pcx_game *game,
+         int extra_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        if (extra_data == -1) {
+                send_select_target(game,
+                                   "%s, de kiu vi volas ŝteli?",
+                                   steal_button.data);
+                return;
+        }
+
+        if (extra_data >= game->n_players || extra_data == game->current_player)
+                return;
+
+        struct pcx_game_player *target = game->players + extra_data;
+
+        if (!is_alive(target))
+                return;
+
+        struct challenge_data *data =
+                check_challenge(game,
+                                CHALLENGE_FLAG_CHALLENGE |
+                                CHALLENGE_FLAG_BLOCK,
+                                game->current_player,
+                                do_accepted_steal,
+                                target, /* user_data */
+                                "💰 %s volas ŝteli de %s\n"
+                                "%s, ĉu vi volas bloki ĝin per ambasadoro aŭ "
+                                "kapitano?\n"
+                                "Aŭ ĉu iu volas defii?",
+                                player->name,
+                                target->name,
+                                target->name);
+
+        data->challenged_characters = (1 << PCX_CHARACTER_CAPTAIN);
+        data->blocking_characters = ((1 << PCX_CHARACTER_AMBASSADOR) |
+                                     (1 << PCX_CHARACTER_CAPTAIN));
+        data->target_player = extra_data;
 }
 
 static bool
@@ -1382,7 +1438,7 @@ choose_action(struct pcx_game *game,
                 else if (is_button(data, &exchange_button))
                         do_exchange(game);
                 else if (is_button(data, &steal_button))
-                        do_steal(game);
+                        do_steal(game, extra_data);
         }
 }
 
