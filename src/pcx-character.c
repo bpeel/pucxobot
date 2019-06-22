@@ -16,20 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_CHARACTER_H
-#define PCX_CHARACTER_H
+#include "pcx-character.h"
 
-enum pcx_character {
-        PCX_CHARACTER_DUKE,
-        PCX_CHARACTER_ASSASSIN,
-        PCX_CHARACTER_CONTESSA,
-        PCX_CHARACTER_CAPTAIN,
-        PCX_CHARACTER_AMBASSADOR
-};
+#include <assert.h>
 
-#define PCX_CHARACTER_COUNT 5
+#include "pcx-util.h"
 
 const char *
-pcx_character_get_name(enum pcx_character character);
+pcx_character_get_name(enum pcx_character character)
+{
+        static const char *names[] = {
+                [PCX_CHARACTER_DUKE] = "Duko",
+                [PCX_CHARACTER_ASSASSIN] = "Murdisto",
+                [PCX_CHARACTER_CONTESSA] = "Grafino",
+                [PCX_CHARACTER_CAPTAIN] = "Kapitano",
+                [PCX_CHARACTER_AMBASSADOR] = "Ambasadoro",
+        };
 
-#endif /* PCX_CHARACTER_H */
+        assert(character >= 0 && character < PCX_N_ELEMENTS(names));
+
+        return names[character];
+}
