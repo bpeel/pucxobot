@@ -637,6 +637,69 @@ lose_card(struct pcx_game *game,
                        player_num);
 }
 
+static void
+get_challenged_cards(struct pcx_buffer *buf,
+                     uint32_t cards)
+{
+        for (unsigned i = 0; cards; i++) {
+                if ((cards & (UINT32_C(1) << i)) == 0)
+                        continue;
+
+                cards &= ~(UINT32_C(1) << i);
+
+                if (buf->length > 0) {
+                        if (cards)
+                                pcx_buffer_append_string(buf, ", ");
+                        else
+                                pcx_buffer_append_string(buf, " aŭ ");
+                }
+
+                pcx_buffer_append_printf(buf,
+                                         "la %sn",
+                                         pcx_character_get_name(i));
+        }
+}
+
+static bool
+get_single_card(const struct pcx_game_player *player,
+                enum pcx_character *single_card)
+{
+        bool found_card = false;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                if (player->cards[i].dead)
+                        continue;
+                if (found_card)
+                        return false;
+                found_card = true;
+                *single_card = player->cards[i].character;
+        }
+
+        return found_card;
+}
+
+static void
+change_card(struct pcx_game *game,
+            int player_num,
+            enum pcx_character character)
+{
+        struct pcx_game_player *player = game->players + player_num;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                struct pcx_game_card *card = player->cards + i;
+
+                if (!card->dead && card->character == character) {
+                        game->deck[game->n_cards++] = character;
+                        shuffle_deck(game);
+                        card->character = take_card(game);
+                        show_cards(game, player_num);
+                        return;
+                }
+        }
+
+        pcx_fatal("card not found in change_card");
+}
+
 typedef void
 (* action_cb)(struct pcx_game *game,
               void *user_data);
@@ -664,6 +727,182 @@ struct challenge_data {
         action_cb block_cb;
 };
 
+struct reveal_data {
+        action_cb cb;
+        void *user_data;
+        int challenging_player;
+        int challenged_player;
+        uint32_t challenged_characters;
+};
+
+static void
+do_challenge_action(struct pcx_game *game,
+                    action_cb cb,
+                    void *user_data)
+{
+        take_action(game);
+        stack_pop(game);
+
+        cb(game, user_data);
+}
+
+static void
+do_reveal(struct pcx_game *game,
+          struct reveal_data *data,
+          enum pcx_character character)
+{
+        struct pcx_game_player *challenged_player =
+                game->players + data->challenged_player;
+        struct pcx_game_player *challenging_player =
+                game->players + data->challenging_player;
+
+        if ((data->challenged_characters & (UINT32_C(1) << character))) {
+                game_note(game,
+                          "%s defiis sed %s ja havis la %sn kaj %s "
+                          "perdas karton",
+                          challenging_player->name,
+                          challenged_player->name,
+                          pcx_character_get_name(character),
+                          challenging_player->name);
+                change_card(game, data->challenged_player, character);
+                do_challenge_action(game, data->cb, data->user_data);
+                lose_card(game, challenging_player - game->players);
+        } else {
+                struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
+                get_challenged_cards(&card_buf,
+                                     data->challenged_characters);
+                game_note(game,
+                          "%s defiis kaj %s ne havis %s kaj %s "
+                          "perdas karton",
+                          challenging_player->name,
+                          challenged_player->name,
+                          (char *) card_buf.data,
+                          challenged_player->name);
+                pcx_buffer_destroy(&card_buf);
+
+                for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                        struct pcx_game_card *card =
+                                challenged_player->cards + i;
+                        if (card->character == character && !card->dead) {
+                                card->dead = true;
+                                break;
+                        }
+                }
+                show_cards(game, data->challenged_player);
+
+                take_action(game);
+                stack_pop(game);
+        }
+}
+
+static void
+reveal_callback_data(struct pcx_game *game,
+                     int player_num,
+                     const char *command,
+                     int extra_data)
+{
+        struct reveal_data *data = get_stack_data_pointer(game);
+
+        if (player_num != data->challenged_player)
+                return;
+        if (strcmp(command, "reveal"))
+                return;
+        if (extra_data < 0 || extra_data >= PCX_GAME_CARDS_PER_PLAYER)
+                return;
+
+        struct pcx_game_player *player = game->players + player_num;
+        struct pcx_game_card *card = player->cards + extra_data;
+
+        if (card->dead)
+                return;
+
+        do_reveal(game, data, card->character);
+}
+
+static void
+reveal_idle(struct pcx_game *game)
+{
+        struct reveal_data *data = get_stack_data_pointer(game);
+        struct pcx_game_player *challenged_player =
+                game->players + data->challenged_player;
+        enum pcx_character single_card;
+
+        if (get_single_card(challenged_player, &single_card)) {
+                do_reveal(game, data, single_card);
+                return;
+        }
+
+        struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
+        get_challenged_cards(&cards, data->challenged_characters);
+
+        pcx_buffer_set_length(&game->buffer, 0);
+        pcx_buffer_append_printf(&game->buffer,
+                                 "%s ne kredas ke vi havas %s.\n"
+                                 "Kiun karton vi volas montri?",
+                                 game->players[data->challenging_player].name,
+                                 (char *) cards.data);
+
+        pcx_buffer_destroy(&cards);
+
+        struct pcx_game_button buttons[PCX_GAME_CARDS_PER_PLAYER];
+        int n_buttons = 0;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                const struct pcx_game_card *card = challenged_player->cards + i;
+
+                if (card->dead)
+                        continue;
+
+                buttons[n_buttons].text =
+                        pcx_character_get_name(card->character);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "reveal:%u", i);
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
+        }
+
+        send_buffer_message_with_buttons_to(game,
+                                            data->challenged_player,
+                                            n_buttons,
+                                            buttons);
+
+        for (unsigned i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+}
+
+static void
+reveal_destroy(struct pcx_game *game)
+{
+        struct reveal_data *data = get_stack_data_pointer(game);
+
+        pcx_free(data);
+}
+
+static void
+reveal_card(struct pcx_game *game,
+            int challenging_player,
+            int challenged_player,
+            uint32_t challenged_characters,
+            action_cb cb,
+            void *user_data)
+{
+        struct reveal_data *data = pcx_calloc(sizeof *data);
+
+        data->challenging_player = challenging_player;
+        data->challenged_player = challenged_player;
+        data->challenged_characters = challenged_characters;
+        data->cb = cb;
+        data->user_data = user_data;
+
+        stack_push_pointer(game,
+                           reveal_callback_data,
+                           reveal_idle,
+                           reveal_destroy,
+                           data);
+}
+
 PCX_PRINTF_FORMAT(6, 7)
 static struct challenge_data *
 check_challenge(struct pcx_game *game,
@@ -681,86 +920,6 @@ remove_challenge_timeout(struct challenge_data *data)
                 pcx_main_context_remove_source(data->timeout_source);
                 data->timeout_source = NULL;
         }
-}
-
-static void
-do_challenge_action(struct pcx_game *game,
-                    struct challenge_data *data)
-{
-        action_cb cb = data->cb;
-        void *user_data = data->user_data;
-
-        take_action(game);
-        stack_pop(game);
-
-        cb(game, user_data);
-}
-
-static bool
-has_challenged_card(struct pcx_game *game,
-                    struct challenge_data *data,
-                    enum pcx_character *found_card)
-{
-        const struct pcx_game_player *player = game->players + data->player_num;
-
-        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
-                const struct pcx_game_card *card = player->cards + i;
-
-                if (card->dead)
-                        continue;
-
-                if (((1 << card->character) & data->challenged_characters)) {
-                        *found_card = card->character;
-                        return true;
-                }
-        }
-
-        return false;
-}
-
-static void
-get_challenged_cards(struct pcx_buffer *buf,
-                     uint32_t cards)
-{
-        for (unsigned i = 0; cards; i++) {
-                if ((cards & (UINT32_C(1) << i)) == 0)
-                        continue;
-
-                cards &= ~(UINT32_C(1) << i);
-
-                if (buf->length > 0) {
-                        if (cards)
-                                pcx_buffer_append_string(buf, ", ");
-                        else
-                                pcx_buffer_append_string(buf, " aŭ ");
-                }
-
-                pcx_buffer_append_printf(buf,
-                                         "la %sn",
-                                         pcx_character_get_name(i));
-        }
-}
-
-static void
-change_card(struct pcx_game *game,
-            int player_num,
-            enum pcx_character character)
-{
-        struct pcx_game_player *player = game->players + player_num;
-
-        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
-                struct pcx_game_card *card = player->cards + i;
-
-                if (!card->dead && card->character == character) {
-                        game->deck[game->n_cards++] = character;
-                        shuffle_deck(game);
-                        card->character = take_card(game);
-                        show_cards(game, player_num);
-                        return;
-                }
-        }
-
-        pcx_fatal("card not found in change_card");
 }
 
 static void
@@ -806,7 +965,7 @@ check_challenge_callback_data(struct pcx_game *game,
                 data->accepted_players |= UINT32_C(1) << player_num;
 
                 if (is_accepted(game, data))
-                        do_challenge_action(game, data);
+                        do_challenge_action(game, data->cb, data->user_data);
         } else if (!strcmp(command, challenge_button.data)) {
                 if ((data->flags & CHALLENGE_FLAG_CHALLENGE) == 0)
                         return;
@@ -816,35 +975,20 @@ check_challenge_callback_data(struct pcx_game *game,
                         return;
 
                 int challenged_player = data->player_num;
-                enum pcx_character found_card;
+                uint32_t challenged_characters = data->challenged_characters;
+                action_cb cb = data->cb;
+                void *user_data = data->user_data;
 
-                if (has_challenged_card(game, data, &found_card)) {
-                        game_note(game,
-                                  "%s defiis sed %s ja havis la %sn kaj %s "
-                                  "perdas karton",
-                                  game->players[player_num].name,
-                                  game->players[challenged_player].name,
-                                  pcx_character_get_name(found_card),
-                                  game->players[player_num].name);
-                        change_card(game, challenged_player, found_card);
-                        do_challenge_action(game, data);
-                        lose_card(game, player_num);
-                } else {
-                        struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
-                        get_challenged_cards(&card_buf,
-                                             data->challenged_characters);
-                        game_note(game,
-                                  "%s defiis kaj %s ne havis %s kaj %s "
-                                  "perdas karton",
-                                  game->players[player_num].name,
-                                  game->players[challenged_player].name,
-                                  (char *) card_buf.data,
-                                  game->players[challenged_player].name);
-                        pcx_buffer_destroy(&card_buf);
-                        take_action(game);
-                        stack_pop(game);
-                        lose_card(game, challenged_player);
-                }
+                stack_pop(game);
+
+                reveal_card(game,
+                            player_num,
+                            challenged_player,
+                            challenged_characters,
+                            cb,
+                            user_data);
+
+                take_action(game);
         } else if (!strcmp(command, block_button.data)) {
                 if ((data->flags & CHALLENGE_FLAG_BLOCK) == 0)
                         return;
@@ -890,7 +1034,7 @@ check_challenge_timeout(struct pcx_main_context_source *source,
 
         data->timeout_source = NULL;
 
-        do_challenge_action(game, data);
+        do_challenge_action(game, data->cb, data->user_data);
 
         do_idle(game);
 }
@@ -910,7 +1054,7 @@ check_challenge_idle(struct pcx_game *game)
          * challenge.
          */
         if (is_accepted(game, data)) {
-                do_challenge_action(game, data);
+                do_challenge_action(game, data->cb, data->user_data);
                 return;
         }
 
