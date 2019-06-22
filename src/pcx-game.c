@@ -25,6 +25,7 @@
 
 #include "pcx-character.h"
 #include "pcx-util.h"
+#include "pcx-buffer.h"
 
 #define PCX_GAME_CARDS_PER_CHARACTER 3
 #define PCX_GAME_CARDS_PER_PLAYER 2
@@ -51,7 +52,119 @@ struct pcx_game {
         int current_player;
         struct pcx_game_callbacks callbacks;
         void *user_data;
+        struct pcx_buffer buffer;
 };
+
+static void
+send_buffer_message(struct pcx_game *game)
+{
+        game->callbacks.send_message((const char *) game->buffer.data,
+                                     PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                     0, /* n_buttons */
+                                     NULL, /* buttons */
+                                     game->user_data);
+}
+
+static bool
+is_alive(const struct pcx_game_player *player)
+{
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                if (!player->cards[i].dead)
+                        return true;
+        }
+
+        return false;
+}
+
+static bool
+is_finished(const struct pcx_game *game)
+{
+        unsigned n_players = 0;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (is_alive(game->players + i))
+                        n_players++;
+        }
+
+        return n_players <= 1;
+}
+
+static void
+add_cards_status(struct pcx_buffer *buffer,
+                 const struct pcx_game_player *player)
+{
+        for (unsigned int i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                const struct pcx_game_card *card = player->cards + i;
+                enum pcx_character character = card->character;
+
+                if (card->dead) {
+                        const char *name = pcx_character_get_name(character);
+                        pcx_buffer_append_printf(buffer, "☠%s", name);
+                } else {
+                        pcx_buffer_append_string(buffer, "🂠");
+                }
+        }
+}
+
+static void
+add_money_status(struct pcx_buffer *buffer,
+                 const struct pcx_game_player *player)
+{
+        if (player->coins == 1)
+                pcx_buffer_append_string(buffer, "1 monero");
+        else
+                pcx_buffer_append_printf(buffer, "%i moneroj", player->coins);
+}
+
+static void
+show_stats(struct pcx_game *game)
+{
+        bool finished = is_finished(game);
+        const struct pcx_game_player *winner = NULL;
+
+        pcx_buffer_set_length(&game->buffer, 0);
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                const struct pcx_game_player *player = game->players + i;
+                bool alive = is_alive(player);
+
+                if (finished) {
+                        if (alive)
+                                pcx_buffer_append_string(&game->buffer, "🏆 ");
+                } else if (game->current_player == i) {
+                        pcx_buffer_append_string(&game->buffer, "👉 ");
+                }
+
+                pcx_buffer_append_string(&game->buffer, player->name);
+                pcx_buffer_append_string(&game->buffer, ":\n");
+
+                add_cards_status(&game->buffer, player);
+
+                if (alive) {
+                        pcx_buffer_append_string(&game->buffer, ", ");
+                        add_money_status(&game->buffer, player);
+                        winner = player;
+                }
+
+                pcx_buffer_append_string(&game->buffer, "\n\n");
+        }
+
+        if (finished) {
+                const char *winner_name = winner ? winner->name : "Neniu";
+                pcx_buffer_append_printf(&game->buffer,
+                                         "%s venkis!",
+                                         winner_name);
+        } else {
+                const struct pcx_game_player *current =
+                        game->players + game->current_player;
+                pcx_buffer_append_printf(&game->buffer,
+                                         "%s, estas via vico, "
+                                         "kion vi volas fari?",
+                                         current->name);
+        }
+
+        send_buffer_message(game);
+}
 
 static void
 shuffle_deck(struct pcx_game *game)
@@ -110,6 +223,8 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                 game->players[i].name = pcx_strdup(names[i]);
         }
 
+        show_stats(game);
+
         return game;
 }
 
@@ -126,6 +241,8 @@ pcx_game_handle_callback_data(struct pcx_game *game,
 void
 pcx_game_free(struct pcx_game *game)
 {
+        pcx_buffer_destroy(&game->buffer);
+
         for (int i = 0; i < game->n_players; i++)
                 pcx_free(game->players[i].name);
 
