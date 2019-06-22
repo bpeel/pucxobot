@@ -750,6 +750,23 @@ do_block(struct pcx_game *game,
         take_action(game);
 }
 
+static bool
+is_accepted(struct pcx_game *game,
+            const struct challenge_data *data)
+{
+        uint32_t alive_players = 0;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (i == data->player_num)
+                        continue;
+
+                if (is_alive(game->players + i))
+                        alive_players |= UINT32_C(1) << i;
+        }
+
+        return (data->accepted_players & alive_players) == alive_players;
+}
+
 static void
 check_challenge_callback_data(struct pcx_game *game,
                               int player_num,
@@ -761,8 +778,7 @@ check_challenge_callback_data(struct pcx_game *game,
         if (!strcmp(command, accept_button.data)) {
                 data->accepted_players |= UINT32_C(1) << player_num;
 
-                if (data->accepted_players ==
-                    (UINT32_C(1) << game->n_players) - 1)
+                if (is_accepted(game, data))
                         do_challenge_action(game, data);
         } else if (!strcmp(command, challenge_button.data)) {
                 if ((data->flags & CHALLENGE_FLAG_CHALLENGE) == 0)
@@ -902,7 +918,6 @@ check_challenge(struct pcx_game *game,
         data->player_num = player_num;
         data->cb = cb;
         data->user_data = user_data;
-        data->accepted_players = UINT32_C(1) << player_num;
         data->target_player = -1;
 
         pcx_buffer_set_length(&game->buffer, 0);
