@@ -28,6 +28,7 @@
 #include "pcx-character.h"
 #include "pcx-util.h"
 #include "pcx-buffer.h"
+#include "pcx-main-context.h"
 
 #define PCX_GAME_CARDS_PER_CHARACTER 3
 #define PCX_GAME_CARDS_PER_PLAYER 2
@@ -36,6 +37,8 @@
 #define PCX_GAME_START_COINS 2
 
 #define PCX_GAME_STACK_SIZE 8
+
+#define PCX_GAME_WAIT_TIME (30 * 1000)
 
 typedef void
 (* pcx_game_callback_data_func)(struct pcx_game *game,
@@ -127,6 +130,18 @@ static const struct pcx_game_button
 steal_button = {
         .text = "Ŝteli (Kapitano)",
         .data = "steal"
+};
+
+static const struct pcx_game_button
+accept_button = {
+        .text = "Akcepti",
+        .data = "accept"
+};
+
+static const struct pcx_game_button
+challenge_button = {
+        .text = "Defii",
+        .data = "challenge"
 };
 
 static const struct pcx_game_button *
@@ -621,6 +636,204 @@ lose_card(struct pcx_game *game,
                        player_num);
 }
 
+typedef void
+(* action_cb)(struct pcx_game *game,
+              void *user_data);
+
+struct challenge_data {
+        action_cb cb;
+        void *user_data;
+        struct pcx_main_context_source *timeout_source;
+        int player_num;
+        enum pcx_character character;
+        uint32_t accepted_players;
+};
+
+static void
+remove_challenge_timeout(struct challenge_data *data)
+{
+        if (data->timeout_source) {
+                pcx_main_context_remove_source(data->timeout_source);
+                data->timeout_source = NULL;
+        }
+}
+
+static void
+do_challenge_action(struct pcx_game *game,
+                    struct challenge_data *data)
+{
+        action_cb cb = data->cb;
+        void *user_data = data->user_data;
+
+        take_action(game);
+        stack_pop(game);
+
+        cb(game, user_data);
+}
+
+static bool
+has_challenged_card(struct pcx_game *game,
+                    struct challenge_data *data)
+{
+        const struct pcx_game_player *player = game->players + data->player_num;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                const struct pcx_game_card *card = player->cards + i;
+
+                if (card->dead)
+                        continue;
+
+                if (card->character == data->character)
+                        return true;
+        }
+
+        return false;
+}
+
+static void
+change_card(struct pcx_game *game,
+            int player_num,
+            enum pcx_character character)
+{
+        struct pcx_game_player *player = game->players + player_num;
+
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                struct pcx_game_card *card = player->cards + i;
+
+                if (!card->dead && card->character == character) {
+                        game->deck[game->n_cards++] = character;
+                        shuffle_deck(game);
+                        card->character = take_card(game);
+                        return;
+                }
+        }
+
+        pcx_fatal("card not found in change_card");
+}
+
+static void
+check_challenge_callback_data(struct pcx_game *game,
+                              int player_num,
+                              const char *command,
+                              int extra_data)
+{
+        struct challenge_data *data = get_stack_data_pointer(game);
+
+        if (!strcmp(command, accept_button.data)) {
+                data->accepted_players |= UINT32_C(1) << player_num;
+
+                if (data->accepted_players ==
+                    (UINT32_C(1) << game->n_players) - 1)
+                        do_challenge_action(game, data);
+        } else if (!strcmp(command, challenge_button.data)) {
+                if (player_num == data->player_num)
+                        return;
+                if (!is_alive(game->players + player_num))
+                        return;
+
+                int challenged_player = data->player_num;
+                enum pcx_character challenged_card = data->character;
+
+                if (has_challenged_card(game, data)) {
+                        game_note(game,
+                                  "%s defiis sed %s ja havis la %sn kaj %s "
+                                  "perdas karton",
+                                  game->players[player_num].name,
+                                  game->players[challenged_player].name,
+                                  pcx_character_get_name(challenged_card),
+                                  game->players[player_num].name);
+                        do_challenge_action(game, data);
+                        change_card(game, challenged_player, challenged_card);
+                        lose_card(game, player_num);
+                } else {
+                        game_note(game,
+                                  "%s defiis kaj %s ne havis la %sn kaj %s "
+                                  "perdas karton",
+                                  game->players[player_num].name,
+                                  game->players[challenged_player].name,
+                                  pcx_character_get_name(challenged_card),
+                                  game->players[challenged_player].name);
+                        take_action(game);
+                        stack_pop(game);
+                        lose_card(game, challenged_player);
+                }
+        }
+}
+
+static void
+check_challenge_timeout(struct pcx_main_context_source *source,
+                        void *user_data)
+{
+        struct pcx_game *game = user_data;
+        struct challenge_data *data = get_stack_data_pointer(game);
+
+        assert(data->timeout_source == source);
+
+        data->timeout_source = NULL;
+
+        do_challenge_action(game, data);
+
+        do_idle(game);
+}
+
+static void
+check_challenge_destroy(struct pcx_game *game)
+{
+        struct challenge_data *data = get_stack_data_pointer(game);
+
+        remove_challenge_timeout(data);
+        pcx_free(data);
+}
+
+PCX_PRINTF_FORMAT(6, 7)
+static void
+check_challenge(struct pcx_game *game,
+                int player_num,
+                enum pcx_character character,
+                action_cb cb,
+                void *user_data,
+                const char *message,
+                ...)
+
+{
+        struct challenge_data *data = pcx_alloc(sizeof *data);
+
+        data->timeout_source =
+                pcx_main_context_add_timeout(NULL,
+                                             PCX_GAME_WAIT_TIME,
+                                             check_challenge_timeout,
+                                             game);
+        data->player_num = player_num;
+        data->character = character;
+        data->cb = cb;
+        data->user_data = user_data;
+        data->accepted_players = UINT32_C(1) << player_num;
+
+        take_action(game);
+
+        pcx_buffer_set_length(&game->buffer, 0);
+
+        va_list ap;
+        va_start(ap, message);
+        pcx_buffer_append_vprintf(&game->buffer, message, ap);
+        va_end(ap);
+
+        const struct pcx_game_button buttons[] = {
+                challenge_button,
+                accept_button
+        };
+
+        send_buffer_message_with_buttons(game,
+                                         PCX_N_ELEMENTS(buttons),
+                                         buttons);
+
+        stack_push_pointer(game,
+                           check_challenge_callback_data,
+                           NULL, /* idle_cb */
+                           check_challenge_destroy,
+                           data);
+}
+
 static void
 send_select_target(struct pcx_game *game,
                    const char *message,
@@ -710,8 +923,34 @@ do_foreign_add(struct pcx_game *game)
 }
 
 static void
+do_accepted_tax(struct pcx_game *game,
+                void *user_data)
+{
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        game_note(game,
+                  "Neniu defiis, %s prenas la 3 monerojn",
+                  player->name);
+
+        player->coins += 3;
+
+        take_action(game);
+}
+
+static void
 do_tax(struct pcx_game *game)
 {
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        check_challenge(game,
+                        game->current_player,
+                        PCX_CHARACTER_DUKE,
+                        do_accepted_tax,
+                        NULL, /* user_data */
+                        "💸 %s pretendas havi la dukon kaj prenas 3 monerojn "
+                        "per imposto.\n"
+                        "Ĉu iu volas defii rin?",
+                        player->name);
 }
 
 static void
