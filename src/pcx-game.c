@@ -656,10 +656,10 @@ struct challenge_data {
         int player_num;
 
         /* If CHALLENGE_FLAG_CHALLENGE is set */
-        enum pcx_character character;
+        uint32_t challenged_characters;
 
         /* If CHALLENGE_FLAG_BLOCK is set */
-        enum pcx_character blocking_character;
+        uint32_t blocking_characters;
         int target_player;
         action_cb block_cb;
 };
@@ -698,7 +698,8 @@ do_challenge_action(struct pcx_game *game,
 
 static bool
 has_challenged_card(struct pcx_game *game,
-                    struct challenge_data *data)
+                    struct challenge_data *data,
+                    enum pcx_character *found_card)
 {
         const struct pcx_game_player *player = game->players + data->player_num;
 
@@ -708,11 +709,36 @@ has_challenged_card(struct pcx_game *game,
                 if (card->dead)
                         continue;
 
-                if (card->character == data->character)
+                if (((1 << card->character) & data->challenged_characters)) {
+                        *found_card = card->character;
                         return true;
+                }
         }
 
         return false;
+}
+
+static void
+get_challenged_cards(struct pcx_buffer *buf,
+                     uint32_t cards)
+{
+        for (unsigned i = 0; cards; i++) {
+                if ((cards & (UINT32_C(1) << i)) == 0)
+                        continue;
+
+                cards &= ~(UINT32_C(1) << i);
+
+                if (buf->length > 0) {
+                        if (cards)
+                                pcx_buffer_append_string(buf, ", ");
+                        else
+                                pcx_buffer_append_string(buf, " aŭ ");
+                }
+
+                pcx_buffer_append_printf(buf,
+                                         "la %sn",
+                                         pcx_character_get_name(i));
+        }
 }
 
 static void
@@ -789,27 +815,31 @@ check_challenge_callback_data(struct pcx_game *game,
                         return;
 
                 int challenged_player = data->player_num;
-                enum pcx_character challenged_card = data->character;
+                enum pcx_character found_card;
 
-                if (has_challenged_card(game, data)) {
+                if (has_challenged_card(game, data, &found_card)) {
                         game_note(game,
                                   "%s defiis sed %s ja havis la %sn kaj %s "
                                   "perdas karton",
                                   game->players[player_num].name,
                                   game->players[challenged_player].name,
-                                  pcx_character_get_name(challenged_card),
+                                  pcx_character_get_name(found_card),
                                   game->players[player_num].name);
                         do_challenge_action(game, data);
-                        change_card(game, challenged_player, challenged_card);
+                        change_card(game, challenged_player, found_card);
                         lose_card(game, player_num);
                 } else {
+                        struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
+                        get_challenged_cards(&card_buf,
+                                             data->challenged_characters);
                         game_note(game,
-                                  "%s defiis kaj %s ne havis la %sn kaj %s "
+                                  "%s defiis kaj %s ne havis %s kaj %s "
                                   "perdas karton",
                                   game->players[player_num].name,
                                   game->players[challenged_player].name,
-                                  pcx_character_get_name(challenged_card),
+                                  (char *) card_buf.data,
                                   game->players[challenged_player].name);
+                        pcx_buffer_destroy(&card_buf);
                         take_action(game);
                         stack_pop(game);
                         lose_card(game, challenged_player);
@@ -827,8 +857,8 @@ check_challenge_callback_data(struct pcx_game *game,
 
                 remove_challenge_timeout(data);
 
-                const char *block_card_name =
-                        pcx_character_get_name(data->blocking_character);
+                struct pcx_buffer blocked_names = PCX_BUFFER_STATIC_INIT;
+                get_challenged_cards(&blocked_names, data->blocking_characters);
 
                 struct challenge_data *block_data =
                         check_challenge(game,
@@ -836,13 +866,15 @@ check_challenge_callback_data(struct pcx_game *game,
                                         player_num,
                                         do_block,
                                         NULL, /* user_data */
-                                        "%s pretendas havi la %sn kaj "
+                                        "%s pretendas havi %s kaj "
                                         "blokas.\n"
                                         "Ĉu iu volas defii rin?",
                                         game->players[player_num].name,
-                                        block_card_name);
+                                        (char *) blocked_names.data);
 
-                block_data->character = data->blocking_character;
+                pcx_buffer_destroy(&blocked_names);
+
+                block_data->challenged_characters = data->blocking_characters;
         }
 }
 
@@ -1070,7 +1102,7 @@ do_foreign_add(struct pcx_game *game)
                                 "rin?",
                                 player->name);
 
-        data->blocking_character = PCX_CHARACTER_DUKE;
+        data->blocking_characters = (1 << PCX_CHARACTER_DUKE);
 }
 
 static void
@@ -1104,7 +1136,7 @@ do_tax(struct pcx_game *game)
                                 "Ĉu iu volas defii rin?",
                                 player->name);
 
-        data->character = PCX_CHARACTER_DUKE;
+        data->challenged_characters = (1 << PCX_CHARACTER_DUKE);
 }
 
 static void
@@ -1172,8 +1204,8 @@ do_assassinate(struct pcx_game *game,
                                 target->name,
                                 target->name);
 
-        data->character = PCX_CHARACTER_ASSASSIN;
-        data->blocking_character = PCX_CHARACTER_CONTESSA;
+        data->challenged_characters = (1 << PCX_CHARACTER_ASSASSIN);
+        data->blocking_characters = (1 << PCX_CHARACTER_CONTESSA);
         data->block_cb = block_assassinate;
 }
 
@@ -1310,7 +1342,7 @@ do_exchange(struct pcx_game *game)
                                 "interŝanĝi kartojn, ĉu iu volas defii rin?",
                                 player->name);
 
-        data->character = PCX_CHARACTER_AMBASSADOR;
+        data->challenged_characters = (1 << PCX_CHARACTER_AMBASSADOR);
 }
 
 static void
