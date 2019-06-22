@@ -64,5 +64,7 @@ main(int argc, char **argv)
 
         pcx_tty_game_free(game);
 
+        pcx_main_context_free(pcx_main_context_get_default());
+
         return EXIT_SUCCESS;
 }
