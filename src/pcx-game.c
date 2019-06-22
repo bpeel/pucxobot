@@ -755,6 +755,7 @@ change_card(struct pcx_game *game,
                         game->deck[game->n_cards++] = character;
                         shuffle_deck(game);
                         card->character = take_card(game);
+                        show_cards(game, player_num);
                         return;
                 }
         }
