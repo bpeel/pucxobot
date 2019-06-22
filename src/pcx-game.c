@@ -110,6 +110,16 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
 }
 
 void
+pcx_game_handle_callback_data(struct pcx_game *game,
+                              int player_num,
+                              const char *callback_data)
+{
+        assert(player_num >= 0 && player_num < game->n_players);
+
+        printf("%i %s\n", player_num, callback_data);
+}
+
+void
 pcx_game_free(struct pcx_game *game)
 {
         for (int i = 0; i < game->n_players; i++)

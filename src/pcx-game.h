@@ -56,6 +56,11 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
              const char * const *names);
 
 void
+pcx_game_handle_callback_data(struct pcx_game *game,
+                              int player_num,
+                              const char *callback_data);
+
+void
 pcx_game_free(struct pcx_game *game);
 
 #endif /* PCX_GAME_H */
