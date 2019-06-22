@@ -826,8 +826,8 @@ check_challenge_callback_data(struct pcx_game *game,
                                   game->players[challenged_player].name,
                                   pcx_character_get_name(found_card),
                                   game->players[player_num].name);
-                        do_challenge_action(game, data);
                         change_card(game, challenged_player, found_card);
+                        do_challenge_action(game, data);
                         lose_card(game, player_num);
                 } else {
                         struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
