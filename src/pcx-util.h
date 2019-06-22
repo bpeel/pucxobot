@@ -39,6 +39,9 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define PCX_N_ELEMENTS(array) \
+  (sizeof (array) / sizeof ((array)[0]))
+
 void *
 pcx_alloc(size_t size);
 
