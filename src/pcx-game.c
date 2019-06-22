@@ -616,7 +616,7 @@ choose_card_to_lose_idle(struct pcx_game *game)
 
                 buttons[n_buttons].text =
                         pcx_character_get_name(player->cards[i].character);
-                buttons[n_buttons].data = pcx_strdup((char *) buf.data);
+                buttons[n_buttons].data = (char *) buf.data;
                 n_buttons++;
         }
 
