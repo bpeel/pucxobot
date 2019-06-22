@@ -28,6 +28,7 @@
 #include "pcx-character.h"
 #include "pcx-util.h"
 #include "pcx-buffer.h"
+#include "pcx-main-context.h"
 
 #define PCX_GAME_CARDS_PER_CHARACTER 3
 #define PCX_GAME_CARDS_PER_PLAYER 2
@@ -44,8 +45,12 @@ typedef void
                                 const char *data,
                                 int extra_data);
 
+typedef void
+(* pcx_game_idle_func)(struct pcx_game *game);
+
 struct pcx_game_stack_entry {
         pcx_game_callback_data_func func;
+        pcx_game_idle_func idle_func;
         int data;
 };
 
@@ -71,6 +76,7 @@ struct pcx_game {
         struct pcx_buffer buffer;
         struct pcx_game_stack_entry stack[PCX_GAME_STACK_SIZE];
         int stack_pos;
+        struct pcx_main_context_source *idle_source;
 };
 
 static const struct pcx_game_button
@@ -126,11 +132,13 @@ character_buttons[] = {
 static void
 stack_push(struct pcx_game *game,
            pcx_game_callback_data_func func,
+           pcx_game_idle_func idle_func,
            int data)
 {
         assert(game->stack_pos < PCX_N_ELEMENTS(game->stack));
 
         game->stack[game->stack_pos].func = func;
+        game->stack[game->stack_pos].idle_func = idle_func;
         game->stack[game->stack_pos].data = data;
 
         game->stack_pos++;
@@ -148,6 +156,39 @@ get_stack_data(struct pcx_game *game)
 {
         assert(game->stack_pos > 0);
         return game->stack[game->stack_pos - 1].data;
+}
+
+static void
+idle_cb(struct pcx_main_context_source *source,
+        void *user_data)
+{
+        struct pcx_game *game = user_data;
+
+        assert(source == game->idle_source);
+
+        pcx_main_context_remove_source(game->idle_source);
+        game->idle_source = NULL;
+
+        if (game->stack_pos <= 0)
+                return;
+
+        struct pcx_game_stack_entry *entry = game->stack + game->stack_pos - 1;
+
+        if (entry->idle_func == NULL)
+                return;
+
+        entry->idle_func(game);
+}
+
+static void
+take_action(struct pcx_game *game)
+{
+        if (game->idle_source)
+                return;
+
+        game->idle_source = pcx_main_context_add_idle(NULL,
+                                                      idle_cb,
+                                                      game);
 }
 
 static void
@@ -394,6 +435,8 @@ choose_card_to_lose(struct pcx_game *game,
             player->cards[extra_data].dead)
                 return;
 
+        take_action(game);
+
         player->cards[extra_data].dead = true;
         stack_pop(game);
 }
@@ -446,7 +489,10 @@ choose_card: (void) 0;
         for (unsigned i = 0; i < n_buttons; i++)
                 pcx_free((char *) buttons[i].data);
 
-        stack_push(game, choose_card_to_lose, player_num);
+        stack_push(game,
+                   choose_card_to_lose,
+                   NULL, /* idle_func */
+                   player_num);
 }
 
 static void
@@ -507,6 +553,8 @@ do_coup(struct pcx_game *game,
 
         if (!is_alive(target))
                 return;
+
+        take_action(game);
 
         game_note(game,
                   "💣 %s faras puĉon kontraŭ %s",
@@ -618,7 +666,10 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                 game->players[i].name = pcx_strdup(names[i]);
         }
 
-        stack_push(game, choose_action, 0 /* data */);
+        stack_push(game,
+                   choose_action,
+                   NULL, /* idle_func */
+                   0 /* data */);
 
         show_stats(game);
 
@@ -670,6 +721,9 @@ pcx_game_handle_callback_data(struct pcx_game *game,
 void
 pcx_game_free(struct pcx_game *game)
 {
+        if (game->idle_source)
+                pcx_main_context_remove_source(game->idle_source);
+
         pcx_buffer_destroy(&game->buffer);
 
         for (int i = 0; i < game->n_players; i++)
