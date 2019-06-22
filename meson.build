@@ -1,0 +1,21 @@
+project('pucxobot', 'c')
+
+cc = meson.get_compiler('c')
+
+foreach a : ['-Wall', '-Wuninitialized', '-Wempty-body', '-Wformat',
+      '-Wformat-security', '-Winit-self', '-Wundef',
+      '-Wvla', '-Wpointer-arith', '-Wmissing-declarations']
+  if cc.has_argument(a)
+    add_project_arguments(a, language : ['c'])
+  endif
+endforeach
+
+src = [
+        'src/pcx-main.c',
+        'src/pcx-game.c',
+        'src/pcx-util.c',
+]
+
+curl = dependency('libcurl', version: '>=7.16')
+
+executable('pucxobot', src, dependencies: [curl])
