@@ -866,6 +866,21 @@ static void
 check_challenge_idle(struct pcx_game *game)
 {
         struct challenge_data *data = get_stack_data_pointer(game);
+
+        /* Restart from zero accepted players every time we ask the
+         * question.
+         */
+        data->accepted_players = 0;
+
+        /* Check if the action is already accepted. This can happen if
+         * there was a block that caused a death and we return to this
+         * challenge.
+         */
+        if (is_accepted(game, data)) {
+                do_challenge_action(game, data);
+                return;
+        }
+
         struct pcx_game_button buttons[3];
         int n_buttons = 0;
 
