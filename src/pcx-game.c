@@ -590,6 +590,14 @@ do_coup(struct pcx_game *game,
 static void
 do_income(struct pcx_game *game)
 {
+        struct pcx_game_player *player = game->players + game->current_player;
+
+        game_note(game,
+                  "💲 %s enspezas 1 moneron",
+                  player->name);
+        player->coins++;
+
+        take_action(game);
 }
 
 static void
