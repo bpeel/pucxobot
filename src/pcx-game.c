@@ -1208,6 +1208,7 @@ do_assassinate(struct pcx_game *game,
         data->challenged_characters = (1 << PCX_CHARACTER_ASSASSIN);
         data->blocking_characters = (1 << PCX_CHARACTER_CONTESSA);
         data->block_cb = block_assassinate;
+        data->target_player = extra_data;
 }
 
 #define CARDS_TAKEN_IN_EXCHANGE 2
