@@ -38,7 +38,7 @@
 
 #define PCX_GAME_STACK_SIZE 8
 
-#define PCX_GAME_WAIT_TIME (30 * 1000)
+#define PCX_GAME_WAIT_TIME (60 * 1000)
 
 typedef void
 (* pcx_game_callback_data_func)(struct pcx_game *game,
