@@ -101,7 +101,7 @@ pcx_game_help[] = {
         "\n"
         "Il n’y a que trois exemplaires de chaque personnage.\n"
         "\n"
-        "Chaque déclaration de carte peut être mise en doute de n’importe "
+        "Chaque déclaration de carte peut être mise en doute par n’importe "
         "quel autre joueur. Si la mise en doute a raison, celui qui a été "
         "mis en doute perd une carte, sinon le metteur en doute en perd.\n"
         "\n"
