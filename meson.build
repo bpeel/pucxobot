@@ -27,6 +27,8 @@ src = [
         'src/pcx-game-help.c',
         'src/pcx-curl-multi.c',
         'src/pcx-config.c',
+        'src/pcx-text-esperanto.c',
+        'src/pcx-text.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')

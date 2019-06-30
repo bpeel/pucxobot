@@ -136,6 +136,7 @@ load_config_func(enum pcx_key_value_event event,
                         data->bot = NULL;
                 } else {
                         data->bot = pcx_calloc(sizeof *data->bot);
+                        data->bot->language = PCX_TEXT_LANGUAGE_ESPERANTO;
                         pcx_list_insert(data->config->bots.prev,
                                         &data->bot->link);
                 }

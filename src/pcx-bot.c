@@ -180,6 +180,28 @@ set_easy_handle_method(struct pcx_bot *bot,
         pcx_free(url);
 }
 
+static void
+text_append_vprintf(struct pcx_bot *bot,
+                    struct pcx_buffer *buf,
+                    enum pcx_text_string string,
+                    va_list ap)
+{
+        const char *format = pcx_text_get(bot->config->language, string);
+        pcx_buffer_append_vprintf(buf, format, ap);
+}
+
+static void
+text_append_printf(struct pcx_bot *bot,
+                   struct pcx_buffer *buf,
+                   enum pcx_text_string string,
+                   ...)
+{
+        va_list ap;
+        va_start(ap, string);
+        text_append_vprintf(bot, buf, string, ap);
+        va_end(ap);
+}
+
 static size_t
 request_write_cb(char *ptr,
                  size_t size,
@@ -383,11 +405,12 @@ static void
 send_message_vprintf(struct pcx_bot *bot,
                      int64_t chat_id,
                      int64_t in_reply_to,
-                     const char *format,
+                     enum pcx_text_string string,
                      va_list ap)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        const char *format = pcx_text_get(bot->config->language, string);
         pcx_buffer_append_vprintf(&buf, format, ap);
 
         send_message(bot,
@@ -398,20 +421,19 @@ send_message_vprintf(struct pcx_bot *bot,
         pcx_buffer_destroy(&buf);
 }
 
-PCX_PRINTF_FORMAT(4, 5)
 static void
 send_message_printf(struct pcx_bot *bot,
                     int64_t chat_id,
                     int64_t in_reply_to,
-                    const char *format,
+                    enum pcx_text_string string,
                     ...)
 {
         va_list ap;
-        va_start(ap, format);
+        va_start(ap, string);
         send_message_vprintf(bot,
                              chat_id,
                              in_reply_to,
-                             format,
+                             string,
                              ap);
         va_end(ap);
 }
@@ -520,8 +542,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                 send_message_printf(bot,
                                     game->chat,
                                     -1, /* in_reply_to */
-                                    "Neniu aliĝis dum pli ol %i minutoj. La "
-                                    "ludo tuj komenciĝos.",
+                                    PCX_TEXT_STRING_TIMEOUT_START,
                                     GAME_TIMEOUT / (60 * 1000));
 
                 start_game(game);
@@ -529,8 +550,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                 send_message_printf(bot,
                                     game->chat,
                                     -1, /* in_reply_to */
-                                    "La ludo estas senaktiva dum pli ol "
-                                    "%i minutoj kaj estos forlasita.",
+                                    PCX_TEXT_STRING_TIMEOUT_ABANDON,
                                     GAME_TIMEOUT / (60 * 1000));
 
                 remove_game(game);
@@ -862,7 +882,7 @@ process_join(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "Bonvolu aliĝi al ludo en publika grupo.");
+                                    PCX_TEXT_STRING_NEED_PUBLIC_GROUP);
                 return;
         }
 
@@ -870,9 +890,7 @@ process_join(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "Bonvolu sendi privatan mesaĝon al @%s "
-                                    "por ke mi povu sendi al vi viajn kartojn "
-                                    "private.",
+                                    PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE,
                                     bot->config->botname);
                 return;
         }
@@ -881,7 +899,7 @@ process_join(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "Vi jam estas en ludo");
+                                    PCX_TEXT_STRING_ALREADY_IN_GAME);
                 return;
         }
 
@@ -891,7 +909,7 @@ process_join(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "La ludo jam estas plena");
+                                    PCX_TEXT_STRING_GAME_FULL);
                 return;
         }
 
@@ -899,7 +917,7 @@ process_join(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "La ludo jam komenciĝis");
+                                    PCX_TEXT_STRING_GAME_ALREADY_STARTED);
                 return;
         }
 
@@ -911,7 +929,10 @@ process_join(struct pcx_bot *bot,
                 player->name = pcx_strdup(info->first_name);
         } else {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-                pcx_buffer_append_printf(&buf, "Sr.%" PRIi64, info->from_id);
+                text_append_printf(bot,
+                                   &buf,
+                                   PCX_TEXT_STRING_NAME_FROM_ID,
+                                   (int) info->from_id);
                 player->name = (char *) buf.data;
         }
 
@@ -919,10 +940,14 @@ process_join(struct pcx_bot *bot,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        const char *final_separator =
+                pcx_text_get(bot->config->language,
+                             PCX_TEXT_STRING_FINAL_CONJUNCTION);
+
         for (unsigned i = 0; i < game->n_players; i++) {
                 if (i > 0) {
                         if (i == game->n_players - 1)
-                                pcx_buffer_append_string(&buf, " kaj ");
+                                pcx_buffer_append_string(&buf, final_separator);
                         else
                                 pcx_buffer_append_string(&buf, ", ");
                 }
@@ -932,11 +957,7 @@ process_join(struct pcx_bot *bot,
         send_message_printf(bot,
                             info->chat_id,
                             info->message_id,
-                            "Bonvenon. Aliaj ludantoj tajpu "
-                            "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
-                            "por komenci la ludon. La aktualaj ludantoj "
-                            "estas:\n"
-                            "%s",
+                            PCX_TEXT_STRING_WELCOME,
                             (char *) buf.data);
 
         pcx_buffer_destroy(&buf);
@@ -975,7 +996,7 @@ process_start(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "La ludo jam komenciĝis");
+                                    PCX_TEXT_STRING_GAME_ALREADY_STARTED);
                 return;
         }
 
@@ -985,8 +1006,7 @@ process_start(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "Aliĝu al la ludo per /aligxi antaŭ ol "
-                                    "komenci ĝin");
+                                    PCX_TEXT_STRING_JOIN_BEFORE_START);
                 return;
         }
 
@@ -994,7 +1014,7 @@ process_start(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    "Necesas almenaŭ 2 ludantoj por ludi.");
+                                    PCX_TEXT_STRING_NEED_TWO_PLAYERS);
                 return;
         }
 
@@ -1049,18 +1069,21 @@ process_entity(struct pcx_bot *bot,
         }
 
         static const struct {
-                const char *name;
+                enum pcx_text_string name;
                 void (* func)(struct pcx_bot *bot,
                               const struct message_info *info);
         } commands[] = {
-                { "/aligxi", process_join },
-                { "/komenci", process_start },
-                { "/helpo", process_help },
+                { PCX_TEXT_STRING_JOIN_COMMAND, process_join },
+                { PCX_TEXT_STRING_START_COMMAND, process_start },
+                { PCX_TEXT_STRING_HELP_COMMAND, process_help },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
-                if (length != strlen(commands[i].name) ||
-                    memcmp(info->text + offset, commands[i].name, length))
+                const char *name =
+                        pcx_text_get(bot->config->language,
+                                     commands[i].name);
+                if (length != strlen(name) ||
+                    memcmp(info->text + offset, name, length))
                         continue;
 
                 commands[i].func(bot, info);
@@ -1085,8 +1108,7 @@ process_message(struct pcx_bot *bot,
                 send_message_printf(bot,
                                     info.chat_id,
                                     info.message_id,
-                                    "Dankon pro la mesaĝo. Vi povas nun aliĝi "
-                                    "al ludo en la ĉefa grupo.");
+                                    PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE);
         }
 
         struct json_object *entities;

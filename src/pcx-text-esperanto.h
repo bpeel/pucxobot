@@ -16,36 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_CONFIG_H
-#define PCX_CONFIG_H
+#ifndef PCX_TEXT_ESPERANTO_H
+#define PCX_TEXT_ESPERANTO_H
 
-#include "pcx-error.h"
-#include "pcx-list.h"
-#include "pcx-text.h"
+extern const char *
+pcx_text_esperanto[];
 
-extern struct pcx_error_domain
-pcx_config_error;
-
-enum pcx_config_error {
-        PCX_CONFIG_ERROR_IO
-};
-
-struct pcx_config_bot {
-        struct pcx_list link;
-        char *apikey;
-        char *botname;
-        char *announce_channel;
-        enum pcx_text_language language;
-};
-
-struct pcx_config {
-        struct pcx_list bots;
-};
-
-struct pcx_config *
-pcx_config_load(struct pcx_error **error);
-
-void
-pcx_config_free(struct pcx_config *config);
-
-#endif /* PCX_CONFIG_H */
+#endif /* PCX_TEXT_ESPERANTO_H */
