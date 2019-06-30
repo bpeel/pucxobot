@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-http-game.h"
@@ -57,6 +58,9 @@ main(int argc, char **argv)
                 }
         } else {
                 struct pcx_error *error = NULL;
+                time_t t;
+                time(&t);
+                srand(t);
                 http_game = pcx_http_game_new(&error);
                 if (http_game == NULL) {
                         fprintf(stderr, "%s\n", error->message);
