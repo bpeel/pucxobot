@@ -354,22 +354,6 @@ send_message_printf(struct pcx_http_game *game,
         va_end(ap);
 }
 
-PCX_PRINTF_FORMAT(2, 3)
-static void
-game_note(struct pcx_http_game *game,
-          const char *format,
-          ...)
-{
-        va_list ap;
-        va_start(ap, format);
-        send_message_vprintf(game,
-                             game->game_chat,
-                             -1, /* in_reply_to */
-                             format,
-                             ap);
-        va_end(ap);
-}
-
 static void
 remove_socket(struct socket_data *sock)
 {
