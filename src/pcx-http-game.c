@@ -33,6 +33,8 @@
 #include "pcx-key-value.h"
 #include "pcx-buffer.h"
 
+#define GAME_TIMEOUT (5 * 60 * 1000)
+
 struct pcx_error_domain
 pcx_http_game_error;
 
@@ -45,6 +47,7 @@ struct pcx_http_game {
         struct pcx_game *game;
 
         struct pcx_main_context_source *timeout_source;
+        struct pcx_main_context_source *game_timeout_source;
         struct pcx_main_context_source *restart_updates_source;
 
         struct pcx_list sockets;
@@ -371,6 +374,16 @@ remove_timeout_source(struct pcx_http_game *game)
 
         pcx_main_context_remove_source(game->timeout_source);
         game->timeout_source = NULL;
+}
+
+static void
+remove_game_timeout_source(struct pcx_http_game *game)
+{
+        if (game->game_timeout_source == NULL)
+                return;
+
+        pcx_main_context_remove_source(game->game_timeout_source);
+        game->game_timeout_source = NULL;
 }
 
 static void
@@ -836,6 +849,41 @@ reset_game(struct pcx_http_game *game)
                 pcx_free(game->players[i].name);
 
         game->n_players = 0;
+
+        remove_game_timeout_source(game);
+}
+
+static void
+game_timeout_cb(struct pcx_main_context_source *source,
+                void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+
+        game->game_timeout_source = NULL;
+
+        if (game->n_players <= 0)
+                return;
+
+        send_message_printf(game,
+                            game->game_chat,
+                            -1, /* in_reply_to */
+                            "La ludo estas senaktiva dum pli ol %i minutoj "
+                            "kaj estos forlasita.",
+                            GAME_TIMEOUT / (60 * 1000));
+
+        reset_game(game);
+}
+
+static void
+set_game_timeout(struct pcx_http_game *game)
+{
+        remove_game_timeout_source(game);
+
+        game->game_timeout_source =
+                pcx_main_context_add_timeout(NULL,
+                                             GAME_TIMEOUT,
+                                             game_timeout_cb,
+                                             game);
 }
 
 static void
@@ -937,6 +985,7 @@ process_callback(struct pcx_http_game *game,
 
         for (unsigned i = 0; i < game->n_players; i++) {
                 if (game->players[i].id == from_id) {
+                        set_game_timeout(game);
                         pcx_game_handle_callback_data(game->game,
                                                       i,
                                                       callback_data);
@@ -1045,6 +1094,8 @@ process_join(struct pcx_http_game *game,
                 return;
         }
 
+        set_game_timeout(game);
+
         struct player *player = game->players + game->n_players++;
 
         if (info->first_name) {
@@ -1120,6 +1171,8 @@ process_start(struct pcx_http_game *game,
                                     "Necesas almenaŭ 2 ludantoj por ludi.");
                 return;
         }
+
+        set_game_timeout(game);
 
         const char *names[PCX_GAME_MAX_PLAYERS];
 
