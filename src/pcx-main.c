@@ -23,7 +23,7 @@
 #include <curl/curl.h>
 
 #include "pcx-tty-game.h"
-#include "pcx-http-game.h"
+#include "pcx-bot.h"
 #include "pcx-game.h"
 #include "pcx-main-context.h"
 
@@ -39,7 +39,7 @@ int
 main(int argc, char **argv)
 {
         struct pcx_tty_game *tty_game = NULL;
-        struct pcx_http_game *http_game = NULL;
+        struct pcx_bot *bot = NULL;
         bool curl_inited = false;
 
         if (argc > 1) {
@@ -66,8 +66,8 @@ main(int argc, char **argv)
                 time_t t;
                 time(&t);
                 srand(t);
-                http_game = pcx_http_game_new(&error);
-                if (http_game == NULL) {
+                bot = pcx_bot_new(&error);
+                if (bot == NULL) {
                         fprintf(stderr, "%s\n", error->message);
                         pcx_error_free(error);
                         return EXIT_FAILURE;
@@ -86,8 +86,8 @@ main(int argc, char **argv)
 
         if (tty_game)
                 pcx_tty_game_free(tty_game);
-        if (http_game)
-                pcx_http_game_free(http_game);
+        if (bot)
+                pcx_bot_free(bot);
         if (curl_inited)
                 curl_global_cleanup();
 

@@ -22,7 +22,7 @@ src = [
         'src/pcx-list.c',
         'src/pcx-tty-game.c',
         'src/pcx-character.c',
-        'src/pcx-http-game.c',
+        'src/pcx-bot.c',
         'src/pcx-key-value.c',
         'src/pcx-game-help.c',
         'src/pcx-curl-multi.c',

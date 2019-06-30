@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-http-game.h"
+#include "pcx-bot.h"
 
 #include <curl/curl.h>
 #include <json_object.h>
@@ -39,14 +39,14 @@
 #define GAME_TIMEOUT (5 * 60 * 1000)
 
 struct pcx_error_domain
-pcx_http_game_error;
+pcx_bot_error;
 
 struct player {
         int64_t id;
         char *name;
 };
 
-struct pcx_http_game {
+struct pcx_bot {
         struct pcx_game *game;
 
         struct pcx_main_context_source *game_timeout_source;
@@ -86,13 +86,13 @@ struct request {
 };
 
 static void
-set_updates_handle_options(struct pcx_http_game *game);
+set_updates_handle_options(struct pcx_bot *bot);
 
 static void
-start_game(struct pcx_http_game *game);
+start_game(struct pcx_bot *bot);
 
 static void
-maybe_start_request(struct pcx_http_game *game);
+maybe_start_request(struct pcx_bot *bot);
 
 static void
 get_updates_finished_cb(CURLcode code,
@@ -157,24 +157,24 @@ get_fields(struct json_object *obj,
 }
 
 static void
-set_post_json_data(struct pcx_http_game *game,
+set_post_json_data(struct pcx_bot *bot,
                    CURL *handle,
                    struct json_object *obj)
 {
         curl_easy_setopt(handle,
                          CURLOPT_HTTPHEADER,
-                         game->content_type_headers);
+                         bot->content_type_headers);
         curl_easy_setopt(handle,
                          CURLOPT_COPYPOSTFIELDS,
                          json_object_to_json_string(obj));
 }
 
 static void
-set_easy_handle_method(struct pcx_http_game *game,
+set_easy_handle_method(struct pcx_bot *bot,
                        CURL *e,
                        const char *method)
 {
-        char *url = pcx_strconcat(game->url_base, method, NULL);
+        char *url = pcx_strconcat(bot->url_base, method, NULL);
         curl_easy_setopt(e, CURLOPT_URL, url);
         pcx_free(url);
 }
@@ -185,10 +185,10 @@ request_write_cb(char *ptr,
                  size_t nmemb,
                  void *userdata)
 {
-        struct pcx_http_game *game = userdata;
+        struct pcx_bot *bot = userdata;
 
         struct json_object *obj =
-                json_tokener_parse_ex(game->request_tokener,
+                json_tokener_parse_ex(bot->request_tokener,
                                       ptr,
                                       size * nmemb);
 
@@ -212,7 +212,7 @@ request_write_cb(char *ptr,
         }
 
         enum json_tokener_error error =
-                json_tokener_get_error(game->request_tokener);
+                json_tokener_get_error(bot->request_tokener);
 
         if (error == json_tokener_continue)
                 return size * nmemb;
@@ -233,7 +233,7 @@ static void
 request_finished_cb(CURLcode code,
                     void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
 
         if (code != CURLE_OK) {
                 fprintf(stderr,
@@ -241,49 +241,49 @@ request_finished_cb(CURLcode code,
                         curl_easy_strerror(code));
         }
 
-        pcx_curl_multi_remove_handle(game->pcurl, game->request_handle);
-        curl_easy_reset(game->request_handle);
+        pcx_curl_multi_remove_handle(bot->pcurl, bot->request_handle);
+        curl_easy_reset(bot->request_handle);
 
-        json_tokener_reset(game->request_tokener);
+        json_tokener_reset(bot->request_tokener);
 
-        game->request_handle_busy = false;
+        bot->request_handle_busy = false;
 
-        maybe_start_request(game);
+        maybe_start_request(bot);
 }
 
 static void
-maybe_start_request(struct pcx_http_game *game)
+maybe_start_request(struct pcx_bot *bot)
 {
-        if (game->request_handle_busy ||
-            pcx_list_empty(&game->queued_requests))
+        if (bot->request_handle_busy ||
+            pcx_list_empty(&bot->queued_requests))
                 return;
 
         struct request *request =
-                pcx_container_of(game->queued_requests.next,
+                pcx_container_of(bot->queued_requests.next,
                                  struct request,
                                  link);
 
-        game->request_handle_busy = true;
+        bot->request_handle_busy = true;
 
-        set_easy_handle_method(game, game->request_handle, request->method);
+        set_easy_handle_method(bot, bot->request_handle, request->method);
 
-        curl_easy_setopt(game->request_handle,
+        curl_easy_setopt(bot->request_handle,
                          CURLOPT_WRITEFUNCTION,
                          request_write_cb);
-        curl_easy_setopt(game->request_handle, CURLOPT_WRITEDATA, game);
+        curl_easy_setopt(bot->request_handle, CURLOPT_WRITEDATA, bot);
 
-        set_post_json_data(game, game->request_handle, request->args);
+        set_post_json_data(bot, bot->request_handle, request->args);
 
-        pcx_curl_multi_add_handle(game->pcurl,
-                                  game->request_handle,
+        pcx_curl_multi_add_handle(bot->pcurl,
+                                  bot->request_handle,
                                   request_finished_cb,
-                                  game);
+                                  bot);
 
         free_request(request);
 }
 
 static void
-send_request(struct pcx_http_game *game,
+send_request(struct pcx_bot *bot,
              const char *method,
              struct json_object *args)
 {
@@ -292,13 +292,13 @@ send_request(struct pcx_http_game *game,
         request->args = json_object_get(args);
         request->method = pcx_strdup(method);
 
-        pcx_list_insert(game->queued_requests.prev, &request->link);
+        pcx_list_insert(bot->queued_requests.prev, &request->link);
 
-        maybe_start_request(game);
+        maybe_start_request(bot);
 }
 
 static void
-send_message_full(struct pcx_http_game *game,
+send_message_full(struct pcx_bot *bot,
                   int64_t chat_id,
                   int64_t in_reply_to,
                   enum pcx_game_message_format format,
@@ -358,18 +358,18 @@ send_message_full(struct pcx_http_game *game,
                 json_object_object_add(args, "reply_markup", reply_markup);
         }
 
-        send_request(game, "sendMessage", args);
+        send_request(bot, "sendMessage", args);
 
         json_object_put(args);
 }
 
 static void
-send_message(struct pcx_http_game *game,
+send_message(struct pcx_bot *bot,
              int64_t chat_id,
              int64_t in_reply_to,
              const char *message)
 {
-        send_message_full(game,
+        send_message_full(bot,
                           chat_id,
                           in_reply_to,
                           PCX_GAME_MESSAGE_FORMAT_PLAIN,
@@ -379,7 +379,7 @@ send_message(struct pcx_http_game *game,
 }
 
 static void
-send_message_vprintf(struct pcx_http_game *game,
+send_message_vprintf(struct pcx_bot *bot,
                      int64_t chat_id,
                      int64_t in_reply_to,
                      const char *format,
@@ -389,7 +389,7 @@ send_message_vprintf(struct pcx_http_game *game,
 
         pcx_buffer_append_vprintf(&buf, format, ap);
 
-        send_message(game,
+        send_message(bot,
                      chat_id,
                      in_reply_to,
                      (char *) buf.data);
@@ -399,7 +399,7 @@ send_message_vprintf(struct pcx_http_game *game,
 
 PCX_PRINTF_FORMAT(4, 5)
 static void
-send_message_printf(struct pcx_http_game *game,
+send_message_printf(struct pcx_bot *bot,
                     int64_t chat_id,
                     int64_t in_reply_to,
                     const char *format,
@@ -407,7 +407,7 @@ send_message_printf(struct pcx_http_game *game,
 {
         va_list ap;
         va_start(ap, format);
-        send_message_vprintf(game,
+        send_message_vprintf(bot,
                              chat_id,
                              in_reply_to,
                              format,
@@ -416,52 +416,52 @@ send_message_printf(struct pcx_http_game *game,
 }
 
 static void
-remove_game_timeout_source(struct pcx_http_game *game)
+remove_game_timeout_source(struct pcx_bot *bot)
 {
-        if (game->game_timeout_source == NULL)
+        if (bot->game_timeout_source == NULL)
                 return;
 
-        pcx_main_context_remove_source(game->game_timeout_source);
-        game->game_timeout_source = NULL;
+        pcx_main_context_remove_source(bot->game_timeout_source);
+        bot->game_timeout_source = NULL;
 }
 
 static void
-remove_restart_updates_source(struct pcx_http_game *game)
+remove_restart_updates_source(struct pcx_bot *bot)
 {
-        if (game->restart_updates_source == NULL)
+        if (bot->restart_updates_source == NULL)
                 return;
 
-        pcx_main_context_remove_source(game->restart_updates_source);
-        game->restart_updates_source = NULL;
+        pcx_main_context_remove_source(bot->restart_updates_source);
+        bot->restart_updates_source = NULL;
 }
 
 static void
 restart_updates_cb(struct pcx_main_context_source *source,
                    void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
 
-        game->restart_updates_source = NULL;
+        bot->restart_updates_source = NULL;
 
-        pcx_curl_multi_remove_handle(game->pcurl,
-                                     game->updates_handle);
+        pcx_curl_multi_remove_handle(bot->pcurl,
+                                     bot->updates_handle);
 
-        curl_easy_reset(game->updates_handle);
-        set_updates_handle_options(game);
+        curl_easy_reset(bot->updates_handle);
+        set_updates_handle_options(bot);
 
-        json_tokener_reset(game->tokener);
+        json_tokener_reset(bot->tokener);
 
-        pcx_curl_multi_add_handle(game->pcurl,
-                                  game->updates_handle,
+        pcx_curl_multi_add_handle(bot->pcurl,
+                                  bot->updates_handle,
                                   get_updates_finished_cb,
-                                  game);
+                                  bot);
 }
 
 static void
 get_updates_finished_cb(CURLcode code,
                         void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
         long timeout = 0;
 
         if (code != CURLE_OK) {
@@ -471,13 +471,13 @@ get_updates_finished_cb(CURLcode code,
                 timeout = 60 * 1000;
         }
 
-        remove_restart_updates_source(game);
+        remove_restart_updates_source(bot);
 
-        game->restart_updates_source =
+        bot->restart_updates_source =
                 pcx_main_context_add_timeout(NULL,
                                              timeout,
                                              restart_updates_cb,
-                                             game);
+                                             bot);
 }
 
 enum load_config_section {
@@ -488,7 +488,7 @@ enum load_config_section {
 
 struct load_config_data {
         const char *filename;
-        struct pcx_http_game *game;
+        struct pcx_bot *bot;
         bool had_error;
         struct pcx_buffer error_buffer;
         enum load_config_section section;
@@ -536,7 +536,7 @@ set_option(struct load_config_data *data,
 {
         switch (type) {
         case OPTION_TYPE_STRING: {
-                char **ptr = (char **) ((uint8_t *) data->game + offset);
+                char **ptr = (char **) ((uint8_t *) data->bot + offset);
                 if (*ptr) {
                         load_config_error(data,
                                           "%s specified twice",
@@ -547,7 +547,7 @@ set_option(struct load_config_data *data,
                 break;
         }
         case OPTION_TYPE_INT: {
-                int64_t *ptr = (int64_t *) ((uint8_t *) data->game + offset);
+                int64_t *ptr = (int64_t *) ((uint8_t *) data->bot + offset);
                 errno = 0;
                 char *tail;
                 *ptr = strtoll(value, &tail, 10);
@@ -575,12 +575,12 @@ load_config_func(enum pcx_key_value_event event,
                 size_t offset;
                 enum option_type type;
         } options[] = {
-#define OPTION(section, name, type)                             \
-                {                                               \
-                        section,                                \
-                        #name,                                  \
-                        offsetof(struct pcx_http_game, name),   \
-                        OPTION_TYPE_ ## type,                   \
+#define OPTION(section, name, type)                     \
+                {                                       \
+                        section,                        \
+                        #name,                          \
+                        offsetof(struct pcx_bot, name), \
+                        OPTION_TYPE_ ## type,           \
                 }
                 OPTION(SECTION_AUTH, apikey, STRING),
                 OPTION(SECTION_SETUP, game_chat, INT),
@@ -619,32 +619,32 @@ load_config_func(enum pcx_key_value_event event,
 }
 
 static bool
-validate_config(struct pcx_http_game *game,
+validate_config(struct pcx_bot *bot,
                 const char *filename,
                 struct pcx_error **error)
 {
-        if (game->apikey == NULL) {
+        if (bot->apikey == NULL) {
                 pcx_set_error(error,
-                              &pcx_http_game_error,
-                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              &pcx_bot_error,
+                              PCX_BOT_ERROR_CONFIG,
                               "%s: missing apikey option",
                               filename);
                 return false;
         }
 
-        if (game->botname == NULL) {
+        if (bot->botname == NULL) {
                 pcx_set_error(error,
-                              &pcx_http_game_error,
-                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              &pcx_bot_error,
+                              PCX_BOT_ERROR_CONFIG,
                               "%s: missing botname option",
                               filename);
                 return false;
         }
 
-        if (game->game_chat == 0) {
+        if (bot->game_chat == 0) {
                 pcx_set_error(error,
-                              &pcx_http_game_error,
-                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              &pcx_bot_error,
+                              PCX_BOT_ERROR_CONFIG,
                               "%s: missing game_chat option",
                               filename);
                 return false;
@@ -661,8 +661,8 @@ get_data_file(const char *name,
 
         if (home == NULL) {
                 pcx_set_error(error,
-                              &pcx_http_game_error,
-                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              &pcx_bot_error,
+                              PCX_BOT_ERROR_CONFIG,
                               "HOME environment variable is not set");
                 return NULL;
         }
@@ -671,7 +671,7 @@ get_data_file(const char *name,
 }
 
 static bool
-load_config(struct pcx_http_game *game,
+load_config(struct pcx_bot *bot,
             struct pcx_error **error)
 {
         bool ret = true;
@@ -685,8 +685,8 @@ load_config(struct pcx_http_game *game,
 
         if (f == NULL) {
                 pcx_set_error(error,
-                              &pcx_http_game_error,
-                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              &pcx_bot_error,
+                              PCX_BOT_ERROR_CONFIG,
                               "%s: %s",
                               fn,
                               strerror(errno));
@@ -694,7 +694,7 @@ load_config(struct pcx_http_game *game,
         } else {
                 struct load_config_data data = {
                         .filename = fn,
-                        .game = game,
+                        .bot = bot,
                         .had_error = false,
                         .section = SECTION_NONE,
                 };
@@ -708,12 +708,12 @@ load_config(struct pcx_http_game *game,
 
                 if (data.had_error) {
                         pcx_set_error(error,
-                                      &pcx_http_game_error,
-                                      PCX_HTTP_GAME_ERROR_CONFIG,
+                                      &pcx_bot_error,
+                                      PCX_BOT_ERROR_CONFIG,
                                       "%s",
                                       (char *) data.error_buffer.data);
                         ret = false;
-                } else if (!validate_config(game, fn, error)) {
+                } else if (!validate_config(bot, fn, error)) {
                         ret = false;
                 }
 
@@ -728,71 +728,71 @@ load_config(struct pcx_http_game *game,
 }
 
 static void
-reset_game(struct pcx_http_game *game)
+reset_game(struct pcx_bot *bot)
 {
-        if (game->game) {
-                pcx_game_free(game->game);
-                game->game = NULL;
+        if (bot->game) {
+                pcx_game_free(bot->game);
+                bot->game = NULL;
         }
 
-        for (unsigned i = 0; i < game->n_players; i++)
-                pcx_free(game->players[i].name);
+        for (unsigned i = 0; i < bot->n_players; i++)
+                pcx_free(bot->players[i].name);
 
-        game->n_players = 0;
+        bot->n_players = 0;
 
-        remove_game_timeout_source(game);
+        remove_game_timeout_source(bot);
 }
 
 static void
 game_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
 
-        game->game_timeout_source = NULL;
+        bot->game_timeout_source = NULL;
 
-        if (game->n_players <= 0)
+        if (bot->n_players <= 0)
                 return;
 
-        if (game->game == NULL && game->n_players >= 2) {
-                send_message_printf(game,
-                                    game->game_chat,
+        if (bot->game == NULL && bot->n_players >= 2) {
+                send_message_printf(bot,
+                                    bot->game_chat,
                                     -1, /* in_reply_to */
                                     "Neniu aliĝis dum pli ol %i minutoj. La "
                                     "ludo tuj komenciĝos.",
                                     GAME_TIMEOUT / (60 * 1000));
 
-                start_game(game);
+                start_game(bot);
         } else {
-                send_message_printf(game,
-                                    game->game_chat,
+                send_message_printf(bot,
+                                    bot->game_chat,
                                     -1, /* in_reply_to */
                                     "La ludo estas senaktiva dum pli ol "
                                     "%i minutoj kaj estos forlasita.",
                                     GAME_TIMEOUT / (60 * 1000));
 
-                reset_game(game);
+                reset_game(bot);
         }
 }
 
 static void
-set_game_timeout(struct pcx_http_game *game)
+set_game_timeout(struct pcx_bot *bot)
 {
-        remove_game_timeout_source(game);
+        remove_game_timeout_source(bot);
 
-        game->game_timeout_source =
+        bot->game_timeout_source =
                 pcx_main_context_add_timeout(NULL,
                                              GAME_TIMEOUT,
                                              game_timeout_cb,
-                                             game);
+                                             bot);
 }
 
 static int
-find_player(struct pcx_http_game *game,
+find_player(struct pcx_bot *bot,
             int64_t player_id)
 {
-        for (int i = 0; i < game->n_players; i++) {
-                if (game->players[i].id == player_id)
+        for (int i = 0; i < bot->n_players; i++) {
+                if (bot->players[i].id == player_id)
                         return i;
         }
 
@@ -807,12 +807,12 @@ send_private_message_cb(int user_num,
                         const struct pcx_game_button *buttons,
                         void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
 
-        assert(user_num >= 0 && user_num < game->n_players);
+        assert(user_num >= 0 && user_num < bot->n_players);
 
-        send_message_full(game,
-                          game->players[user_num].id,
+        send_message_full(bot,
+                          bot->players[user_num].id,
                           -1, /* in_reply_to */
                           format,
                           message,
@@ -827,10 +827,10 @@ send_message_cb(enum pcx_game_message_format format,
                 const struct pcx_game_button *buttons,
                 void *user_data)
 {
-        struct pcx_http_game *game = user_data;
+        struct pcx_bot *bot = user_data;
 
-        send_message_full(game,
-                          game->game_chat,
+        send_message_full(bot,
+                          bot->game_chat,
                           -1, /* in_reply_to */
                           format,
                           message,
@@ -841,8 +841,8 @@ send_message_cb(enum pcx_game_message_format format,
 static void
 game_over_cb(void *user_data)
 {
-        struct pcx_http_game *game = user_data;
-        reset_game(game);
+        struct pcx_bot *bot = user_data;
+        reset_game(bot);
 }
 
 static const struct pcx_game_callbacks
@@ -853,7 +853,7 @@ game_callbacks = {
 };
 
 static void
-answer_callback(struct pcx_http_game *game,
+answer_callback(struct pcx_bot *bot,
                 const char *id)
 {
         struct json_object *args = json_object_new_object();
@@ -862,13 +862,13 @@ answer_callback(struct pcx_http_game *game,
                                "callback_query_id",
                                json_object_new_string(id));
 
-        send_request(game, "answerCallbackQuery", args);
+        send_request(bot, "answerCallbackQuery", args);
 
         json_object_put(args);
 }
 
 static bool
-process_callback(struct pcx_http_game *game,
+process_callback(struct pcx_bot *bot,
                  struct json_object *callback)
 {
         const char *id;
@@ -893,16 +893,16 @@ process_callback(struct pcx_http_game *game,
         if (!ret)
                 return false;
 
-        answer_callback(game, id);
+        answer_callback(bot, id);
 
-        if (!game->game)
+        if (!bot->game)
                 return true;
 
-        int player_id = find_player(game, from_id);
+        int player_id = find_player(bot, from_id);
 
         if (player_id != -1) {
-                set_game_timeout(game);
-                pcx_game_handle_callback_data(game->game,
+                set_game_timeout(bot);
+                pcx_game_handle_callback_data(bot->game,
                                               player_id,
                                               callback_data);
         }
@@ -964,11 +964,11 @@ get_message_info(struct json_object *message,
 }
 
 static bool
-is_known_id(struct pcx_http_game *game,
+is_known_id(struct pcx_bot *bot,
             int64_t id)
 {
-        size_t n_ids = game->known_ids.length / sizeof (int64_t);
-        const int64_t *ids = (const int64_t *) game->known_ids.data;
+        size_t n_ids = bot->known_ids.length / sizeof (int64_t);
+        const int64_t *ids = (const int64_t *) bot->known_ids.data;
 
         for (unsigned i = 0; i < n_ids; i++) {
                 if (ids[i] == id)
@@ -979,7 +979,7 @@ is_known_id(struct pcx_http_game *game,
 }
 
 static void
-save_known_ids(struct pcx_http_game *game)
+save_known_ids(struct pcx_bot *bot)
 {
         struct pcx_error *error = NULL;
         char *fn = get_data_file("known_ids.txt", &error);
@@ -993,8 +993,8 @@ save_known_ids(struct pcx_http_game *game)
         FILE *f = fopen(tmp_fn, "w");
 
         if (f) {
-                size_t n_ids = game->known_ids.length / sizeof (int64_t);
-                const int64_t *ids = (const int64_t *) game->known_ids.data;
+                size_t n_ids = bot->known_ids.length / sizeof (int64_t);
+                const int64_t *ids = (const int64_t *) bot->known_ids.data;
 
                 for (unsigned i = 0; i < n_ids; i++)
                         fprintf(f, "%" PRIi64 "\n", ids[i]);
@@ -1009,7 +1009,7 @@ save_known_ids(struct pcx_http_game *game)
 }
 
 static void
-load_known_ids(struct pcx_http_game *game)
+load_known_ids(struct pcx_bot *bot)
 {
         struct pcx_error *error = NULL;
         char *fn = get_data_file("known_ids.txt", &error);
@@ -1022,12 +1022,12 @@ load_known_ids(struct pcx_http_game *game)
         FILE *f = fopen(fn, "r");
 
         if (f) {
-                game->known_ids.length = 0;
+                bot->known_ids.length = 0;
 
                 int64_t id;
 
                 while (fscanf(f, "%" PRIi64 "\n", &id) == 1)
-                        pcx_buffer_append(&game->known_ids, &id, sizeof id);
+                        pcx_buffer_append(&bot->known_ids, &id, sizeof id);
 
                 fclose(f);
         }
@@ -1036,60 +1036,60 @@ load_known_ids(struct pcx_http_game *game)
 }
 
 static void
-add_known_id(struct pcx_http_game *game,
+add_known_id(struct pcx_bot *bot,
              int64_t id)
 {
-        pcx_buffer_append(&game->known_ids, &id, sizeof id);
-        save_known_ids(game);
+        pcx_buffer_append(&bot->known_ids, &id, sizeof id);
+        save_known_ids(bot);
 }
 
 static void
-process_join(struct pcx_http_game *game,
+process_join(struct pcx_bot *bot,
              const struct message_info *info)
 {
-        if (info->chat_id != game->game_chat)
+        if (info->chat_id != bot->game_chat)
                 return;
 
-        int player_num = find_player(game, info->from_id);
+        int player_num = find_player(bot, info->from_id);
 
         if (player_num != -1) {
-                send_message_printf(game,
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "Vi jam estas en la ludo");
                 return;
         }
 
-        if (game->n_players >= PCX_GAME_MAX_PLAYERS) {
-                send_message_printf(game,
+        if (bot->n_players >= PCX_GAME_MAX_PLAYERS) {
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "La ludo jam estas plena");
                 return;
         }
 
-        if (game->game) {
-                send_message_printf(game,
+        if (bot->game) {
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "La ludo jam komenciĝis");
                 return;
         }
 
-        if (!is_known_id(game, info->from_id)) {
-                send_message_printf(game,
+        if (!is_known_id(bot, info->from_id)) {
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "Bonvolu sendi privatan mesaĝon al @%s "
                                     "por ke mi povu sendi al vi viajn kartojn "
                                     "private.",
-                                    game->botname);
+                                    bot->botname);
                 return;
         }
 
-        set_game_timeout(game);
+        set_game_timeout(bot);
 
-        struct player *player = game->players + game->n_players++;
+        struct player *player = bot->players + bot->n_players++;
 
         if (info->first_name) {
                 player->name = pcx_strdup(info->first_name);
@@ -1103,17 +1103,17 @@ process_join(struct pcx_http_game *game,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        for (unsigned i = 0; i < game->n_players; i++) {
+        for (unsigned i = 0; i < bot->n_players; i++) {
                 if (i > 0) {
-                        if (i == game->n_players - 1)
+                        if (i == bot->n_players - 1)
                                 pcx_buffer_append_string(&buf, " kaj ");
                         else
                                 pcx_buffer_append_string(&buf, ", ");
                 }
-                pcx_buffer_append_string(&buf, game->players[i].name);
+                pcx_buffer_append_string(&buf, bot->players[i].name);
         }
 
-        send_message_printf(game,
+        send_message_printf(bot,
                             info->chat_id,
                             info->message_id,
                             "Bonvenon. Aliaj ludantoj tajpu "
@@ -1127,47 +1127,47 @@ process_join(struct pcx_http_game *game,
 }
 
 static void
-start_game(struct pcx_http_game *game)
+start_game(struct pcx_bot *bot)
 {
-        assert(game->game == NULL);
+        assert(bot->game == NULL);
 
-        set_game_timeout(game);
+        set_game_timeout(bot);
 
         const char *names[PCX_GAME_MAX_PLAYERS];
 
-        for (unsigned i = 0; i < game->n_players; i++)
-                names[i] = game->players[i].name;
+        for (unsigned i = 0; i < bot->n_players; i++)
+                names[i] = bot->players[i].name;
 
-        game->game = pcx_game_new(&game_callbacks,
-                                  game,
-                                  game->n_players,
-                                  names);
+        bot->game = pcx_game_new(&game_callbacks,
+                                 bot,
+                                 bot->n_players,
+                                 names);
 }
 
 static void
-process_start(struct pcx_http_game *game,
+process_start(struct pcx_bot *bot,
               const struct message_info *info)
 {
-        if (info->chat_id != game->game_chat)
+        if (info->chat_id != bot->game_chat)
                 return;
 
-        if (game->game) {
-                send_message_printf(game,
+        if (bot->game) {
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "La ludo jam komenciĝis");
                 return;
         }
 
-        if (game->n_players <= 0) {
-                process_join(game, info);
+        if (bot->n_players <= 0) {
+                process_join(bot, info);
                 return;
         }
 
-        int player_num = find_player(game, info->from_id);
+        int player_num = find_player(bot, info->from_id);
 
         if (player_num == -1) {
-                send_message_printf(game,
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "Aliĝu al la ludo per /aligxi antaŭ ol "
@@ -1175,25 +1175,25 @@ process_start(struct pcx_http_game *game,
                 return;
         }
 
-        if (game->n_players < 2) {
-                send_message_printf(game,
+        if (bot->n_players < 2) {
+                send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     "Necesas almenaŭ 2 ludantoj por ludi.");
                 return;
         }
 
-        start_game(game);
+        start_game(bot);
 }
 
 static void
-process_help(struct pcx_http_game *game,
+process_help(struct pcx_bot *bot,
              const struct message_info *info)
 {
-        if (info->chat_id != game->game_chat && !info->is_private)
+        if (info->chat_id != bot->game_chat && !info->is_private)
                 return;
 
-        send_message_full(game,
+        send_message_full(bot,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_HTML,
@@ -1203,7 +1203,7 @@ process_help(struct pcx_http_game *game,
 }
 
 static bool
-process_entity(struct pcx_http_game *game,
+process_entity(struct pcx_bot *bot,
                struct json_object *entity,
                const struct message_info *info)
 {
@@ -1227,9 +1227,9 @@ process_entity(struct pcx_http_game *game,
         const char *at = memchr(info->text + offset, '@', length);
 
         if (at) {
-                size_t botname_len = strlen(game->botname);
+                size_t botname_len = strlen(bot->botname);
                 if (info->text + offset + length - at - 1 != botname_len ||
-                    memcmp(at + 1, game->botname, botname_len)) {
+                    memcmp(at + 1, bot->botname, botname_len)) {
                         return true;
                 }
 
@@ -1238,7 +1238,7 @@ process_entity(struct pcx_http_game *game,
 
         static const struct {
                 const char *name;
-                void (* func)(struct pcx_http_game *game,
+                void (* func)(struct pcx_bot *bot,
                               const struct message_info *info);
         } commands[] = {
                 { "/aligxi", process_join },
@@ -1251,7 +1251,7 @@ process_entity(struct pcx_http_game *game,
                     memcmp(info->text + offset, commands[i].name, length))
                         continue;
 
-                commands[i].func(game, info);
+                commands[i].func(bot, info);
 
                 break;
         }
@@ -1260,7 +1260,7 @@ process_entity(struct pcx_http_game *game,
 }
 
 static bool
-process_message(struct pcx_http_game *game,
+process_message(struct pcx_bot *bot,
                 struct json_object *message)
 {
         struct message_info info;
@@ -1268,9 +1268,9 @@ process_message(struct pcx_http_game *game,
         if (!get_message_info(message, &info))
                 return false;
 
-        if (info.is_private && !is_known_id(game, info.from_id)) {
-                add_known_id(game, info.from_id);
-                send_message_printf(game,
+        if (info.is_private && !is_known_id(bot, info.from_id)) {
+                add_known_id(bot, info.from_id);
+                send_message_printf(bot,
                                     info.chat_id,
                                     info.message_id,
                                     "Dankon pro la mesaĝo. Vi povas nun aliĝi "
@@ -1288,7 +1288,7 @@ process_message(struct pcx_http_game *game,
                 struct json_object *entity =
                         json_object_array_get_idx(entities, i);
 
-                if (!process_entity(game, entity, &info))
+                if (!process_entity(bot, entity, &info))
                         return false;
         }
 
@@ -1296,7 +1296,7 @@ process_message(struct pcx_http_game *game,
 }
 
 static bool
-process_updates(struct pcx_http_game *game,
+process_updates(struct pcx_bot *bot,
                 struct json_object *obj)
 {
         struct json_object *result;
@@ -1308,7 +1308,7 @@ process_updates(struct pcx_http_game *game,
         if (!ret || !ok)
                 return false;
 
-        game->last_update_id = 0;
+        bot->last_update_id = 0;
 
         for (unsigned i = 0; i < json_object_array_length(result); i++) {
                 struct json_object *update =
@@ -1318,8 +1318,8 @@ process_updates(struct pcx_http_game *game,
                 if (get_fields(update,
                                "update_id", json_type_int, &update_id,
                                NULL) &&
-                    update_id > game->last_update_id) {
-                        game->last_update_id = update_id;
+                    update_id > bot->last_update_id) {
+                        bot->last_update_id = update_id;
                 }
 
                 struct json_object *message;
@@ -1327,7 +1327,7 @@ process_updates(struct pcx_http_game *game,
                 if (get_fields(update,
                                "message", json_type_object, &message,
                                NULL)) {
-                        if (!process_message(game, message))
+                        if (!process_message(bot, message))
                                 return false;
                 }
 
@@ -1336,7 +1336,7 @@ process_updates(struct pcx_http_game *game,
                 if (get_fields(update,
                                "callback_query", json_type_object, &callback,
                                NULL)) {
-                        if (!process_callback(game, callback))
+                        if (!process_callback(bot, callback))
                                 return false;
                 }
         }
@@ -1350,21 +1350,21 @@ updates_write_cb(char *ptr,
                  size_t nmemb,
                  void *userdata)
 {
-        struct pcx_http_game *game = userdata;
+        struct pcx_bot *bot = userdata;
 
         struct json_object *obj =
-                json_tokener_parse_ex(game->tokener,
+                json_tokener_parse_ex(bot->tokener,
                                       ptr,
                                       size * nmemb);
 
         if (obj) {
-                bool ret = process_updates(game, obj);
+                bool ret = process_updates(bot, obj);
                 json_object_put(obj);
                 return ret ? size * nmemb : 0;
         }
 
         enum json_tokener_error error =
-                json_tokener_get_error(game->tokener);
+                json_tokener_get_error(bot->tokener);
 
         if (error == json_tokener_continue)
                 return size * nmemb;
@@ -1373,14 +1373,14 @@ updates_write_cb(char *ptr,
 }
 
 static void
-set_updates_handle_options(struct pcx_http_game *game)
+set_updates_handle_options(struct pcx_bot *bot)
 {
-        set_easy_handle_method(game, game->updates_handle, "getUpdates");
+        set_easy_handle_method(bot, bot->updates_handle, "getUpdates");
 
-        curl_easy_setopt(game->updates_handle,
+        curl_easy_setopt(bot->updates_handle,
                          CURLOPT_WRITEFUNCTION,
                          updates_write_cb);
-        curl_easy_setopt(game->updates_handle, CURLOPT_WRITEDATA, game);
+        curl_easy_setopt(bot->updates_handle, CURLOPT_WRITEDATA, bot);
 
         struct json_object *au = json_object_new_array();
         json_object_array_add(au, json_object_new_string("message"));
@@ -1389,115 +1389,115 @@ set_updates_handle_options(struct pcx_http_game *game)
         json_object_object_add(obj, "allowed_updates", au);
         json_object_object_add(obj, "timeout", json_object_new_int(300));
 
-        if (game->last_update_id > 0) {
+        if (bot->last_update_id > 0) {
                 struct json_object *id =
-                        json_object_new_int64(game->last_update_id + 1);
+                        json_object_new_int64(bot->last_update_id + 1);
                 json_object_object_add(obj, "offset", id);
         }
 
-        set_post_json_data(game, game->updates_handle, obj);
+        set_post_json_data(bot, bot->updates_handle, obj);
 
         json_object_put(obj);
 }
 
-struct pcx_http_game *
-pcx_http_game_new(struct pcx_error **error)
+struct pcx_bot *
+pcx_bot_new(struct pcx_error **error)
 {
-        struct pcx_http_game *game = pcx_calloc(sizeof *game);
+        struct pcx_bot *bot = pcx_calloc(sizeof *bot);
 
-        pcx_list_init(&game->queued_requests);
+        pcx_list_init(&bot->queued_requests);
 
-        pcx_buffer_init(&game->known_ids);
+        pcx_buffer_init(&bot->known_ids);
 
-        if (!load_config(game, error))
+        if (!load_config(bot, error))
                 goto error;
 
-        load_known_ids(game);
+        load_known_ids(bot);
 
-        game->tokener = json_tokener_new();
+        bot->tokener = json_tokener_new();
 
-        game->url_base = pcx_strconcat("https://api.telegram.org/bot",
-                                       game->apikey,
-                                       "/",
-                                       NULL);
+        bot->url_base = pcx_strconcat("https://api.telegram.org/bot",
+                                      bot->apikey,
+                                      "/",
+                                      NULL);
 
-        game->pcurl = pcx_curl_multi_new();
+        bot->pcurl = pcx_curl_multi_new();
 
-        game->content_type_headers =
+        bot->content_type_headers =
                 curl_slist_append(NULL,
                                   "Content-Type: "
                                   "application/json; charset=utf-8");
 
-        game->updates_handle = curl_easy_init();
+        bot->updates_handle = curl_easy_init();
 
-        set_updates_handle_options(game);
+        set_updates_handle_options(bot);
 
-        pcx_curl_multi_add_handle(game->pcurl,
-                                  game->updates_handle,
+        pcx_curl_multi_add_handle(bot->pcurl,
+                                  bot->updates_handle,
                                   get_updates_finished_cb,
-                                  game);
+                                  bot);
 
-        game->request_handle = curl_easy_init();
-        game->request_tokener = json_tokener_new();
+        bot->request_handle = curl_easy_init();
+        bot->request_tokener = json_tokener_new();
 
-        return game;
+        return bot;
 
 error:
-        pcx_http_game_free(game);
+        pcx_bot_free(bot);
         return NULL;
 }
 
 static void
-free_requests(struct pcx_http_game *game)
+free_requests(struct pcx_bot *bot)
 {
         struct request *request, *tmp;
 
-        pcx_list_for_each_safe(request, tmp, &game->queued_requests, link) {
+        pcx_list_for_each_safe(request, tmp, &bot->queued_requests, link) {
                 free_request(request);
         }
 }
 
 void
-pcx_http_game_free(struct pcx_http_game *game)
+pcx_bot_free(struct pcx_bot *bot)
 {
-        if (game->updates_handle) {
-                pcx_curl_multi_remove_handle(game->pcurl,
-                                             game->updates_handle);
-                curl_easy_cleanup(game->updates_handle);
+        if (bot->updates_handle) {
+                pcx_curl_multi_remove_handle(bot->pcurl,
+                                             bot->updates_handle);
+                curl_easy_cleanup(bot->updates_handle);
         }
 
-        if (game->request_handle) {
-                if (game->request_handle_busy) {
-                        pcx_curl_multi_remove_handle(game->pcurl,
-                                                     game->request_handle);
+        if (bot->request_handle) {
+                if (bot->request_handle_busy) {
+                        pcx_curl_multi_remove_handle(bot->pcurl,
+                                                     bot->request_handle);
                 }
-                curl_easy_cleanup(game->request_handle);
+                curl_easy_cleanup(bot->request_handle);
         }
 
-        free_requests(game);
+        free_requests(bot);
 
-        curl_slist_free_all(game->content_type_headers);
+        curl_slist_free_all(bot->content_type_headers);
 
-        if (game->pcurl)
-                pcx_curl_multi_free(game->pcurl);
+        if (bot->pcurl)
+                pcx_curl_multi_free(bot->pcurl);
 
-        if (game->tokener)
-                json_tokener_free(game->tokener);
+        if (bot->tokener)
+                json_tokener_free(bot->tokener);
 
-        if (game->request_tokener)
-                json_tokener_free(game->request_tokener);
+        if (bot->request_tokener)
+                json_tokener_free(bot->request_tokener);
 
-        reset_game(game);
+        reset_game(bot);
 
-        remove_restart_updates_source(game);
+        remove_restart_updates_source(bot);
 
-        pcx_buffer_destroy(&game->known_ids);
+        pcx_buffer_destroy(&bot->known_ids);
 
-        pcx_free(game->apikey);
-        pcx_free(game->botname);
-        pcx_free(game->announce_channel);
+        pcx_free(bot->apikey);
+        pcx_free(bot->botname);
+        pcx_free(bot->announce_channel);
 
-        pcx_free(game->url_base);
+        pcx_free(bot->url_base);
 
-        pcx_free(game);
+        pcx_free(bot);
 }

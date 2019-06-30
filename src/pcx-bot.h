@@ -16,24 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_HTTP_GAME_H
-#define PCX_HTTP_GAME_H
+#ifndef PCX_BOT_H
+#define PCX_BOT_H
 
 #include "pcx-error.h"
 
 extern struct pcx_error_domain
-pcx_http_game_error;
+pcx_bot_error;
 
-enum pcx_http_game_error {
-        PCX_HTTP_GAME_ERROR_CONFIG
+enum pcx_bot_error {
+        PCX_BOT_ERROR_CONFIG
 };
 
-struct pcx_http_game;
+struct pcx_bot;
 
-struct pcx_http_game *
-pcx_http_game_new(struct pcx_error **error);
+struct pcx_bot *
+pcx_bot_new(struct pcx_error **error);
 
 void
-pcx_http_game_free(struct pcx_http_game *game);
+pcx_bot_free(struct pcx_bot *bot);
 
-#endif /* PCX_HTTP_GAME_H */
+#endif /* PCX_BOT_H */
