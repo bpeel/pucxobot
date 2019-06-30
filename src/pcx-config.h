@@ -16,17 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_BOT_H
-#define PCX_BOT_H
+#ifndef PCX_CONFIG_H
+#define PCX_CONFIG_H
 
 #include "pcx-error.h"
 
-struct pcx_bot;
+extern struct pcx_error_domain
+pcx_config_error;
 
-struct pcx_bot *
-pcx_bot_new(struct pcx_error **error);
+enum pcx_config_error {
+        PCX_CONFIG_ERROR_IO
+};
+
+struct pcx_config {
+        char *apikey;
+        char *botname;
+        char *announce_channel;
+};
+
+struct pcx_config *
+pcx_config_load(struct pcx_error **error);
 
 void
-pcx_bot_free(struct pcx_bot *bot);
+pcx_config_free(struct pcx_config *config);
 
-#endif /* PCX_BOT_H */
+#endif /* PCX_CONFIG_H */

@@ -26,20 +26,18 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
 #include "pcx-game.h"
 #include "pcx-list.h"
-#include "pcx-key-value.h"
+#include "pcx-config.h"
 #include "pcx-buffer.h"
 #include "pcx-game-help.h"
 #include "pcx-curl-multi.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
-
-struct pcx_error_domain
-pcx_bot_error;
 
 struct player {
         int64_t id;
@@ -61,9 +59,7 @@ struct pcx_bot {
 
         struct pcx_main_context_source *restart_updates_source;
 
-        char *apikey;
-        char *botname;
-        char *announce_channel;
+        struct pcx_config *config;
 
         char *url_base;
 
@@ -485,241 +481,15 @@ get_updates_finished_cb(CURLcode code,
                                              bot);
 }
 
-enum load_config_section {
-        SECTION_NONE,
-        SECTION_AUTH,
-        SECTION_SETUP
-} section;
-
-struct load_config_data {
-        const char *filename;
-        struct pcx_bot *bot;
-        bool had_error;
-        struct pcx_buffer error_buffer;
-        enum load_config_section section;
-};
-
-PCX_PRINTF_FORMAT(2, 3)
-static void
-load_config_error(struct load_config_data *data,
-                  const char *format,
-                  ...)
-{
-        data->had_error = true;
-
-        if (data->error_buffer.length > 0)
-                pcx_buffer_append_c(&data->error_buffer, '\n');
-
-        pcx_buffer_append_printf(&data->error_buffer, "%s: ", data->filename);
-
-        va_list ap;
-
-        va_start(ap, format);
-        pcx_buffer_append_vprintf(&data->error_buffer, format, ap);
-        va_end(ap);
-}
-
-static void
-load_config_error_func(const char *message,
-                       void *user_data)
-{
-        struct load_config_data *data = user_data;
-        load_config_error(data, "%s", message);
-}
-
-enum option_type {
-        OPTION_TYPE_STRING,
-        OPTION_TYPE_INT
-};
-
-static void
-set_option(struct load_config_data *data,
-           enum option_type type,
-           size_t offset,
-           const char *key,
-           const char *value)
-{
-        switch (type) {
-        case OPTION_TYPE_STRING: {
-                char **ptr = (char **) ((uint8_t *) data->bot + offset);
-                if (*ptr) {
-                        load_config_error(data,
-                                          "%s specified twice",
-                                          key);
-                } else {
-                        *ptr = pcx_strdup(value);
-                }
-                break;
-        }
-        case OPTION_TYPE_INT: {
-                int64_t *ptr = (int64_t *) ((uint8_t *) data->bot + offset);
-                errno = 0;
-                char *tail;
-                *ptr = strtoll(value, &tail, 10);
-                if (errno || *tail) {
-                        load_config_error(data,
-                                          "invalid value for %s",
-                                          key);
-                }
-                break;
-        }
-        }
-}
-
-static void
-load_config_func(enum pcx_key_value_event event,
-                 int line_number,
-                 const char *key,
-                 const char *value,
-                 void *user_data)
-{
-        struct load_config_data *data = user_data;
-        static const struct {
-                enum load_config_section section;
-                const char *key;
-                size_t offset;
-                enum option_type type;
-        } options[] = {
-#define OPTION(section, name, type)                     \
-                {                                       \
-                        section,                        \
-                        #name,                          \
-                        offsetof(struct pcx_bot, name), \
-                        OPTION_TYPE_ ## type,           \
-                }
-                OPTION(SECTION_AUTH, apikey, STRING),
-                OPTION(SECTION_SETUP, botname, STRING),
-                OPTION(SECTION_SETUP, announce_channel, STRING),
-#undef OPTION
-        };
-
-        switch (event) {
-        case PCX_KEY_VALUE_EVENT_HEADER:
-                if (!strcmp(value, "auth"))
-                        data->section = SECTION_AUTH;
-                else if (!strcmp(value, "setup"))
-                        data->section = SECTION_SETUP;
-                else
-                        load_config_error(data, "unknown section: %s", value);
-                break;
-        case PCX_KEY_VALUE_EVENT_PROPERTY:
-                for (unsigned i = 0; i < PCX_N_ELEMENTS(options); i++) {
-                        if (data->section != options[i].section ||
-                            strcmp(key, options[i].key))
-                                continue;
-
-                        set_option(data,
-                                   options[i].type,
-                                   options[i].offset,
-                                   key,
-                                   value);
-                        goto found_key;
-                }
-
-                load_config_error(data, "unknown config option: %s", key);
-        found_key:
-                break;
-        }
-}
-
-static bool
-validate_config(struct pcx_bot *bot,
-                const char *filename,
-                struct pcx_error **error)
-{
-        if (bot->apikey == NULL) {
-                pcx_set_error(error,
-                              &pcx_bot_error,
-                              PCX_BOT_ERROR_CONFIG,
-                              "%s: missing apikey option",
-                              filename);
-                return false;
-        }
-
-        if (bot->botname == NULL) {
-                pcx_set_error(error,
-                              &pcx_bot_error,
-                              PCX_BOT_ERROR_CONFIG,
-                              "%s: missing botname option",
-                              filename);
-                return false;
-        }
-
-        return true;
-}
-
 static char *
-get_data_file(const char *name,
-              struct pcx_error **error)
+get_data_file(const char *name)
 {
         const char *home = getenv("HOME");
 
-        if (home == NULL) {
-                pcx_set_error(error,
-                              &pcx_bot_error,
-                              PCX_BOT_ERROR_CONFIG,
-                              "HOME environment variable is not set");
+        if (home == NULL)
                 return NULL;
-        }
 
         return pcx_strconcat(home, "/.pucxobot/", name, NULL);
-}
-
-static bool
-load_config(struct pcx_bot *bot,
-            struct pcx_error **error)
-{
-        bool ret = true;
-
-        char *fn = get_data_file("conf.txt", error);
-
-        if (fn == NULL)
-                return false;
-
-        FILE *f = fopen(fn, "r");
-
-        if (f == NULL) {
-                pcx_set_error(error,
-                              &pcx_bot_error,
-                              PCX_BOT_ERROR_CONFIG,
-                              "%s: %s",
-                              fn,
-                              strerror(errno));
-                ret = false;
-        } else {
-                struct load_config_data data = {
-                        .filename = fn,
-                        .bot = bot,
-                        .had_error = false,
-                        .section = SECTION_NONE,
-                };
-
-                pcx_buffer_init(&data.error_buffer);
-
-                pcx_key_value_load(f,
-                                   load_config_func,
-                                   load_config_error_func,
-                                   &data);
-
-                if (data.had_error) {
-                        pcx_set_error(error,
-                                      &pcx_bot_error,
-                                      PCX_BOT_ERROR_CONFIG,
-                                      "%s",
-                                      (char *) data.error_buffer.data);
-                        ret = false;
-                } else if (!validate_config(bot, fn, error)) {
-                        ret = false;
-                }
-
-                pcx_buffer_destroy(&data.error_buffer);
-
-                fclose(f);
-        }
-
-        pcx_free(fn);
-
-        return ret;
 }
 
 static void
@@ -993,13 +763,10 @@ is_known_id(struct pcx_bot *bot,
 static void
 save_known_ids(struct pcx_bot *bot)
 {
-        struct pcx_error *error = NULL;
-        char *fn = get_data_file("known_ids.txt", &error);
+        char *fn = get_data_file("known_ids.txt");
 
-        if (fn == NULL) {
-                pcx_error_free(error);
+        if (fn == NULL)
                 return;
-        }
 
         char *tmp_fn = pcx_strconcat(fn, ".tmp", NULL);
         FILE *f = fopen(tmp_fn, "w");
@@ -1023,13 +790,10 @@ save_known_ids(struct pcx_bot *bot)
 static void
 load_known_ids(struct pcx_bot *bot)
 {
-        struct pcx_error *error = NULL;
-        char *fn = get_data_file("known_ids.txt", &error);
+        char *fn = get_data_file("known_ids.txt");
 
-        if (fn == NULL) {
-                pcx_error_free(error);
+        if (fn == NULL)
                 return;
-        }
 
         FILE *f = fopen(fn, "r");
 
@@ -1109,7 +873,7 @@ process_join(struct pcx_bot *bot,
                                     "Bonvolu sendi privatan mesaĝon al @%s "
                                     "por ke mi povu sendi al vi viajn kartojn "
                                     "private.",
-                                    bot->botname);
+                                    bot->config->botname);
                 return;
         }
 
@@ -1275,9 +1039,9 @@ process_entity(struct pcx_bot *bot,
         const char *at = memchr(info->text + offset, '@', length);
 
         if (at) {
-                size_t botname_len = strlen(bot->botname);
+                size_t botname_len = strlen(bot->config->botname);
                 if (info->text + offset + length - at - 1 != botname_len ||
-                    memcmp(at + 1, bot->botname, botname_len)) {
+                    memcmp(at + 1, bot->config->botname, botname_len)) {
                         return true;
                 }
 
@@ -1458,7 +1222,8 @@ pcx_bot_new(struct pcx_error **error)
 
         pcx_buffer_init(&bot->known_ids);
 
-        if (!load_config(bot, error))
+        bot->config = pcx_config_load(error);
+        if (bot->config == NULL)
                 goto error;
 
         load_known_ids(bot);
@@ -1466,7 +1231,7 @@ pcx_bot_new(struct pcx_error **error)
         bot->tokener = json_tokener_new();
 
         bot->url_base = pcx_strconcat("https://api.telegram.org/bot",
-                                      bot->apikey,
+                                      bot->config->apikey,
                                       "/",
                                       NULL);
 
@@ -1552,9 +1317,8 @@ pcx_bot_free(struct pcx_bot *bot)
 
         pcx_buffer_destroy(&bot->known_ids);
 
-        pcx_free(bot->apikey);
-        pcx_free(bot->botname);
-        pcx_free(bot->announce_channel);
+        if (bot->config)
+                pcx_config_free(bot->config);
 
         pcx_free(bot->url_base);
 
