@@ -930,6 +930,18 @@ set_game_timeout(struct pcx_http_game *game)
                                              game);
 }
 
+static int
+find_player(struct pcx_http_game *game,
+            int64_t player_id)
+{
+        for (int i = 0; i < game->n_players; i++) {
+                if (game->players[i].id == player_id)
+                        return i;
+        }
+
+        return -1;
+}
+
 static void
 send_private_message_cb(int user_num,
                         enum pcx_game_message_format format,
@@ -1029,14 +1041,13 @@ process_callback(struct pcx_http_game *game,
         if (!game->game)
                 return true;
 
-        for (unsigned i = 0; i < game->n_players; i++) {
-                if (game->players[i].id == from_id) {
-                        set_game_timeout(game);
-                        pcx_game_handle_callback_data(game->game,
-                                                      i,
-                                                      callback_data);
-                        break;
-                }
+        int player_id = find_player(game, from_id);
+
+        if (player_id != -1) {
+                set_game_timeout(game);
+                pcx_game_handle_callback_data(game->game,
+                                              player_id,
+                                              callback_data);
         }
 
         return true;
@@ -1093,18 +1104,6 @@ get_message_info(struct json_object *message,
         info->is_private = ret && !strcmp(chat_type, "private");
 
         return true;
-}
-
-static int
-find_player(struct pcx_http_game *game,
-            int64_t player_id)
-{
-        for (int i = 0; i < game->n_players; i++) {
-                if (game->players[i].id == player_id)
-                        return i;
-        }
-
-        return -1;
 }
 
 static bool
