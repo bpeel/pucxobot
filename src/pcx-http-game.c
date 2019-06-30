@@ -20,6 +20,7 @@
 
 #include <curl/curl.h>
 #include <json_object.h>
+#include <json_tokener.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,6 +53,10 @@ struct pcx_http_game {
         CURLM *curlm;
         CURL *updates_handle;
         struct curl_slist *updates_headers;
+
+        struct json_tokener *tokener;
+
+        int64_t last_update_id;
 };
 
 struct socket_data {
@@ -400,11 +405,167 @@ set_updates_handle_post_data(struct pcx_http_game *game)
         json_object_object_add(obj, "allowed_updates", au);
         json_object_object_add(obj, "timeout", json_object_new_int(300));
 
+        if (game->last_update_id > 0) {
+                struct json_object *id =
+                        json_object_new_int64(game->last_update_id);
+                json_object_object_add(obj, "offset", id);
+        }
+
         curl_easy_setopt(game->updates_handle,
                          CURLOPT_COPYPOSTFIELDS,
                          json_object_to_json_string(obj));
 
         json_object_put(obj);
+}
+
+PCX_NULL_TERMINATED
+static bool
+get_fields(struct json_object *obj,
+           ...)
+{
+        if (!json_object_is_type(obj, json_type_object))
+                return false;
+
+        bool ret = true;
+        va_list ap;
+
+        va_start(ap, obj);
+
+        const char *key;
+
+        while ((key = va_arg(ap, const char *))) {
+                struct json_object *value;
+
+                if (!json_object_object_get_ex(obj, key, &value)) {
+                        ret = false;
+                        break;
+                }
+
+                enum json_type type = va_arg(ap, enum json_type);
+
+                if (!json_object_is_type(value, type)) {
+                        ret = false;
+                        break;
+                }
+
+                switch (type) {
+                case json_type_boolean:
+                        *va_arg(ap, bool *) = json_object_get_boolean(value);
+                        break;
+                case json_type_string:
+                        *va_arg(ap, const char **) =
+                                json_object_get_string(value);
+                        break;
+                case json_type_double:
+                        *va_arg(ap, double *) = json_object_get_double(value);
+                        break;
+                case json_type_int:
+                        *va_arg(ap, int64_t *) = json_object_get_int64(value);
+                        break;
+                case json_type_object:
+                case json_type_array:
+                        *va_arg(ap, struct json_object **) = value;
+                        break;
+                default:
+                        pcx_fatal("Unexpected json type");
+                }
+        }
+
+        va_end(ap);
+
+        return ret;
+}
+
+static bool
+process_callback(struct pcx_http_game *game,
+                 struct json_object *callback)
+{
+        return true;
+}
+
+static bool
+process_message(struct pcx_http_game *game,
+                struct json_object *message)
+{
+        printf("%s\n", json_object_to_json_string(message));
+        return true;
+}
+
+static bool
+process_updates(struct pcx_http_game *game,
+                struct json_object *obj)
+{
+        struct json_object *result;
+        bool ok;
+        bool ret = get_fields(obj,
+                              "ok", json_type_boolean, &ok,
+                              "result", json_type_array, &result,
+                              NULL);
+        if (!ret || !ok)
+                return false;
+
+        game->last_update_id = 0;
+
+        for (unsigned i = 0; i < json_object_array_length(result); i++) {
+                struct json_object *update =
+                        json_object_array_get_idx(result, i);
+                int64_t update_id;
+
+                if (get_fields(update,
+                               "update_id", json_type_int, &update_id,
+                               NULL) &&
+                    update_id > game->last_update_id) {
+                        game->last_update_id = update_id;
+                }
+
+                struct json_object *message;
+
+                if (get_fields(update,
+                               "message", json_type_object, &message,
+                               NULL)) {
+                        if (!process_message(game, message))
+                                return false;
+                }
+
+                struct json_object *callback;
+
+                if (get_fields(update,
+                               "callback_query", json_type_object, &callback,
+                               NULL)) {
+                        if (!process_callback(game, callback))
+                                return false;
+                }
+        }
+
+        return true;
+}
+
+static size_t
+updates_write_cb(char *ptr,
+                 size_t size,
+                 size_t nmemb,
+                 void *userdata)
+{
+        struct pcx_http_game *game = userdata;
+
+        struct json_object *obj =
+                json_tokener_parse_ex(game->tokener,
+                                      ptr,
+                                      size * nmemb);
+
+        if (obj) {
+                bool ret = process_updates(game, obj);
+                json_object_put(obj);
+                return ret ? size * nmemb : 0;
+        }
+
+        enum json_tokener_error error =
+                json_tokener_get_error(game->tokener);
+
+        if (error == json_tokener_continue)
+                return size * nmemb;
+        else
+                return 0;
 }
 
 struct pcx_http_game *
@@ -418,6 +579,8 @@ pcx_http_game_new(struct pcx_error **error)
 
         if (!load_config(game, error))
                 goto error;
+
+        game->tokener = json_tokener_new();
 
         game->url_base = pcx_strconcat("https://api.telegram.org/bot",
                                        game->apikey,
@@ -441,6 +604,11 @@ pcx_http_game_new(struct pcx_error **error)
         curl_easy_setopt(game->updates_handle,
                          CURLOPT_HTTPHEADER,
                          game->updates_headers);
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_WRITEFUNCTION,
+                         updates_write_cb);
+        curl_easy_setopt(game->updates_handle, CURLOPT_WRITEDATA, game);
 
         set_updates_handle_post_data(game);
 
@@ -476,6 +644,9 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         if (game->curlm)
                 curl_multi_cleanup(game->curlm);
+
+        if (game->tokener)
+                json_tokener_free(game->tokener);
 
         curl_global_cleanup();
 
