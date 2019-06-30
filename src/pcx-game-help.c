@@ -18,8 +18,11 @@
 
 #include "pcx-game-help.h"
 
-const char
-pcx_game_help[] =
+#include "pcx-text.h"
+
+const char *
+pcx_game_help[] = {
+        [PCX_TEXT_LANGUAGE_ESPERANTO] =
         "<b>RESUMO DE LA REGULOJ:</b>"
         "\n"
         "Puĉo estas kartludo de trompado kaj blufado.\n"
@@ -59,4 +62,48 @@ pcx_game_help[] =
         "la defio estis prava, la defiito perdas karton, alikaze la defianto "
         "perdas karton.\n"
         "\n"
-        "Tiu kiu restas vivanta venkas.\n";
+        "Tiu kiu restas vivanta venkas.\n",
+
+        [PCX_TEXT_LANGUAGE_FRENCH] =
+        "<b>RESUMÉ DES RÈGLES :</b>"
+        "\n"
+        "Complot est un jeu de cartes au tour du bluff.\n"
+        "\n"
+        "Tout le monde commence avec 2 cartes (face visible) et 2 or. "
+        "Si quelqu’un perd une vie, il doit dévoiler une carte et il ne peut "
+        "plus l’utiliser.\n"
+        "\n"
+        "Pendant votre tour, vous pouvez faire une des actions suivantes :\n"
+        "\n"
+        "<b>Revenu</b> : prendre 1 or et personne ne peut l’empecher.\n"
+        "\n"
+        "<b>Aide étrangère</b> : prendre 2 or, mais si quelqu’un prétend avoir "
+        "la duchesse il peut le bloquer.\n"
+        "\n"
+        "<b>Assassinat</b> : payer 7 or pour assassiner quelqu’un. Personne "
+        "ne peut l’empecher. Si quelqu’un a 10 or il doit forcement faire un "
+        "assassinat.\n"
+        "\n"
+        "Si vous avez une des cartes suivantes, ou vouz prétendez l’avoir, "
+        "vous pouvez :\n"
+        "\n"
+        "<b>Taxe (Duchesse)</b> : Prendre 3 or.\n"
+        "\n"
+        "<b>Assassine (Assassin)</b> : Payer 3 or et assassiner quelqu’un. "
+        "Si la victime prétend avoir la comtesse elle peut le bloquer.\n"
+        "\n"
+        "<b>Échange (Ambassadeur)</b> : Échanger vos cartes pour de nouvelles "
+        "cartes.\n"
+        "\n"
+        "<b>Voler (Capitaine)</b> : Voler 2 or à un autre joueur. "
+        "Si la victime prétend avoir l’ambassadeur ou le capitaine elle peut "
+        "le bloquer.\n"
+        "\n"
+        "Il n’y a que trois exemplaires de chaque personnage.\n"
+        "\n"
+        "Chaque déclaration de carte peut être mise en doute de n’importe "
+        "quel autre joueur. Si la mise en doute a raison, celui qui a été "
+        "mis en doute perd une carte, sinon le metteur en doute en perd.\n"
+        "\n"
+        "Celui qui reste en vie remporte la partie.\n",
+};

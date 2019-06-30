@@ -19,7 +19,7 @@
 #ifndef PCX_GAME_HELP_H
 #define PCX_GAME_HELP_H
 
-extern const char
+extern const char *
 pcx_game_help[];
 
 #endif /* PCX_GAME_HELP_H */

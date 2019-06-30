@@ -1032,7 +1032,7 @@ process_help(struct pcx_bot *bot,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_HTML,
-                          pcx_game_help,
+                          pcx_game_help[bot->config->language],
                           0, /* n_buttons */
                           NULL /* buttons */);
 }
