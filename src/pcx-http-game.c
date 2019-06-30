@@ -92,6 +92,9 @@ struct request {
 static void
 set_updates_handle_options(struct pcx_http_game *game);
 
+static void
+start_game(struct pcx_http_game *game);
+
 PCX_NULL_TERMINATED
 static bool
 get_fields(struct json_object *obj,
@@ -880,14 +883,25 @@ game_timeout_cb(struct pcx_main_context_source *source,
         if (game->n_players <= 0)
                 return;
 
-        send_message_printf(game,
-                            game->game_chat,
-                            -1, /* in_reply_to */
-                            "La ludo estas senaktiva dum pli ol %i minutoj "
-                            "kaj estos forlasita.",
-                            GAME_TIMEOUT / (60 * 1000));
+        if (game->game == NULL && game->n_players >= 2) {
+                send_message_printf(game,
+                                    game->game_chat,
+                                    -1, /* in_reply_to */
+                                    "Neniu aliĝis dum pli ol %i minutoj. La "
+                                    "ludo tuj komenciĝos.",
+                                    GAME_TIMEOUT / (60 * 1000));
 
-        reset_game(game);
+                start_game(game);
+        } else {
+                send_message_printf(game,
+                                    game->game_chat,
+                                    -1, /* in_reply_to */
+                                    "La ludo estas senaktiva dum pli ol "
+                                    "%i minutoj kaj estos forlasita.",
+                                    GAME_TIMEOUT / (60 * 1000));
+
+                reset_game(game);
+        }
 }
 
 static void
@@ -1152,6 +1166,24 @@ process_join(struct pcx_http_game *game,
 }
 
 static void
+start_game(struct pcx_http_game *game)
+{
+        assert(game->game == NULL);
+
+        set_game_timeout(game);
+
+        const char *names[PCX_GAME_MAX_PLAYERS];
+
+        for (unsigned i = 0; i < game->n_players; i++)
+                names[i] = game->players[i].name;
+
+        game->game = pcx_game_new(&game_callbacks,
+                                  game,
+                                  game->n_players,
+                                  names);
+}
+
+static void
 process_start(struct pcx_http_game *game,
               const struct message_info *info)
 {
@@ -1190,17 +1222,7 @@ process_start(struct pcx_http_game *game,
                 return;
         }
 
-        set_game_timeout(game);
-
-        const char *names[PCX_GAME_MAX_PLAYERS];
-
-        for (unsigned i = 0; i < game->n_players; i++)
-                names[i] = game->players[i].name;
-
-        game->game = pcx_game_new(&game_callbacks,
-                                  game,
-                                  game->n_players,
-                                  names);
+        start_game(game);
 }
 
 static void
