@@ -252,12 +252,13 @@ send_request(struct pcx_http_game *game,
 }
 
 static void
-send_message_with_buttons(struct pcx_http_game *game,
-                          int64_t chat_id,
-                          int64_t in_reply_to,
-                          const char *message,
-                          size_t n_buttons,
-                          const struct pcx_game_button *buttons)
+send_message_full(struct pcx_http_game *game,
+                  int64_t chat_id,
+                  int64_t in_reply_to,
+                  enum pcx_game_message_format format,
+                  const char *message,
+                  size_t n_buttons,
+                  const struct pcx_game_button *buttons)
 {
         struct json_object *args = json_object_new_object();
 
@@ -273,6 +274,16 @@ send_message_with_buttons(struct pcx_http_game *game,
                 json_object_object_add(args,
                                        "reply_to_message_id",
                                        json_object_new_int64(in_reply_to));
+        }
+
+        switch (format) {
+        case PCX_GAME_MESSAGE_FORMAT_HTML:
+                json_object_object_add(args,
+                                       "parse_mode",
+                                       json_object_new_string("HTML"));
+                break;
+        case PCX_GAME_MESSAGE_FORMAT_PLAIN:
+                break;
         }
 
         if (n_buttons > 0) {
@@ -312,12 +323,13 @@ send_message(struct pcx_http_game *game,
              int64_t in_reply_to,
              const char *message)
 {
-        send_message_with_buttons(game,
-                                  chat_id,
-                                  in_reply_to,
-                                  message,
-                                  0, /* n_buttons */
-                                  NULL /* buttons */);
+        send_message_full(game,
+                          chat_id,
+                          in_reply_to,
+                          PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                          message,
+                          0, /* n_buttons */
+                          NULL /* buttons */);
 }
 
 static void
@@ -898,12 +910,13 @@ send_private_message_cb(int user_num,
 
         assert(user_num >= 0 && user_num < game->n_players);
 
-        send_message_with_buttons(game,
-                                  game->players[user_num].id,
-                                  -1, /* in_reply_to */
-                                  message,
-                                  n_buttons,
-                                  buttons);
+        send_message_full(game,
+                          game->players[user_num].id,
+                          -1, /* in_reply_to */
+                          format,
+                          message,
+                          n_buttons,
+                          buttons);
 }
 
 static void
@@ -915,12 +928,13 @@ send_message_cb(enum pcx_game_message_format format,
 {
         struct pcx_http_game *game = user_data;
 
-        send_message_with_buttons(game,
-                                  game->game_chat,
-                                  -1, /* in_reply_to */
-                                  message,
-                                  n_buttons,
-                                  buttons);
+        send_message_full(game,
+                          game->game_chat,
+                          -1, /* in_reply_to */
+                          format,
+                          message,
+                          n_buttons,
+                          buttons);
 }
 
 static void
