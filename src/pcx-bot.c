@@ -90,7 +90,8 @@ static void
 set_updates_handle_options(struct pcx_bot *bot);
 
 static void
-start_game(struct game *game);
+start_game(struct pcx_bot *bot,
+           struct game *game);
 
 static void
 maybe_start_request(struct pcx_bot *bot);
@@ -545,7 +546,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                                     PCX_TEXT_STRING_TIMEOUT_START,
                                     GAME_TIMEOUT / (60 * 1000));
 
-                start_game(game);
+                start_game(bot, game);
         } else {
                 send_message_printf(bot,
                                     game->chat,
@@ -964,7 +965,8 @@ process_join(struct pcx_bot *bot,
 }
 
 static void
-start_game(struct game *game)
+start_game(struct pcx_bot *bot,
+           struct game *game)
 {
         assert(game->game == NULL);
 
@@ -977,6 +979,7 @@ start_game(struct game *game)
 
         game->game = pcx_game_new(&game_callbacks,
                                   game,
+                                  bot->config->language,
                                   game->n_players,
                                   names);
 }
@@ -1018,7 +1021,7 @@ process_start(struct pcx_bot *bot,
                 return;
         }
 
-        start_game(game);
+        start_game(bot, game);
 }
 
 static void

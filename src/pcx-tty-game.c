@@ -253,6 +253,7 @@ pcx_tty_game_new(int n_players,
 
         game->game = pcx_game_new(&callbacks,
                                   game,
+                                  PCX_TEXT_LANGUAGE_ESPERANTO,
                                   n_players,
                                   names);
 

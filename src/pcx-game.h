@@ -21,6 +21,8 @@
 
 #include <stddef.h>
 
+#include "pcx-text.h"
+
 #define PCX_GAME_MAX_PLAYERS 6
 
 struct pcx_game;
@@ -53,6 +55,7 @@ struct pcx_game_callbacks {
 struct pcx_game *
 pcx_game_new(const struct pcx_game_callbacks *callbacks,
              void *user_data,
+             enum pcx_text_language language,
              int n_players,
              const char * const *names);
 

@@ -88,65 +88,71 @@ struct pcx_game {
         int stack_pos;
         bool action_taken;
         struct pcx_main_context_source *game_over_source;
+        enum pcx_text_language language;
 };
 
-static const struct pcx_game_button
+struct game_text_button {
+        enum pcx_text_string text;
+        const char *data;
+};
+
+static const struct game_text_button
 coup_button = {
-        .text = "Puĉo",
+        .text = PCX_TEXT_STRING_COUP,
         .data = "coup"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 income_button = {
-        .text = "Enspezi",
+        .text = PCX_TEXT_STRING_INCOME,
         .data = "income"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 foreign_aid_button = {
-        .text = "Eksterlanda helpo",
+        .text = PCX_TEXT_STRING_FOREIGN_AID,
         .data = "foreign_aid"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 tax_button = {
-        .text = "Imposto (Duko)",
+        .text = PCX_TEXT_STRING_TAX,
         .data = "tax"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 assassinate_button = {
-        .text = "Murdi (Murdisto)",
+        .text = PCX_TEXT_STRING_ASSASSINATE,
         .data = "assassinate"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 exchange_button = {
-        .text = "Interŝanĝi (Ambasadoro)",
+        .text = PCX_TEXT_STRING_EXCHANGE,
         .data = "exchange"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 steal_button = {
-        .text = "Ŝteli (Kapitano)",
+        .text = PCX_TEXT_STRING_STEAL,
         .data = "steal"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 accept_button = {
-        .text = "Akcepti",
+        .text = PCX_TEXT_STRING_ACCEPT,
         .data = "accept"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 challenge_button = {
-        .text = "Defii",
+        .text = PCX_TEXT_STRING_CHALLENGE,
         .data = "challenge"
 };
 
-static const struct pcx_game_button
+static const struct game_text_button
 block_button = {
-        .text = "Bloki",
+        .text = PCX_TEXT_STRING_BLOCK,
         .data = "block"
 };
 
@@ -154,6 +160,37 @@ static struct pcx_game_stack_entry *
 get_stack_top(struct pcx_game *game)
 {
         return game->stack + game->stack_pos - 1;
+}
+
+static void
+append_buffer_string(struct pcx_game *game,
+                     struct pcx_buffer *buffer,
+                     enum pcx_text_string string)
+{
+        const char *value = pcx_text_get(game->language, string);
+        pcx_buffer_append_string(buffer, value);
+}
+
+static void
+append_buffer_vprintf(struct pcx_game *game,
+                      struct pcx_buffer *buffer,
+                      enum pcx_text_string string,
+                      va_list ap)
+{
+        const char *format = pcx_text_get(game->language, string);
+        pcx_buffer_append_vprintf(buffer, format, ap);
+}
+
+static void
+append_buffer_printf(struct pcx_game *game,
+                     struct pcx_buffer *buffer,
+                     enum pcx_text_string string,
+                     ...)
+{
+        va_list ap;
+        va_start(ap, string);
+        append_buffer_vprintf(game, buffer, string, ap);
+        va_end(ap);
 }
 
 static struct pcx_game_stack_entry *
@@ -331,17 +368,18 @@ send_buffer_message(struct pcx_game *game)
                                          NULL /* buttons */);
 }
 
-PCX_PRINTF_FORMAT(2, 3)
 static void
 game_note(struct pcx_game *game,
-          const char *format,
+          enum pcx_text_string string,
           ...)
 {
         pcx_buffer_set_length(&game->buffer, 0);
 
+        const char *format = pcx_text_get(game->language, string);
+
         va_list ap;
 
-        va_start(ap, format);
+        va_start(ap, string);
         pcx_buffer_append_vprintf(&game->buffer, format, ap);
         va_end(ap);
 
@@ -349,10 +387,25 @@ game_note(struct pcx_game *game,
 }
 
 static void
-add_button(struct pcx_buffer *buffer,
-           const struct pcx_game_button *button)
+make_button(struct pcx_game *game,
+            struct pcx_game_button *button,
+            const struct game_text_button *text_button)
 {
-        pcx_buffer_append(buffer, button, sizeof *button);
+        button->text = pcx_text_get(game->language, text_button->text);
+        button->data = text_button->data;
+}
+
+static void
+add_button(struct pcx_game *game,
+           struct pcx_buffer *buffer,
+           const struct game_text_button *text_button)
+{
+        size_t old_length = buffer->length;
+        pcx_buffer_set_length(buffer,
+                              old_length + sizeof (struct pcx_game_button));
+        make_button(game,
+                    (struct pcx_game_button *) (buffer->data + old_length),
+                    text_button);
 }
 
 static void
@@ -363,21 +416,21 @@ get_buttons(struct pcx_game *game,
                 game->players + game->current_player;
 
         if (player->coins >= 10) {
-                add_button(buffer, &coup_button);
+                add_button(game, buffer, &coup_button);
                 return;
         }
 
-        add_button(buffer, &income_button);
-        add_button(buffer, &foreign_aid_button);
+        add_button(game, buffer, &income_button);
+        add_button(game, buffer, &foreign_aid_button);
 
         if (player->coins >= 7)
-                add_button(buffer, &coup_button);
+                add_button(game, buffer, &coup_button);
 
-        add_button(buffer, &tax_button);
+        add_button(game, buffer, &tax_button);
         if (player->coins >= 3)
-                add_button(buffer, &assassinate_button);
-        add_button(buffer, &exchange_button);
-        add_button(buffer, &steal_button);
+                add_button(game, buffer, &assassinate_button);
+        add_button(game, buffer, &exchange_button);
+        add_button(game, buffer, &steal_button);
 }
 
 static void
@@ -398,13 +451,18 @@ add_cards_status(struct pcx_buffer *buffer,
 }
 
 static void
-add_money_status(struct pcx_buffer *buffer,
+add_money_status(struct pcx_game *game,
+                 struct pcx_buffer *buffer,
                  const struct pcx_game_player *player)
 {
-        if (player->coins == 1)
-                pcx_buffer_append_string(buffer, "1 monero");
-        else
-                pcx_buffer_append_printf(buffer, "%i moneroj", player->coins);
+        if (player->coins == 1) {
+                append_buffer_string(game, buffer, PCX_TEXT_STRING_1_COIN);
+        } else {
+                append_buffer_printf(game,
+                                     buffer,
+                                     PCX_TEXT_STRING_PLURAL_COINS,
+                        player->coins);
+        }
 }
 
 static void
@@ -417,8 +475,10 @@ show_cards(struct pcx_game *game,
                 return;
 
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_string(&game->buffer,
-                                 "Viaj kartoj estas:\n");
+        append_buffer_string(game,
+                             &game->buffer,
+                             PCX_TEXT_STRING_YOUR_CARDS_ARE);
+        pcx_buffer_append_string(&game->buffer, "\n");
 
         for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
                 const struct pcx_game_card *card = player->cards + i;
@@ -473,7 +533,7 @@ show_stats(struct pcx_game *game)
 
                 if (alive) {
                         pcx_buffer_append_string(&game->buffer, ", ");
-                        add_money_status(&game->buffer, player);
+                        add_money_status(game, &game->buffer, player);
                         winner = player;
                 }
 
@@ -481,17 +541,24 @@ show_stats(struct pcx_game *game)
         }
 
         if (finished) {
-                const char *winner_name = winner ? winner->name : "Neniu";
-                pcx_buffer_append_printf(&game->buffer,
-                                         "%s venkis!",
-                                         winner_name);
+                const char *winner_name;
+                if (winner) {
+                        winner_name = winner->name;
+                } else {
+                        winner_name = pcx_text_get(game->language,
+                                                   PCX_TEXT_STRING_NOONE);
+                }
+                append_buffer_printf(game,
+                                     &game->buffer,
+                                     PCX_TEXT_STRING_WON,
+                                     winner_name);
         } else {
                 const struct pcx_game_player *current =
                         game->players + game->current_player;
-                pcx_buffer_append_printf(&game->buffer,
-                                         "%s, estas via vico, "
-                                         "kion vi volas fari?",
-                                         current->name);
+                append_buffer_printf(game,
+                                     &game->buffer,
+                                     PCX_TEXT_STRING_YOUR_GO,
+                                     current->name);
         }
 
         struct pcx_buffer buttons = PCX_BUFFER_STATIC_INIT;
@@ -633,7 +700,9 @@ choose_card_to_lose_idle(struct pcx_game *game)
         }
 
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_string(&game->buffer, "Kiun karton vi volas perdi?");
+        append_buffer_string(game,
+                             &game->buffer,
+                             PCX_TEXT_STRING_WHICH_CARD_TO_LOSE);
 
         send_buffer_message_with_buttons_to(game,
                                             player_num,
@@ -655,9 +724,14 @@ lose_card(struct pcx_game *game,
 }
 
 static void
-get_challenged_cards(struct pcx_buffer *buf,
+get_challenged_cards(struct pcx_game *game,
+                     struct pcx_buffer *buf,
                      uint32_t cards)
 {
+        const char *final_separator =
+                pcx_text_get(game->language,
+                             PCX_TEXT_STRING_FINAL_DISJUNCTION);
+
         for (unsigned i = 0; cards; i++) {
                 if ((cards & (UINT32_C(1) << i)) == 0)
                         continue;
@@ -668,12 +742,13 @@ get_challenged_cards(struct pcx_buffer *buf,
                         if (cards)
                                 pcx_buffer_append_string(buf, ", ");
                         else
-                                pcx_buffer_append_string(buf, " aŭ ");
+                                pcx_buffer_append_string(buf, final_separator);
                 }
 
-                pcx_buffer_append_printf(buf,
-                                         "la %sn",
-                                         pcx_character_get_name(i));
+                append_buffer_printf(game,
+                                     buf,
+                                     PCX_TEXT_STRING_CARD_LIST_OBJECT,
+                                     pcx_character_get_name(i));
         }
 }
 
@@ -775,8 +850,7 @@ do_reveal(struct pcx_game *game,
 
         if ((data->challenged_characters & (UINT32_C(1) << character))) {
                 game_note(game,
-                          "%s defiis sed %s ja havis la %sn kaj %s "
-                          "perdas karton",
+                          PCX_TEXT_STRING_CHALLENGE_FAILED,
                           challenging_player->name,
                           challenged_player->name,
                           pcx_character_get_name(character),
@@ -790,11 +864,11 @@ do_reveal(struct pcx_game *game,
                 lose_card(game, challenging_player - game->players);
         } else {
                 struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
-                get_challenged_cards(&card_buf,
+                get_challenged_cards(game,
+                                     &card_buf,
                                      data->challenged_characters);
                 game_note(game,
-                          "%s defiis kaj %s ne havis %s kaj %s "
-                          "perdas karton",
+                          PCX_TEXT_STRING_CHALLENGE_SUCCEEDED,
                           challenging_player->name,
                           challenged_player->name,
                           (char *) card_buf.data,
@@ -856,14 +930,14 @@ reveal_idle(struct pcx_game *game)
         }
 
         struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
-        get_challenged_cards(&cards, data->challenged_characters);
+        get_challenged_cards(game, &cards, data->challenged_characters);
 
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_printf(&game->buffer,
-                                 "%s ne kredas ke vi havas %s.\n"
-                                 "Kiun karton vi volas montri?",
-                                 game->players[data->challenging_player].name,
-                                 (char *) cards.data);
+        append_buffer_printf(game,
+                             &game->buffer,
+                             PCX_TEXT_STRING_ANNOUNCE_CHALLENGE,
+                             game->players[data->challenging_player].name,
+                             (char *) cards.data);
 
         pcx_buffer_destroy(&cards);
 
@@ -926,14 +1000,13 @@ reveal_card(struct pcx_game *game,
                            data);
 }
 
-PCX_PRINTF_FORMAT(6, 7)
 static struct challenge_data *
 check_challenge(struct pcx_game *game,
                 enum challenge_flag flags,
                 int player_num,
                 action_cb cb,
                 void *user_data,
-                const char *message,
+                enum pcx_text_string string,
                 ...);
 
 static void
@@ -954,7 +1027,7 @@ do_block(struct pcx_game *game,
         if (data->block_cb)
                 data->block_cb(game, data->user_data);
 
-        game_note(game, "Neniu defiis. La ago estis blokita.");
+        game_note(game, PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK);
         stack_pop(game);
         take_action(game);
 }
@@ -1029,7 +1102,9 @@ check_challenge_callback_data(struct pcx_game *game,
                 remove_challenge_timeout(data);
 
                 struct pcx_buffer blocked_names = PCX_BUFFER_STATIC_INIT;
-                get_challenged_cards(&blocked_names, data->blocking_characters);
+                get_challenged_cards(game,
+                                     &blocked_names,
+                                     data->blocking_characters);
 
                 struct challenge_data *block_data =
                         check_challenge(game,
@@ -1037,8 +1112,7 @@ check_challenge_callback_data(struct pcx_game *game,
                                         player_num,
                                         do_block,
                                         NULL, /* user_data */
-                                        "%s pretendas havi %s kaj "
-                                        "blokas.",
+                                        PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK,
                                         game->players[player_num].name,
                                         (char *) blocked_names.data);
 
@@ -1087,53 +1161,57 @@ check_challenge_idle(struct pcx_game *game)
         int n_buttons = 0;
 
         if ((data->flags & CHALLENGE_FLAG_CHALLENGE))
-                buttons[n_buttons++] = challenge_button;
+                make_button(game, buttons + n_buttons++, &challenge_button);
         if ((data->flags & CHALLENGE_FLAG_BLOCK))
-                buttons[n_buttons++] = block_button;
-        buttons[n_buttons++] = accept_button;
+                make_button(game, buttons + n_buttons++, &block_button);
+        make_button(game, buttons + n_buttons++, &accept_button);
 
         pcx_buffer_set_length(&game->buffer, 0);
         pcx_buffer_append_string(&game->buffer, data->message);
 
         if ((data->flags & (CHALLENGE_FLAG_CHALLENGE))) {
-                pcx_buffer_append_printf(&game->buffer,
-                                         "\nĈu iu volas defii rin?");
+                pcx_buffer_append_c(&game->buffer, '\n');
+                append_buffer_printf(game,
+                                     &game->buffer,
+                                     PCX_TEXT_STRING_DOES_SOMEBODY_CHALLENGE);
         }
 
         if ((data->flags & (CHALLENGE_FLAG_BLOCK))) {
-                const char *format;
-
                 struct pcx_buffer blocking_cards = PCX_BUFFER_STATIC_INIT;
 
-                get_challenged_cards(&blocking_cards,
+                get_challenged_cards(game,
+                                     &blocking_cards,
                                      data->blocking_characters);
 
+                pcx_buffer_append_c(&game->buffer, '\n');
+
                 if (data->target_player == -1) {
-                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK))) {
-                                format = ("\nAŭ ĉu iu volas pretendi havi %s "
-                                          "kaj bloki rin?");
-                        } else {
-                                format = ("\nĈu iu volas pretendi havi %s kaj "
-                                          "bloki rin?");
-                        }
-                        pcx_buffer_append_printf(&game->buffer,
-                                                 format,
-                                                 (char *) blocking_cards.data);
+                        enum pcx_text_string format;
+
+                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
+                                format = PCX_TEXT_STRING_OR_BLOCK_NO_TARGET;
+                        else
+                                format = PCX_TEXT_STRING_BLOCK_NO_TARGET;
+
+                        append_buffer_printf(game,
+                                             &game->buffer,
+                                             format,
+                                             (char *) blocking_cards.data);
                 } else {
+                        enum pcx_text_string format;
                         const struct pcx_game_player *target_player =
                                 game->players + data->target_player;
 
-                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK))) {
-                                format = ("\nAŭ %s, ĉu vi volas pretendi havi "
-                                          "%s kaj bloki rin?");
-                        } else {
-                                format = ("\n%s, ĉu vi volas pretendi havi %s "
-                                          "kaj bloki rin?");
-                        }
-                        pcx_buffer_append_printf(&game->buffer,
-                                                 format,
-                                                 target_player->name,
-                                                 (char *) blocking_cards.data);
+                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
+                                format = PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET;
+                        else
+                                format = PCX_TEXT_STRING_BLOCK_WITH_TARGET;
+
+                        append_buffer_printf(game,
+                                             &game->buffer,
+                                             format,
+                                             target_player->name,
+                                             (char *) blocking_cards.data);
                 }
 
                 pcx_buffer_destroy(&blocking_cards);
@@ -1160,14 +1238,13 @@ check_challenge_destroy(struct pcx_game *game)
         pcx_free(data);
 }
 
-PCX_PRINTF_FORMAT(6, 7)
 static struct challenge_data *
 check_challenge(struct pcx_game *game,
                 enum challenge_flag flags,
                 int player_num,
                 action_cb cb,
                 void *user_data,
-                const char *message,
+                enum pcx_text_string message,
                 ...)
 {
         struct challenge_data *data = pcx_calloc(sizeof *data);
@@ -1185,7 +1262,7 @@ check_challenge(struct pcx_game *game,
 
         va_list ap;
         va_start(ap, message);
-        pcx_buffer_append_vprintf(&game->buffer, message, ap);
+        append_buffer_vprintf(game, &game->buffer, message, ap);
         va_end(ap);
 
         data->message = pcx_strdup((char *) game->buffer.data);
@@ -1203,7 +1280,7 @@ check_challenge(struct pcx_game *game,
 
 static void
 send_select_target(struct pcx_game *game,
-                   const char *message,
+                   enum pcx_text_string message,
                    const char *data)
 {
         size_t n_buttons = 0;
@@ -1222,9 +1299,10 @@ send_select_target(struct pcx_game *game,
         }
 
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_printf(&game->buffer,
-                                 message,
-                                 game->players[game->current_player].name);
+        append_buffer_printf(game,
+                             &game->buffer,
+                             message,
+                             game->players[game->current_player].name);
 
         send_buffer_message_with_buttons(game,
                                          n_buttons,
@@ -1247,7 +1325,7 @@ do_coup(struct pcx_game *game,
 
         if (extra_data == -1) {
                 send_select_target(game,
-                                   "%s, kiun vi volas mortigi dum la puĉo?",
+                                   PCX_TEXT_STRING_WHO_TO_COUP,
                                    coup_button.data);
                 return;
         }
@@ -1263,7 +1341,7 @@ do_coup(struct pcx_game *game,
         take_action(game);
 
         game_note(game,
-                  "💣 %s faras puĉon kontraŭ %s",
+                  PCX_TEXT_STRING_DOING_COUP,
                   player->name,
                   target->name);
 
@@ -1277,7 +1355,7 @@ do_income(struct pcx_game *game)
         struct pcx_game_player *player = game->players + game->current_player;
 
         game_note(game,
-                  "💲 %s enspezas 1 moneron",
+                  PCX_TEXT_STRING_DOING_INCOME,
                   player->name);
         player->coins++;
 
@@ -1291,7 +1369,7 @@ do_accepted_foreign_aid(struct pcx_game *game,
         struct pcx_game_player *player = game->players + game->current_player;
 
         game_note(game,
-                  "Neniu blokis, %s prenas la 2 monerojn",
+                  PCX_TEXT_STRING_REALLY_DOING_FOREIGN_AID,
                   player->name);
 
         player->coins += 2;
@@ -1310,8 +1388,7 @@ do_foreign_add(struct pcx_game *game)
                                 game->current_player,
                                 do_accepted_foreign_aid,
                                 NULL, /* user_data */
-                                "💴 %s prenas 2 monerojn per eksterlanda "
-                                "helpo.",
+                                PCX_TEXT_STRING_DOING_FOREIGN_AID,
                                 player->name);
 
         data->blocking_characters = (1 << PCX_CHARACTER_DUKE);
@@ -1324,7 +1401,7 @@ do_accepted_tax(struct pcx_game *game,
         struct pcx_game_player *player = game->players + game->current_player;
 
         game_note(game,
-                  "Neniu defiis, %s prenas la 3 monerojn",
+                  PCX_TEXT_STRING_REALLY_DOING_TAX,
                   player->name);
 
         player->coins += 3;
@@ -1343,8 +1420,7 @@ do_tax(struct pcx_game *game)
                                 game->current_player,
                                 do_accepted_tax,
                                 NULL, /* user_data */
-                                "💸 %s pretendas havi la dukon kaj prenas "
-                                "3 monerojn per imposto.",
+                                PCX_TEXT_STRING_DOING_TAX,
                                 player->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_DUKE);
@@ -1367,7 +1443,7 @@ do_accepted_assassinate(struct pcx_game *game,
         struct pcx_game_player *target = user_data;
 
         game_note(game,
-                  "Neniu blokis aŭ defiis, %s murdas %s",
+                  PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION,
                   player->name,
                   target->name);
 
@@ -1388,7 +1464,7 @@ do_assassinate(struct pcx_game *game,
 
         if (extra_data == -1) {
                 send_select_target(game,
-                                   "%s, kiun vi volas murdi?",
+                                   PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION,
                                    assassinate_button.data);
                 return;
         }
@@ -1408,7 +1484,7 @@ do_assassinate(struct pcx_game *game,
                                 game->current_player,
                                 do_accepted_assassinate,
                                 target, /* user_data */
-                                "🗡 %s volas murdi %s",
+                                PCX_TEXT_STRING_DOING_ASSASSINATION,
                                 player->name,
                                 target->name);
 
@@ -1480,8 +1556,9 @@ exchange_idle(struct pcx_game *game)
         }
 
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_string(&game->buffer,
-                                 "Kiujn kartojn vi volas konservi?");
+        append_buffer_string(game,
+                             &game->buffer,
+                             PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP);
 
         send_buffer_message_with_buttons_to(game,
                                             game->current_player,
@@ -1506,7 +1583,7 @@ do_accepted_exchange(struct pcx_game *game,
         struct pcx_game_player *player = game->players + game->current_player;
 
         game_note(game,
-                  "Neniu blokis aŭ defiis, %s interŝanĝas kartojn",
+                  PCX_TEXT_STRING_REALLY_DOING_EXCHANGE,
                   player->name);
 
         struct exchange_data *data = pcx_calloc(sizeof *data);
@@ -1547,8 +1624,7 @@ do_exchange(struct pcx_game *game)
                                 game->current_player,
                                 do_accepted_exchange,
                                 NULL, /* user_data */
-                                "🔄 %s pretendas havi la ambasadoron kaj volas "
-                                "interŝanĝi kartojn",
+                                PCX_TEXT_STRING_DOING_EXCHANGE,
                                 player->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_AMBASSADOR);
@@ -1562,7 +1638,7 @@ do_accepted_steal(struct pcx_game *game,
         struct pcx_game_player *target = user_data;
 
         game_note(game,
-                  "Neniu blokis aŭ defiis, %s ŝtelas de %s",
+                  PCX_TEXT_STRING_REALLY_DOING_STEAL,
                   player->name,
                   target->name);
 
@@ -1581,7 +1657,7 @@ do_steal(struct pcx_game *game,
 
         if (extra_data == -1) {
                 send_select_target(game,
-                                   "%s, de kiu vi volas ŝteli?",
+                                   PCX_TEXT_STRING_SELECT_TARGET_STEAL,
                                    steal_button.data);
                 return;
         }
@@ -1601,7 +1677,7 @@ do_steal(struct pcx_game *game,
                                 game->current_player,
                                 do_accepted_steal,
                                 target, /* user_data */
-                                "💰 %s volas ŝteli de %s",
+                                PCX_TEXT_STRING_DOING_STEAL,
                                 player->name,
                                 target->name);
 
@@ -1613,7 +1689,7 @@ do_steal(struct pcx_game *game,
 
 static bool
 is_button(const char *data,
-          const struct pcx_game_button *button)
+          const struct game_text_button *button)
 {
         return !strcmp(data, button->data);
 }
@@ -1670,6 +1746,7 @@ choose_action_idle(struct pcx_game *game)
 struct pcx_game *
 pcx_game_new(const struct pcx_game_callbacks *callbacks,
              void *user_data,
+             enum pcx_text_language language,
              int n_players,
              const char * const *names)
 {
@@ -1677,6 +1754,7 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
 
         struct pcx_game *game = pcx_calloc(sizeof *game);
 
+        game->language = language;
         game->callbacks = *callbacks;
         game->user_data = user_data;
 

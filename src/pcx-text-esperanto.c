@@ -44,6 +44,8 @@ pcx_text_esperanto[] = {
         "Sr.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
         " kaj ",
+        [PCX_TEXT_STRING_FINAL_DISJUNCTION] =
+        " aŭ ",
         [PCX_TEXT_STRING_WELCOME] =
         "Bonvenon. Aliaj ludantoj tajpu "
         "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
@@ -64,4 +66,104 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Dankon pro la mesaĝo. Vi povas nun aliĝi "
         "al ludo en la ĉefa grupo.",
+        [PCX_TEXT_STRING_COUP] =
+        "Puĉo",
+        [PCX_TEXT_STRING_INCOME] =
+        "Enspezi",
+        [PCX_TEXT_STRING_FOREIGN_AID] =
+        "Eksterlanda helpo",
+        [PCX_TEXT_STRING_TAX] =
+        "Imposto (Duko)",
+        [PCX_TEXT_STRING_ASSASSINATE] =
+        "Murdi (Murdisto)",
+        [PCX_TEXT_STRING_EXCHANGE] =
+        "Interŝanĝi (Ambasadoro)",
+        [PCX_TEXT_STRING_STEAL] =
+        "Ŝteli (Kapitano)",
+        [PCX_TEXT_STRING_ACCEPT] =
+        "Akcepti",
+        [PCX_TEXT_STRING_CHALLENGE] =
+        "Defii",
+        [PCX_TEXT_STRING_BLOCK] =
+        "Bloki",
+        [PCX_TEXT_STRING_1_COIN] =
+        "1 monero",
+        [PCX_TEXT_STRING_PLURAL_COINS] =
+        "%i moneroj",
+        [PCX_TEXT_STRING_YOUR_CARDS_ARE] =
+        "Viaj kartoj estas:",
+        [PCX_TEXT_STRING_NOONE] =
+        "Neniu",
+        [PCX_TEXT_STRING_WON] =
+        "%s venkis!",
+        [PCX_TEXT_STRING_YOUR_GO] =
+        "%s, estas via vico, "
+        "kion vi volas fari?",
+        [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
+        "Kiun karton vi volas perdi?",
+        [PCX_TEXT_STRING_CARD_LIST_OBJECT] =
+        "la %sn",
+        [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
+        "%s defiis kaj %s ne havis %s kaj %s "
+        "perdas karton",
+        [PCX_TEXT_STRING_CHALLENGE_FAILED] =
+        "%s defiis sed %s ja havis la %sn kaj %s "
+        "perdas karton",
+        [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
+        "%s ne kredas ke vi havas %s.\n"
+        "Kiun karton vi volas montri?",
+        [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
+        "Neniu defiis. La ago estis blokita.",
+        [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
+        "%s pretendas havi %s kaj "
+        "blokas.",
+        [PCX_TEXT_STRING_DOES_SOMEBODY_CHALLENGE] =
+        "Ĉu iu volas defii rin?",
+        [PCX_TEXT_STRING_OR_BLOCK_NO_TARGET] =
+        "Aŭ ĉu iu volas pretendi havi %s "
+        "kaj bloki rin?",
+        [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
+        "Ĉu iu volas pretendi havi %s kaj "
+        "bloki rin?",
+        [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
+        "Aŭ %s, ĉu vi volas pretendi havi "
+        "%s kaj bloki rin?",
+        [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
+        "%s, ĉu vi volas pretendi havi %s "
+        "kaj bloki rin?",
+        [PCX_TEXT_STRING_WHO_TO_COUP] =
+        "%s, kiun vi volas mortigi dum la puĉo?",
+        [PCX_TEXT_STRING_DOING_COUP] =
+        "💣 %s faras puĉon kontraŭ %s",
+        [PCX_TEXT_STRING_DOING_INCOME] =
+        "💲 %s enspezas 1 moneron",
+        [PCX_TEXT_STRING_REALLY_DOING_FOREIGN_AID] =
+        "Neniu blokis, %s prenas la 2 monerojn",
+        [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
+        "💴 %s prenas 2 monerojn per eksterlanda "
+        "helpo.",
+        [PCX_TEXT_STRING_REALLY_DOING_TAX] =
+        "Neniu defiis, %s prenas la 3 monerojn",
+        [PCX_TEXT_STRING_DOING_TAX] =
+        "💸 %s pretendas havi la dukon kaj prenas "
+        "3 monerojn per imposto.",
+        [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
+        "Neniu blokis aŭ defiis, %s murdas %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
+        "%s, kiun vi volas murdi?",
+        [PCX_TEXT_STRING_DOING_ASSASSINATION] =
+        "🗡 %s volas murdi %s",
+        [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
+        "Kiujn kartojn vi volas konservi?",
+        [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
+        "Neniu blokis aŭ defiis, %s interŝanĝas kartojn",
+        [PCX_TEXT_STRING_DOING_EXCHANGE] =
+        "🔄 %s pretendas havi la ambasadoron kaj volas "
+        "interŝanĝi kartojn",
+        [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
+        "Neniu blokis aŭ defiis, %s ŝtelas de %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
+        "%s, de kiu vi volas ŝteli?",
+        [PCX_TEXT_STRING_DOING_STEAL] =
+        "💰 %s volas ŝteli de %s",
 };
