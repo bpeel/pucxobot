@@ -656,6 +656,15 @@ validate_config(struct pcx_http_game *game,
                 return false;
         }
 
+        if (game->botname == NULL) {
+                pcx_set_error(error,
+                              &pcx_http_game_error,
+                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              "%s: missing botname option",
+                              filename);
+                return false;
+        }
+
         if (game->game_chat == 0) {
                 pcx_set_error(error,
                               &pcx_http_game_error,
@@ -765,12 +774,10 @@ process_entity(struct pcx_http_game *game,
         const char *at = memchr(text + offset, '@', length);
 
         if (at) {
-                if (game->botname) {
-                        size_t botname_len = strlen(game->botname);
-                        if (text + offset + length - at - 1 != botname_len ||
-                            memcmp(at + 1, game->botname, botname_len)) {
-                                return true;
-                        }
+                size_t botname_len = strlen(game->botname);
+                if (text + offset + length - at - 1 != botname_len ||
+                    memcmp(at + 1, game->botname, botname_len)) {
+                        return true;
                 }
 
                 length = at - (text + offset);
