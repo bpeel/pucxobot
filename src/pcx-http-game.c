@@ -1244,7 +1244,7 @@ process_start(struct pcx_http_game *game,
                 send_message_printf(game,
                                     info->chat_id,
                                     info->message_id,
-                                    "Aliĝi al la ludo per /aligxi antaŭ ol "
+                                    "Aliĝu al la ludo per /aligxi antaŭ ol "
                                     "komenci ĝin");
                 return;
         }
