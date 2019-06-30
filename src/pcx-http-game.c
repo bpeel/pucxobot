@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
@@ -795,11 +796,10 @@ validate_config(struct pcx_http_game *game,
         return true;
 }
 
-static bool
-load_config(struct pcx_http_game *game,
-            struct pcx_error **error)
+static char *
+get_data_file(const char *name,
+              struct pcx_error **error)
 {
-        bool ret = true;
         const char *home = getenv("HOME");
 
         if (home == NULL) {
@@ -807,10 +807,22 @@ load_config(struct pcx_http_game *game,
                               &pcx_http_game_error,
                               PCX_HTTP_GAME_ERROR_CONFIG,
                               "HOME environment variable is not set");
-                return false;
+                return NULL;
         }
 
-        char *fn = pcx_strconcat(home, "/.pucxobot/conf.txt", NULL);
+        return pcx_strconcat(home, "/.pucxobot/", name, NULL);
+}
+
+static bool
+load_config(struct pcx_http_game *game,
+            struct pcx_error **error)
+{
+        bool ret = true;
+
+        char *fn = get_data_file("conf.txt", error);
+
+        if (fn == NULL)
+                return false;
 
         FILE *f = fopen(fn, "r");
 
@@ -1111,10 +1123,68 @@ is_known_id(struct pcx_http_game *game,
 }
 
 static void
+save_known_ids(struct pcx_http_game *game)
+{
+        struct pcx_error *error = NULL;
+        char *fn = get_data_file("known_ids.txt", &error);
+
+        if (fn == NULL) {
+                pcx_error_free(error);
+                return;
+        }
+
+        char *tmp_fn = pcx_strconcat(fn, ".tmp", NULL);
+        FILE *f = fopen(tmp_fn, "w");
+
+        if (f) {
+                size_t n_ids = game->known_ids.length / sizeof (int64_t);
+                const int64_t *ids = (const int64_t *) game->known_ids.data;
+
+                for (unsigned i = 0; i < n_ids; i++)
+                        fprintf(f, "%" PRIi64 "\n", ids[i]);
+
+                fclose(f);
+
+                rename(tmp_fn, fn);
+        }
+
+        pcx_free(tmp_fn);
+        pcx_free(fn);
+}
+
+static void
+load_known_ids(struct pcx_http_game *game)
+{
+        struct pcx_error *error = NULL;
+        char *fn = get_data_file("known_ids.txt", &error);
+
+        if (fn == NULL) {
+                pcx_error_free(error);
+                return;
+        }
+
+        FILE *f = fopen(fn, "r");
+
+        if (f) {
+                game->known_ids.length = 0;
+
+                int64_t id;
+
+                while (fscanf(f, "%" PRIi64 "\n", &id) == 1)
+                        pcx_buffer_append(&game->known_ids, &id, sizeof id);
+
+                fclose(f);
+        }
+
+        pcx_free(fn);
+}
+
+static void
 add_known_id(struct pcx_http_game *game,
              int64_t id)
 {
         pcx_buffer_append(&game->known_ids, &id, sizeof id);
+        save_known_ids(game);
 }
 
 static void
@@ -1488,6 +1558,8 @@ pcx_http_game_new(struct pcx_error **error)
 
         if (!load_config(game, error))
                 goto error;
+
+        load_known_ids(game);
 
         game->tokener = json_tokener_new();
 
