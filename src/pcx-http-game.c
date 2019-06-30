@@ -32,6 +32,7 @@
 #include "pcx-list.h"
 #include "pcx-key-value.h"
 #include "pcx-buffer.h"
+#include "pcx-game-help.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
 
@@ -1199,6 +1200,22 @@ process_start(struct pcx_http_game *game,
                                   names);
 }
 
+static void
+process_help(struct pcx_http_game *game,
+             const struct message_info *info)
+{
+        if (info->chat_id != game->game_chat && !info->is_private)
+                return;
+
+        send_message_full(game,
+                          info->chat_id,
+                          info->message_id,
+                          PCX_GAME_MESSAGE_FORMAT_HTML,
+                          game_help,
+                          0, /* n_buttons */
+                          NULL /* buttons */);
+}
+
 static bool
 process_entity(struct pcx_http_game *game,
                struct json_object *entity,
@@ -1239,7 +1256,8 @@ process_entity(struct pcx_http_game *game,
                               const struct message_info *info);
         } commands[] = {
                 { "/aligxi", process_join },
-                { "/komenci", process_start }
+                { "/komenci", process_start },
+                { "/helpo", process_help },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
