@@ -45,7 +45,7 @@ struct pcx_http_game {
         struct pcx_list sockets;
 
         char *apikey;
-        char *game_chat;
+        int64_t game_chat;
         char *botname;
         char *announce_channel;
 
@@ -307,6 +307,45 @@ load_config_error_func(const char *message,
         load_config_error(data, "%s", message);
 }
 
+enum option_type {
+        OPTION_TYPE_STRING,
+        OPTION_TYPE_INT
+};
+
+static void
+set_option(struct load_config_data *data,
+           enum option_type type,
+           size_t offset,
+           const char *key,
+           const char *value)
+{
+        switch (type) {
+        case OPTION_TYPE_STRING: {
+                char **ptr = (char **) ((uint8_t *) data->game + offset);
+                if (*ptr) {
+                        load_config_error(data,
+                                          "%s specified twice",
+                                          key);
+                } else {
+                        *ptr = pcx_strdup(value);
+                }
+                break;
+        }
+        case OPTION_TYPE_INT: {
+                int64_t *ptr = (int64_t *) ((uint8_t *) data->game + offset);
+                errno = 0;
+                char *tail;
+                *ptr = strtoll(value, &tail, 10);
+                if (errno || *tail) {
+                        load_config_error(data,
+                                          "invalid value for %s",
+                                          key);
+                }
+                break;
+        }
+        }
+}
+
 static void
 load_config_func(enum pcx_key_value_event event,
                  int line_number,
@@ -319,17 +358,19 @@ load_config_func(enum pcx_key_value_event event,
                 enum load_config_section section;
                 const char *key;
                 size_t offset;
+                enum option_type type;
         } options[] = {
-#define OPTION(section, name)                                   \
+#define OPTION(section, name, type)                             \
                 {                                               \
                         section,                                \
                         #name,                                  \
-                        offsetof(struct pcx_http_game, name)    \
+                        offsetof(struct pcx_http_game, name),   \
+                        OPTION_TYPE_ ## type,                   \
                 }
-                OPTION(SECTION_AUTH, apikey),
-                OPTION(SECTION_SETUP, game_chat),
-                OPTION(SECTION_SETUP, botname),
-                OPTION(SECTION_SETUP, announce_channel),
+                OPTION(SECTION_AUTH, apikey, STRING),
+                OPTION(SECTION_SETUP, game_chat, INT),
+                OPTION(SECTION_SETUP, botname, STRING),
+                OPTION(SECTION_SETUP, announce_channel, STRING),
 #undef OPTION
         };
 
@@ -348,15 +389,11 @@ load_config_func(enum pcx_key_value_event event,
                             strcmp(key, options[i].key))
                                 continue;
 
-                        char **ptr = (char **) ((uint8_t *) data->game +
-                                                options[i].offset);
-                        if (*ptr) {
-                                load_config_error(data,
-                                                  "%s specified twice",
-                                                  key);
-                        } else {
-                                *ptr = pcx_strdup(value);
-                        }
+                        set_option(data,
+                                   options[i].type,
+                                   options[i].offset,
+                                   key,
+                                   value);
                         goto found_key;
                 }
 
@@ -376,6 +413,15 @@ validate_config(struct pcx_http_game *game,
                               &pcx_http_game_error,
                               PCX_HTTP_GAME_ERROR_CONFIG,
                               "%s: missing apikey option",
+                              filename);
+                return false;
+        }
+
+        if (game->game_chat == 0) {
+                pcx_set_error(error,
+                              &pcx_http_game_error,
+                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              "%s: missing game_chat option",
                               filename);
                 return false;
         }
@@ -722,7 +768,6 @@ pcx_http_game_free(struct pcx_http_game *game)
         remove_restart_updates_source(game);
 
         pcx_free(game->apikey);
-        pcx_free(game->game_chat);
         pcx_free(game->botname);
         pcx_free(game->announce_channel);
 
