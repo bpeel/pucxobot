@@ -68,8 +68,10 @@ struct pcx_http_game {
 
         int64_t last_update_id;
 
-        struct pcx_list inflight_requests;
-        struct pcx_list unused_requests;
+        CURL *request_handle;
+        bool request_handle_busy;
+        struct pcx_list queued_requests;
+        struct json_tokener *request_tokener;
 
         int n_players;
         struct player players[PCX_GAME_MAX_PLAYERS];
@@ -83,8 +85,8 @@ struct socket_data {
 
 struct request {
         struct pcx_list link;
-        struct json_tokener *tokener;
-        CURL *handle;
+        char *method;
+        struct json_object *args;
 };
 
 static void
@@ -148,25 +150,6 @@ get_fields(struct json_object *obj,
         return ret;
 }
 
-static struct request *
-get_unused_request(struct pcx_http_game *game)
-{
-        if (pcx_list_empty(&game->unused_requests)) {
-                struct request *request = pcx_alloc(sizeof *request);
-
-                request->handle = curl_easy_init();
-                request->tokener = json_tokener_new();
-                return request;
-        } else {
-                struct request *request =
-                        pcx_container_of(game->unused_requests.next,
-                                         struct request,
-                                         link);
-                pcx_list_remove(&request->link);
-                return request;
-        }
-}
-
 static void
 set_post_json_data(struct pcx_http_game *game,
                    CURL *handle,
@@ -196,10 +179,10 @@ request_write_cb(char *ptr,
                  size_t nmemb,
                  void *userdata)
 {
-        struct request *request = userdata;
+        struct pcx_http_game *game = userdata;
 
         struct json_object *obj =
-                json_tokener_parse_ex(request->tokener,
+                json_tokener_parse_ex(game->request_tokener,
                                       ptr,
                                       size * nmemb);
 
@@ -223,7 +206,7 @@ request_write_cb(char *ptr,
         }
 
         enum json_tokener_error error =
-                json_tokener_get_error(request->tokener);
+                json_tokener_get_error(game->request_tokener);
 
         if (error == json_tokener_continue)
                 return size * nmemb;
@@ -232,24 +215,55 @@ request_write_cb(char *ptr,
 }
 
 static void
+free_request(struct request *request)
+{
+        pcx_list_remove(&request->link);
+        json_object_put(request->args);
+        pcx_free(request->method);
+        pcx_free(request);
+}
+
+static void
+maybe_start_request(struct pcx_http_game *game)
+{
+        if (game->request_handle_busy ||
+            pcx_list_empty(&game->queued_requests))
+                return;
+
+        struct request *request =
+                pcx_container_of(game->queued_requests.next,
+                                 struct request,
+                                 link);
+
+        game->request_handle_busy = true;
+
+        set_easy_handle_method(game, game->request_handle, request->method);
+
+        curl_easy_setopt(game->request_handle,
+                         CURLOPT_WRITEFUNCTION,
+                         request_write_cb);
+        curl_easy_setopt(game->request_handle, CURLOPT_WRITEDATA, game);
+
+        set_post_json_data(game, game->request_handle, request->args);
+
+        curl_multi_add_handle(game->curlm, game->request_handle);
+
+        free_request(request);
+}
+
+static void
 send_request(struct pcx_http_game *game,
              const char *method,
              struct json_object *args)
 {
-        struct request *request = get_unused_request(game);
+        struct request *request = pcx_alloc(sizeof *request);
 
-        set_easy_handle_method(game, request->handle, method);
+        request->args = json_object_get(args);
+        request->method = pcx_strdup(method);
 
-        curl_easy_setopt(request->handle,
-                         CURLOPT_WRITEFUNCTION,
-                         request_write_cb);
-        curl_easy_setopt(request->handle, CURLOPT_WRITEDATA, request);
+        pcx_list_insert(game->queued_requests.prev, &request->link);
 
-        set_post_json_data(game, request->handle, args);
-
-        pcx_list_insert(&game->inflight_requests, &request->link);
-
-        curl_multi_add_handle(game->curlm, request->handle);
+        maybe_start_request(game);
 }
 
 static void
@@ -451,34 +465,23 @@ restart_updates(struct pcx_http_game *game,
 }
 
 static void
-remove_inflight_request(struct pcx_http_game *game,
-                        CURL *handle,
-                        CURLcode code)
+finish_request(struct pcx_http_game *game,
+               CURLcode code)
 {
-        struct request *request;
-
-        pcx_list_for_each(request, &game->inflight_requests, link) {
-                if (handle != request->handle)
-                        continue;
-
-                if (code != CURLE_OK) {
-                        fprintf(stderr,
-                                "request failed: %s\n",
-                                curl_easy_strerror(code));
-                }
-
-                curl_multi_remove_handle(game->curlm, handle);
-                curl_easy_reset(handle);
-
-                json_tokener_reset(request->tokener);
-
-                pcx_list_remove(&request->link);
-                pcx_list_insert(&game->unused_requests, &request->link);
-
-                return;
+        if (code != CURLE_OK) {
+                fprintf(stderr,
+                        "request failed: %s\n",
+                        curl_easy_strerror(code));
         }
 
-        pcx_fatal("unknown curl handle finished");
+        curl_multi_remove_handle(game->curlm, game->request_handle);
+        curl_easy_reset(game->request_handle);
+
+        json_tokener_reset(game->request_tokener);
+
+        game->request_handle_busy = false;
+
+        maybe_start_request(game);
 }
 
 static void
@@ -514,10 +517,10 @@ socket_action_cb(struct pcx_main_context_source *source,
 
                 if (msg->easy_handle == game->updates_handle) {
                         restart_updates(game, msg->data.result);
+                } else if (msg->easy_handle == game->request_handle) {
+                        finish_request(game, msg->data.result);
                 } else {
-                        remove_inflight_request(game,
-                                                msg->easy_handle,
-                                                msg->data.result);
+                        pcx_fatal("unknown curl handled completed");
                 }
         }
 }
@@ -1411,8 +1414,7 @@ pcx_http_game_new(struct pcx_error **error)
         struct pcx_http_game *game = pcx_calloc(sizeof *game);
 
         pcx_list_init(&game->sockets);
-        pcx_list_init(&game->inflight_requests);
-        pcx_list_init(&game->unused_requests);
+        pcx_list_init(&game->queued_requests);
 
         curl_global_init(CURL_GLOBAL_ALL);
 
@@ -1444,6 +1446,9 @@ pcx_http_game_new(struct pcx_error **error)
 
         curl_multi_add_handle(game->curlm, game->updates_handle);
 
+        game->request_handle = curl_easy_init();
+        game->request_tokener = json_tokener_new();
+
         return game;
 
 error:
@@ -1462,18 +1467,12 @@ remove_sockets(struct pcx_http_game *game)
 }
 
 static void
-free_requests(struct pcx_http_game *game,
-              struct pcx_list *list,
-              bool remove_from_multi)
+free_requests(struct pcx_http_game *game)
 {
         struct request *request, *tmp;
 
-        pcx_list_for_each_safe(request, tmp, list, link) {
-                if (remove_from_multi)
-                        curl_multi_remove_handle(game->curlm, request->handle);
-                curl_easy_cleanup(request->handle);
-                json_tokener_free(request->tokener);
-                pcx_free(request);
+        pcx_list_for_each_safe(request, tmp, &game->queued_requests, link) {
+                free_request(request);
         }
 }
 
@@ -1486,8 +1485,15 @@ pcx_http_game_free(struct pcx_http_game *game)
                 curl_easy_cleanup(game->updates_handle);
         }
 
-        free_requests(game, &game->inflight_requests, true);
-        free_requests(game, &game->unused_requests, false);
+        if (game->request_handle) {
+                if (game->request_handle_busy) {
+                        curl_multi_remove_handle(game->curlm,
+                                                 game->request_handle);
+                }
+                curl_easy_cleanup(game->request_handle);
+        }
+
+        free_requests(game);
 
         curl_slist_free_all(game->content_type_headers);
 
@@ -1496,6 +1502,9 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         if (game->tokener)
                 json_tokener_free(game->tokener);
+
+        if (game->request_tokener)
+                json_tokener_free(game->request_tokener);
 
         curl_global_cleanup();
 
