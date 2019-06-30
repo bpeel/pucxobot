@@ -51,6 +51,7 @@ struct pcx_http_game {
 
         CURLM *curlm;
         CURL *updates_handle;
+        struct curl_slist *updates_headers;
 };
 
 struct socket_data {
@@ -432,6 +433,15 @@ pcx_http_game_new(struct pcx_error **error)
 
         game->updates_handle = create_easy_handle(game, "getUpdates");
 
+        game->updates_headers =
+                curl_slist_append(NULL,
+                                  "Content-Type: "
+                                  "application/json; charset=utf-8");
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_HTTPHEADER,
+                         game->updates_headers);
+
         set_updates_handle_post_data(game);
 
         curl_multi_add_handle(game->curlm, game->updates_handle);
@@ -461,6 +471,8 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         if (game->updates_handle)
                 curl_easy_cleanup(game->updates_handle);
+
+        curl_slist_free_all(game->updates_headers);
 
         if (game->curlm)
                 curl_multi_cleanup(game->curlm);
