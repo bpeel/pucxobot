@@ -18,6 +18,8 @@
 
 #include "pcx-text.h"
 
+#include <string.h>
+
 #include "pcx-text-esperanto.h"
 #include "pcx-text-french.h"
 
@@ -32,4 +34,19 @@ pcx_text_get(enum pcx_text_language lang,
              enum pcx_text_string string)
 {
         return languages[lang][string];
+}
+
+bool
+pcx_text_lookup_language(const char *code,
+                         enum pcx_text_language *language)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(languages); i++) {
+                if (!strcmp(code,
+                            pcx_text_get(i, PCX_TEXT_STRING_LANGUAGE_CODE))) {
+                        *language = i;
+                        return true;
+                }
+        }
+
+        return false;
 }

@@ -67,7 +67,8 @@ load_config_error_func(const char *message,
 
 enum option_type {
         OPTION_TYPE_STRING,
-        OPTION_TYPE_INT
+        OPTION_TYPE_INT,
+        OPTION_TYPE_LANGUAGE_CODE,
 };
 
 static void
@@ -86,6 +87,17 @@ set_option(struct load_config_data *data,
                                           key);
                 } else {
                         *ptr = pcx_strdup(value);
+                }
+                break;
+        }
+        case OPTION_TYPE_LANGUAGE_CODE: {
+                enum pcx_text_language *ptr =
+                        (enum pcx_text_language *)
+                        ((uint8_t *) data->bot + offset);
+                if (!pcx_text_lookup_language(value, ptr)) {
+                        load_config_error(data,
+                                          "invalid language: %s",
+                                          value);
                 }
                 break;
         }
@@ -126,6 +138,7 @@ load_config_func(enum pcx_key_value_event event,
                 OPTION(apikey, STRING),
                 OPTION(botname, STRING),
                 OPTION(announce_channel, STRING),
+                OPTION(language, LANGUAGE_CODE),
 #undef OPTION
         };
 

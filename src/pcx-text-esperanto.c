@@ -22,6 +22,7 @@
 
 const char *
 pcx_text_esperanto[] = {
+        [PCX_TEXT_STRING_LANGUAGE_CODE] = "eo",
         [PCX_TEXT_STRING_TIMEOUT_START] =
         "Neniu aliĝis dum pli ol %i minutoj. La "
         "ludo tuj komenciĝos.",

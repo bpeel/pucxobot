@@ -20,6 +20,7 @@
 #define PCX_TEXT_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "pcx-buffer.h"
 
@@ -29,6 +30,7 @@ enum pcx_text_language {
 };
 
 enum pcx_text_string {
+        PCX_TEXT_STRING_LANGUAGE_CODE,
         PCX_TEXT_STRING_TIMEOUT_START,
         PCX_TEXT_STRING_TIMEOUT_ABANDON,
         PCX_TEXT_STRING_NEED_PUBLIC_GROUP,
@@ -104,5 +106,9 @@ enum pcx_text_string {
 const char *
 pcx_text_get(enum pcx_text_language lang,
              enum pcx_text_string string);
+
+bool
+pcx_text_lookup_language(const char *code,
+                         enum pcx_text_language *language);
 
 #endif /* PCX_TEXT_H */
