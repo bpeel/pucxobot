@@ -27,5 +27,6 @@ src = [
 ]
 
 curl = dependency('libcurl', version: '>=7.16')
+json = dependency('json-c')
 
-executable('pucxobot', src, dependencies: [curl])
+executable('pucxobot', src, dependencies: [curl, json])

@@ -19,6 +19,7 @@
 #include "pcx-http-game.h"
 
 #include <curl/curl.h>
+#include <json_object.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +47,10 @@ struct pcx_http_game {
         char *botname;
         char *announce_channel;
 
+        char *url_base;
+
         CURLM *curlm;
+        CURL *updates_handle;
 };
 
 struct socket_data {
@@ -372,6 +376,36 @@ load_config(struct pcx_http_game *game,
         return ret;
 }
 
+static CURL *
+create_easy_handle(struct pcx_http_game *game,
+                   const char *method)
+{
+        CURL *e = curl_easy_init();
+
+        char *url = pcx_strconcat(game->url_base, method, NULL);
+        curl_easy_setopt(e, CURLOPT_URL, url);
+        pcx_free(url);
+
+        return e;
+}
+
+static void
+set_updates_handle_post_data(struct pcx_http_game *game)
+{
+        struct json_object *au = json_object_new_array();
+        json_object_array_add(au, json_object_new_string("message"));
+        json_object_array_add(au, json_object_new_string("callback_query"));
+        struct json_object *obj = json_object_new_object();
+        json_object_object_add(obj, "allowed_updates", au);
+        json_object_object_add(obj, "timeout", json_object_new_int(300));
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_COPYPOSTFIELDS,
+                         json_object_to_json_string(obj));
+
+        json_object_put(obj);
+}
+
 struct pcx_http_game *
 pcx_http_game_new(struct pcx_error **error)
 {
@@ -384,12 +418,23 @@ pcx_http_game_new(struct pcx_error **error)
         if (!load_config(game, error))
                 goto error;
 
+        game->url_base = pcx_strconcat("https://api.telegram.org/bot",
+                                       game->apikey,
+                                       "/",
+                                       NULL);
+
         game->curlm = curl_multi_init();
 
         curl_multi_setopt(game->curlm, CURLMOPT_SOCKETFUNCTION, socket_cb);
         curl_multi_setopt(game->curlm, CURLMOPT_SOCKETDATA, game);
         curl_multi_setopt(game->curlm, CURLMOPT_TIMERFUNCTION, timer_cb);
         curl_multi_setopt(game->curlm, CURLMOPT_TIMERDATA, game);
+
+        game->updates_handle = create_easy_handle(game, "getUpdates");
+
+        set_updates_handle_post_data(game);
+
+        curl_multi_add_handle(game->curlm, game->updates_handle);
 
         return game;
 
@@ -414,6 +459,9 @@ pcx_http_game_free(struct pcx_http_game *game)
         if (game->game)
                 pcx_game_free(game->game);
 
+        if (game->updates_handle)
+                curl_easy_cleanup(game->updates_handle);
+
         if (game->curlm)
                 curl_multi_cleanup(game->curlm);
 
@@ -427,6 +475,8 @@ pcx_http_game_free(struct pcx_http_game *game)
         pcx_free(game->game_chat);
         pcx_free(game->botname);
         pcx_free(game->announce_channel);
+
+        pcx_free(game->url_base);
 
         pcx_free(game);
 }
