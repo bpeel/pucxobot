@@ -87,6 +87,7 @@ struct pcx_game {
         struct pcx_game_stack_entry stack[PCX_GAME_STACK_SIZE];
         int stack_pos;
         bool action_taken;
+        struct pcx_main_context_source *game_over_source;
 };
 
 static const struct pcx_game_button
@@ -266,11 +267,6 @@ do_idle(struct pcx_game *game)
                         break;
 
                 entry->idle_func(game);
-
-                if (is_finished(game)) {
-                        game->callbacks.game_over(game->user_data);
-                        break;
-                }
         }
 }
 
@@ -443,6 +439,15 @@ show_cards(struct pcx_game *game,
 }
 
 static void
+game_over_cb(struct pcx_main_context_source *source,
+             void *user_data)
+{
+        struct pcx_game *game = user_data;
+        game->game_over_source = NULL;
+        game->callbacks.game_over(game->user_data);
+}
+
+static void
 show_stats(struct pcx_game *game)
 {
         bool finished = is_finished(game);
@@ -501,6 +506,14 @@ show_stats(struct pcx_game *game)
                                          buttons.data);
 
         pcx_buffer_destroy(&buttons);
+
+        if (finished && game->game_over_source == NULL) {
+                game->game_over_source =
+                        pcx_main_context_add_timeout(NULL,
+                                                     0, /* ms */
+                                                     game_over_cb,
+                                                     game);
+        }
 }
 
 static void
@@ -1709,6 +1722,9 @@ pcx_game_free(struct pcx_game *game)
 
         for (int i = 0; i < game->n_players; i++)
                 pcx_free(game->players[i].name);
+
+        if (game->game_over_source)
+                pcx_main_context_remove_source(game->game_over_source);
 
         pcx_free(game);
 }
