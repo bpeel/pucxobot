@@ -240,34 +240,84 @@ send_request(struct pcx_http_game *game,
         curl_multi_add_handle(game->curlm, request->handle);
 }
 
+static void
+send_message(struct pcx_http_game *game,
+             int64_t chat_id,
+             int64_t in_reply_to,
+             const char *message)
+{
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args,
+                               "chat_id",
+                               json_object_new_int64(chat_id));
+
+        json_object_object_add(args,
+                               "text",
+                               json_object_new_string(message));
+
+        if (in_reply_to != -1) {
+                json_object_object_add(args,
+                                       "reply_to_message_id",
+                                       json_object_new_int64(in_reply_to));
+        }
+
+        send_request(game, "sendMessage", args);
+
+        json_object_put(args);
+}
+
+static void
+send_message_vprintf(struct pcx_http_game *game,
+                     int64_t chat_id,
+                     int64_t in_reply_to,
+                     const char *format,
+                     va_list ap)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_vprintf(&buf, format, ap);
+
+        send_message(game,
+                     chat_id,
+                     in_reply_to,
+                     (char *) buf.data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+PCX_PRINTF_FORMAT(4, 5)
+static void
+send_message_printf(struct pcx_http_game *game,
+                    int64_t chat_id,
+                    int64_t in_reply_to,
+                    const char *format,
+                    ...)
+{
+        va_list ap;
+        va_start(ap, format);
+        send_message_vprintf(game,
+                             chat_id,
+                             in_reply_to,
+                             format,
+                             ap);
+        va_end(ap);
+}
+
 PCX_PRINTF_FORMAT(2, 3)
 static void
 game_note(struct pcx_http_game *game,
           const char *format,
           ...)
 {
-        struct json_object *args = json_object_new_object();
-
-        json_object_object_add(args,
-                               "chat_id",
-                               json_object_new_int64(game->game_chat));
-
-        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-
         va_list ap;
         va_start(ap, format);
-        pcx_buffer_append_vprintf(&buf, format, ap);
+        send_message_vprintf(game,
+                             game->game_chat,
+                             -1, /* in_reply_to */
+                             format,
+                             ap);
         va_end(ap);
-
-        json_object_object_add(args,
-                               "text",
-                               json_object_new_string((char *) buf.data));
-
-        pcx_buffer_destroy(&buf);
-
-        send_request(game, "sendMessage", args);
-
-        json_object_put(args);
 }
 
 static void
@@ -838,6 +888,11 @@ process_entity(struct pcx_http_game *game,
                   "you sent command %.*s\n",
                   (int) length,
                   info->text + offset);
+
+        send_message_printf(game,
+                            info->chat_id,
+                            info->message_id,
+                            "You sent the command here");
 
         return true;
 }
