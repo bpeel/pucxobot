@@ -24,7 +24,7 @@ game_help[] =
         "\n"
         "Puĉo estas kartludo de trompado kaj blufado.\n"
         "\n"
-        "Ĉiu komence havas 2 kartojn (fackaŝitajn) kaj 2 monerojn."
+        "Ĉiu komence havas 2 kartojn (fackaŝitajn) kaj 2 monerojn. "
         "Se oni perdas vivon oni devas malkaŝi karton kaj oni ne plu povas uzi "
         "ĝin.\n"
         "\n"
