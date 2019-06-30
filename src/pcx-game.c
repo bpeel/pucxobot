@@ -1668,6 +1668,9 @@ pcx_game_new(const struct pcx_game_callbacks *callbacks,
                 game->players[i].name = pcx_strdup(names[i]);
         }
 
+        if (game->n_players == 2)
+                game->players[game->current_player].coins--;
+
         stack_push(game,
                    choose_action,
                    choose_action_idle);
