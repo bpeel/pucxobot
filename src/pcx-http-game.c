@@ -568,10 +568,99 @@ process_callback(struct pcx_http_game *game,
 }
 
 static bool
+process_entity(struct pcx_http_game *game,
+               struct json_object *entity,
+               const char *text,
+               int64_t from_id,
+               const char *first_name)
+{
+        int64_t offset, length;
+        const char *type;
+
+        bool ret = get_fields(entity,
+                              "offset", json_type_int, &offset,
+                              "length", json_type_int, &length,
+                              "type", json_type_string, &type,
+                              NULL);
+        if (!ret)
+                return false;
+
+        if (offset < 0 || length < 1 || offset + length > strlen(text))
+                return false;
+
+        if (strcmp(type, "bot_command"))
+                return true;
+
+        const char *at = memchr(text + offset, '@', length);
+
+        if (at) {
+                if (game->botname) {
+                        size_t botname_len = strlen(game->botname);
+                        if (text + offset + length - at - 1 != botname_len ||
+                            memcmp(at + 1, game->botname, botname_len)) {
+                                return true;
+                        }
+                }
+
+                length = at - (text + offset);
+        }
+
+        printf("%.*s\n", (int) length, text + offset);
+
+        return true;
+}
+
+static bool
 process_message(struct pcx_http_game *game,
                 struct json_object *message)
 {
-        printf("%s\n", json_object_to_json_string(message));
+        struct json_object *chat, *from;
+        const char *text;
+
+        bool ret = get_fields(message,
+                              "chat", json_type_object, &chat,
+                              "from", json_type_object, &from,
+                              "text", json_type_string, &text,
+                              NULL);
+        if (!ret)
+                return false;
+
+        int64_t from_id;
+        const char *first_name;
+
+        ret = get_fields(from,
+                         "id", json_type_int, &from_id,
+                         "first_name", json_type_string, &first_name,
+                         NULL);
+        if (!ret)
+                return false;
+
+        int64_t chat_id;
+
+        ret = get_fields(chat,
+                         "id", json_type_int, &chat_id,
+                         NULL);
+        if (!ret)
+                return false;
+
+        if (chat_id != game->game_chat)
+                return true;
+
+        struct json_object *entities;
+
+        if (!get_fields(message,
+                        "entities", json_type_array, &entities,
+                        NULL))
+                return true;
+
+        for (unsigned i = 0; i < json_object_array_length(entities); i++) {
+                struct json_object *entity =
+                        json_object_array_get_idx(entities, i);
+
+                if (!process_entity(game, entity, text, from_id, first_name))
+                        return false;
+        }
+
         return true;
 }
 
