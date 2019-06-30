@@ -782,7 +782,11 @@ do_reveal(struct pcx_game *game,
                           pcx_character_get_name(character),
                           challenging_player->name);
                 change_card(game, data->challenged_player, character);
-                do_challenge_action(game, data->cb, data->user_data);
+                stack_pop(game);
+                struct challenge_data *challenge_data =
+                        get_stack_data_pointer(game);
+                challenge_data->flags &= ~CHALLENGE_FLAG_CHALLENGE;
+                take_action(game);
                 lose_card(game, challenging_player - game->players);
         } else {
                 struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
@@ -808,6 +812,8 @@ do_reveal(struct pcx_game *game,
                 show_cards(game, data->challenged_player);
 
                 take_action(game);
+                stack_pop(game);
+                /* Also pop the challenge */
                 stack_pop(game);
         }
 }
@@ -957,6 +963,9 @@ static bool
 is_accepted(struct pcx_game *game,
             const struct challenge_data *data)
 {
+        if (data->flags == 0)
+                return true;
+
         uint32_t alive_players = 0;
 
         for (unsigned i = 0; i < game->n_players; i++) {
@@ -995,8 +1004,6 @@ check_challenge_callback_data(struct pcx_game *game,
                 uint32_t challenged_characters = data->challenged_characters;
                 action_cb cb = data->cb;
                 void *user_data = data->user_data;
-
-                stack_pop(game);
 
                 reveal_card(game,
                             player_num,
