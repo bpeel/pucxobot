@@ -751,6 +751,7 @@ struct message_info {
         const char *text;
         int64_t from_id;
         int64_t chat_id;
+        int64_t message_id;
         bool is_private;
         /* Can be null */
         const char *first_name;
@@ -766,6 +767,7 @@ get_message_info(struct json_object *message,
                               "chat", json_type_object, &chat,
                               "from", json_type_object, &from,
                               "text", json_type_string, &info->text,
+                              "message_id", json_type_int, &info->message_id,
                               NULL);
         if (!ret)
                 return false;
