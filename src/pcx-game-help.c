@@ -19,7 +19,7 @@
 #include "pcx-game-help.h"
 
 const char
-game_help[] =
+pcx_game_help[] =
         "<b>RESUMO DE LA REGULOJ:</b>"
         "\n"
         "Puĉo estas kartludo de trompado kaj blufado.\n"

@@ -20,6 +20,6 @@
 #define PCX_GAME_HELP_H
 
 extern const char
-game_help[];
+pcx_game_help[];
 
 #endif /* PCX_GAME_HELP_H */

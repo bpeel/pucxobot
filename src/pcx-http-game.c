@@ -1197,7 +1197,7 @@ process_help(struct pcx_http_game *game,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_HTML,
-                          game_help,
+                          pcx_game_help,
                           0, /* n_buttons */
                           NULL /* buttons */);
 }
