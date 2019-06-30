@@ -25,6 +25,7 @@
 
 enum pcx_text_language {
         PCX_TEXT_LANGUAGE_ESPERANTO,
+        PCX_TEXT_LANGUAGE_FRENCH,
 };
 
 enum pcx_text_string {

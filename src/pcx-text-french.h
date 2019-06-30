@@ -16,20 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-text.h"
+#ifndef PCX_TEXT_FRENCH_H
+#define PCX_TEXT_FRENCH_H
 
-#include "pcx-text-esperanto.h"
-#include "pcx-text-french.h"
+extern const char *
+pcx_text_french[];
 
-static const char **
-languages[] = {
-        [PCX_TEXT_LANGUAGE_ESPERANTO] = pcx_text_esperanto,
-        [PCX_TEXT_LANGUAGE_FRENCH] = pcx_text_french,
-};
-
-const char *
-pcx_text_get(enum pcx_text_language lang,
-             enum pcx_text_string string)
-{
-        return languages[lang][string];
-}
+#endif /* PCX_TEXT_FRENCH_H */

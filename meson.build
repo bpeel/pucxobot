@@ -28,6 +28,7 @@ src = [
         'src/pcx-curl-multi.c',
         'src/pcx-config.c',
         'src/pcx-text-esperanto.c',
+        'src/pcx-text-french.c',
         'src/pcx-text.c',
 ]
 
