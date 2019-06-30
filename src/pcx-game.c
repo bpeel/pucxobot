@@ -49,8 +49,7 @@ typedef void
 typedef void
 (* pcx_game_idle_func)(struct pcx_game *game);
 
-/* Called just beforing popping the stack in order to clean up
- * data.
+/* Called just before popping the stack in order to clean up data.
  */
 typedef void
 (* pcx_game_stack_destroy_func)(struct pcx_game *game);
