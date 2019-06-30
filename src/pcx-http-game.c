@@ -40,6 +40,7 @@ struct pcx_http_game {
         struct pcx_game *game;
 
         struct pcx_main_context_source *timeout_source;
+        struct pcx_main_context_source *restart_updates_source;
 
         struct pcx_list sockets;
 
@@ -66,6 +67,9 @@ struct socket_data {
 };
 
 static void
+set_updates_handle_options(struct pcx_http_game *game);
+
+static void
 remove_socket(struct socket_data *sock)
 {
         if (sock->source)
@@ -82,6 +86,55 @@ remove_timeout_source(struct pcx_http_game *game)
 
         pcx_main_context_remove_source(game->timeout_source);
         game->timeout_source = NULL;
+}
+
+static void
+remove_restart_updates_source(struct pcx_http_game *game)
+{
+        if (game->restart_updates_source == NULL)
+                return;
+
+        pcx_main_context_remove_source(game->restart_updates_source);
+        game->restart_updates_source = NULL;
+}
+
+static void
+restart_updates_cb(struct pcx_main_context_source *source,
+                   void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+
+        game->restart_updates_source = NULL;
+
+        curl_multi_remove_handle(game->curlm,
+                                 game->updates_handle);
+
+        curl_easy_reset(game->updates_handle);
+        set_updates_handle_options(game);
+
+        curl_multi_add_handle(game->curlm, game->updates_handle);
+}
+
+static void
+restart_updates(struct pcx_http_game *game,
+                CURLcode code)
+{
+        long timeout = 0;
+
+        if (code != CURLE_OK) {
+                fprintf(stderr,
+                        "getUpdates failed: %s\n",
+                        curl_easy_strerror(code));
+                timeout = 60 * 1000;
+        }
+
+        remove_restart_updates_source(game);
+
+        game->restart_updates_source =
+                pcx_main_context_add_timeout(NULL,
+                                             timeout,
+                                             restart_updates_cb,
+                                             game);
 }
 
 static void
@@ -107,6 +160,17 @@ socket_action_cb(struct pcx_main_context_source *source,
                                  fd,
                                  ev_bitmask,
                                  &running_handles);
+
+        CURLMsg *msg;
+        int msgs_in_queue;
+
+        while ((msg = curl_multi_info_read(game->curlm, &msgs_in_queue))) {
+                if (msg->msg != CURLMSG_DONE)
+                        continue;
+
+                if (msg->easy_handle == game->updates_handle)
+                        restart_updates(game, msg->data.result);
+        }
 }
 
 static int
@@ -382,40 +446,14 @@ load_config(struct pcx_http_game *game,
         return ret;
 }
 
-static CURL *
-create_easy_handle(struct pcx_http_game *game,
-                   const char *method)
+static void
+set_easy_handle_method(struct pcx_http_game *game,
+                       CURL *e,
+                       const char *method)
 {
-        CURL *e = curl_easy_init();
-
         char *url = pcx_strconcat(game->url_base, method, NULL);
         curl_easy_setopt(e, CURLOPT_URL, url);
         pcx_free(url);
-
-        return e;
-}
-
-static void
-set_updates_handle_post_data(struct pcx_http_game *game)
-{
-        struct json_object *au = json_object_new_array();
-        json_object_array_add(au, json_object_new_string("message"));
-        json_object_array_add(au, json_object_new_string("callback_query"));
-        struct json_object *obj = json_object_new_object();
-        json_object_object_add(obj, "allowed_updates", au);
-        json_object_object_add(obj, "timeout", json_object_new_int(300));
-
-        if (game->last_update_id > 0) {
-                struct json_object *id =
-                        json_object_new_int64(game->last_update_id);
-                json_object_object_add(obj, "offset", id);
-        }
-
-        curl_easy_setopt(game->updates_handle,
-                         CURLOPT_COPYPOSTFIELDS,
-                         json_object_to_json_string(obj));
-
-        json_object_put(obj);
 }
 
 PCX_NULL_TERMINATED
@@ -568,6 +606,40 @@ updates_write_cb(char *ptr,
                 return 0;
 }
 
+static void
+set_updates_handle_options(struct pcx_http_game *game)
+{
+        set_easy_handle_method(game, game->updates_handle, "getUpdates");
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_HTTPHEADER,
+                         game->updates_headers);
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_WRITEFUNCTION,
+                         updates_write_cb);
+        curl_easy_setopt(game->updates_handle, CURLOPT_WRITEDATA, game);
+
+        struct json_object *au = json_object_new_array();
+        json_object_array_add(au, json_object_new_string("message"));
+        json_object_array_add(au, json_object_new_string("callback_query"));
+        struct json_object *obj = json_object_new_object();
+        json_object_object_add(obj, "allowed_updates", au);
+        json_object_object_add(obj, "timeout", json_object_new_int(300));
+
+        if (game->last_update_id > 0) {
+                struct json_object *id =
+                        json_object_new_int64(game->last_update_id + 1);
+                json_object_object_add(obj, "offset", id);
+        }
+
+        curl_easy_setopt(game->updates_handle,
+                         CURLOPT_COPYPOSTFIELDS,
+                         json_object_to_json_string(obj));
+
+        json_object_put(obj);
+}
+
 struct pcx_http_game *
 pcx_http_game_new(struct pcx_error **error)
 {
@@ -594,23 +666,14 @@ pcx_http_game_new(struct pcx_error **error)
         curl_multi_setopt(game->curlm, CURLMOPT_TIMERFUNCTION, timer_cb);
         curl_multi_setopt(game->curlm, CURLMOPT_TIMERDATA, game);
 
-        game->updates_handle = create_easy_handle(game, "getUpdates");
-
         game->updates_headers =
                 curl_slist_append(NULL,
                                   "Content-Type: "
                                   "application/json; charset=utf-8");
 
-        curl_easy_setopt(game->updates_handle,
-                         CURLOPT_HTTPHEADER,
-                         game->updates_headers);
+        game->updates_handle = curl_easy_init();
 
-        curl_easy_setopt(game->updates_handle,
-                         CURLOPT_WRITEFUNCTION,
-                         updates_write_cb);
-        curl_easy_setopt(game->updates_handle, CURLOPT_WRITEDATA, game);
-
-        set_updates_handle_post_data(game);
+        set_updates_handle_options(game);
 
         curl_multi_add_handle(game->curlm, game->updates_handle);
 
@@ -637,8 +700,11 @@ pcx_http_game_free(struct pcx_http_game *game)
         if (game->game)
                 pcx_game_free(game->game);
 
-        if (game->updates_handle)
+        if (game->updates_handle) {
+                curl_multi_remove_handle(game->curlm,
+                                         game->updates_handle);
                 curl_easy_cleanup(game->updates_handle);
+        }
 
         curl_slist_free_all(game->updates_headers);
 
@@ -653,6 +719,7 @@ pcx_http_game_free(struct pcx_http_game *game)
         remove_sockets(game);
 
         remove_timeout_source(game);
+        remove_restart_updates_source(game);
 
         pcx_free(game->apikey);
         pcx_free(game->game_chat);
