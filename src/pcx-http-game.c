@@ -883,10 +883,61 @@ game_callbacks = {
         .send_message = send_message_cb,
 };
 
+static void
+answer_callback(struct pcx_http_game *game,
+                const char *id)
+{
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args,
+                               "callback_query_id",
+                               json_object_new_string(id));
+
+        send_request(game, "answerCallbackQuery", args);
+
+        json_object_put(args);
+}
+
 static bool
 process_callback(struct pcx_http_game *game,
                  struct json_object *callback)
 {
+        const char *id;
+        const char *callback_data;
+        struct json_object *from;
+
+        bool ret = get_fields(callback,
+                              "id", json_type_string, &id,
+                              "data", json_type_string, &callback_data,
+                              "from", json_type_object, &from,
+                              NULL);
+
+        if (!ret)
+                return false;
+
+        int64_t from_id;
+
+        ret = get_fields(from,
+                         "id", json_type_int, &from_id,
+                         NULL);
+
+        if (!ret)
+                return false;
+
+        answer_callback(game, id);
+
+        if (!game->game)
+                return true;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (game->players[i].id == from_id) {
+                        pcx_game_handle_callback_data(game->game,
+                                                      i,
+                                                      callback_data);
+                        break;
+                }
+        }
+
         return true;
 }
 
