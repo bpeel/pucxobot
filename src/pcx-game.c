@@ -434,7 +434,8 @@ get_buttons(struct pcx_game *game,
 }
 
 static void
-add_cards_status(struct pcx_buffer *buffer,
+add_cards_status(struct pcx_game *game,
+                 struct pcx_buffer *buffer,
                  const struct pcx_game_player *player)
 {
         for (unsigned int i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
@@ -442,8 +443,11 @@ add_cards_status(struct pcx_buffer *buffer,
                 enum pcx_character character = card->character;
 
                 if (card->dead) {
-                        const char *name = pcx_character_get_name(character);
-                        pcx_buffer_append_printf(buffer, "☠%s☠", name);
+                        enum pcx_text_string name =
+                                pcx_character_get_name(character);
+                        pcx_buffer_append_string(buffer, "☠");
+                        append_buffer_string(game, buffer, name);
+                        pcx_buffer_append_string(buffer, "☠");
                 } else {
                         pcx_buffer_append_string(buffer, "🂠");
                 }
@@ -482,18 +486,21 @@ show_cards(struct pcx_game *game,
 
         for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
                 const struct pcx_game_card *card = player->cards + i;
-                const char *name = pcx_character_get_name(card->character);
+                enum pcx_text_string name =
+                        pcx_character_get_name(card->character);
 
-                if (card->dead) {
-                        pcx_buffer_append_printf(&game->buffer,
-                                                 "☠%s☠\n",
-                                                 name);
-                } else {
-                        pcx_buffer_append_printf(&game->buffer,
-                                                 "%s\n",
-                                                 name);
-                }
+                if (card->dead)
+                        pcx_buffer_append_string(&game->buffer, "☠");
+
+                append_buffer_string(game, &game->buffer, name);
+
+                if (card->dead)
+                        pcx_buffer_append_string(&game->buffer, "☠");
+
+                pcx_buffer_append_c(&game->buffer, '\n');
         }
+
+        pcx_buffer_append_c(&game->buffer, '\0');
 
         send_buffer_message_to(game, player_num);
 }
@@ -529,7 +536,7 @@ show_stats(struct pcx_game *game)
                 pcx_buffer_append_string(&game->buffer, player->name);
                 pcx_buffer_append_string(&game->buffer, ":\n");
 
-                add_cards_status(&game->buffer, player);
+                add_cards_status(game, &game->buffer, player);
 
                 if (alive) {
                         pcx_buffer_append_string(&game->buffer, ", ");
@@ -692,9 +699,11 @@ choose_card_to_lose_idle(struct pcx_game *game)
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "lose:%u", i);
+                enum pcx_text_string name =
+                        pcx_character_get_name(player->cards[i].character);
 
                 buttons[n_buttons].text =
-                        pcx_character_get_name(player->cards[i].character);
+                        pcx_text_get(game->language, name);
                 buttons[n_buttons].data = (char *) buf.data;
                 n_buttons++;
         }
@@ -745,10 +754,9 @@ get_challenged_cards(struct pcx_game *game,
                                 pcx_buffer_append_string(buf, final_separator);
                 }
 
-                append_buffer_printf(game,
+                append_buffer_string(game,
                                      buf,
-                                     PCX_TEXT_STRING_CARD_LIST_OBJECT,
-                                     pcx_character_get_name(i));
+                                     pcx_character_get_object_name(i));
         }
 }
 
@@ -849,11 +857,15 @@ do_reveal(struct pcx_game *game,
                 game->players + data->challenging_player;
 
         if ((data->challenged_characters & (UINT32_C(1) << character))) {
+                enum pcx_text_string character_name =
+                        pcx_character_get_object_name(character);
+                const char *character_name_string =
+                        pcx_text_get(game->language, character_name);
                 game_note(game,
                           PCX_TEXT_STRING_CHALLENGE_FAILED,
                           challenging_player->name,
                           challenged_player->name,
-                          pcx_character_get_name(character),
+                          character_name_string,
                           challenging_player->name);
                 change_card(game, data->challenged_player, character);
                 stack_pop(game);
@@ -950,8 +962,11 @@ reveal_idle(struct pcx_game *game)
                 if (card->dead)
                         continue;
 
-                buttons[n_buttons].text =
+                enum pcx_text_string name =
                         pcx_character_get_name(card->character);
+
+                buttons[n_buttons].text =
+                        pcx_text_get(game->language, name);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "reveal:%u", i);
@@ -1548,7 +1563,9 @@ exchange_idle(struct pcx_game *game)
 
         for (unsigned i = 0; i < data->n_cards_available; i++) {
                 enum pcx_character character = data->available_cards[i];
-                buttons[i].text = pcx_character_get_name(character);
+                enum pcx_text_string name =
+                        pcx_character_get_name(character);
+                buttons[i].text = pcx_text_get(game->language, name);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "keep:%u", i);

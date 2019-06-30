@@ -97,13 +97,11 @@ pcx_text_french[] = {
         "%s, c’est à vous, que voulez-vous faire ?",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
         "Quelle carte voulez-vous perdre ?",
-        [PCX_TEXT_STRING_CARD_LIST_OBJECT] =
-        "le %s",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s a mis %s en doute et il/elle n’avait pas %s et perd "
         "une carte",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s a mis %s en doute mais il/elle avait vraiment le %s et %s perd "
+        "%s a mis %s en doute mais il/elle avait vraiment %s et %s perd "
         "une carte",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne croit pas que vous aviez %s.\n"
@@ -154,4 +152,24 @@ pcx_text_french[] = {
         "%s, à qui voulez-vous voler ?",
         [PCX_TEXT_STRING_DOING_STEAL] =
         "💰 %s veut voler à %s.",
+        [PCX_TEXT_STRING_CHARACTER_NAME_DUKE] =
+        "Duchesse",
+        [PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN] =
+        "Assassin",
+        [PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA] =
+        "Comtesse",
+        [PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN] =
+        "Capitaine",
+        [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
+        "Ambassadeur",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
+        "la duchesse",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
+        "l’assassin",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA] =
+        "la comtesse",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN] =
+        "le capitaine",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
+        "l’ambassadeur",
 };

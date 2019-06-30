@@ -22,15 +22,41 @@
 
 #include "pcx-util.h"
 
-const char *
+enum pcx_text_string
 pcx_character_get_name(enum pcx_character character)
 {
-        static const char *names[] = {
-                [PCX_CHARACTER_DUKE] = "Duko",
-                [PCX_CHARACTER_ASSASSIN] = "Murdisto",
-                [PCX_CHARACTER_CONTESSA] = "Grafino",
-                [PCX_CHARACTER_CAPTAIN] = "Kapitano",
-                [PCX_CHARACTER_AMBASSADOR] = "Ambasadoro",
+        static const enum pcx_text_string names[] = {
+                [PCX_CHARACTER_DUKE] =
+                PCX_TEXT_STRING_CHARACTER_NAME_DUKE,
+                [PCX_CHARACTER_ASSASSIN] =
+                PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN,
+                [PCX_CHARACTER_CONTESSA] =
+                PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA,
+                [PCX_CHARACTER_CAPTAIN] =
+                PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN,
+                [PCX_CHARACTER_AMBASSADOR] =
+                PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR,
+        };
+
+        assert(character >= 0 && character < PCX_N_ELEMENTS(names));
+
+        return names[character];
+}
+
+enum pcx_text_string
+pcx_character_get_object_name(enum pcx_character character)
+{
+        static const enum pcx_text_string names[] = {
+                [PCX_CHARACTER_DUKE] =
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE,
+                [PCX_CHARACTER_ASSASSIN] =
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN,
+                [PCX_CHARACTER_CONTESSA] =
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA,
+                [PCX_CHARACTER_CAPTAIN] =
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN,
+                [PCX_CHARACTER_AMBASSADOR] =
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR,
         };
 
         assert(character >= 0 && character < PCX_N_ELEMENTS(names));

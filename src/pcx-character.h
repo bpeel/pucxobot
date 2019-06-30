@@ -19,6 +19,8 @@
 #ifndef PCX_CHARACTER_H
 #define PCX_CHARACTER_H
 
+#include "pcx-text.h"
+
 enum pcx_character {
         PCX_CHARACTER_DUKE,
         PCX_CHARACTER_ASSASSIN,
@@ -29,7 +31,10 @@ enum pcx_character {
 
 #define PCX_CHARACTER_COUNT 5
 
-const char *
+enum pcx_text_string
 pcx_character_get_name(enum pcx_character character);
+
+enum pcx_text_string
+pcx_character_get_object_name(enum pcx_character character);
 
 #endif /* PCX_CHARACTER_H */

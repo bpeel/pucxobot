@@ -101,13 +101,11 @@ pcx_text_esperanto[] = {
         "kion vi volas fari?",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
         "Kiun karton vi volas perdi?",
-        [PCX_TEXT_STRING_CARD_LIST_OBJECT] =
-        "la %sn",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s defiis kaj %s ne havis %s kaj %s "
         "perdas karton",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s defiis sed %s ja havis la %sn kaj %s "
+        "%s defiis sed %s ja havis %s kaj %s "
         "perdas karton",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne kredas ke vi havas %s.\n"
@@ -166,4 +164,24 @@ pcx_text_esperanto[] = {
         "%s, de kiu vi volas ŝteli?",
         [PCX_TEXT_STRING_DOING_STEAL] =
         "💰 %s volas ŝteli de %s",
+        [PCX_TEXT_STRING_CHARACTER_NAME_DUKE] =
+        "Duko",
+        [PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN] =
+        "Murdisto",
+        [PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA] =
+        "Grafino",
+        [PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN] =
+        "Kapitano",
+        [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
+        "Ambasadoro",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
+        "la dukon",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
+        "la murdiston",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA] =
+        "la grafinon",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN] =
+        "la kapitanon",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
+        "la ambasadoron",
 };
