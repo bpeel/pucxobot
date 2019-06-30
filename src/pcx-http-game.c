@@ -1553,8 +1553,6 @@ pcx_http_game_new(struct pcx_error **error)
 
         pcx_buffer_init(&game->known_ids);
 
-        curl_global_init(CURL_GLOBAL_ALL);
-
         if (!load_config(game, error))
                 goto error;
 
@@ -1644,8 +1642,6 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         if (game->request_tokener)
                 json_tokener_free(game->request_tokener);
-
-        curl_global_cleanup();
 
         reset_game(game);
 

@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+#include <curl/curl.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-http-game.h"
@@ -39,6 +40,7 @@ main(int argc, char **argv)
 {
         struct pcx_tty_game *tty_game = NULL;
         struct pcx_http_game *http_game = NULL;
+        bool curl_inited = false;
 
         if (argc > 1) {
                 if (argc - 1 > PCX_GAME_MAX_PLAYERS) {
@@ -57,6 +59,9 @@ main(int argc, char **argv)
                         return EXIT_FAILURE;
                 }
         } else {
+                curl_global_init(CURL_GLOBAL_ALL);
+                curl_inited = true;
+
                 struct pcx_error *error = NULL;
                 time_t t;
                 time(&t);
@@ -83,6 +88,8 @@ main(int argc, char **argv)
                 pcx_tty_game_free(tty_game);
         if (http_game)
                 pcx_http_game_free(http_game);
+        if (curl_inited)
+                curl_global_cleanup();
 
         pcx_main_context_free(pcx_main_context_get_default());
 
