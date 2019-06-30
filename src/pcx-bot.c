@@ -1213,7 +1213,8 @@ set_updates_handle_options(struct pcx_bot *bot)
 }
 
 struct pcx_bot *
-pcx_bot_new(struct pcx_error **error)
+pcx_bot_new(struct pcx_curl_multi *pcurl,
+            struct pcx_error **error)
 {
         struct pcx_bot *bot = pcx_calloc(sizeof *bot);
 
@@ -1235,7 +1236,7 @@ pcx_bot_new(struct pcx_error **error)
                                       "/",
                                       NULL);
 
-        bot->pcurl = pcx_curl_multi_new();
+        bot->pcurl = pcurl;
 
         bot->content_type_headers =
                 curl_slist_append(NULL,
@@ -1301,9 +1302,6 @@ pcx_bot_free(struct pcx_bot *bot)
         free_requests(bot);
 
         curl_slist_free_all(bot->content_type_headers);
-
-        if (bot->pcurl)
-                pcx_curl_multi_free(bot->pcurl);
 
         if (bot->tokener)
                 json_tokener_free(bot->tokener);

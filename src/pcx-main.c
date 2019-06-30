@@ -26,6 +26,7 @@
 #include "pcx-bot.h"
 #include "pcx-game.h"
 #include "pcx-main-context.h"
+#include "pcx-curl-multi.h"
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -39,6 +40,7 @@ int
 main(int argc, char **argv)
 {
         struct pcx_tty_game *tty_game = NULL;
+        struct pcx_curl_multi *pcurl = NULL;
         struct pcx_bot *bot = NULL;
         bool curl_inited = false;
 
@@ -63,10 +65,13 @@ main(int argc, char **argv)
                 curl_inited = true;
 
                 struct pcx_error *error = NULL;
+
+                pcurl = pcx_curl_multi_new();
+
                 time_t t;
                 time(&t);
                 srand(t);
-                bot = pcx_bot_new(&error);
+                bot = pcx_bot_new(pcurl, &error);
                 if (bot == NULL) {
                         fprintf(stderr, "%s\n", error->message);
                         pcx_error_free(error);
@@ -88,6 +93,8 @@ main(int argc, char **argv)
                 pcx_tty_game_free(tty_game);
         if (bot)
                 pcx_bot_free(bot);
+        if (pcurl)
+                pcx_curl_multi_free(pcurl);
         if (curl_inited)
                 curl_global_cleanup();
 

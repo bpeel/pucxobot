@@ -19,12 +19,14 @@
 #ifndef PCX_BOT_H
 #define PCX_BOT_H
 
+#include "pcx-curl-multi.h"
 #include "pcx-error.h"
 
 struct pcx_bot;
 
 struct pcx_bot *
-pcx_bot_new(struct pcx_error **error);
+pcx_bot_new(struct pcx_curl_multi *pcurl,
+            struct pcx_error **error);
 
 void
 pcx_bot_free(struct pcx_bot *bot);
