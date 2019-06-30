@@ -118,10 +118,16 @@ send_message_cb(enum pcx_game_message_format format,
                            buttons);
 }
 
+static void
+game_over_cb(void *user_data)
+{
+}
+
 static const struct pcx_game_callbacks
 callbacks = {
         .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
+        .game_over = game_over_cb,
 };
 
 static void

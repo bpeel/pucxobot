@@ -47,6 +47,7 @@ struct pcx_game_callbacks {
                               size_t n_buttons,
                               const struct pcx_game_button *buttons,
                               void *user_data);
+        void (* game_over)(void *user_data);
 };
 
 struct pcx_game *

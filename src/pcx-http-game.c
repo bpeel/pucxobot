@@ -825,6 +825,20 @@ load_config(struct pcx_http_game *game,
 }
 
 static void
+reset_game(struct pcx_http_game *game)
+{
+        if (game->game) {
+                pcx_game_free(game->game);
+                game->game = NULL;
+        }
+
+        for (unsigned i = 0; i < game->n_players; i++)
+                pcx_free(game->players[i].name);
+
+        game->n_players = 0;
+}
+
+static void
 send_private_message_cb(int user_num,
                         enum pcx_game_message_format format,
                         const char *message,
@@ -861,10 +875,18 @@ send_message_cb(enum pcx_game_message_format format,
                                   buttons);
 }
 
+static void
+game_over_cb(void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+        reset_game(game);
+}
+
 static const struct pcx_game_callbacks
 game_callbacks = {
         .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
+        .game_over = game_over_cb,
 };
 
 static void
@@ -1347,14 +1369,6 @@ remove_sockets(struct pcx_http_game *game)
 }
 
 static void
-remove_players(struct pcx_http_game *game)
-{
-        for (unsigned i = 0; i < game->n_players; i++)
-                pcx_free(game->players[i].name);
-        game->n_players = 0;
-}
-
-static void
 free_requests(struct pcx_http_game *game,
               struct pcx_list *list,
               bool remove_from_multi)
@@ -1373,9 +1387,6 @@ free_requests(struct pcx_http_game *game,
 void
 pcx_http_game_free(struct pcx_http_game *game)
 {
-        if (game->game)
-                pcx_game_free(game->game);
-
         if (game->updates_handle) {
                 curl_multi_remove_handle(game->curlm,
                                          game->updates_handle);
@@ -1395,7 +1406,7 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         curl_global_cleanup();
 
-        remove_players(game);
+        reset_game(game);
 
         remove_sockets(game);
 

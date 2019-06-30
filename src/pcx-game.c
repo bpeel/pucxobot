@@ -228,6 +228,30 @@ get_stack_data_pointer(struct pcx_game *game)
         return get_stack_top(game)->data.p;
 }
 
+static bool
+is_alive(const struct pcx_game_player *player)
+{
+        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
+                if (!player->cards[i].dead)
+                        return true;
+        }
+
+        return false;
+}
+
+static bool
+is_finished(const struct pcx_game *game)
+{
+        unsigned n_players = 0;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (is_alive(game->players + i))
+                        n_players++;
+        }
+
+        return n_players <= 1;
+}
+
 static void
 do_idle(struct pcx_game *game)
 {
@@ -243,6 +267,11 @@ do_idle(struct pcx_game *game)
                         break;
 
                 entry->idle_func(game);
+
+                if (is_finished(game)) {
+                        game->callbacks.game_over(game->user_data);
+                        break;
+                }
         }
 }
 
@@ -354,30 +383,6 @@ get_buttons(struct pcx_game *game,
                 add_button(buffer, &assassinate_button);
         add_button(buffer, &exchange_button);
         add_button(buffer, &steal_button);
-}
-
-static bool
-is_alive(const struct pcx_game_player *player)
-{
-        for (unsigned i = 0; i < PCX_GAME_CARDS_PER_PLAYER; i++) {
-                if (!player->cards[i].dead)
-                        return true;
-        }
-
-        return false;
-}
-
-static bool
-is_finished(const struct pcx_game *game)
-{
-        unsigned n_players = 0;
-
-        for (unsigned i = 0; i < game->n_players; i++) {
-                if (is_alive(game->players + i))
-                        n_players++;
-        }
-
-        return n_players <= 1;
 }
 
 static void
