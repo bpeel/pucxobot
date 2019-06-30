@@ -1000,6 +1000,8 @@ check_challenge_callback_data(struct pcx_game *game,
                 if (!is_alive(game->players + player_num))
                         return;
 
+                remove_challenge_timeout(data);
+
                 int challenged_player = data->player_num;
                 uint32_t challenged_characters = data->challenged_characters;
                 action_cb cb = data->cb;
