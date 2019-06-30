@@ -59,7 +59,7 @@ struct pcx_bot {
 
         struct pcx_main_context_source *restart_updates_source;
 
-        struct pcx_config *config;
+        const struct pcx_config_bot *config;
 
         char *url_base;
 
@@ -1214,7 +1214,7 @@ set_updates_handle_options(struct pcx_bot *bot)
 
 struct pcx_bot *
 pcx_bot_new(struct pcx_curl_multi *pcurl,
-            struct pcx_error **error)
+            const struct pcx_config_bot *config)
 {
         struct pcx_bot *bot = pcx_calloc(sizeof *bot);
 
@@ -1223,9 +1223,7 @@ pcx_bot_new(struct pcx_curl_multi *pcurl,
 
         pcx_buffer_init(&bot->known_ids);
 
-        bot->config = pcx_config_load(error);
-        if (bot->config == NULL)
-                goto error;
+        bot->config = config;
 
         load_known_ids(bot);
 
@@ -1256,10 +1254,6 @@ pcx_bot_new(struct pcx_curl_multi *pcurl,
         bot->request_tokener = json_tokener_new();
 
         return bot;
-
-error:
-        pcx_bot_free(bot);
-        return NULL;
 }
 
 static void
@@ -1314,9 +1308,6 @@ pcx_bot_free(struct pcx_bot *bot)
         remove_restart_updates_source(bot);
 
         pcx_buffer_destroy(&bot->known_ids);
-
-        if (bot->config)
-                pcx_config_free(bot->config);
 
         pcx_free(bot->url_base);
 

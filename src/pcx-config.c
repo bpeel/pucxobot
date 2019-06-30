@@ -29,18 +29,12 @@
 struct pcx_error_domain
 pcx_config_error;
 
-enum load_config_section {
-        SECTION_NONE,
-        SECTION_AUTH,
-        SECTION_SETUP
-} section;
-
 struct load_config_data {
         const char *filename;
         struct pcx_config *config;
         bool had_error;
         struct pcx_buffer error_buffer;
-        enum load_config_section section;
+        struct pcx_config_bot *bot;
 };
 
 PCX_PRINTF_FORMAT(2, 3)
@@ -85,7 +79,7 @@ set_option(struct load_config_data *data,
 {
         switch (type) {
         case OPTION_TYPE_STRING: {
-                char **ptr = (char **) ((uint8_t *) data->config + offset);
+                char **ptr = (char **) ((uint8_t *) data->bot + offset);
                 if (*ptr) {
                         load_config_error(data,
                                           "%s specified twice",
@@ -96,7 +90,7 @@ set_option(struct load_config_data *data,
                 break;
         }
         case OPTION_TYPE_INT: {
-                int64_t *ptr = (int64_t *) ((uint8_t *) data->config + offset);
+                int64_t *ptr = (int64_t *) ((uint8_t *) data->bot + offset);
                 errno = 0;
                 char *tail;
                 *ptr = strtoll(value, &tail, 10);
@@ -119,37 +113,39 @@ load_config_func(enum pcx_key_value_event event,
 {
         struct load_config_data *data = user_data;
         static const struct {
-                enum load_config_section section;
                 const char *key;
                 size_t offset;
                 enum option_type type;
         } options[] = {
-#define OPTION(section, name, type)                     \
-                {                                       \
-                        section,                        \
-                        #name,                          \
-                        offsetof(struct pcx_config, name), \
-                        OPTION_TYPE_ ## type,           \
+#define OPTION(name, type)                                      \
+                {                                               \
+                        #name,                                  \
+                        offsetof(struct pcx_config_bot, name),  \
+                        OPTION_TYPE_ ## type,                   \
                 }
-                OPTION(SECTION_AUTH, apikey, STRING),
-                OPTION(SECTION_SETUP, botname, STRING),
-                OPTION(SECTION_SETUP, announce_channel, STRING),
+                OPTION(apikey, STRING),
+                OPTION(botname, STRING),
+                OPTION(announce_channel, STRING),
 #undef OPTION
         };
 
         switch (event) {
         case PCX_KEY_VALUE_EVENT_HEADER:
-                if (!strcmp(value, "auth"))
-                        data->section = SECTION_AUTH;
-                else if (!strcmp(value, "setup"))
-                        data->section = SECTION_SETUP;
-                else
+                if (strcmp(value, "bot")) {
                         load_config_error(data, "unknown section: %s", value);
+                        data->bot = NULL;
+                } else {
+                        data->bot = pcx_calloc(sizeof *data->bot);
+                        pcx_list_insert(data->config->bots.prev,
+                                        &data->bot->link);
+                }
                 break;
         case PCX_KEY_VALUE_EVENT_PROPERTY:
+                if (data->bot == NULL)
+                        break;
+
                 for (unsigned i = 0; i < PCX_N_ELEMENTS(options); i++) {
-                        if (data->section != options[i].section ||
-                            strcmp(key, options[i].key))
+                        if (strcmp(key, options[i].key))
                                 continue;
 
                         set_option(data,
@@ -167,11 +163,11 @@ load_config_func(enum pcx_key_value_event event,
 }
 
 static bool
-validate_config(struct pcx_config *config,
-                const char *filename,
-                struct pcx_error **error)
+validate_bot(struct pcx_config_bot *bot,
+             const char *filename,
+             struct pcx_error **error)
 {
-        if (config->apikey == NULL) {
+        if (bot->apikey == NULL) {
                 pcx_set_error(error,
                               &pcx_config_error,
                               PCX_CONFIG_ERROR_IO,
@@ -180,11 +176,37 @@ validate_config(struct pcx_config *config,
                 return false;
         }
 
-        if (config->botname == NULL) {
+        if (bot->botname == NULL) {
                 pcx_set_error(error,
                               &pcx_config_error,
                               PCX_CONFIG_ERROR_IO,
                               "%s: missing botname option",
+                              filename);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+validate_config(struct pcx_config *config,
+                const char *filename,
+                struct pcx_error **error)
+{
+        struct pcx_config_bot *bot;
+        bool found_bot = false;
+
+        pcx_list_for_each(bot, &config->bots, link) {
+                if (!validate_bot(bot, filename, error))
+                        return false;
+                found_bot = true;
+        }
+
+        if (!found_bot) {
+                pcx_set_error(error,
+                              &pcx_config_error,
+                              PCX_CONFIG_ERROR_IO,
+                              "%s: no bots configured",
                               filename);
                 return false;
         }
@@ -235,7 +257,7 @@ load_config(struct pcx_config *config,
                         .filename = fn,
                         .config = config,
                         .had_error = false,
-                        .section = SECTION_NONE,
+                        .bot = NULL,
                 };
 
                 pcx_buffer_init(&data.error_buffer);
@@ -271,6 +293,8 @@ pcx_config_load(struct pcx_error **error)
 {
         struct pcx_config *config = pcx_calloc(sizeof *config);
 
+        pcx_list_init(&config->bots);
+
         if (!load_config(config, error))
                 goto error;
 
@@ -284,9 +308,14 @@ error:
 void
 pcx_config_free(struct pcx_config *config)
 {
-        pcx_free(config->apikey);
-        pcx_free(config->botname);
-        pcx_free(config->announce_channel);
+        struct pcx_config_bot *bot, *tmp;
+
+        pcx_list_for_each_safe(bot, tmp, &config->bots, link) {
+                pcx_free(bot->apikey);
+                pcx_free(bot->botname);
+                pcx_free(bot->announce_channel);
+                pcx_free(bot);
+        }
 
         pcx_free(config);
 }

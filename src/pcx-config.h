@@ -20,6 +20,7 @@
 #define PCX_CONFIG_H
 
 #include "pcx-error.h"
+#include "pcx-list.h"
 
 extern struct pcx_error_domain
 pcx_config_error;
@@ -28,10 +29,15 @@ enum pcx_config_error {
         PCX_CONFIG_ERROR_IO
 };
 
-struct pcx_config {
+struct pcx_config_bot {
+        struct pcx_list link;
         char *apikey;
         char *botname;
         char *announce_channel;
+};
+
+struct pcx_config {
+        struct pcx_list bots;
 };
 
 struct pcx_config *

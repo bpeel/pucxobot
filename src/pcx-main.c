@@ -26,6 +26,7 @@
 #include "pcx-bot.h"
 #include "pcx-game.h"
 #include "pcx-main-context.h"
+#include "pcx-config.h"
 #include "pcx-curl-multi.h"
 
 static void
@@ -41,7 +42,9 @@ main(int argc, char **argv)
 {
         struct pcx_tty_game *tty_game = NULL;
         struct pcx_curl_multi *pcurl = NULL;
-        struct pcx_bot *bot = NULL;
+        size_t n_bots = 0;
+        struct pcx_bot **bots = NULL;
+        struct pcx_config *config = NULL;
         bool curl_inited = false;
 
         if (argc > 1) {
@@ -61,21 +64,36 @@ main(int argc, char **argv)
                         return EXIT_FAILURE;
                 }
         } else {
+                struct pcx_error *error = NULL;
+
+                config = pcx_config_load(&error);
+                if (config == NULL) {
+                        fprintf(stderr, "%s\n", error->message);
+                        pcx_error_free(error);
+                        return EXIT_FAILURE;
+                }
+
                 curl_global_init(CURL_GLOBAL_ALL);
                 curl_inited = true;
-
-                struct pcx_error *error = NULL;
 
                 pcurl = pcx_curl_multi_new();
 
                 time_t t;
                 time(&t);
                 srand(t);
-                bot = pcx_bot_new(pcurl, &error);
-                if (bot == NULL) {
-                        fprintf(stderr, "%s\n", error->message);
-                        pcx_error_free(error);
-                        return EXIT_FAILURE;
+
+                struct pcx_config_bot *bot;
+
+                pcx_list_for_each(bot, &config->bots, link) {
+                        n_bots++;
+                }
+
+                bots = pcx_alloc((sizeof *bots) * MAX(n_bots, 1));
+
+                unsigned i = 0;
+
+                pcx_list_for_each(bot, &config->bots, link) {
+                        bots[i++] = pcx_bot_new(pcurl, bot);
                 }
         }
 
@@ -91,12 +109,15 @@ main(int argc, char **argv)
 
         if (tty_game)
                 pcx_tty_game_free(tty_game);
-        if (bot)
-                pcx_bot_free(bot);
+        for (unsigned i = 0; i < n_bots; i++)
+                pcx_bot_free(bots[i]);
+        pcx_free(bots);
         if (pcurl)
                 pcx_curl_multi_free(pcurl);
         if (curl_inited)
                 curl_global_cleanup();
+        if (config)
+                pcx_config_free(config);
 
         pcx_main_context_free(pcx_main_context_get_default());
 
