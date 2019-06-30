@@ -1113,6 +1113,14 @@ process_start(struct pcx_http_game *game,
                 return;
         }
 
+        if (game->n_players < 2) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "Necesas almenaŭ 2 ludantoj por ludi.");
+                return;
+        }
+
         const char *names[PCX_GAME_MAX_PLAYERS];
 
         for (unsigned i = 0; i < game->n_players; i++)
