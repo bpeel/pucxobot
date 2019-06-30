@@ -672,7 +672,7 @@ answer_callback(struct pcx_bot *bot,
         json_object_put(args);
 }
 
-static bool
+static void
 process_callback(struct pcx_bot *bot,
                  struct json_object *callback)
 {
@@ -687,7 +687,7 @@ process_callback(struct pcx_bot *bot,
                               NULL);
 
         if (!ret)
-                return false;
+                return;
 
         int64_t from_id;
 
@@ -696,7 +696,7 @@ process_callback(struct pcx_bot *bot,
                          NULL);
 
         if (!ret)
-                return false;
+                return;
 
         answer_callback(bot, id);
 
@@ -709,8 +709,6 @@ process_callback(struct pcx_bot *bot,
                                               player_num,
                                               callback_data);
         }
-
-        return true;
 }
 
 struct message_info {
@@ -1037,7 +1035,7 @@ process_help(struct pcx_bot *bot,
                           NULL /* buttons */);
 }
 
-static bool
+static void
 process_entity(struct pcx_bot *bot,
                struct json_object *entity,
                const struct message_info *info)
@@ -1051,13 +1049,13 @@ process_entity(struct pcx_bot *bot,
                               "type", json_type_string, &type,
                               NULL);
         if (!ret)
-                return false;
+                return;
 
         if (offset < 0 || length < 1 || offset + length > strlen(info->text))
-                return false;
+                return;
 
         if (strcmp(type, "bot_command"))
-                return true;
+                return;
 
         const char *at = memchr(info->text + offset, '@', length);
 
@@ -1065,7 +1063,7 @@ process_entity(struct pcx_bot *bot,
                 size_t botname_len = strlen(bot->config->botname);
                 if (info->text + offset + length - at - 1 != botname_len ||
                     memcmp(at + 1, bot->config->botname, botname_len)) {
-                        return true;
+                        return;
                 }
 
                 length = at - (info->text + offset);
@@ -1093,18 +1091,16 @@ process_entity(struct pcx_bot *bot,
 
                 break;
         }
-
-        return true;
 }
 
-static bool
+static void
 process_message(struct pcx_bot *bot,
                 struct json_object *message)
 {
         struct message_info info;
 
         if (!get_message_info(message, &info))
-                return false;
+                return;
 
         if (info.is_private && !is_known_id(bot, info.from_id)) {
                 add_known_id(bot, info.from_id);
@@ -1119,17 +1115,14 @@ process_message(struct pcx_bot *bot,
         if (!get_fields(message,
                         "entities", json_type_array, &entities,
                         NULL))
-                return true;
+                return;
 
         for (unsigned i = 0; i < json_object_array_length(entities); i++) {
                 struct json_object *entity =
                         json_object_array_get_idx(entities, i);
 
-                if (!process_entity(bot, entity, &info))
-                        return false;
+                process_entity(bot, entity, &info);
         }
-
-        return true;
 }
 
 static bool
@@ -1164,8 +1157,7 @@ process_updates(struct pcx_bot *bot,
                 if (get_fields(update,
                                "message", json_type_object, &message,
                                NULL)) {
-                        if (!process_message(bot, message))
-                                return false;
+                        process_message(bot, message);
                 }
 
                 struct json_object *callback;
@@ -1173,8 +1165,7 @@ process_updates(struct pcx_bot *bot,
                 if (get_fields(update,
                                "callback_query", json_type_object, &callback,
                                NULL)) {
-                        if (!process_callback(bot, callback))
-                                return false;
+                        process_callback(bot, callback);
                 }
         }
 
