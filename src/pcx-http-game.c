@@ -34,6 +34,7 @@
 #include "pcx-key-value.h"
 #include "pcx-buffer.h"
 #include "pcx-game-help.h"
+#include "pcx-curl-multi.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
 
@@ -48,11 +49,8 @@ struct player {
 struct pcx_http_game {
         struct pcx_game *game;
 
-        struct pcx_main_context_source *timeout_source;
         struct pcx_main_context_source *game_timeout_source;
         struct pcx_main_context_source *restart_updates_source;
-
-        struct pcx_list sockets;
 
         char *apikey;
         int64_t game_chat;
@@ -61,7 +59,8 @@ struct pcx_http_game {
 
         char *url_base;
 
-        CURLM *curlm;
+        struct pcx_curl_multi *pcurl;
+
         CURL *updates_handle;
         struct curl_slist *content_type_headers;
 
@@ -80,12 +79,6 @@ struct pcx_http_game {
         struct pcx_buffer known_ids;
 };
 
-struct socket_data {
-        struct pcx_list link;
-        struct pcx_main_context_source *source;
-        curl_socket_t fd;
-};
-
 struct request {
         struct pcx_list link;
         char *method;
@@ -97,6 +90,13 @@ set_updates_handle_options(struct pcx_http_game *game);
 
 static void
 start_game(struct pcx_http_game *game);
+
+static void
+maybe_start_request(struct pcx_http_game *game);
+
+static void
+get_updates_finished_cb(CURLcode code,
+                        void *user_data);
 
 PCX_NULL_TERMINATED
 static bool
@@ -230,6 +230,28 @@ free_request(struct request *request)
 }
 
 static void
+request_finished_cb(CURLcode code,
+                    void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+
+        if (code != CURLE_OK) {
+                fprintf(stderr,
+                        "request failed: %s\n",
+                        curl_easy_strerror(code));
+        }
+
+        pcx_curl_multi_remove_handle(game->pcurl, game->request_handle);
+        curl_easy_reset(game->request_handle);
+
+        json_tokener_reset(game->request_tokener);
+
+        game->request_handle_busy = false;
+
+        maybe_start_request(game);
+}
+
+static void
 maybe_start_request(struct pcx_http_game *game)
 {
         if (game->request_handle_busy ||
@@ -252,7 +274,10 @@ maybe_start_request(struct pcx_http_game *game)
 
         set_post_json_data(game, game->request_handle, request->args);
 
-        curl_multi_add_handle(game->curlm, game->request_handle);
+        pcx_curl_multi_add_handle(game->pcurl,
+                                  game->request_handle,
+                                  request_finished_cb,
+                                  game);
 
         free_request(request);
 }
@@ -391,25 +416,6 @@ send_message_printf(struct pcx_http_game *game,
 }
 
 static void
-remove_socket(struct socket_data *sock)
-{
-        if (sock->source)
-                pcx_main_context_remove_source(sock->source);
-        pcx_list_remove(&sock->link);
-        pcx_free(sock);
-}
-
-static void
-remove_timeout_source(struct pcx_http_game *game)
-{
-        if (game->timeout_source == NULL)
-                return;
-
-        pcx_main_context_remove_source(game->timeout_source);
-        game->timeout_source = NULL;
-}
-
-static void
 remove_game_timeout_source(struct pcx_http_game *game)
 {
         if (game->game_timeout_source == NULL)
@@ -437,21 +443,25 @@ restart_updates_cb(struct pcx_main_context_source *source,
 
         game->restart_updates_source = NULL;
 
-        curl_multi_remove_handle(game->curlm,
-                                 game->updates_handle);
+        pcx_curl_multi_remove_handle(game->pcurl,
+                                     game->updates_handle);
 
         curl_easy_reset(game->updates_handle);
         set_updates_handle_options(game);
 
         json_tokener_reset(game->tokener);
 
-        curl_multi_add_handle(game->curlm, game->updates_handle);
+        pcx_curl_multi_add_handle(game->pcurl,
+                                  game->updates_handle,
+                                  get_updates_finished_cb,
+                                  game);
 }
 
 static void
-restart_updates(struct pcx_http_game *game,
-                CURLcode code)
+get_updates_finished_cb(CURLcode code,
+                        void *user_data)
 {
+        struct pcx_http_game *game = user_data;
         long timeout = 0;
 
         if (code != CURLE_OK) {
@@ -468,159 +478,6 @@ restart_updates(struct pcx_http_game *game,
                                              timeout,
                                              restart_updates_cb,
                                              game);
-}
-
-static void
-finish_request(struct pcx_http_game *game,
-               CURLcode code)
-{
-        if (code != CURLE_OK) {
-                fprintf(stderr,
-                        "request failed: %s\n",
-                        curl_easy_strerror(code));
-        }
-
-        curl_multi_remove_handle(game->curlm, game->request_handle);
-        curl_easy_reset(game->request_handle);
-
-        json_tokener_reset(game->request_tokener);
-
-        game->request_handle_busy = false;
-
-        maybe_start_request(game);
-}
-
-static void
-socket_action_cb(struct pcx_main_context_source *source,
-                 int fd,
-                 enum pcx_main_context_poll_flags flags,
-                 void *user_data)
-{
-        struct pcx_http_game *game = user_data;
-
-        int ev_bitmask = 0;
-
-        if ((flags & PCX_MAIN_CONTEXT_POLL_IN))
-                ev_bitmask |= CURL_CSELECT_IN;
-        if ((flags & PCX_MAIN_CONTEXT_POLL_OUT))
-                ev_bitmask |= CURL_CSELECT_OUT;
-        if ((flags & PCX_MAIN_CONTEXT_POLL_ERROR))
-                ev_bitmask |= CURL_CSELECT_ERR;
-
-        int running_handles;
-
-        curl_multi_socket_action(game->curlm,
-                                 fd,
-                                 ev_bitmask,
-                                 &running_handles);
-
-        CURLMsg *msg;
-        int msgs_in_queue;
-
-        while ((msg = curl_multi_info_read(game->curlm, &msgs_in_queue))) {
-                if (msg->msg != CURLMSG_DONE)
-                        continue;
-
-                if (msg->easy_handle == game->updates_handle) {
-                        restart_updates(game, msg->data.result);
-                } else if (msg->easy_handle == game->request_handle) {
-                        finish_request(game, msg->data.result);
-                } else {
-                        pcx_fatal("unknown curl handled completed");
-                }
-        }
-}
-
-static int
-socket_cb(CURL *easy,
-          curl_socket_t s,
-          int what,
-          void *userp,
-          void *socketp)
-{
-        struct pcx_http_game *game = userp;
-        struct socket_data *sock = socketp;
-
-        if (sock) {
-                if (what == CURL_POLL_REMOVE) {
-                        remove_socket(sock);
-                        return CURLM_OK;
-                }
-
-                assert(s == sock->fd);
-        } else {
-                sock = pcx_calloc(sizeof *sock);
-                sock->fd = s;
-                pcx_list_insert(&game->sockets, &sock->link);
-                curl_multi_assign(game->curlm, s, sock);
-        }
-
-        enum pcx_main_context_poll_flags flags;
-
-        switch (what) {
-        case CURL_POLL_IN:
-                flags = (PCX_MAIN_CONTEXT_POLL_IN |
-                         PCX_MAIN_CONTEXT_POLL_ERROR);
-                break;
-        case CURL_POLL_OUT:
-                flags = PCX_MAIN_CONTEXT_POLL_OUT;
-                break;
-        case CURL_POLL_INOUT:
-                flags = (PCX_MAIN_CONTEXT_POLL_IN |
-                         PCX_MAIN_CONTEXT_POLL_OUT |
-                         PCX_MAIN_CONTEXT_POLL_ERROR);
-                break;
-        default:
-                pcx_fatal("Unknown curl poll status");
-        }
-
-        if (sock->source) {
-                pcx_main_context_modify_poll(sock->source, flags);
-        } else {
-                sock->source = pcx_main_context_add_poll(NULL,
-                                                         s,
-                                                         flags,
-                                                         socket_action_cb,
-                                                         game);
-        }
-
-        return CURLM_OK;
-}
-
-static void
-timeout_cb(struct pcx_main_context_source *source,
-           void *user_data)
-{
-        struct pcx_http_game *game = user_data;
-
-        game->timeout_source = NULL;
-
-        int running_handles;
-
-        curl_multi_socket_action(game->curlm,
-                                 CURL_SOCKET_TIMEOUT,
-                                 0, /* ev_bitmask */
-                                 &running_handles);
-}
-
-static int
-timer_cb(CURLM *multi,
-         long timeout_ms,
-         void *userp)
-{
-        struct pcx_http_game *game = userp;
-
-        remove_timeout_source(game);
-
-        if (timeout_ms >= 0) {
-                game->timeout_source =
-                        pcx_main_context_add_timeout(NULL,
-                                                     timeout_ms,
-                                                     timeout_cb,
-                                                     game);
-        }
-
-        return CURLM_OK;
 }
 
 enum load_config_section {
@@ -1548,7 +1405,6 @@ pcx_http_game_new(struct pcx_error **error)
 {
         struct pcx_http_game *game = pcx_calloc(sizeof *game);
 
-        pcx_list_init(&game->sockets);
         pcx_list_init(&game->queued_requests);
 
         pcx_buffer_init(&game->known_ids);
@@ -1565,12 +1421,7 @@ pcx_http_game_new(struct pcx_error **error)
                                        "/",
                                        NULL);
 
-        game->curlm = curl_multi_init();
-
-        curl_multi_setopt(game->curlm, CURLMOPT_SOCKETFUNCTION, socket_cb);
-        curl_multi_setopt(game->curlm, CURLMOPT_SOCKETDATA, game);
-        curl_multi_setopt(game->curlm, CURLMOPT_TIMERFUNCTION, timer_cb);
-        curl_multi_setopt(game->curlm, CURLMOPT_TIMERDATA, game);
+        game->pcurl = pcx_curl_multi_new();
 
         game->content_type_headers =
                 curl_slist_append(NULL,
@@ -1581,7 +1432,10 @@ pcx_http_game_new(struct pcx_error **error)
 
         set_updates_handle_options(game);
 
-        curl_multi_add_handle(game->curlm, game->updates_handle);
+        pcx_curl_multi_add_handle(game->pcurl,
+                                  game->updates_handle,
+                                  get_updates_finished_cb,
+                                  game);
 
         game->request_handle = curl_easy_init();
         game->request_tokener = json_tokener_new();
@@ -1591,16 +1445,6 @@ pcx_http_game_new(struct pcx_error **error)
 error:
         pcx_http_game_free(game);
         return NULL;
-}
-
-static void
-remove_sockets(struct pcx_http_game *game)
-{
-        struct socket_data *sock, *tmp;
-
-        pcx_list_for_each_safe(sock, tmp, &game->sockets, link) {
-                remove_socket(sock);
-        }
 }
 
 static void
@@ -1617,15 +1461,15 @@ void
 pcx_http_game_free(struct pcx_http_game *game)
 {
         if (game->updates_handle) {
-                curl_multi_remove_handle(game->curlm,
-                                         game->updates_handle);
+                pcx_curl_multi_remove_handle(game->pcurl,
+                                             game->updates_handle);
                 curl_easy_cleanup(game->updates_handle);
         }
 
         if (game->request_handle) {
                 if (game->request_handle_busy) {
-                        curl_multi_remove_handle(game->curlm,
-                                                 game->request_handle);
+                        pcx_curl_multi_remove_handle(game->pcurl,
+                                                     game->request_handle);
                 }
                 curl_easy_cleanup(game->request_handle);
         }
@@ -1634,8 +1478,8 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         curl_slist_free_all(game->content_type_headers);
 
-        if (game->curlm)
-                curl_multi_cleanup(game->curlm);
+        if (game->pcurl)
+                pcx_curl_multi_free(game->pcurl);
 
         if (game->tokener)
                 json_tokener_free(game->tokener);
@@ -1645,9 +1489,6 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         reset_game(game);
 
-        remove_sockets(game);
-
-        remove_timeout_source(game);
         remove_restart_updates_source(game);
 
         pcx_buffer_destroy(&game->known_ids);
