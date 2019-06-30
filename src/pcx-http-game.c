@@ -36,6 +36,11 @@
 struct pcx_error_domain
 pcx_http_game_error;
 
+struct player {
+        int64_t id;
+        char *name;
+};
+
 struct pcx_http_game {
         struct pcx_game *game;
 
@@ -61,6 +66,9 @@ struct pcx_http_game {
 
         struct pcx_list inflight_requests;
         struct pcx_list unused_requests;
+
+        int n_players;
+        struct player players[PCX_GAME_MAX_PLAYERS];
 };
 
 struct socket_data {
@@ -790,6 +798,45 @@ load_config(struct pcx_http_game *game,
         return ret;
 }
 
+static void
+send_private_message_cb(int user_num,
+                        enum pcx_game_message_format format,
+                        const char *message,
+                        size_t n_buttons,
+                        const struct pcx_game_button *buttons,
+                        void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+
+        assert(user_num >= 0 && user_num < game->n_players);
+
+        send_message(game,
+                     game->players[user_num].id,
+                     -1, /* in_reply_to */
+                     message);
+}
+
+static void
+send_message_cb(enum pcx_game_message_format format,
+                const char *message,
+                size_t n_buttons,
+                const struct pcx_game_button *buttons,
+                void *user_data)
+{
+        struct pcx_http_game *game = user_data;
+
+        send_message(game,
+                     game->game_chat,
+                     -1, /* in_reply_to */
+                     message);
+}
+
+static const struct pcx_game_callbacks
+game_callbacks = {
+        .send_private_message = send_private_message_cb,
+        .send_message = send_message_cb,
+};
+
 static bool
 process_callback(struct pcx_http_game *game,
                  struct json_object *callback)
@@ -850,6 +897,130 @@ get_message_info(struct json_object *message,
         return true;
 }
 
+static int
+find_player(struct pcx_http_game *game,
+            int64_t player_id)
+{
+        for (int i = 0; i < game->n_players; i++) {
+                if (game->players[i].id == player_id)
+                        return i;
+        }
+
+        return -1;
+}
+
+static void
+process_join(struct pcx_http_game *game,
+             const struct message_info *info)
+{
+        if (info->chat_id != game->game_chat)
+                return;
+
+        int player_num = find_player(game, info->from_id);
+
+        if (player_num != -1) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "Vi jam estas en la ludo");
+                return;
+        }
+
+        if (game->n_players >= PCX_GAME_MAX_PLAYERS) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "La ludo jam estas plena");
+                return;
+        }
+
+        if (game->game) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "La ludo jam komenciĝis");
+                return;
+        }
+
+        struct player *player = game->players + game->n_players++;
+
+        if (info->first_name) {
+                player->name = pcx_strdup(info->first_name);
+        } else {
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "Sr.%" PRIi64, info->from_id);
+                player->name = (char *) buf.data;
+        }
+
+        player->id = info->from_id;
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (i > 0) {
+                        if (i == game->n_players - 1)
+                                pcx_buffer_append_string(&buf, " kaj ");
+                        else
+                                pcx_buffer_append_string(&buf, ", ");
+                }
+                pcx_buffer_append_string(&buf, game->players[i].name);
+        }
+
+        send_message_printf(game,
+                            info->chat_id,
+                            info->message_id,
+                            "Bonvenon. Aliaj ludantoj tajpu "
+                            "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
+                            "por komenci la ludon. La aktualaj ludantoj "
+                            "estas:\n"
+                            "%s",
+                            (char *) buf.data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+process_start(struct pcx_http_game *game,
+              const struct message_info *info)
+{
+        if (info->chat_id != game->game_chat)
+                return;
+
+        if (game->game) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "La ludo jam komenciĝis");
+                return;
+        }
+
+        if (game->n_players <= 0) {
+                process_join(game, info);
+                return;
+        }
+
+        int player_num = find_player(game, info->from_id);
+
+        if (player_num == -1) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "Aliĝi al la ludo per /aligxi antaŭ ol "
+                                    "komenci ĝin");
+                return;
+        }
+
+        const char *names[PCX_GAME_MAX_PLAYERS];
+
+        for (unsigned i = 0; i < game->n_players; i++)
+                names[i] = game->players[i].name;
+
+        game->game = pcx_game_new(&game_callbacks,
+                                  game,
+                                  game->n_players,
+                                  names);
+}
+
 static bool
 process_entity(struct pcx_http_game *game,
                struct json_object *entity,
@@ -884,15 +1055,24 @@ process_entity(struct pcx_http_game *game,
                 length = at - (info->text + offset);
         }
 
-        game_note(game,
-                  "you sent command %.*s\n",
-                  (int) length,
-                  info->text + offset);
+        static const struct {
+                const char *name;
+                void (* func)(struct pcx_http_game *game,
+                              const struct message_info *info);
+        } commands[] = {
+                { "/aligxi", process_join },
+                { "/komenci", process_start }
+        };
 
-        send_message_printf(game,
-                            info->chat_id,
-                            info->message_id,
-                            "You sent the command here");
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
+                if (length != strlen(commands[i].name) ||
+                    memcmp(info->text + offset, commands[i].name, length))
+                        continue;
+
+                commands[i].func(game, info);
+
+                break;
+        }
 
         return true;
 }
@@ -1086,6 +1266,14 @@ remove_sockets(struct pcx_http_game *game)
 }
 
 static void
+remove_players(struct pcx_http_game *game)
+{
+        for (unsigned i = 0; i < game->n_players; i++)
+                pcx_free(game->players[i].name);
+        game->n_players = 0;
+}
+
+static void
 free_requests(struct pcx_http_game *game,
               struct pcx_list *list,
               bool remove_from_multi)
@@ -1125,6 +1313,8 @@ pcx_http_game_free(struct pcx_http_game *game)
                 json_tokener_free(game->tokener);
 
         curl_global_cleanup();
+
+        remove_players(game);
 
         remove_sockets(game);
 
