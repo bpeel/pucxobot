@@ -75,6 +75,8 @@ struct pcx_http_game {
 
         int n_players;
         struct player players[PCX_GAME_MAX_PLAYERS];
+
+        struct pcx_buffer known_ids;
 };
 
 struct socket_data {
@@ -1093,6 +1095,28 @@ find_player(struct pcx_http_game *game,
         return -1;
 }
 
+static bool
+is_known_id(struct pcx_http_game *game,
+            int64_t id)
+{
+        size_t n_ids = game->known_ids.length / sizeof (int64_t);
+        const int64_t *ids = (const int64_t *) game->known_ids.data;
+
+        for (unsigned i = 0; i < n_ids; i++) {
+                if (ids[i] == id)
+                        return true;
+        }
+
+        return false;
+}
+
+static void
+add_known_id(struct pcx_http_game *game,
+             int64_t id)
+{
+        pcx_buffer_append(&game->known_ids, &id, sizeof id);
+}
+
 static void
 process_join(struct pcx_http_game *game,
              const struct message_info *info)
@@ -1123,6 +1147,17 @@ process_join(struct pcx_http_game *game,
                                     info->chat_id,
                                     info->message_id,
                                     "La ludo jam komenciĝis");
+                return;
+        }
+
+        if (!is_known_id(game, info->from_id)) {
+                send_message_printf(game,
+                                    info->chat_id,
+                                    info->message_id,
+                                    "Bonvolu sendi privatan mesaĝon al @%s "
+                                    "por ke mi povu sendi al vi viajn kartojn "
+                                    "private.",
+                                    game->botname);
                 return;
         }
 
@@ -1307,6 +1342,15 @@ process_message(struct pcx_http_game *game,
         if (!get_message_info(message, &info))
                 return false;
 
+        if (info.is_private && !is_known_id(game, info.from_id)) {
+                add_known_id(game, info.from_id);
+                send_message_printf(game,
+                                    info.chat_id,
+                                    info.message_id,
+                                    "Dankon pro la mesaĝo. Vi povas nun aliĝi "
+                                    "al ludo en la ĉefa grupo.");
+        }
+
         struct json_object *entities;
 
         if (!get_fields(message,
@@ -1438,6 +1482,8 @@ pcx_http_game_new(struct pcx_error **error)
         pcx_list_init(&game->sockets);
         pcx_list_init(&game->queued_requests);
 
+        pcx_buffer_init(&game->known_ids);
+
         curl_global_init(CURL_GLOBAL_ALL);
 
         if (!load_config(game, error))
@@ -1536,6 +1582,8 @@ pcx_http_game_free(struct pcx_http_game *game)
 
         remove_timeout_source(game);
         remove_restart_updates_source(game);
+
+        pcx_buffer_destroy(&game->known_ids);
 
         pcx_free(game->apikey);
         pcx_free(game->botname);
