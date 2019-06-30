@@ -20,11 +20,19 @@
 
 #include <curl/curl.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
 #include "pcx-game.h"
 #include "pcx-list.h"
+#include "pcx-key-value.h"
+#include "pcx-buffer.h"
+
+struct pcx_error_domain
+pcx_http_game_error;
 
 struct pcx_http_game {
         struct pcx_game *game;
@@ -32,6 +40,11 @@ struct pcx_http_game {
         struct pcx_main_context_source *timeout_source;
 
         struct pcx_list sockets;
+
+        char *apikey;
+        char *game_chat;
+        char *botname;
+        char *announce_channel;
 
         CURLM *curlm;
 };
@@ -178,14 +191,198 @@ timer_cb(CURLM *multi,
         return CURLM_OK;
 }
 
+enum load_config_section {
+        SECTION_NONE,
+        SECTION_AUTH,
+        SECTION_SETUP
+} section;
+
+struct load_config_data {
+        const char *filename;
+        struct pcx_http_game *game;
+        bool had_error;
+        struct pcx_buffer error_buffer;
+        enum load_config_section section;
+};
+
+PCX_PRINTF_FORMAT(2, 3)
+static void
+load_config_error(struct load_config_data *data,
+                  const char *format,
+                  ...)
+{
+        data->had_error = true;
+
+        if (data->error_buffer.length > 0)
+                pcx_buffer_append_c(&data->error_buffer, '\n');
+
+        pcx_buffer_append_printf(&data->error_buffer, "%s: ", data->filename);
+
+        va_list ap;
+
+        va_start(ap, format);
+        pcx_buffer_append_vprintf(&data->error_buffer, format, ap);
+        va_end(ap);
+}
+
+static void
+load_config_error_func(const char *message,
+                       void *user_data)
+{
+        struct load_config_data *data = user_data;
+        load_config_error(data, "%s", message);
+}
+
+static void
+load_config_func(enum pcx_key_value_event event,
+                 int line_number,
+                 const char *key,
+                 const char *value,
+                 void *user_data)
+{
+        struct load_config_data *data = user_data;
+        static const struct {
+                enum load_config_section section;
+                const char *key;
+                size_t offset;
+        } options[] = {
+#define OPTION(section, name)                                   \
+                {                                               \
+                        section,                                \
+                        #name,                                  \
+                        offsetof(struct pcx_http_game, name)    \
+                }
+                OPTION(SECTION_AUTH, apikey),
+                OPTION(SECTION_SETUP, game_chat),
+                OPTION(SECTION_SETUP, botname),
+                OPTION(SECTION_SETUP, announce_channel),
+#undef OPTION
+        };
+
+        switch (event) {
+        case PCX_KEY_VALUE_EVENT_HEADER:
+                if (!strcmp(value, "auth"))
+                        data->section = SECTION_AUTH;
+                else if (!strcmp(value, "setup"))
+                        data->section = SECTION_SETUP;
+                else
+                        load_config_error(data, "unknown section: %s", value);
+                break;
+        case PCX_KEY_VALUE_EVENT_PROPERTY:
+                for (unsigned i = 0; i < PCX_N_ELEMENTS(options); i++) {
+                        if (data->section != options[i].section ||
+                            strcmp(key, options[i].key))
+                                continue;
+
+                        char **ptr = (char **) ((uint8_t *) data->game +
+                                                options[i].offset);
+                        if (*ptr) {
+                                load_config_error(data,
+                                                  "%s specified twice",
+                                                  key);
+                        } else {
+                                *ptr = pcx_strdup(value);
+                        }
+                        goto found_key;
+                }
+
+                load_config_error(data, "unknown config option: %s", key);
+        found_key:
+                break;
+        }
+}
+
+static bool
+validate_config(struct pcx_http_game *game,
+                const char *filename,
+                struct pcx_error **error)
+{
+        if (game->apikey == NULL) {
+                pcx_set_error(error,
+                              &pcx_http_game_error,
+                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              "%s: missing apikey option",
+                              filename);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+load_config(struct pcx_http_game *game,
+            struct pcx_error **error)
+{
+        bool ret = true;
+        const char *home = getenv("HOME");
+
+        if (home == NULL) {
+                pcx_set_error(error,
+                              &pcx_http_game_error,
+                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              "HOME environment variable is not set");
+                return false;
+        }
+
+        char *fn = pcx_strconcat(home, "/.pucxobot/conf.txt", NULL);
+
+        FILE *f = fopen(fn, "r");
+
+        if (f == NULL) {
+                pcx_set_error(error,
+                              &pcx_http_game_error,
+                              PCX_HTTP_GAME_ERROR_CONFIG,
+                              "%s: %s",
+                              fn,
+                              strerror(errno));
+                ret = false;
+        } else {
+                struct load_config_data data = {
+                        .filename = fn,
+                        .game = game,
+                        .had_error = false,
+                        .section = SECTION_NONE,
+                };
+
+                pcx_buffer_init(&data.error_buffer);
+
+                pcx_key_value_load(f,
+                                   load_config_func,
+                                   load_config_error_func,
+                                   &data);
+
+                if (data.had_error) {
+                        pcx_set_error(error,
+                                      &pcx_http_game_error,
+                                      PCX_HTTP_GAME_ERROR_CONFIG,
+                                      "%s",
+                                      (char *) data.error_buffer.data);
+                        ret = false;
+                } else if (!validate_config(game, fn, error)) {
+                        ret = false;
+                }
+
+                pcx_buffer_destroy(&data.error_buffer);
+
+                fclose(f);
+        }
+
+        pcx_free(fn);
+
+        return ret;
+}
+
 struct pcx_http_game *
-pcx_http_game_new(void)
+pcx_http_game_new(struct pcx_error **error)
 {
         struct pcx_http_game *game = pcx_calloc(sizeof *game);
 
         pcx_list_init(&game->sockets);
 
         curl_global_init(CURL_GLOBAL_ALL);
+
+        if (!load_config(game, error))
+                goto error;
 
         game->curlm = curl_multi_init();
 
@@ -195,6 +392,10 @@ pcx_http_game_new(void)
         curl_multi_setopt(game->curlm, CURLMOPT_TIMERDATA, game);
 
         return game;
+
+error:
+        pcx_http_game_free(game);
+        return NULL;
 }
 
 static void
@@ -221,6 +422,11 @@ pcx_http_game_free(struct pcx_http_game *game)
         remove_sockets(game);
 
         remove_timeout_source(game);
+
+        pcx_free(game->apikey);
+        pcx_free(game->game_chat);
+        pcx_free(game->botname);
+        pcx_free(game->announce_channel);
 
         pcx_free(game);
 }

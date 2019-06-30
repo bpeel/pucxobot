@@ -19,10 +19,19 @@
 #ifndef PCX_HTTP_GAME_H
 #define PCX_HTTP_GAME_H
 
+#include "pcx-error.h"
+
+extern struct pcx_error_domain
+pcx_http_game_error;
+
+enum pcx_http_game_error {
+        PCX_HTTP_GAME_ERROR_CONFIG
+};
+
 struct pcx_http_game;
 
 struct pcx_http_game *
-pcx_http_game_new(void);
+pcx_http_game_new(struct pcx_error **error);
 
 void
 pcx_http_game_free(struct pcx_http_game *game);

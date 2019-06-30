@@ -56,7 +56,13 @@ main(int argc, char **argv)
                         return EXIT_FAILURE;
                 }
         } else {
-                http_game = pcx_http_game_new();
+                struct pcx_error *error = NULL;
+                http_game = pcx_http_game_new(&error);
+                if (http_game == NULL) {
+                        fprintf(stderr, "%s\n", error->message);
+                        pcx_error_free(error);
+                        return EXIT_FAILURE;
+                }
         }
 
         bool quit = false;
