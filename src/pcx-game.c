@@ -1036,8 +1036,7 @@ check_challenge_callback_data(struct pcx_game *game,
                                         do_block,
                                         NULL, /* user_data */
                                         "%s pretendas havi %s kaj "
-                                        "blokas.\n"
-                                        "Ĉu iu volas defii rin?",
+                                        "blokas.",
                                         game->players[player_num].name,
                                         (char *) blocked_names.data);
 
@@ -1093,6 +1092,50 @@ check_challenge_idle(struct pcx_game *game)
 
         pcx_buffer_set_length(&game->buffer, 0);
         pcx_buffer_append_string(&game->buffer, data->message);
+
+        if ((data->flags & (CHALLENGE_FLAG_CHALLENGE))) {
+                pcx_buffer_append_printf(&game->buffer,
+                                         "\nĈu iu volas defii rin?");
+        }
+
+        if ((data->flags & (CHALLENGE_FLAG_BLOCK))) {
+                const char *format;
+
+                struct pcx_buffer blocking_cards = PCX_BUFFER_STATIC_INIT;
+
+                get_challenged_cards(&blocking_cards,
+                                     data->blocking_characters);
+
+                if (data->target_player == -1) {
+                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK))) {
+                                format = ("\nAŭ ĉu iu volas pretendi havi %s "
+                                          "kaj bloki rin?");
+                        } else {
+                                format = ("\nĈu iu volas pretendi havi %s kaj "
+                                          "bloki rin?");
+                        }
+                        pcx_buffer_append_printf(&game->buffer,
+                                                 format,
+                                                 (char *) blocking_cards.data);
+                } else {
+                        const struct pcx_game_player *target_player =
+                                game->players + data->target_player;
+
+                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK))) {
+                                format = ("\nAŭ %s, ĉu vi volas pretendi havi "
+                                          "%s kaj bloki rin?");
+                        } else {
+                                format = ("\n%s, ĉu vi volas pretendi havi %s "
+                                          "kaj bloki rin?");
+                        }
+                        pcx_buffer_append_printf(&game->buffer,
+                                                 format,
+                                                 target_player->name,
+                                                 (char *) blocking_cards.data);
+                }
+
+                pcx_buffer_destroy(&blocking_cards);
+        }
 
         if (data->timeout_source == NULL) {
                 data->timeout_source =
@@ -1266,9 +1309,7 @@ do_foreign_add(struct pcx_game *game)
                                 do_accepted_foreign_aid,
                                 NULL, /* user_data */
                                 "💴 %s prenas 2 monerojn per eksterlanda "
-                                "helpo.\n"
-                                "Ĉu iu volas pretendi havi la dukon kaj bloki "
-                                "rin?",
+                                "helpo.",
                                 player->name);
 
         data->blocking_characters = (1 << PCX_CHARACTER_DUKE);
@@ -1301,8 +1342,7 @@ do_tax(struct pcx_game *game)
                                 do_accepted_tax,
                                 NULL, /* user_data */
                                 "💸 %s pretendas havi la dukon kaj prenas "
-                                "3 monerojn per imposto.\n"
-                                "Ĉu iu volas defii rin?",
+                                "3 monerojn per imposto.",
                                 player->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_DUKE);
@@ -1366,11 +1406,8 @@ do_assassinate(struct pcx_game *game,
                                 game->current_player,
                                 do_accepted_assassinate,
                                 target, /* user_data */
-                                "🗡 %s volas murdi %s\n"
-                                "%s, ĉu vi volas bloki ĝin per grafino?\n"
-                                "Aŭ ĉu iu volas defii?",
+                                "🗡 %s volas murdi %s",
                                 player->name,
-                                target->name,
                                 target->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_ASSASSIN);
@@ -1509,7 +1546,7 @@ do_exchange(struct pcx_game *game)
                                 do_accepted_exchange,
                                 NULL, /* user_data */
                                 "🔄 %s pretendas havi la ambasadoron kaj volas "
-                                "interŝanĝi kartojn, ĉu iu volas defii rin?",
+                                "interŝanĝi kartojn",
                                 player->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_AMBASSADOR);
@@ -1562,12 +1599,8 @@ do_steal(struct pcx_game *game,
                                 game->current_player,
                                 do_accepted_steal,
                                 target, /* user_data */
-                                "💰 %s volas ŝteli de %s\n"
-                                "%s, ĉu vi volas bloki ĝin per ambasadoro aŭ "
-                                "kapitano?\n"
-                                "Aŭ ĉu iu volas defii?",
+                                "💰 %s volas ŝteli de %s",
                                 player->name,
-                                target->name,
                                 target->name);
 
         data->challenged_characters = (1 << PCX_CHARACTER_CAPTAIN);
