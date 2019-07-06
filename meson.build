@@ -31,6 +31,7 @@ src = [
         'src/pcx-text-french.c',
         'src/pcx-text.c',
         'src/pcx-coup.c',
+        'src/pcx-html.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')
