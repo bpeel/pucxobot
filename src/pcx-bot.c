@@ -1031,13 +1031,17 @@ static void
 process_help(struct pcx_bot *bot,
              const struct message_info *info)
 {
+        char *help = bot->config->game->get_help_cb(bot->config->language);
+
         send_message_full(bot,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_HTML,
-                          bot->config->game->help[bot->config->language],
+                          help,
                           0, /* n_buttons */
                           NULL /* buttons */);
+
+        pcx_free(help);
 }
 
 static void

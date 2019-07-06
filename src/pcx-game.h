@@ -54,12 +54,12 @@ struct pcx_game {
         const char *name;
         int min_players;
         int max_players;
-        const char **help;
         void *(* create_game_cb)(const struct pcx_game_callbacks *callbacks,
                                  void *user_data,
                                  enum pcx_text_language language,
                                  int n_players,
                                  const char * const *names);
+        char *(* get_help_cb)(enum pcx_text_language language);
         void (* handle_callback_data_cb)(void *game,
                                          int player_num,
                                          const char *callback_data);

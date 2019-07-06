@@ -1836,6 +1836,12 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
         return coup;
 }
 
+static char *
+get_help_cb(enum pcx_text_language language)
+{
+        return pcx_strdup(pcx_coup_help[language]);
+}
+
 static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
@@ -1888,8 +1894,8 @@ pcx_coup_game = {
         .name = "coup",
         .min_players = PCX_COUP_MIN_PLAYERS,
         .max_players = PCX_COUP_MAX_PLAYERS,
-        .help = pcx_coup_help,
         .create_game_cb = create_game_cb,
+        .get_help_cb = get_help_cb,
         .handle_callback_data_cb = handle_callback_data_cb,
         .free_game_cb = free_game_cb
 };
