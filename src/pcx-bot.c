@@ -34,7 +34,6 @@
 #include "pcx-list.h"
 #include "pcx-config.h"
 #include "pcx-buffer.h"
-#include "pcx-game-help.h"
 #include "pcx-curl-multi.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
@@ -46,7 +45,7 @@ struct player {
 
 struct game {
         struct pcx_list link;
-        struct pcx_game *game;
+        void *game;
         int n_players;
         struct player players[PCX_GAME_MAX_PLAYERS];
         int64_t chat;
@@ -516,10 +515,11 @@ get_data_file(const char *name)
 }
 
 static void
-remove_game(struct game *game)
+remove_game(struct pcx_bot *bot,
+            struct game *game)
 {
         if (game->game)
-                pcx_game_free(game->game);
+                bot->config->game->free_game_cb(game->game);
 
         for (unsigned i = 0; i < game->n_players; i++)
                 pcx_free(game->players[i].name);
@@ -554,7 +554,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                                     PCX_TEXT_STRING_TIMEOUT_ABANDON,
                                     GAME_TIMEOUT / (60 * 1000));
 
-                remove_game(game);
+                remove_game(bot, game);
         }
 }
 
@@ -647,7 +647,7 @@ static void
 game_over_cb(void *user_data)
 {
         struct game *game = user_data;
-        remove_game(game);
+        remove_game(game->bot, game);
 }
 
 static const struct pcx_game_callbacks
@@ -705,9 +705,9 @@ process_callback(struct pcx_bot *bot,
 
         if (find_player(bot, from_id, &game, &player_num) && game->game) {
                 set_game_timeout(game);
-                pcx_game_handle_callback_data(game->game,
-                                              player_num,
-                                              callback_data);
+                bot->config->game->handle_callback_data_cb(game->game,
+                                                           player_num,
+                                                           callback_data);
         }
 }
 
@@ -904,7 +904,7 @@ process_join(struct pcx_bot *bot,
 
         game = find_or_create_game(bot, info->chat_id);
 
-        if (game->n_players >= PCX_GAME_MAX_PLAYERS) {
+        if (game->n_players >= bot->config->game->max_players) {
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
@@ -975,11 +975,11 @@ start_game(struct pcx_bot *bot,
         for (unsigned i = 0; i < game->n_players; i++)
                 names[i] = game->players[i].name;
 
-        game->game = pcx_game_new(&game_callbacks,
-                                  game,
-                                  bot->config->language,
-                                  game->n_players,
-                                  names);
+        game->game = bot->config->game->create_game_cb(&game_callbacks,
+                                                       game,
+                                                       bot->config->language,
+                                                       game->n_players,
+                                                       names);
 }
 
 static void
@@ -1011,11 +1011,12 @@ process_start(struct pcx_bot *bot,
                 return;
         }
 
-        if (game->n_players < 2) {
+        if (game->n_players < bot->config->game->min_players) {
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
-                                    PCX_TEXT_STRING_NEED_TWO_PLAYERS);
+                                    PCX_TEXT_STRING_NEED_MIN_PLAYERS,
+                                    bot->config->game->min_players);
                 return;
         }
 
@@ -1030,7 +1031,7 @@ process_help(struct pcx_bot *bot,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_HTML,
-                          pcx_game_help[bot->config->language],
+                          bot->config->game->help[bot->config->language],
                           0, /* n_buttons */
                           NULL /* buttons */);
 }
@@ -1288,7 +1289,7 @@ free_games(struct pcx_bot *bot)
         struct game *game, *tmp;
 
         pcx_list_for_each_safe(game, tmp, &bot->games, link) {
-                remove_game(game);
+                remove_game(bot, game);
         }
 }
 

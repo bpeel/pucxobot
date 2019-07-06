@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-game-help.h"
+#include "pcx-coup-help.h"
 
 #include "pcx-text.h"
 
 const char *
-pcx_game_help[] = {
+pcx_coup_help[] = {
         [PCX_TEXT_LANGUAGE_ESPERANTO] =
         "<b>RESUMO DE LA REGULOJ:</b>"
         "\n"

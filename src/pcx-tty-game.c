@@ -40,7 +40,8 @@ struct pcx_tty_game_player {
 };
 
 struct pcx_tty_game {
-        struct pcx_game *game;
+        const struct pcx_game *game;
+        void *game_data;
         int n_players;
         struct pcx_tty_game_player players[PCX_GAME_MAX_PLAYERS];
         struct pcx_buffer buffer;
@@ -182,10 +183,11 @@ found_player_num: (void) 0;
 
                 *data_end = '\0';
 
-                pcx_game_handle_callback_data(game->game,
-                                              player_num,
-                                              (const char *)
-                                              player->buffer.data + processed);
+                game->game->handle_callback_data_cb(game->game_data,
+                                                    player_num,
+                                                    (const char *)
+                                                    player->buffer.data +
+                                                    processed);
 
                 processed = end - player->buffer.data + 1;
         }
@@ -215,6 +217,8 @@ pcx_tty_game_new(int n_players,
         assert(n_players > 0 && n_players <= PCX_GAME_MAX_PLAYERS);
 
         struct pcx_tty_game *game = pcx_calloc(sizeof *game);
+
+        game->game = pcx_game_list[0];
 
         pcx_buffer_init(&game->buffer);
 
@@ -251,11 +255,12 @@ pcx_tty_game_new(int n_players,
         for (unsigned i = 0; i < n_players; i++)
                 names[i] = get_basename(files[i]);
 
-        game->game = pcx_game_new(&callbacks,
-                                  game,
-                                  PCX_TEXT_LANGUAGE_ESPERANTO,
-                                  n_players,
-                                  names);
+        game->game_data =
+                game->game->create_game_cb(&callbacks,
+                                           game,
+                                           PCX_TEXT_LANGUAGE_ESPERANTO,
+                                           n_players,
+                                           names);
 
         return game;
 
@@ -267,8 +272,8 @@ error:
 void
 pcx_tty_game_free(struct pcx_tty_game *game)
 {
-        if (game->game)
-                pcx_game_free(game->game);
+        if (game->game_data)
+                game->game->free_game_cb(game->game_data);
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(game->players); i++) {
                 if (game->players[i].fd != -1)

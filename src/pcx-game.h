@@ -25,8 +25,6 @@
 
 #define PCX_GAME_MAX_PLAYERS 6
 
-struct pcx_game;
-
 enum pcx_game_message_format {
         PCX_GAME_MESSAGE_FORMAT_PLAIN,
         PCX_GAME_MESSAGE_FORMAT_HTML
@@ -52,19 +50,24 @@ struct pcx_game_callbacks {
         void (* game_over)(void *user_data);
 };
 
-struct pcx_game *
-pcx_game_new(const struct pcx_game_callbacks *callbacks,
-             void *user_data,
-             enum pcx_text_language language,
-             int n_players,
-             const char * const *names);
+struct pcx_game {
+        const char *name;
+        int min_players;
+        int max_players;
+        const char **help;
+        void *(* create_game_cb)(const struct pcx_game_callbacks *callbacks,
+                                 void *user_data,
+                                 enum pcx_text_language language,
+                                 int n_players,
+                                 const char * const *names);
+        void (* handle_callback_data_cb)(void *game,
+                                         int player_num,
+                                         const char *callback_data);
+        void (* free_game_cb)(void *game);
+};
 
-void
-pcx_game_handle_callback_data(struct pcx_game *game,
-                              int player_num,
-                              const char *callback_data);
-
-void
-pcx_game_free(struct pcx_game *game);
+/* Null terminated list of games */
+extern const struct pcx_game * const
+pcx_game_list[];
 
 #endif /* PCX_GAME_H */

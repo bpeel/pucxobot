@@ -53,8 +53,8 @@ pcx_text_french[] = {
         "%s",
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Rejoignez la partie en tapant /rejoindre avant de la commencer",
-        [PCX_TEXT_STRING_NEED_TWO_PLAYERS] =
-        "Il faut au moins 2 joeurs pour jouer",
+        [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =
+        "Il faut au moins %i joeurs pour jouer",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/rejoindre",
         [PCX_TEXT_STRING_START_COMMAND] =

@@ -24,12 +24,13 @@ src = [
         'src/pcx-character.c',
         'src/pcx-bot.c',
         'src/pcx-key-value.c',
-        'src/pcx-game-help.c',
+        'src/pcx-coup-help.c',
         'src/pcx-curl-multi.c',
         'src/pcx-config.c',
         'src/pcx-text-esperanto.c',
         'src/pcx-text-french.c',
         'src/pcx-text.c',
+        'src/pcx-coup.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')

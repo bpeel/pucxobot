@@ -16,10 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_GAME_HELP_H
-#define PCX_GAME_HELP_H
+#ifndef PCX_COUP_H
+#define PCX_COUP_H
 
-extern const char *
-pcx_game_help[];
+#include "pcx-game.h"
 
-#endif /* PCX_GAME_HELP_H */
+extern const struct pcx_game pcx_coup_game;
+
+#endif /* PCX_COUP_H */

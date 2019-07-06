@@ -56,8 +56,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Aliĝu al la ludo per /aligxi antaŭ ol "
         "komenci ĝin",
-        [PCX_TEXT_STRING_NEED_TWO_PLAYERS] =
-        "Necesas almenaŭ 2 ludantoj por ludi.",
+        [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =
+        "Necesas almenaŭ %i ludantoj por ludi.",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/aligxi",
         [PCX_TEXT_STRING_START_COMMAND] =

@@ -22,6 +22,7 @@
 #include "pcx-error.h"
 #include "pcx-list.h"
 #include "pcx-text.h"
+#include "pcx-game.h"
 
 extern struct pcx_error_domain
 pcx_config_error;
@@ -36,6 +37,7 @@ struct pcx_config_bot {
         char *botname;
         char *announce_channel;
         enum pcx_text_language language;
+        const struct pcx_game *game;
 };
 
 struct pcx_config {
