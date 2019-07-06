@@ -16,25 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_CHARACTER_H
-#define PCX_CHARACTER_H
+#ifndef PCX_COUP_CHARACTER_H
+#define PCX_COUP_CHARACTER_H
 
 #include "pcx-text.h"
 
-enum pcx_character {
-        PCX_CHARACTER_DUKE,
-        PCX_CHARACTER_ASSASSIN,
-        PCX_CHARACTER_CONTESSA,
-        PCX_CHARACTER_CAPTAIN,
-        PCX_CHARACTER_AMBASSADOR
+enum pcx_coup_character {
+        PCX_COUP_CHARACTER_DUKE,
+        PCX_COUP_CHARACTER_ASSASSIN,
+        PCX_COUP_CHARACTER_CONTESSA,
+        PCX_COUP_CHARACTER_CAPTAIN,
+        PCX_COUP_CHARACTER_AMBASSADOR
 };
 
-#define PCX_CHARACTER_COUNT 5
+#define PCX_COUP_CHARACTER_COUNT 5
 
 enum pcx_text_string
-pcx_character_get_name(enum pcx_character character);
+pcx_coup_character_get_name(enum pcx_coup_character character);
 
 enum pcx_text_string
-pcx_character_get_object_name(enum pcx_character character);
+pcx_coup_character_get_object_name(enum pcx_coup_character character);
 
-#endif /* PCX_CHARACTER_H */
+#endif /* PCX_COUP_CHARACTER_H */

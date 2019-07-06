@@ -21,7 +21,7 @@ src = [
         'src/pcx-buffer.c',
         'src/pcx-list.c',
         'src/pcx-tty-game.c',
-        'src/pcx-character.c',
+        'src/pcx-coup-character.c',
         'src/pcx-bot.c',
         'src/pcx-key-value.c',
         'src/pcx-coup-help.c',

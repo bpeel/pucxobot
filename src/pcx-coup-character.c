@@ -16,25 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-character.h"
+#include "pcx-coup-character.h"
 
 #include <assert.h>
 
 #include "pcx-util.h"
 
 enum pcx_text_string
-pcx_character_get_name(enum pcx_character character)
+pcx_coup_character_get_name(enum pcx_coup_character character)
 {
         static const enum pcx_text_string names[] = {
-                [PCX_CHARACTER_DUKE] =
+                [PCX_COUP_CHARACTER_DUKE] =
                 PCX_TEXT_STRING_CHARACTER_NAME_DUKE,
-                [PCX_CHARACTER_ASSASSIN] =
+                [PCX_COUP_CHARACTER_ASSASSIN] =
                 PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN,
-                [PCX_CHARACTER_CONTESSA] =
+                [PCX_COUP_CHARACTER_CONTESSA] =
                 PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA,
-                [PCX_CHARACTER_CAPTAIN] =
+                [PCX_COUP_CHARACTER_CAPTAIN] =
                 PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN,
-                [PCX_CHARACTER_AMBASSADOR] =
+                [PCX_COUP_CHARACTER_AMBASSADOR] =
                 PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR,
         };
 
@@ -44,18 +44,18 @@ pcx_character_get_name(enum pcx_character character)
 }
 
 enum pcx_text_string
-pcx_character_get_object_name(enum pcx_character character)
+pcx_coup_character_get_object_name(enum pcx_coup_character character)
 {
         static const enum pcx_text_string names[] = {
-                [PCX_CHARACTER_DUKE] =
+                [PCX_COUP_CHARACTER_DUKE] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE,
-                [PCX_CHARACTER_ASSASSIN] =
+                [PCX_COUP_CHARACTER_ASSASSIN] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN,
-                [PCX_CHARACTER_CONTESSA] =
+                [PCX_COUP_CHARACTER_CONTESSA] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA,
-                [PCX_CHARACTER_CAPTAIN] =
+                [PCX_COUP_CHARACTER_CAPTAIN] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN,
-                [PCX_CHARACTER_AMBASSADOR] =
+                [PCX_COUP_CHARACTER_AMBASSADOR] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR,
         };
 

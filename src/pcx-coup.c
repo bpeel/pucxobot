@@ -25,7 +25,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "pcx-character.h"
+#include "pcx-coup-character.h"
 #include "pcx-util.h"
 #include "pcx-buffer.h"
 #include "pcx-main-context.h"
@@ -36,7 +36,7 @@
 
 #define PCX_COUP_CARDS_PER_CHARACTER 3
 #define PCX_COUP_CARDS_PER_PLAYER 2
-#define PCX_COUP_TOTAL_CARDS (PCX_CHARACTER_COUNT * \
+#define PCX_COUP_TOTAL_CARDS (PCX_COUP_CHARACTER_COUNT * \
                               PCX_COUP_CARDS_PER_CHARACTER)
 #define PCX_COUP_START_COINS 2
 
@@ -71,7 +71,7 @@ struct pcx_coup_stack_entry {
 };
 
 struct pcx_coup_card {
-        enum pcx_character character;
+        enum pcx_coup_character character;
         bool dead;
 };
 
@@ -82,7 +82,7 @@ struct pcx_coup_player {
 };
 
 struct pcx_coup {
-        enum pcx_character deck[PCX_COUP_TOTAL_CARDS];
+        enum pcx_coup_character deck[PCX_COUP_TOTAL_CARDS];
         struct pcx_coup_player players[PCX_COUP_MAX_PLAYERS];
         int n_players;
         int n_cards;
@@ -463,11 +463,11 @@ add_cards_status(struct pcx_coup *coup,
 {
         for (unsigned int i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
                 const struct pcx_coup_card *card = player->cards + i;
-                enum pcx_character character = card->character;
+                enum pcx_coup_character character = card->character;
 
                 if (card->dead) {
                         enum pcx_text_string name =
-                                pcx_character_get_name(character);
+                                pcx_coup_character_get_name(character);
                         pcx_buffer_append_string(buffer, "☠");
                         append_buffer_string(coup, buffer, name);
                         pcx_buffer_append_string(buffer, "☠");
@@ -510,7 +510,7 @@ show_cards(struct pcx_coup *coup,
         for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
                 const struct pcx_coup_card *card = player->cards + i;
                 enum pcx_text_string name =
-                        pcx_character_get_name(card->character);
+                        pcx_coup_character_get_name(card->character);
 
                 if (card->dead)
                         pcx_buffer_append_string(&coup->buffer, "☠");
@@ -621,13 +621,13 @@ shuffle_deck(struct pcx_coup *coup)
 
         for (unsigned i = coup->n_cards - 1; i > 0; i--) {
                 int j = rand() % (i + 1);
-                enum pcx_character t = coup->deck[j];
+                enum pcx_coup_character t = coup->deck[j];
                 coup->deck[j] = coup->deck[i];
                 coup->deck[i] = t;
         }
 }
 
-static enum pcx_character
+static enum pcx_coup_character
 take_card(struct pcx_coup *coup)
 {
         assert(coup->n_cards > 1);
@@ -723,7 +723,7 @@ choose_card_to_lose_idle(struct pcx_coup *coup)
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "lose:%u", i);
                 enum pcx_text_string name =
-                        pcx_character_get_name(player->cards[i].character);
+                        pcx_coup_character_get_name(player->cards[i].character);
 
                 buttons[n_buttons].text =
                         pcx_text_get(coup->language, name);
@@ -779,13 +779,13 @@ get_challenged_cards(struct pcx_coup *coup,
 
                 append_buffer_string(coup,
                                      buf,
-                                     pcx_character_get_object_name(i));
+                                     pcx_coup_character_get_object_name(i));
         }
 }
 
 static bool
 get_single_card(const struct pcx_coup_player *player,
-                enum pcx_character *single_card)
+                enum pcx_coup_character *single_card)
 {
         bool found_card = false;
 
@@ -804,7 +804,7 @@ get_single_card(const struct pcx_coup_player *player,
 static void
 change_card(struct pcx_coup *coup,
             int player_num,
-            enum pcx_character character)
+            enum pcx_coup_character character)
 {
         struct pcx_coup_player *player = coup->players + player_num;
 
@@ -872,7 +872,7 @@ do_challenge_action(struct pcx_coup *coup,
 static void
 do_reveal(struct pcx_coup *coup,
           struct reveal_data *data,
-          enum pcx_character character)
+          enum pcx_coup_character character)
 {
         struct pcx_coup_player *challenged_player =
                 coup->players + data->challenged_player;
@@ -881,7 +881,7 @@ do_reveal(struct pcx_coup *coup,
 
         if ((data->challenged_characters & (UINT32_C(1) << character))) {
                 enum pcx_text_string character_name =
-                        pcx_character_get_object_name(character);
+                        pcx_coup_character_get_object_name(character);
                 const char *character_name_string =
                         pcx_text_get(coup->language, character_name);
                 coup_note(coup,
@@ -957,7 +957,7 @@ reveal_idle(struct pcx_coup *coup)
         struct reveal_data *data = get_stack_data_pointer(coup);
         struct pcx_coup_player *challenged_player =
                 coup->players + data->challenged_player;
-        enum pcx_character single_card;
+        enum pcx_coup_character single_card;
 
         if (get_single_card(challenged_player, &single_card)) {
                 do_reveal(coup, data, single_card);
@@ -986,7 +986,7 @@ reveal_idle(struct pcx_coup *coup)
                         continue;
 
                 enum pcx_text_string name =
-                        pcx_character_get_name(card->character);
+                        pcx_coup_character_get_name(card->character);
 
                 buttons[n_buttons].text =
                         pcx_text_get(coup->language, name);
@@ -1429,7 +1429,7 @@ do_foreign_add(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_FOREIGN_AID,
                                 player->name);
 
-        data->blocking_characters = (1 << PCX_CHARACTER_DUKE);
+        data->blocking_characters = (1 << PCX_COUP_CHARACTER_DUKE);
 }
 
 static void
@@ -1461,7 +1461,7 @@ do_tax(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_TAX,
                                 player->name);
 
-        data->challenged_characters = (1 << PCX_CHARACTER_DUKE);
+        data->challenged_characters = (1 << PCX_COUP_CHARACTER_DUKE);
 }
 
 static void
@@ -1526,8 +1526,8 @@ do_assassinate(struct pcx_coup *coup,
                                 player->name,
                                 target->name);
 
-        data->challenged_characters = (1 << PCX_CHARACTER_ASSASSIN);
-        data->blocking_characters = (1 << PCX_CHARACTER_CONTESSA);
+        data->challenged_characters = (1 << PCX_COUP_CHARACTER_ASSASSIN);
+        data->blocking_characters = (1 << PCX_COUP_CHARACTER_CONTESSA);
         data->block_cb = block_assassinate;
         data->target_player = extra_data;
 }
@@ -1537,7 +1537,7 @@ do_assassinate(struct pcx_coup *coup,
 struct exchange_data {
         int n_cards_chosen;
         int n_cards_available;
-        enum pcx_character available_cards[CARDS_TAKEN_IN_EXCHANGE +
+        enum pcx_coup_character available_cards[CARDS_TAKEN_IN_EXCHANGE +
                                            PCX_COUP_CARDS_PER_PLAYER];
 };
 
@@ -1585,9 +1585,9 @@ exchange_idle(struct pcx_coup *coup)
                                        PCX_COUP_CARDS_PER_PLAYER];
 
         for (unsigned i = 0; i < data->n_cards_available; i++) {
-                enum pcx_character character = data->available_cards[i];
+                enum pcx_coup_character character = data->available_cards[i];
                 enum pcx_text_string name =
-                        pcx_character_get_name(character);
+                        pcx_coup_character_get_name(character);
                 buttons[i].text = pcx_text_get(coup->language, name);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -1667,7 +1667,7 @@ do_exchange(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_EXCHANGE,
                                 player->name);
 
-        data->challenged_characters = (1 << PCX_CHARACTER_AMBASSADOR);
+        data->challenged_characters = (1 << PCX_COUP_CHARACTER_AMBASSADOR);
 }
 
 static void
@@ -1721,9 +1721,9 @@ do_steal(struct pcx_coup *coup,
                                 player->name,
                                 target->name);
 
-        data->challenged_characters = (1 << PCX_CHARACTER_CAPTAIN);
-        data->blocking_characters = ((1 << PCX_CHARACTER_AMBASSADOR) |
-                                     (1 << PCX_CHARACTER_CAPTAIN));
+        data->challenged_characters = (1 << PCX_COUP_CHARACTER_CAPTAIN);
+        data->blocking_characters = ((1 << PCX_COUP_CHARACTER_AMBASSADOR) |
+                                     (1 << PCX_COUP_CHARACTER_CAPTAIN));
         data->target_player = extra_data;
 }
 
@@ -1800,7 +1800,7 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
 
         coup->n_cards = PCX_COUP_TOTAL_CARDS;
 
-        for (unsigned ch = 0; ch < PCX_CHARACTER_COUNT; ch++) {
+        for (unsigned ch = 0; ch < PCX_COUP_CHARACTER_COUNT; ch++) {
                 for (unsigned c = 0; c < PCX_COUP_CARDS_PER_CHARACTER; c++)
                         coup->deck[ch * PCX_COUP_CARDS_PER_CHARACTER + c] = ch;
         }
