@@ -173,4 +173,54 @@ pcx_text_french[] = {
         "le capitaine",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "l’ambassadeur",
+        [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
+        "Chauffeur",
+        [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
+        "Serrurier",
+        [PCX_TEXT_STRING_ROLE_NAME_MUSCLE] =
+        "Costaud",
+        [PCX_TEXT_STRING_ROLE_NAME_CON_ARTIST] =
+        "Arnaquer",
+        [PCX_TEXT_STRING_ROLE_NAME_LOOKOUT] =
+        "Guetteur",
+        [PCX_TEXT_STRING_ROLE_NAME_SNITCH] =
+        "Balance",
+        [PCX_TEXT_STRING_ROUND_NUM] =
+        "Tour %i / %i",
+        [PCX_TEXT_STRING_CHOOSE_HEIST_DIFFICULTY] =
+        "%s, vous êtes le chef. Combien de personnages voulez-vous pour "
+        "le braquage ?",
+        [PCX_TEXT_STRING_HEIST_SIZE_CHOSEN] =
+        "Le braquage aura besoin de ces %i personnages :",
+        [PCX_TEXT_STRING_DISCUSS_HEIST] =
+        "Maintenant vous pouvez discuter entre vous sur quels personnages vous "
+        "aller fournir au braquage. Quand vous serez prêts, choisissez votre "
+        "carte en secret.",
+        [PCX_TEXT_STRING_CARDS_CHOSEN] =
+        "Tout le monde a fait son choix ! Les personnages sont :",
+        [PCX_TEXT_STRING_NEEDED_CARDS_WERE] =
+        "La cartes requises ont été :",
+        [PCX_TEXT_STRING_YOU_CHOSE] =
+        "Vous avez choisi :",
+        [PCX_TEXT_STRING_WHICH_ROLE] =
+        "Quelle carte voulez-vous choisir ?",
+        [PCX_TEXT_STRING_HEIST_SUCCESS] =
+        "Le braquage a réussi ! Tous les joueurs qui n’ont pas choisi "
+        "la balance reçoivent %i or.",
+        [PCX_TEXT_STRING_HEIST_FAILED] =
+        "Le braquage a échoué ! Tous ce qui n’ont pas choisi la balance "
+        "perdent 1 or.",
+        [PCX_TEXT_STRING_SNITCH_GAIN_1] =
+        "Tous les autres gagnent 1 or.",
+        [PCX_TEXT_STRING_SNITCH_GAIN_PLURAL] =
+        "Tous les autres gagnent %i or.",
+        [PCX_TEXT_STRING_EVERYONE_SNITCHED] =
+        "Le braquage a échoué et tout le monde l’a balancé ! "
+        "Personne ne gagne d’or.",
+        [PCX_TEXT_STRING_NOONE_SNITCHED] =
+        "Personne ne l’a balancé.",
+        [PCX_TEXT_STRING_1_SNITCH] =
+        "1 balance",
+        [PCX_TEXT_STRING_PLURAL_SNITCHES] =
+        "%i balances"
 };
