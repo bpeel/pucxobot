@@ -16,14 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PCX_SNITCH_H
+#define PCX_SNITCH_H
+
 #include "pcx-game.h"
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
+extern const struct pcx_game pcx_snitch_game;
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_snitch_game,
-        NULL
-};
+#endif /* PCX_SNITCH_H */

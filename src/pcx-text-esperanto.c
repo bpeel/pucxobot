@@ -185,4 +185,42 @@ pcx_text_esperanto[] = {
         "la kapitanon",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "la ambasadoron",
+        [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
+        "Ŝoforo",
+        [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
+        "Ŝlosisto",
+        [PCX_TEXT_STRING_ROLE_NAME_MUSCLE] =
+        "Muskolulo",
+        [PCX_TEXT_STRING_ROLE_NAME_CON_ARTIST] =
+        "Trompartisto",
+        [PCX_TEXT_STRING_ROLE_NAME_LOOKOUT] =
+        "Gvatisto",
+        [PCX_TEXT_STRING_ROLE_NAME_SNITCH] =
+        "Perfidulo",
+        [PCX_TEXT_STRING_ROUND_NUM] =
+        "Raŭndo %i / %i",
+        [PCX_TEXT_STRING_CHOOSE_HEIST_DIFFICULTY] =
+        "%s, vi estas la rabestro. Kiom da roluloj vi volas por la rabado?",
+        [PCX_TEXT_STRING_HEIST_SIZE_CHOSEN] =
+        "La rabado bezonos %i rolulojn kiuj estas:",
+        [PCX_TEXT_STRING_DISCUSS_HEIST] =
+        "Nun vi povas interkonsenti inter vi pri kiun rolon vi aldonos al "
+        "la rabado. Kiam vi estas preta, sekrete elektu karton.",
+        [PCX_TEXT_STRING_CARDS_CHOSEN] =
+        "Ĉiu faris sian elekton! La roluloj estas:",
+        [PCX_TEXT_STRING_NEEDED_CARDS_WERE] =
+        "La bezonataj kartoj estis:",
+        [PCX_TEXT_STRING_YOU_CHOSE] =
+        "Vi elektis:",
+        [PCX_TEXT_STRING_WHICH_ROLE] =
+        "Kiun karton vi volas elekti?",
+        [PCX_TEXT_STRING_HEIST_SUCCESS] =
+        "La rabado sukcesis! Ĉiu ludanto kiu ne elektis la perfidulon ricevas "
+        "%i monerojn.",
+        [PCX_TEXT_STRING_HEIST_FAILED] =
+        "La rabado fuŝiĝis! Ĉiu kiu ne elektis la perfidulon perdas 1 moneron.",
+        [PCX_TEXT_STRING_SNITCH_GAIN_1] =
+        "Ĉiu alia gajnas 1 moneron.",
+        [PCX_TEXT_STRING_SNITCH_GAIN_PLURAL] =
+        "Ĉiu alia gajnas %i monerojn.",
 };
