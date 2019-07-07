@@ -186,6 +186,7 @@ take_card(struct pcx_snitch *snitch)
                        snitch->discarded_cards,
                        snitch->n_cards * sizeof snitch->deck[0]);
                 shuffle_deck(snitch);
+                snitch->n_discarded_cards = 0;
         }
 
         assert(snitch->n_cards > 0);
