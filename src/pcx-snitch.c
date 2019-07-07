@@ -570,11 +570,24 @@ discard_cards(struct pcx_snitch *snitch)
 
                 player->cards[player->chosen_role]--;
 
+                if (player->chosen_role == PCX_SNITCH_ROLE_SNITCH)
+                        continue;
+
                 assert(snitch->n_discarded_cards <
                        PCX_N_ELEMENTS(snitch->discarded_cards));
 
                 snitch->discarded_cards[snitch->n_discarded_cards++] =
                         player->chosen_role;
+        }
+
+        for (unsigned i = 0; i < PCX_SNITCH_N_BASE_ROLES; i++) {
+                assert(snitch->n_discarded_cards +
+                       snitch->heist[i] <=
+                       PCX_N_ELEMENTS(snitch->discarded_cards));
+                for (unsigned j = 0; j < snitch->heist[i]; j++) {
+                        snitch->discarded_cards[snitch->n_discarded_cards] = i;
+                        snitch->n_discarded_cards++;
+                }
         }
 }
 
