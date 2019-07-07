@@ -211,17 +211,13 @@ get_long_name(enum pcx_text_language language,
 }
 
 static void
-append_special_format(struct pcx_love *love,
-                      struct pcx_buffer *buf,
-                      enum pcx_text_string format_string,
-                      ...)
+append_special_vformat(struct pcx_love *love,
+                       struct pcx_buffer *buf,
+                       enum pcx_text_string format_string,
+                       va_list ap)
 {
         const char *format = pcx_text_get(love->language, format_string);
         const char *last = format;
-
-        va_list ap;
-
-        va_start(ap, format_string);
 
         while (true) {
                 const char *percent = strchr(last, '%');
@@ -268,9 +264,42 @@ append_special_format(struct pcx_love *love,
                 last = percent + 2;
         }
 
+        pcx_buffer_append_string(buf, last);
+}
+
+static void
+append_special_format(struct pcx_love *love,
+                      struct pcx_buffer *buf,
+                      enum pcx_text_string format_string,
+                      ...)
+{
+        va_list ap;
+
+        va_start(ap, format_string);
+        append_special_vformat(love, buf, format_string, ap);
+        va_end(ap);
+}
+
+static void
+game_note(struct pcx_love *love,
+          enum pcx_text_string format,
+          ...)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        va_list ap;
+
+        va_start(ap, format);
+        append_special_vformat(love, &buf, format, ap);
         va_end(ap);
 
-        pcx_buffer_append_string(buf, last);
+        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                     (const char *) buf.data,
+                                     0, /* n_buttons */
+                                     NULL, /* buttons */
+                                     love->user_data);
+
+        pcx_buffer_destroy(&buf);
 }
 
 static void
@@ -665,6 +694,236 @@ get_help_cb(enum pcx_text_language language)
         return (char *) buf.data;
 }
 
+static uint32_t
+get_targets(struct pcx_love *love)
+{
+        uint32_t targets = 0;
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                if (i == love->current_player)
+                        continue;
+
+                const struct pcx_love_player *player = love->players + i;
+
+                if (player->is_alive && !player->is_protected)
+                        targets |= 1 << i;
+        }
+
+        return targets;
+}
+
+static void
+add_to_discard_pile(struct pcx_love_player *player,
+                    const struct pcx_love_character *card)
+{
+        assert(player->n_discarded_cards <
+               PCX_N_ELEMENTS(player->discarded_cards));
+
+        player->discarded_cards[player->n_discarded_cards++] = card;
+}
+
+static void
+start_discard(struct pcx_love *love,
+              const struct pcx_love_character *card)
+{
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+
+        if (card != love->pending_card)
+                current_player->card = love->pending_card;
+
+        add_to_discard_pile(current_player, card);
+}
+
+static void
+finish_discard(struct pcx_love *love)
+{
+        show_card(love, love->current_player);
+
+        int next_player = love->current_player;
+
+        do
+                next_player = (next_player + 1) % love->n_players;
+        while (next_player != love->current_player &&
+               !love->players[next_player].is_alive);
+
+        love->current_player = next_player;
+
+        take_turn(love);
+}
+
+static void
+do_discard(struct pcx_love *love,
+           const struct pcx_love_character *card)
+{
+        start_discard(love, card);
+        finish_discard(love);
+}
+
+static void
+choose_target(struct pcx_love *love,
+              enum pcx_text_string question,
+              const char *keyword,
+              uint32_t targets)
+{
+        struct pcx_game_button buttons[PCX_LOVE_MAX_PLAYERS];
+        int n_buttons = 0;
+
+        for (int i = 0; targets; i++, targets >>= 1) {
+                if ((targets & 1) == 0)
+                        continue;
+
+                buttons[n_buttons].text = love->players[i].name;
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "%s:%i", keyword, i);
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
+        }
+
+        love->callbacks.send_private_message(love->current_player,
+                                             PCX_GAME_MESSAGE_FORMAT_HTML,
+                                             pcx_text_get(love->language,
+                                                          question),
+                                             n_buttons,
+                                             buttons,
+                                             love->user_data);
+
+        for (int i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+}
+
+static int
+choose_target_for_discard(struct pcx_love *love,
+                          const struct pcx_love_character *card,
+                          int extra_data,
+                          enum pcx_text_string question)
+{
+        uint32_t targets = get_targets(love);
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+
+        if (targets == 0) {
+                game_note(love,
+                          PCX_TEXT_STRING_EVERYONE_PROTECTED,
+                          current_player,
+                          card);
+                do_discard(love, card);
+                return -1;
+        } else if (extra_data == -1) {
+                choose_target(love, question, card->keyword, targets);
+                return -1;
+        } else {
+                int player_num = extra_data & 0xff;
+                if (targets & (1 << player_num))
+                        return player_num;
+                else
+                        return -1;
+        }
+}
+
+static void
+kill_player(struct pcx_love_player *player)
+{
+        add_to_discard_pile(player, player->card);
+        player->card = NULL;
+        player->is_alive = false;
+}
+
+static void
+guess_card(struct pcx_love *love,
+           int extra_data)
+{
+        struct pcx_game_button buttons[PCX_N_ELEMENTS(characters)];
+        int n_buttons = 0;
+
+        for (int i = 0; i < PCX_N_ELEMENTS(characters); i++) {
+                if (characters[i] == &guard_character)
+                        continue;
+
+                struct pcx_buffer name_buf = PCX_BUFFER_STATIC_INIT;
+                get_long_name(love->language, characters[i], &name_buf, false);
+                buttons[n_buttons].text = (char *) name_buf.data;
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf,
+                                         "guard:%i",
+                                         0x10000 | (i << 8) | extra_data);
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
+        }
+
+        const char *question = pcx_text_get(love->language,
+                                            PCX_TEXT_STRING_GUESS_WHICH_CARD);
+
+        love->callbacks.send_private_message(love->current_player,
+                                             PCX_GAME_MESSAGE_FORMAT_HTML,
+                                             question,
+                                             n_buttons,
+                                             buttons,
+                                             love->user_data);
+
+        for (int i = 0; i < n_buttons; i++) {
+                pcx_free((char *) buttons[i].text);
+                pcx_free((char *) buttons[i].data);
+        }
+}
+
+static void
+discard_guard(struct pcx_love *love,
+              int extra_data)
+{
+        int target = choose_target_for_discard(love,
+                                               &guard_character,
+                                               extra_data,
+                                               PCX_TEXT_STRING_WHO_GUESS);
+
+        if (target < 0)
+                return;
+
+        if (extra_data < 0x100) {
+                guess_card(love, extra_data);
+                return;
+        }
+
+        int card_num = (extra_data >> 8) & 0xff;
+
+        if (card_num < 0 || card_num >= PCX_N_ELEMENTS(characters))
+                return;
+
+        const struct pcx_love_character *card = characters[card_num];
+
+        if (card == &guard_character)
+                return;
+
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+        struct pcx_love_player *target_player =
+                love->players + target;
+
+        if (card == target_player->card) {
+                game_note(love,
+                          PCX_TEXT_STRING_GUARD_SUCCESS,
+                          current_player,
+                          &guard_character,
+                          target_player,
+                          card,
+                          target_player);
+                kill_player(target_player);
+        } else {
+                game_note(love,
+                          PCX_TEXT_STRING_GUARD_FAIL,
+                          current_player,
+                          &guard_character,
+                          target_player,
+                          card);
+        }
+
+        do_discard(love, &guard_character);
+}
+
 static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
@@ -673,6 +932,9 @@ handle_callback_data_cb(void *user_data,
         struct pcx_love *love = user_data;
 
         assert(player_num >= 0 && player_num < love->n_players);
+
+        if (player_num != love->current_player)
+                return;
 
         int extra_data;
         const char *colon = strchr(callback_data, ':');
@@ -693,9 +955,26 @@ handle_callback_data_cb(void *user_data,
         if (colon <= callback_data)
                 return;
 
-        char *main_data = pcx_strndup(callback_data, colon - callback_data);
+        static const struct {
+                const struct pcx_love_character *character;
+                void (* func)(struct pcx_love *love,
+                              int extra_data);
+        } card_cbs[] = {
+                { &guard_character, discard_guard },
+        };
 
-        pcx_free(main_data);
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {
+                const char *keyword = card_cbs[i].character->keyword;
+                size_t len = strlen(keyword);
+
+                if (colon - callback_data == len &&
+                    !memcmp(keyword, callback_data, len)) {
+                        if (can_discard(love, card_cbs[i].character))
+                                card_cbs[i].func(love, extra_data);
+
+                        break;
+                }
+        }
 }
 
 static void

@@ -316,4 +316,17 @@ pcx_text_esperanto[] = {
         "<b>%p</b>, estas via vico",
         [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
         "Kiun karton vi volas forĵeti?",
+        [PCX_TEXT_STRING_EVERYONE_PROTECTED] =
+        "%p forĵetas la %C sed ĉiuj aliaj ludantoj "
+        "estas protektataj kaj ĝi ne havas efikon.",
+        [PCX_TEXT_STRING_WHO_GUESS] =
+        "Kies karton vi volas diveni?",
+        [PCX_TEXT_STRING_GUESS_WHICH_CARD] =
+        "Kiun karton vi volas diveni?",
+        [PCX_TEXT_STRING_GUARD_SUCCESS] =
+        "%p forĵetis la %C kaj ĝuste divenis ke "
+        "%p havis la %C. %p perdas la raŭndon.",
+        [PCX_TEXT_STRING_GUARD_FAIL] =
+        "%p forĵetis la %C kaj malĝuste divenis "
+        "ke %p havas la %C.",
 };
