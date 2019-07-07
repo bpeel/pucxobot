@@ -630,6 +630,8 @@ end_game(struct pcx_snitch *snitch)
 
         get_status(snitch, &buf);
 
+        pcx_buffer_append_string(&buf, "🏆 ");
+
         append_buffer_printf(snitch,
                              &buf,
                              PCX_TEXT_STRING_WON,
