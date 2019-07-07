@@ -192,16 +192,53 @@ take_card(struct pcx_snitch *snitch)
         return snitch->deck[--snitch->n_cards];
 }
 
+static int
+get_current_player(struct pcx_snitch *snitch)
+{
+        return (snitch->first_player + snitch->round_num) % snitch->n_players;
+}
+
+static void
+get_status(struct pcx_snitch *snitch,
+           struct pcx_buffer *buf)
+{
+        struct pcx_snitch_player *current_player =
+                snitch->players + get_current_player(snitch);
+
+        for (unsigned i = 0; i < snitch->n_players; i++) {
+                struct pcx_snitch_player *player = snitch->players + i;
+
+                player->chosen_role = -1;
+
+                if (player == current_player)
+                        pcx_buffer_append_string(buf, "👉 ");
+
+                pcx_buffer_append_string(buf, player->name);
+                pcx_buffer_append_string(buf, ", ");
+
+                if (player->coins == 1) {
+                        append_buffer_string(snitch,
+                                             buf,
+                                             PCX_TEXT_STRING_1_COIN);
+                } else {
+                        append_buffer_printf(snitch,
+                                             buf,
+                                             PCX_TEXT_STRING_PLURAL_COINS,
+                                             player->coins);
+                }
+
+                pcx_buffer_append_string(buf, "\n");
+        }
+
+        pcx_buffer_append_string(buf, "\n");
+}
+
 static void
 start_round(struct pcx_snitch *snitch)
 {
         snitch->heist_size = -1;
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-
-        struct pcx_snitch_player *current_player =
-                snitch->players + ((snitch->first_player + snitch->round_num) %
-                                   snitch->n_players);
 
         append_buffer_printf(snitch,
                              &buf,
@@ -210,37 +247,12 @@ start_round(struct pcx_snitch *snitch)
                              PCX_SNITCH_N_ROUNDS);
         pcx_buffer_append_string(&buf, "\n\n");
 
-        for (unsigned i = 0; i < snitch->n_players; i++) {
-                struct pcx_snitch_player *player = snitch->players + i;
-
-                player->chosen_role = -1;
-
-                if (player == current_player)
-                        pcx_buffer_append_string(&buf, "👉 ");
-
-                pcx_buffer_append_string(&buf, player->name);
-                pcx_buffer_append_string(&buf, ", ");
-
-                if (player->coins == 1) {
-                        append_buffer_string(snitch,
-                                             &buf,
-                                             PCX_TEXT_STRING_1_COIN);
-                } else {
-                        append_buffer_printf(snitch,
-                                             &buf,
-                                             PCX_TEXT_STRING_PLURAL_COINS,
-                                             player->coins);
-                }
-
-                pcx_buffer_append_string(&buf, "\n");
-        }
-
-        pcx_buffer_append_string(&buf, "\n");
+        get_status(snitch, &buf);
 
         append_buffer_printf(snitch,
                              &buf,
                              PCX_TEXT_STRING_CHOOSE_HEIST_DIFFICULTY,
-                             current_player->name);
+                             snitch->players[get_current_player(snitch)].name);
 
         struct pcx_game_button buttons[PCX_SNITCH_MAX_PLAYERS];
         int n_buttons = 0;
@@ -384,8 +396,7 @@ handle_set_heist_size(struct pcx_snitch *snitch,
         if (snitch->heist_size != -1)
                 return;
 
-        if (player_num != ((snitch->first_player + snitch->round_num) %
-                           snitch->n_players))
+        if (player_num != get_current_player(snitch))
                 return;
 
         if (heist_size < PCX_SNITCH_MIN_HEIST_SIZE ||
@@ -592,6 +603,9 @@ end_game(struct pcx_snitch *snitch)
         }
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        get_status(snitch, &buf);
+
         append_buffer_printf(snitch,
                              &buf,
                              PCX_TEXT_STRING_WON,
