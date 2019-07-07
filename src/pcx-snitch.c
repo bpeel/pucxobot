@@ -164,6 +164,19 @@ append_buffer_printf(struct pcx_snitch *snitch,
 }
 
 static void
+append_buffer_plural(struct pcx_snitch *snitch,
+                     struct pcx_buffer *buf,
+                     enum pcx_text_string single,
+                     enum pcx_text_string plural,
+                     int amount)
+{
+        if (amount == 1)
+                append_buffer_string(snitch, buf, single);
+        else
+                append_buffer_printf(snitch, buf, plural, amount);
+}
+
+static void
 shuffle_deck(struct pcx_snitch *snitch)
 {
         if (snitch->n_cards < 2)
@@ -218,16 +231,11 @@ get_status(struct pcx_snitch *snitch,
                 pcx_buffer_append_string(buf, player->name);
                 pcx_buffer_append_string(buf, ", ");
 
-                if (player->coins == 1) {
-                        append_buffer_string(snitch,
-                                             buf,
-                                             PCX_TEXT_STRING_1_COIN);
-                } else {
-                        append_buffer_printf(snitch,
-                                             buf,
-                                             PCX_TEXT_STRING_PLURAL_COINS,
-                                             player->coins);
-                }
+                append_buffer_plural(snitch,
+                                     buf,
+                                     PCX_TEXT_STRING_1_COIN,
+                                     PCX_TEXT_STRING_PLURAL_COINS,
+                                     player->coins);
 
                 pcx_buffer_append_string(buf, "\n");
         }
@@ -558,13 +566,10 @@ handle_failed_heist(struct pcx_snitch *snitch,
                         append_buffer_string(snitch,
                                              buf,
                                              PCX_TEXT_STRING_NOONE_SNITCHED);
-                } else if (split == 1) {
-                        append_buffer_string(snitch,
-                                             buf,
-                                             PCX_TEXT_STRING_SNITCH_GAIN_1);
                 } else {
-                        append_buffer_printf(snitch,
+                        append_buffer_plural(snitch,
                                              buf,
+                                             PCX_TEXT_STRING_SNITCH_GAIN_1,
                                              PCX_TEXT_STRING_SNITCH_GAIN_PLURAL,
                                              split);
                 }
