@@ -545,18 +545,28 @@ handle_failed_heist(struct pcx_snitch *snitch,
                 player->coins += split;
         }
 
-        append_buffer_string(snitch, buf, PCX_TEXT_STRING_HEIST_FAILED);
-        pcx_buffer_append_c(buf, ' ');
-
-        if (split == 1) {
+        if (n_snitches >= snitch->n_players) {
                 append_buffer_string(snitch,
                                      buf,
-                                     PCX_TEXT_STRING_SNITCH_GAIN_1);
+                                     PCX_TEXT_STRING_EVERYONE_SNITCHED);
         } else {
-                append_buffer_printf(snitch,
-                                     buf,
-                                     PCX_TEXT_STRING_SNITCH_GAIN_PLURAL,
-                                     split);
+                append_buffer_string(snitch, buf, PCX_TEXT_STRING_HEIST_FAILED);
+                pcx_buffer_append_c(buf, ' ');
+
+                if (n_snitches == 0) {
+                        append_buffer_string(snitch,
+                                             buf,
+                                             PCX_TEXT_STRING_NOONE_SNITCHED);
+                } else if (split == 1) {
+                        append_buffer_string(snitch,
+                                             buf,
+                                             PCX_TEXT_STRING_SNITCH_GAIN_1);
+                } else {
+                        append_buffer_printf(snitch,
+                                             buf,
+                                             PCX_TEXT_STRING_SNITCH_GAIN_PLURAL,
+                                             split);
+                }
         }
 }
 

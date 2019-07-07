@@ -223,4 +223,8 @@ pcx_text_esperanto[] = {
         "Ĉiu alia gajnas 1 moneron.",
         [PCX_TEXT_STRING_SNITCH_GAIN_PLURAL] =
         "Ĉiu alia gajnas %i monerojn.",
+        [PCX_TEXT_STRING_EVERYONE_SNITCHED] =
+        "La rabado fuŝiĝis kaj ĉiu perfidis! Neniu gajnas monon.",
+        [PCX_TEXT_STRING_NOONE_SNITCHED] =
+        "Neniu perfidis.",
 };
