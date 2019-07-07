@@ -32,6 +32,7 @@ src = [
         'src/pcx-text.c',
         'src/pcx-coup.c',
         'src/pcx-snitch.c',
+        'src/pcx-snitch-help.c',
         'src/pcx-html.c',
 ]
 

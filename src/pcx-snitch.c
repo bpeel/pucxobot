@@ -27,6 +27,7 @@
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
+#include "pcx-snitch-help.h"
 
 #define PCX_SNITCH_MIN_PLAYERS 3
 #define PCX_SNITCH_MAX_PLAYERS 5
@@ -341,8 +342,7 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("Neniu skribis la helpon. Intertempe vidu: "
-                          "http://www.slightgames.co.uk/snitch/EN");
+        return pcx_strdup(pcx_snitch_help[language]);
 }
 
 static void
