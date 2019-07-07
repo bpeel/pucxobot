@@ -227,4 +227,8 @@ pcx_text_esperanto[] = {
         "La rabado fuŝiĝis kaj ĉiu perfidis! Neniu gajnas monon.",
         [PCX_TEXT_STRING_NOONE_SNITCHED] =
         "Neniu perfidis.",
+        [PCX_TEXT_STRING_1_SNITCH] =
+        "1 perfidulo",
+        [PCX_TEXT_STRING_PLURAL_SNITCHES] =
+        "%i perfiduloj",
 };

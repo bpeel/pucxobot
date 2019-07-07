@@ -214,36 +214,6 @@ get_current_player(struct pcx_snitch *snitch)
 }
 
 static void
-get_status(struct pcx_snitch *snitch,
-           struct pcx_buffer *buf)
-{
-        struct pcx_snitch_player *current_player =
-                snitch->players + get_current_player(snitch);
-
-        for (unsigned i = 0; i < snitch->n_players; i++) {
-                struct pcx_snitch_player *player = snitch->players + i;
-
-                player->chosen_role = -1;
-
-                if (player == current_player)
-                        pcx_buffer_append_string(buf, "👉 ");
-
-                pcx_buffer_append_string(buf, player->name);
-                pcx_buffer_append_string(buf, ", ");
-
-                append_buffer_plural(snitch,
-                                     buf,
-                                     PCX_TEXT_STRING_1_COIN,
-                                     PCX_TEXT_STRING_PLURAL_COINS,
-                                     player->coins);
-
-                pcx_buffer_append_string(buf, "\n");
-        }
-
-        pcx_buffer_append_string(buf, "\n");
-}
-
-static void
 start_round(struct pcx_snitch *snitch)
 {
         snitch->heist_size = -1;
@@ -257,7 +227,30 @@ start_round(struct pcx_snitch *snitch)
                              PCX_SNITCH_N_ROUNDS);
         pcx_buffer_append_string(&buf, "\n\n");
 
-        get_status(snitch, &buf);
+        struct pcx_snitch_player *current_player =
+                snitch->players + get_current_player(snitch);
+
+        for (unsigned i = 0; i < snitch->n_players; i++) {
+                struct pcx_snitch_player *player = snitch->players + i;
+
+                player->chosen_role = -1;
+
+                if (player == current_player)
+                        pcx_buffer_append_string(&buf, "👉 ");
+
+                pcx_buffer_append_string(&buf, player->name);
+                pcx_buffer_append_string(&buf, ", ");
+
+                append_buffer_plural(snitch,
+                                     &buf,
+                                     PCX_TEXT_STRING_1_COIN,
+                                     PCX_TEXT_STRING_PLURAL_COINS,
+                                     player->coins);
+
+                pcx_buffer_append_string(&buf, "\n");
+        }
+
+        pcx_buffer_append_string(&buf, "\n");
 
         append_buffer_printf(snitch,
                              &buf,
@@ -617,6 +610,36 @@ game_over_cb(struct pcx_main_context_source *source,
 }
 
 static void
+get_final_status(struct pcx_snitch *snitch,
+                 struct pcx_buffer *buf)
+{
+        for (unsigned i = 0; i < snitch->n_players; i++) {
+                struct pcx_snitch_player *player = snitch->players + i;
+
+                pcx_buffer_append_string(buf, player->name);
+                pcx_buffer_append_string(buf, ", ");
+
+                append_buffer_plural(snitch,
+                                     buf,
+                                     PCX_TEXT_STRING_1_COIN,
+                                     PCX_TEXT_STRING_PLURAL_COINS,
+                                     player->coins);
+
+                pcx_buffer_append_string(buf, ", ");
+
+                append_buffer_plural(snitch,
+                                     buf,
+                                     PCX_TEXT_STRING_1_SNITCH,
+                                     PCX_TEXT_STRING_PLURAL_SNITCHES,
+                                     player->cards[PCX_SNITCH_ROLE_SNITCH]);
+
+                pcx_buffer_append_string(buf, "\n");
+        }
+
+        pcx_buffer_append_string(buf, "\n");
+}
+
+static void
 end_game(struct pcx_snitch *snitch)
 {
         const struct pcx_snitch_player *best_player = snitch->players + 0;
@@ -633,7 +656,7 @@ end_game(struct pcx_snitch *snitch)
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        get_status(snitch, &buf);
+        get_final_status(snitch, &buf);
 
         pcx_buffer_append_string(&buf, "🏆 ");
 
