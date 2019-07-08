@@ -51,6 +51,7 @@ struct game {
         int64_t chat;
         struct pcx_main_context_source *game_timeout_source;
         struct pcx_bot *bot;
+        const struct pcx_game *type;
 };
 
 struct pcx_bot {
@@ -523,7 +524,7 @@ remove_game(struct pcx_bot *bot,
             struct game *game)
 {
         if (game->game)
-                bot->config->game->free_game_cb(game->game);
+                game->type->free_game_cb(game->game);
 
         for (unsigned i = 0; i < game->n_players; i++)
                 pcx_free(game->players[i].name);
@@ -544,7 +545,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
         game->game_timeout_source = NULL;
 
         if (game->game == NULL &&
-            game->n_players >= bot->config->game->min_players) {
+            game->n_players >= game->type->min_players) {
                 send_message_printf(bot,
                                     game->chat,
                                     -1, /* in_reply_to */
@@ -800,9 +801,9 @@ process_callback(struct pcx_bot *bot,
 
         if (find_player(bot, from_id, &game, &player_num) && game->game) {
                 set_game_timeout(game);
-                bot->config->game->handle_callback_data_cb(game->game,
-                                                           player_num,
-                                                           callback_data);
+                game->type->handle_callback_data_cb(game->game,
+                                                    player_num,
+                                                    callback_data);
         }
 }
 
@@ -948,73 +949,11 @@ find_game(struct pcx_bot *bot,
         return NULL;
 }
 
-static struct game *
-find_or_create_game(struct pcx_bot *bot,
-                    int64_t chat_id)
-{
-        struct game *game = find_game(bot, chat_id);
-
-        if (game == NULL) {
-                game = pcx_calloc(sizeof *game);
-                game->chat = chat_id;
-                game->bot = bot;
-
-                pcx_list_insert(&bot->games, &game->link);
-        }
-
-        return game;
-}
-
 static void
-process_join(struct pcx_bot *bot,
-             const struct message_info *info)
+join_game(struct pcx_bot *bot,
+          struct game *game,
+          const struct message_info *info)
 {
-        struct game *game;
-        int player_num;
-
-        if (info->is_private) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_NEED_PUBLIC_GROUP);
-                return;
-        }
-
-        if (!is_known_id(bot, info->from_id)) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE,
-                                    bot->config->botname);
-                return;
-        }
-
-        if (find_player(bot, info->from_id, &game, &player_num)) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_ALREADY_IN_GAME);
-                return;
-        }
-
-        game = find_or_create_game(bot, info->chat_id);
-
-        if (game->n_players >= bot->config->game->max_players) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_GAME_FULL);
-                return;
-        }
-
-        if (game->game) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_GAME_ALREADY_STARTED);
-                return;
-        }
-
         set_game_timeout(game);
 
         struct player *player = game->players + game->n_players++;
@@ -1057,6 +996,105 @@ process_join(struct pcx_bot *bot,
         pcx_buffer_destroy(&buf);
 }
 
+static bool
+check_known_id(struct pcx_bot *bot,
+               const struct message_info *info)
+{
+        if (!is_known_id(bot, info->from_id)) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE,
+                                    bot->config->botname);
+                return false;
+        }
+
+        return true;
+}
+
+static void
+process_create_game(struct pcx_bot *bot,
+                    const struct pcx_game *game_type,
+                    const struct message_info *info)
+{
+        if (info->is_private) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_NEED_PUBLIC_GROUP);
+                return;
+        }
+
+        struct game *game = find_game(bot, info->chat_id);
+
+        if (game != NULL) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_ALREADY_GAME);
+                return;
+        }
+
+        if (!check_known_id(bot, info))
+                return;
+
+        game = pcx_calloc(sizeof *game);
+        game->chat = info->chat_id;
+        game->bot = bot;
+        game->type = game_type;
+
+        pcx_list_insert(&bot->games, &game->link);
+
+        join_game(bot, game, info);
+}
+
+static void
+process_join(struct pcx_bot *bot,
+             const struct message_info *info)
+{
+        struct game *game;
+        int player_num;
+
+        if (!check_known_id(bot, info))
+                return;
+
+        if (find_player(bot, info->from_id, &game, &player_num)) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_ALREADY_IN_GAME);
+                return;
+        }
+
+        game = find_game(bot, info->chat_id);
+
+        if (game == NULL) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_CREATE_BEFORE_JOIN);
+                return;
+        }
+
+        if (game->n_players >= game->type->max_players) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_GAME_FULL);
+                return;
+        }
+
+        if (game->game) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_GAME_ALREADY_STARTED);
+                return;
+        }
+
+        join_game(bot, game, info);
+}
+
 static void
 start_game(struct pcx_bot *bot,
            struct game *game)
@@ -1070,21 +1108,25 @@ start_game(struct pcx_bot *bot,
         for (unsigned i = 0; i < game->n_players; i++)
                 names[i] = game->players[i].name;
 
-        game->game = bot->config->game->create_game_cb(&game_callbacks,
-                                                       game,
-                                                       bot->config->language,
-                                                       game->n_players,
-                                                       names);
+        game->game = game->type->create_game_cb(&game_callbacks,
+                                                game,
+                                                bot->config->language,
+                                                game->n_players,
+                                                names);
 }
 
 static void
 process_start(struct pcx_bot *bot,
               const struct message_info *info)
 {
-        struct game *game = find_game(bot, info->chat_id);
+        int player_num;
+        struct game *game;
 
-        if (game == NULL) {
-                process_join(bot, info);
+        if (!find_player(bot, info->from_id, &game, &player_num)) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_JOIN_BEFORE_START);
                 return;
         }
 
@@ -1096,22 +1138,12 @@ process_start(struct pcx_bot *bot,
                 return;
         }
 
-        int player_num = find_player_in_game(game, info->from_id);
-
-        if (player_num == -1) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_JOIN_BEFORE_START);
-                return;
-        }
-
-        if (game->n_players < bot->config->game->min_players) {
+        if (game->n_players < game->type->min_players) {
                 send_message_printf(bot,
                                     info->chat_id,
                                     info->message_id,
                                     PCX_TEXT_STRING_NEED_MIN_PLAYERS,
-                                    bot->config->game->min_players);
+                                    game->type->min_players);
                 return;
         }
 
@@ -1152,6 +1184,17 @@ process_help(struct pcx_bot *bot,
                 pcx_free((char *) buttons[i].data);
 
         pcx_free(buttons);
+}
+
+static bool
+is_command(struct pcx_bot *bot,
+           const char *text,
+           int64_t length,
+           enum pcx_text_string string)
+{
+        const char *name = pcx_text_get(bot->config->language, string);
+
+        return length == strlen(name) && !memcmp(text, name, length);
 }
 
 static void
@@ -1199,16 +1242,25 @@ process_entity(struct pcx_bot *bot,
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
-                const char *name =
-                        pcx_text_get(bot->config->language,
-                                     commands[i].name);
-                if (length != strlen(name) ||
-                    memcmp(info->text + offset, name, length))
-                        continue;
+                if (!is_command(bot,
+                                info->text + offset, length,
+                                commands[i].name))
+                    continue;
 
                 commands[i].func(bot, info);
 
-                break;
+                return;
+        }
+
+        for (unsigned i = 0; pcx_game_list[i]; i++) {
+                if (!is_command(bot,
+                                info->text + offset, length,
+                                pcx_game_list[i]->start_command))
+                    continue;
+
+                process_create_game(bot, pcx_game_list[i], info);
+
+                return;
         }
 }
 

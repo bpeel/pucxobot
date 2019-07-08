@@ -69,7 +69,6 @@ enum option_type {
         OPTION_TYPE_STRING,
         OPTION_TYPE_INT,
         OPTION_TYPE_LANGUAGE_CODE,
-        OPTION_TYPE_GAME_TYPE,
 };
 
 static void
@@ -100,20 +99,6 @@ set_option(struct load_config_data *data,
                                           "invalid language: %s",
                                           value);
                 }
-                break;
-        }
-        case OPTION_TYPE_GAME_TYPE: {
-                const struct pcx_game **ptr =
-                        (const struct pcx_game **)
-                        ((uint8_t *) data->bot + offset);
-                for (unsigned i = 0; pcx_game_list[i]; i++) {
-                        if (!strcmp(pcx_game_list[i]->name, value)) {
-                                *ptr = pcx_game_list[i];
-                                goto found_game;
-                        }
-                }
-                load_config_error(data, "invalid game: %s", value);
-                found_game:
                 break;
         }
         case OPTION_TYPE_INT: {
@@ -154,7 +139,6 @@ load_config_func(enum pcx_key_value_event event,
                 OPTION(botname, STRING),
                 OPTION(announce_channel, STRING),
                 OPTION(language, LANGUAGE_CODE),
-                OPTION(game, GAME_TYPE),
 #undef OPTION
         };
 
@@ -166,7 +150,6 @@ load_config_func(enum pcx_key_value_event event,
                 } else {
                         data->bot = pcx_calloc(sizeof *data->bot);
                         data->bot->language = PCX_TEXT_LANGUAGE_ESPERANTO;
-                        data->bot->game = pcx_game_list[0];
                         pcx_list_insert(data->config->bots.prev,
                                         &data->bot->link);
                 }

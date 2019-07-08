@@ -1893,6 +1893,7 @@ const struct pcx_game
 pcx_coup_game = {
         .name = "coup",
         .name_string = PCX_TEXT_STRING_NAME_COUP,
+        .start_command = PCX_TEXT_STRING_COUP_START_COMMAND,
         .min_players = PCX_COUP_MIN_PLAYERS,
         .max_players = PCX_COUP_MAX_PLAYERS,
         .create_game_cb = create_game_cb,

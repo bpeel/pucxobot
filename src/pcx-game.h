@@ -53,6 +53,7 @@ struct pcx_game_callbacks {
 struct pcx_game {
         const char *name;
         enum pcx_text_string name_string;
+        enum pcx_text_string start_command;
         int min_players;
         int max_players;
         void *(* create_game_cb)(const struct pcx_game_callbacks *callbacks,

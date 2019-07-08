@@ -851,6 +851,7 @@ const struct pcx_game
 pcx_snitch_game = {
         .name = "snitch",
         .name_string = PCX_TEXT_STRING_NAME_SNITCH,
+        .start_command = PCX_TEXT_STRING_SNITCH_START_COMMAND,
         .min_players = PCX_SNITCH_MIN_PLAYERS,
         .max_players = PCX_SNITCH_MAX_PLAYERS,
         .create_game_cb = create_game_cb,

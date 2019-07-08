@@ -27,6 +27,10 @@ pcx_text_french[] = {
         "Complot",
         [PCX_TEXT_STRING_NAME_SNITCH] =
         "Balance",
+        [PCX_TEXT_STRING_COUP_START_COMMAND] =
+        "/complot",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
+        "/balance",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -42,6 +46,10 @@ pcx_text_french[] = {
         "pour que je puisse vous envoyer vos cartes discretement.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Vous êtes déjà dans une partie",
+        [PCX_TEXT_STRING_ALREADY_GAME] =
+        "Il y a déjà une partie dans ce groupe",
+        [PCX_TEXT_STRING_CREATE_BEFORE_JOIN] =
+        "Veuillez créer une partie avant d’essayer de le rejoindre.",
         [PCX_TEXT_STRING_GAME_FULL] =
         "La partie est pleine",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =

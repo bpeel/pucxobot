@@ -27,6 +27,10 @@ pcx_text_esperanto[] = {
         "Puĉo",
         [PCX_TEXT_STRING_NAME_SNITCH] =
         "Perfidulo",
+        [PCX_TEXT_STRING_COUP_START_COMMAND] =
+        "/pucxo",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
+        "/perfidulo",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -43,6 +47,10 @@ pcx_text_esperanto[] = {
         "private.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Vi jam estas en ludo",
+        [PCX_TEXT_STRING_ALREADY_GAME] =
+        "Jam estas ludo en ĉi tiu grupo",
+        [PCX_TEXT_STRING_CREATE_BEFORE_JOIN] =
+        "Bonvolu krei ludon antaŭ ol provi aliĝi al ĝi.",
         [PCX_TEXT_STRING_GAME_FULL] =
         "La ludo jam estas plena",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
