@@ -663,6 +663,84 @@ game_callbacks = {
 };
 
 static void
+delete_message(struct pcx_bot *bot,
+               int64_t chat_id,
+               int64_t message_id)
+{
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args,
+                               "chat_id",
+                               json_object_new_int64(chat_id));
+        json_object_object_add(args,
+                               "message_id",
+                               json_object_new_int64(message_id));
+
+        send_request(bot, "deleteMessage", args);
+
+        json_object_put(args);
+}
+
+static void
+process_help_callback_data(struct pcx_bot *bot,
+                           struct json_object *callback,
+                           const char *callback_data)
+{
+        const struct pcx_game *game;
+
+        for (unsigned i = 0; pcx_game_list[i]; i++) {
+                if (!strcmp(pcx_game_list[i]->name, callback_data)) {
+                        game = pcx_game_list[i];
+                        goto found_game;
+                }
+        }
+
+        return;
+
+found_game: (void) 0;
+
+        struct json_object *message;
+
+        bool ret = get_fields(callback,
+                              "message", json_type_object, &message,
+                              NULL);
+        if (!ret)
+                return;
+
+        int64_t message_id;
+        struct json_object *chat;
+
+        ret = get_fields(message,
+                         "message_id", json_type_int, &message_id,
+                         "chat", json_type_object, &chat,
+                         NULL);
+        if (!ret)
+                return;
+
+        int64_t chat_id;
+
+        ret = get_fields(chat,
+                         "id", json_type_int, &chat_id,
+                         NULL);
+        if (!ret)
+                return;
+
+        delete_message(bot, chat_id, message_id);
+
+        char *help = game->get_help_cb(bot->config->language);
+
+        send_message_full(bot,
+                          chat_id,
+                          -1, /* message_id */
+                          PCX_GAME_MESSAGE_FORMAT_HTML,
+                          help,
+                          0, /* n_buttons */
+                          NULL /* buttons */);
+
+        pcx_free(help);
+}
+
+static void
 answer_callback(struct pcx_bot *bot,
                 const char *id)
 {
@@ -704,6 +782,18 @@ process_callback(struct pcx_bot *bot,
                 return;
 
         answer_callback(bot, id);
+
+        static const char help_prefix[] = "help:";
+
+        if (strlen(callback_data) >= sizeof help_prefix &&
+            !memcmp(callback_data, help_prefix, (sizeof help_prefix) - 1)) {
+                process_help_callback_data(bot,
+                                           callback,
+                                           callback_data +
+                                           (sizeof help_prefix) -
+                                           1);
+                return;
+        }
 
         struct game *game;
         int player_num;
@@ -1032,17 +1122,36 @@ static void
 process_help(struct pcx_bot *bot,
              const struct message_info *info)
 {
-        char *help = bot->config->game->get_help_cb(bot->config->language);
+        int n_games;
+
+        for (n_games = 0; pcx_game_list[n_games]; n_games++);
+
+        struct pcx_game_button *buttons = pcx_alloc(n_games * sizeof *buttons);
+
+        for (int i = 0; i < n_games; i++) {
+                const struct pcx_game *game = pcx_game_list[i];
+
+                buttons[i].text = pcx_text_get(bot->config->language,
+                                               game->name_string);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "help:%s", game->name);
+                buttons[i].data = (char *) buf.data;
+        }
 
         send_message_full(bot,
                           info->chat_id,
                           info->message_id,
-                          PCX_GAME_MESSAGE_FORMAT_HTML,
-                          help,
-                          0, /* n_buttons */
-                          NULL /* buttons */);
+                          PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                          pcx_text_get(bot->config->language,
+                                       PCX_TEXT_STRING_WHICH_HELP),
+                          n_games,
+                          buttons);
 
-        pcx_free(help);
+        for (int i = 0; i < n_games; i++)
+                pcx_free((char *) buttons[i].data);
+
+        pcx_free(buttons);
 }
 
 static void

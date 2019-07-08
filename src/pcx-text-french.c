@@ -23,6 +23,12 @@
 const char *
 pcx_text_french[] = {
         [PCX_TEXT_STRING_LANGUAGE_CODE] = "fr",
+        [PCX_TEXT_STRING_NAME_COUP] =
+        "Complot",
+        [PCX_TEXT_STRING_NAME_SNITCH] =
+        "Balance",
+        [PCX_TEXT_STRING_WHICH_HELP] =
+        "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
         "Personne n’a rejoint pendant plus que %i minutes. "
         "La partie commencera tout de suite.",

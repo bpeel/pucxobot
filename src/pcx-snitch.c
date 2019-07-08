@@ -850,6 +850,7 @@ free_game_cb(void *data)
 const struct pcx_game
 pcx_snitch_game = {
         .name = "snitch",
+        .name_string = PCX_TEXT_STRING_NAME_SNITCH,
         .min_players = PCX_SNITCH_MIN_PLAYERS,
         .max_players = PCX_SNITCH_MAX_PLAYERS,
         .create_game_cb = create_game_cb,

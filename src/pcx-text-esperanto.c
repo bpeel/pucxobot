@@ -23,6 +23,12 @@
 const char *
 pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_LANGUAGE_CODE] = "eo",
+        [PCX_TEXT_STRING_NAME_COUP] =
+        "Puĉo",
+        [PCX_TEXT_STRING_NAME_SNITCH] =
+        "Perfidulo",
+        [PCX_TEXT_STRING_WHICH_HELP] =
+        "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
         "Neniu aliĝis dum pli ol %i minutoj. La "
         "ludo tuj komenciĝos.",
