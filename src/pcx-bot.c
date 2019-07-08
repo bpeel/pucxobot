@@ -683,6 +683,25 @@ delete_message(struct pcx_bot *bot,
 }
 
 static void
+show_help(struct pcx_bot *bot,
+          const struct pcx_game *game,
+          int64_t chat_id,
+          int64_t message_id)
+{
+        char *help = game->get_help_cb(bot->config->language);
+
+        send_message_full(bot,
+                          chat_id,
+                          -1, /* message_id */
+                          PCX_GAME_MESSAGE_FORMAT_HTML,
+                          help,
+                          0, /* n_buttons */
+                          NULL /* buttons */);
+
+        pcx_free(help);
+}
+
+static void
 process_help_callback_data(struct pcx_bot *bot,
                            struct json_object *callback,
                            const char *callback_data)
@@ -728,17 +747,7 @@ found_game: (void) 0;
 
         delete_message(bot, chat_id, message_id);
 
-        char *help = game->get_help_cb(bot->config->language);
-
-        send_message_full(bot,
-                          chat_id,
-                          -1, /* message_id */
-                          PCX_GAME_MESSAGE_FORMAT_HTML,
-                          help,
-                          0, /* n_buttons */
-                          NULL /* buttons */);
-
-        pcx_free(help);
+        show_help(bot, game, chat_id, -1 /* message_id */);
 }
 
 static void
@@ -1154,6 +1163,16 @@ static void
 process_help(struct pcx_bot *bot,
              const struct message_info *info)
 {
+        struct game *running_game = find_game(bot, info->chat_id);
+
+        if (running_game != NULL) {
+                show_help(bot,
+                          running_game->type,
+                          info->chat_id,
+                          info->message_id);
+                return;
+        }
+
         int n_games;
 
         for (n_games = 0; pcx_game_list[n_games]; n_games++);
