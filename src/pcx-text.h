@@ -150,6 +150,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_PRINCESS_DESCRIPTION,
         PCX_TEXT_STRING_ONE_COPY,
         PCX_TEXT_STRING_PLURAL_COPIES,
+        PCX_TEXT_STRING_YOUR_CARD_IS,
 };
 
 const char *

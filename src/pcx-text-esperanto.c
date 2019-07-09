@@ -290,4 +290,6 @@ pcx_text_esperanto[] = {
         "1 ekzemplero",
         [PCX_TEXT_STRING_PLURAL_COPIES] =
         "%i ekzempleroj",
+        [PCX_TEXT_STRING_YOUR_CARD_IS] =
+        "Via karto estas: ",
 };

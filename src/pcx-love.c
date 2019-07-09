@@ -33,6 +33,11 @@
 #define PCX_LOVE_MIN_PLAYERS 2
 #define PCX_LOVE_MAX_PLAYERS 4
 
+#define PCX_LOVE_N_CARDS 16
+
+/* Number of cards that are immediately visible in a two-player game */
+#define PCX_LOVE_N_VISIBLE_CARDS 3
+
 struct pcx_love_character {
         enum pcx_text_string name;
         const char *symbol;
@@ -134,12 +139,29 @@ characters[] = {
         &princess_character,
 };
 
+struct pcx_love_player {
+        char *name;
+        const struct pcx_love_character *card;
+        const struct pcx_love_character *discarded_cards[PCX_LOVE_N_CARDS / 2];
+        size_t n_discarded_cards;
+        int hearts;
+        bool is_alive;
+        bool is_protected;
+};
+
 struct pcx_love {
         int n_players;
         int current_player;
+        struct pcx_love_player players[PCX_LOVE_MAX_PLAYERS];
         struct pcx_game_callbacks callbacks;
         void *user_data;
         enum pcx_text_language language;
+        const struct pcx_love_character *deck[PCX_LOVE_N_CARDS];
+        size_t n_cards;
+        const struct pcx_love_character *pending_card;
+        const struct pcx_love_character *set_aside_card;
+        const struct pcx_love_character *
+        visible_cards[PCX_LOVE_N_VISIBLE_CARDS];
 };
 
 static void
@@ -162,6 +184,86 @@ get_long_name(enum pcx_text_language language,
         get_value_symbol(character, buf);
 }
 
+static void
+shuffle_deck(struct pcx_love *love)
+{
+        if (love->n_cards < 2)
+                return;
+
+        for (unsigned i = love->n_cards - 1; i > 0; i--) {
+                int j = rand() % (i + 1);
+                const struct pcx_love_character *t = love->deck[j];
+                love->deck[j] = love->deck[i];
+                love->deck[i] = t;
+        }
+}
+
+static const struct pcx_love_character *
+take_card(struct pcx_love *love)
+{
+        assert(love->n_cards > 1);
+        return love->deck[--love->n_cards];
+}
+
+static void
+show_card(struct pcx_love *love,
+          int player_num)
+{
+        const struct pcx_love_player *player = love->players + player_num;
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        const char *note = pcx_text_get(love->language,
+                                        PCX_TEXT_STRING_YOUR_CARD_IS);
+        pcx_html_escape(&buf, note);
+        get_long_name(love->language, player->card, &buf);
+
+        love->callbacks.send_private_message(player_num,
+                                             PCX_GAME_MESSAGE_FORMAT_HTML,
+                                             (const char *) buf.data,
+                                             0, /* n_buttons */
+                                             NULL, /* buttons */
+                                             love->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+start_round(struct pcx_love *love)
+{
+        love->pending_card = NULL;
+
+        love->n_cards = 0;
+
+        for (unsigned ch = 0; ch < PCX_N_ELEMENTS(characters); ch++) {
+                const struct pcx_love_character *character = characters[ch];
+
+                for (int i = 0; i < character->count; i++)
+                        love->deck[love->n_cards++] = character;
+
+                assert(ch == 0 ||
+                       character->value == characters[ch - 1]->value + 1);
+        }
+
+        assert(love->n_cards == PCX_LOVE_N_CARDS);
+
+        shuffle_deck(love);
+
+        love->set_aside_card = take_card(love);
+
+        if (love->n_players == 2) {
+                for (unsigned i = 0; i < PCX_LOVE_N_VISIBLE_CARDS; i++)
+                        love->visible_cards[i] = take_card(love);
+        }
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                struct pcx_love_player *player = love->players + i;
+                player->card = take_card(love);
+                player->is_alive = true;
+                player->is_protected = false;
+                player->n_discarded_cards = 0;
+                show_card(love, i);
+        }
+}
+
 static void *
 create_game_cb(const struct pcx_game_callbacks *callbacks,
                void *user_data,
@@ -173,12 +275,17 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
 
         struct pcx_love *love = pcx_calloc(sizeof *love);
 
+        for (unsigned i = 0; i < n_players; i++)
+                love->players[i].name = pcx_strdup(names[i]);
+
         love->language = language;
         love->callbacks = *callbacks;
         love->user_data = user_data;
 
         love->n_players = n_players;
         love->current_player = rand() % n_players;
+
+        start_round(love);
 
         return love;
 }
@@ -265,6 +372,9 @@ static void
 free_game_cb(void *data)
 {
         struct pcx_love *love = data;
+
+        for (int i = 0; i < love->n_players; i++)
+                pcx_free(love->players[i].name);
 
         pcx_free(love);
 }
