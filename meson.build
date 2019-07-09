@@ -34,6 +34,7 @@ src = [
         'src/pcx-snitch.c',
         'src/pcx-snitch-help.c',
         'src/pcx-html.c',
+        'src/pcx-love.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')

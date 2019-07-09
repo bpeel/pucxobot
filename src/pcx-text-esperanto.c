@@ -27,10 +27,14 @@ pcx_text_esperanto[] = {
         "Puĉo",
         [PCX_TEXT_STRING_NAME_SNITCH] =
         "Perfidulo",
+        [PCX_TEXT_STRING_NAME_LOVE] =
+        "Amletero",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/pucxo",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/perfidulo",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND] =
+        "/amletero",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
