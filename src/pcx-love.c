@@ -172,6 +172,7 @@ struct pcx_love {
         const struct pcx_love_character *set_aside_card;
         const struct pcx_love_character *
         visible_cards[PCX_LOVE_N_VISIBLE_CARDS];
+        struct pcx_main_context_source *game_over_source;
 };
 
 static void
@@ -254,6 +255,12 @@ append_special_vformat(struct pcx_love *love,
                         const struct pcx_love_player *p =
                                 va_arg(ap, const struct pcx_love_player *);
                         pcx_html_escape(buf, p->name);
+                        break;
+                }
+
+                case 'i': {
+                        int i = va_arg(ap, int);
+                        pcx_buffer_append_printf(buf, "%i", i);
                         break;
                 }
 
@@ -475,8 +482,30 @@ show_final_round_stats(struct pcx_love *love,
 }
 
 static void
-end_game(struct pcx_love *love)
+game_over_cb(struct pcx_main_context_source *source,
+             void *user_data)
 {
+        struct pcx_love *love = user_data;
+        love->game_over_source = NULL;
+        love->callbacks.game_over(love->user_data);
+}
+
+static void
+end_game(struct pcx_love *love,
+         int winner)
+{
+        game_note(love,
+                  PCX_TEXT_STRING_WINS_PRINCESS,
+                  love->players + winner,
+                  love->players[winner].hearts);
+
+        if (love->game_over_source == NULL) {
+                love->game_over_source =
+                        pcx_main_context_add_timeout(NULL,
+                                                     0, /* ms */
+                                                     game_over_cb,
+                                                     love);
+        }
 }
 
 static bool
@@ -624,7 +653,7 @@ take_turn(struct pcx_love *love)
 
                 if (love->players[winner].hearts >
                     PCX_LOVE_N_HEARTS / love->n_players) {
-                        end_game(love);
+                        end_game(love, winner);
                 } else {
                         love->current_player = winner;
                         start_round(love);
@@ -1358,6 +1387,9 @@ free_game_cb(void *data)
 
         for (int i = 0; i < love->n_players; i++)
                 pcx_free(love->players[i].name);
+
+        if (love->game_over_source)
+                pcx_main_context_remove_source(love->game_over_source);
 
         pcx_free(love);
 }

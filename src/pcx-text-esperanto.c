@@ -380,4 +380,6 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_WINS_ROUND] =
         "💘 %p gajnas la raŭndon kaj gajnas korinklinon "
         "de la princino",
+        [PCX_TEXT_STRING_WINS_PRINCESS] =
+        "🏆 %p havas %i korinklinojn kaj gajnas la partion!",
 };

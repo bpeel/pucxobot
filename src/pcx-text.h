@@ -189,6 +189,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_EVERYBODY_SHOWS_CARD,
         PCX_TEXT_STRING_SET_ASIDE_CARD,
         PCX_TEXT_STRING_WINS_ROUND,
+        PCX_TEXT_STRING_WINS_PRINCESS,
 };
 
 const char *
