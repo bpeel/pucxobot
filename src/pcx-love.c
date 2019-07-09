@@ -1044,6 +1044,23 @@ discard_baron(struct pcx_love *love,
 }
 
 static void
+discard_handmaid(struct pcx_love *love,
+                 int extra_data)
+{
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+
+        game_note(love,
+                  PCX_TEXT_STRING_DISCARDS_HANDMAID,
+                  current_player,
+                  &handmaid_character);
+
+        current_player->is_protected = true;
+
+        do_discard(love, &handmaid_character);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -1082,6 +1099,7 @@ handle_callback_data_cb(void *user_data,
                 { &guard_character, discard_guard },
                 { &spy_character, discard_spy },
                 { &baron_character, discard_baron },
+                { &handmaid_character, discard_handmaid },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {

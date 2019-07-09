@@ -175,6 +175,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_COMPARE_LOSER,
         PCX_TEXT_STRING_TELL_COMPARE,
         PCX_TEXT_STRING_COMPARE_CARDS_EQUAL,
+        PCX_TEXT_STRING_DISCARDS_HANDMAID,
 };
 
 const char *

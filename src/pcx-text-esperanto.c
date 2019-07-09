@@ -348,4 +348,7 @@ pcx_text_esperanto[] = {
         "malpli alta kaj ri perdas la raŭndon.",
         [PCX_TEXT_STRING_TELL_COMPARE] =
         "Vi havas la %C kaj %p havas la %C",
+        [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
+        "%p forĵetas la %C kaj estos protektata ĝis "
+        "sia sekva vico",
 };
