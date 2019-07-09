@@ -185,6 +185,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_TELL_EXCHANGE,
         PCX_TEXT_STRING_EXCHANGES,
         PCX_TEXT_STRING_DISCARDS_COMTESSE,
+        PCX_TEXT_STRING_DISCARDS_PRINCESS,
 };
 
 const char *
