@@ -799,12 +799,12 @@ choose_target(struct pcx_love *love,
 }
 
 static int
-choose_target_for_discard(struct pcx_love *love,
-                          const struct pcx_love_character *card,
-                          int extra_data,
-                          enum pcx_text_string question)
+choose_target_for_discard_with_targets(struct pcx_love *love,
+                                       const struct pcx_love_character *card,
+                                       int extra_data,
+                                       enum pcx_text_string question,
+                                       uint32_t targets)
 {
-        uint32_t targets = get_targets(love);
         struct pcx_love_player *current_player =
                 love->players + love->current_player;
 
@@ -825,6 +825,19 @@ choose_target_for_discard(struct pcx_love *love,
                 else
                         return -1;
         }
+}
+
+static int
+choose_target_for_discard(struct pcx_love *love,
+                          const struct pcx_love_character *card,
+                          int extra_data,
+                          enum pcx_text_string question)
+{
+        return choose_target_for_discard_with_targets(love,
+                                                      card,
+                                                      extra_data,
+                                                      question,
+                                                      get_targets(love));
 }
 
 static void
@@ -1061,6 +1074,84 @@ discard_handmaid(struct pcx_love *love,
 }
 
 static void
+discard_prince(struct pcx_love *love,
+               int extra_data)
+{
+        uint32_t targets = get_targets(love) | (1 << love->current_player);
+        enum pcx_text_string question = PCX_TEXT_STRING_WHO_PRINCE;
+        int target =
+                choose_target_for_discard_with_targets(love,
+                                                       &prince_character,
+                                                       extra_data,
+                                                       question,
+                                                       targets);
+
+        if (target < 0)
+                return;
+
+        start_discard(love, &prince_character);
+
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+        struct pcx_love_player *target_player =
+                love->players + target;
+
+        const struct pcx_love_character *discarded_card = target_player->card;
+
+        if (love->n_cards > 0) {
+                target_player->card = take_card(love);
+        } else {
+                target_player->card = love->set_aside_card;
+                love->set_aside_card = NULL;
+        }
+
+        add_to_discard_pile(target_player, discarded_card);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        if (current_player == target_player) {
+                append_special_format(love,
+                                      &buf,
+                                      PCX_TEXT_STRING_PRINCE_SELF,
+                                      current_player,
+                                      &prince_character,
+                                      discarded_card);
+        } else {
+                append_special_format(love,
+                                      &buf,
+                                      PCX_TEXT_STRING_PRINCE_OTHER,
+                                      current_player,
+                                      &prince_character,
+                                      target_player,
+                                      discarded_card);
+        }
+
+        if (discarded_card == &princess_character) {
+                append_special_format(love,
+                                      &buf,
+                                      PCX_TEXT_STRING_FORCE_DISCARD_PRINCESS);
+                kill_player(target_player);
+        } else {
+                append_special_format(love,
+                                      &buf,
+                                      PCX_TEXT_STRING_FORCE_DISCARD_OTHER);
+        }
+
+        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                     (const char *) buf.data,
+                                     0, /* n_buttons */
+                                     NULL, /* buttons */
+                                     love->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        if (target_player != current_player)
+                show_card(love, target);
+
+        finish_discard(love);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -1100,6 +1191,7 @@ handle_callback_data_cb(void *user_data,
                 { &spy_character, discard_spy },
                 { &baron_character, discard_baron },
                 { &handmaid_character, discard_handmaid },
+                { &prince_character, discard_prince },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {

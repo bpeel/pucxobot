@@ -351,4 +351,16 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p forĵetas la %C kaj estos protektata ĝis "
         "sia sekva vico",
+        [PCX_TEXT_STRING_WHO_PRINCE] =
+        "Kiun vi volas devigi forĵeti sian manon?",
+        [PCX_TEXT_STRING_PRINCE_SELF] =
+        "%p forĵetis la %C kaj devigis sin mem "
+        "forĵeti sian %C",
+        [PCX_TEXT_STRING_PRINCE_OTHER] =
+        "%p forĵetis la %C kaj devigis %p "
+        "forĵeti sian %C",
+        [PCX_TEXT_STRING_FORCE_DISCARD_PRINCESS] =
+        " kaj tial ri perdas la raŭndon.",
+        [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =
+        " kaj preni novan karton.",
 };
