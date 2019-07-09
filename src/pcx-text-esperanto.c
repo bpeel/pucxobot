@@ -369,4 +369,6 @@ pcx_text_esperanto[] = {
         "Vi fordonas la %C al %p kaj ricevas la %C",
         [PCX_TEXT_STRING_EXCHANGES] =
         "%p forĵetis la reĝon kaj interŝanĝas la manon kun %p",
+        [PCX_TEXT_STRING_DISCARDS_COMTESSE] =
+        "%p forĵetis la %C",
 };

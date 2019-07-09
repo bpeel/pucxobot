@@ -1205,6 +1205,21 @@ discard_king(struct pcx_love *love,
 }
 
 static void
+discard_comtesse(struct pcx_love *love,
+                 int extra_data)
+{
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+
+        game_note(love,
+                  PCX_TEXT_STRING_DISCARDS_COMTESSE,
+                  current_player,
+                  &comtesse_character);
+
+        do_discard(love, &comtesse_character);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -1246,6 +1261,7 @@ handle_callback_data_cb(void *user_data,
                 { &handmaid_character, discard_handmaid },
                 { &prince_character, discard_prince },
                 { &king_character, discard_king },
+                { &comtesse_character, discard_comtesse },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {
