@@ -319,7 +319,7 @@ shuffle_deck(struct pcx_love *love)
 static const struct pcx_love_character *
 take_card(struct pcx_love *love)
 {
-        assert(love->n_cards > 1);
+        assert(love->n_cards >= 1);
         return love->deck[--love->n_cards];
 }
 
