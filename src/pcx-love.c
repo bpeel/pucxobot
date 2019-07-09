@@ -198,6 +198,62 @@ get_long_name(enum pcx_text_language language,
 }
 
 static void
+append_special_format(struct pcx_love *love,
+                      struct pcx_buffer *buf,
+                      enum pcx_text_string format_string,
+                      ...)
+{
+        const char *format = pcx_text_get(love->language, format_string);
+        const char *last = format;
+
+        va_list ap;
+
+        va_start(ap, format_string);
+
+        while (true) {
+                const char *percent = strchr(last, '%');
+
+                if (percent == NULL)
+                        break;
+
+                pcx_buffer_append(buf, last, percent - last);
+
+                switch (percent[1]) {
+                case 's': {
+                        enum pcx_text_string e =
+                                va_arg(ap, enum pcx_text_string);
+                        const char *s = pcx_text_get(love->language, e);
+                        pcx_buffer_append_string(buf, s);
+                        break;
+                }
+
+                case 'c': {
+                        const struct pcx_love_character *c =
+                                va_arg(ap, const struct pcx_love_character *);
+                        get_long_name(love->language, c, buf);
+                        break;
+                }
+
+                case 'p': {
+                        const struct pcx_love_player *p =
+                                va_arg(ap, const struct pcx_love_player *);
+                        pcx_html_escape(buf, p->name);
+                        break;
+                }
+
+                default:
+                        pcx_fatal("Unknown format character");
+                }
+
+                last = percent + 2;
+        }
+
+        va_end(ap);
+
+        pcx_buffer_append_string(buf, last);
+}
+
+static void
 shuffle_deck(struct pcx_love *love)
 {
         if (love->n_cards < 2)
@@ -383,25 +439,6 @@ send_discard_question(struct pcx_love *love)
 }
 
 static void
-add_your_go_message(struct pcx_love *love,
-                    struct pcx_buffer *buf)
-{
-        struct pcx_buffer name_buf = PCX_BUFFER_STATIC_INIT;
-
-        const struct pcx_love_player *current_player =
-                love->players + love->current_player;
-
-        pcx_html_escape(&name_buf, current_player->name);
-
-        const char *format = pcx_text_get(love->language,
-                                          PCX_TEXT_STRING_YOUR_GO_NO_QUESTION);
-
-        pcx_buffer_append_printf(buf, format, name_buf.data);
-
-        pcx_buffer_destroy(&name_buf);
-}
-
-static void
 show_stats(struct pcx_love *love)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -454,7 +491,10 @@ show_stats(struct pcx_love *love)
                 pcx_buffer_append_string(&buf, "\n\n");
         }
 
-        add_your_go_message(love, &buf);
+        append_special_format(love,
+                              &buf,
+                              PCX_TEXT_STRING_YOUR_GO_NO_QUESTION,
+                              love->players + love->current_player);
 
         love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
                                      (const char *) buf.data,

@@ -297,7 +297,7 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_N_CARDS] =
         "Kartaro: ",
         [PCX_TEXT_STRING_YOUR_GO_NO_QUESTION] =
-        "<b>%s</b>, estas via vico",
+        "<b>%p</b>, estas via vico",
         [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
         "Kiun karton vi volas forĵeti?",
 };
