@@ -328,6 +328,10 @@ show_card(struct pcx_love *love,
           int player_num)
 {
         const struct pcx_love_player *player = love->players + player_num;
+
+        if (!player->is_alive)
+                return;
+
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
         escape_string(love, &buf, PCX_TEXT_STRING_YOUR_CARD_IS);
         get_long_name(love->language, player->card, &buf, false);
