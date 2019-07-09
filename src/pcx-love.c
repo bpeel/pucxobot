@@ -41,6 +41,7 @@
 
 struct pcx_love_character {
         enum pcx_text_string name;
+        enum pcx_text_string object_name;
         const char *symbol;
         enum pcx_text_string description;
         int value;
@@ -51,6 +52,7 @@ struct pcx_love_character {
 static const struct pcx_love_character
 guard_character = {
         .name = PCX_TEXT_STRING_GUARD,
+        .object_name = PCX_TEXT_STRING_GUARD_OBJECT,
         .symbol = "👮️",
         .description = PCX_TEXT_STRING_GUARD_DESCRIPTION,
         .value = 1,
@@ -61,6 +63,7 @@ guard_character = {
 static const struct pcx_love_character
 spy_character = {
         .name = PCX_TEXT_STRING_SPY,
+        .object_name = PCX_TEXT_STRING_SPY_OBJECT,
         .symbol = "🔎",
         .description = PCX_TEXT_STRING_SPY_DESCRIPTION,
         .value = 2,
@@ -71,6 +74,7 @@ spy_character = {
 static const struct pcx_love_character
 baron_character = {
         .name = PCX_TEXT_STRING_BARON,
+        .object_name = PCX_TEXT_STRING_BARON_OBJECT,
         .symbol = "⚔️",
         .description = PCX_TEXT_STRING_BARON_DESCRIPTION,
         .value = 3,
@@ -81,6 +85,7 @@ baron_character = {
 static const struct pcx_love_character
 handmaid_character = {
         .name = PCX_TEXT_STRING_HANDMAID,
+        .object_name = PCX_TEXT_STRING_HANDMAID_OBJECT,
         .symbol = "💅",
         .description = PCX_TEXT_STRING_HANDMAID_DESCRIPTION,
         .value = 4,
@@ -91,6 +96,7 @@ handmaid_character = {
 static const struct pcx_love_character
 prince_character = {
         .name = PCX_TEXT_STRING_PRINCE,
+        .object_name = PCX_TEXT_STRING_PRINCE_OBJECT,
         .symbol = "🤴",
         .description = PCX_TEXT_STRING_PRINCE_DESCRIPTION,
         .value = 5,
@@ -101,6 +107,7 @@ prince_character = {
 static const struct pcx_love_character
 king_character = {
         .name = PCX_TEXT_STRING_KING,
+        .object_name = PCX_TEXT_STRING_KING_OBJECT,
         .symbol = "👑",
         .description = PCX_TEXT_STRING_KING_DESCRIPTION,
         .value = 6,
@@ -111,6 +118,7 @@ king_character = {
 static const struct pcx_love_character
 comtesse_character = {
         .name = PCX_TEXT_STRING_COMTESSE,
+        .object_name = PCX_TEXT_STRING_COMTESSE_OBJECT,
         .symbol = "👩‍💼",
         .description = PCX_TEXT_STRING_COMTESSE_DESCRIPTION,
         .value = 7,
@@ -121,6 +129,7 @@ comtesse_character = {
 static const struct pcx_love_character
 princess_character = {
         .name = PCX_TEXT_STRING_PRINCESS,
+        .object_name = PCX_TEXT_STRING_PRINCESS_OBJECT,
         .symbol = "👸",
         .description = PCX_TEXT_STRING_PRINCESS_DESCRIPTION,
         .value = 8,
@@ -189,9 +198,13 @@ get_value_symbol(const struct pcx_love_character *character,
 static void
 get_long_name(enum pcx_text_language language,
               const struct pcx_love_character *character,
-              struct pcx_buffer *buf)
+              struct pcx_buffer *buf,
+              bool object)
 {
-        pcx_html_escape(buf, pcx_text_get(language, character->name));
+        enum pcx_text_string name = (object ?
+                                     character->object_name :
+                                     character->name);
+        pcx_html_escape(buf, pcx_text_get(language, name));
         pcx_buffer_append_c(buf, ' ');
         pcx_buffer_append_string(buf, character->symbol);
         get_value_symbol(character, buf);
@@ -230,7 +243,14 @@ append_special_format(struct pcx_love *love,
                 case 'c': {
                         const struct pcx_love_character *c =
                                 va_arg(ap, const struct pcx_love_character *);
-                        get_long_name(love->language, c, buf);
+                        get_long_name(love->language, c, buf, false);
+                        break;
+                }
+
+                case 'C': {
+                        const struct pcx_love_character *c =
+                                va_arg(ap, const struct pcx_love_character *);
+                        get_long_name(love->language, c, buf, true);
                         break;
                 }
 
@@ -281,7 +301,7 @@ show_card(struct pcx_love *love,
         const struct pcx_love_player *player = love->players + player_num;
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
         escape_string(love, &buf, PCX_TEXT_STRING_YOUR_CARD_IS);
-        get_long_name(love->language, player->card, &buf);
+        get_long_name(love->language, player->card, &buf, false);
 
         love->callbacks.send_private_message(player_num,
                                              PCX_GAME_MESSAGE_FORMAT_HTML,
@@ -389,7 +409,7 @@ explain_card(struct pcx_love *love,
              const struct pcx_love_character *card)
 {
         pcx_buffer_append_string(buf, "<b>");
-        get_long_name(love->language, card, buf);
+        get_long_name(love->language, card, buf, false);
         pcx_buffer_append_string(buf, "</b>\n");
         escape_string(love, buf, card->description);
 
@@ -616,7 +636,7 @@ get_help_cb(enum pcx_text_language language)
                         pcx_buffer_append_string(&buf, "\n\n");
 
                 pcx_buffer_append_string(&buf, "<b>");
-                get_long_name(language, characters[i], &buf);
+                get_long_name(language, characters[i], &buf, false);
                 pcx_buffer_append_string(&buf, "</b> ");
 
                 if (characters[i]->count == 1) {
