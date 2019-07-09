@@ -701,6 +701,15 @@ show_help(struct pcx_bot *bot,
         pcx_free(help);
 }
 
+static bool
+can_run_game(struct pcx_bot *bot,
+             const struct pcx_game *game)
+{
+        /* Skip games that don’t have a translation */
+        return pcx_text_get(bot->config->language,
+                            game->start_command) != NULL;
+}
+
 static void
 process_help_callback_data(struct pcx_bot *bot,
                            struct json_object *callback,
@@ -718,6 +727,9 @@ process_help_callback_data(struct pcx_bot *bot,
         return;
 
 found_game: (void) 0;
+
+        if (!can_run_game(bot, game))
+            return;
 
         struct json_object *message;
 
@@ -1179,15 +1191,22 @@ process_help(struct pcx_bot *bot,
 
         struct pcx_game_button *buttons = pcx_alloc(n_games * sizeof *buttons);
 
+        int n_buttons = 0;
+
         for (int i = 0; i < n_games; i++) {
+                if (!can_run_game(bot, pcx_game_list[i]))
+                    continue;
+
                 const struct pcx_game *game = pcx_game_list[i];
 
-                buttons[i].text = pcx_text_get(bot->config->language,
-                                               game->name_string);
+                buttons[n_buttons].text = pcx_text_get(bot->config->language,
+                                                       game->name_string);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "help:%s", game->name);
-                buttons[i].data = (char *) buf.data;
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
         }
 
         send_message_full(bot,
@@ -1196,10 +1215,10 @@ process_help(struct pcx_bot *bot,
                           PCX_GAME_MESSAGE_FORMAT_PLAIN,
                           pcx_text_get(bot->config->language,
                                        PCX_TEXT_STRING_WHICH_HELP),
-                          n_games,
+                          n_buttons,
                           buttons);
 
-        for (int i = 0; i < n_games; i++)
+        for (int i = 0; i < n_buttons; i++)
                 pcx_free((char *) buttons[i].data);
 
         pcx_free(buttons);
@@ -1272,10 +1291,13 @@ process_entity(struct pcx_bot *bot,
         }
 
         for (unsigned i = 0; pcx_game_list[i]; i++) {
+                if (!can_run_game(bot, pcx_game_list[i]))
+                        continue;
+
                 if (!is_command(bot,
                                 info->text + offset, length,
                                 pcx_game_list[i]->start_command))
-                    continue;
+                        continue;
 
                 process_create_game(bot, pcx_game_list[i], info);
 
