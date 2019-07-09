@@ -27,10 +27,14 @@ pcx_text_french[] = {
         "Complot",
         [PCX_TEXT_STRING_NAME_SNITCH] =
         "Balance",
+        [PCX_TEXT_STRING_NAME_LOVE] =
+        "Love Letter",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/complot",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/balance",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND] =
+        "/letter",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -236,5 +240,129 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_1_SNITCH] =
         "1 balance",
         [PCX_TEXT_STRING_PLURAL_SNITCHES] =
-        "%i balances"
+        "%i balances",
+        [PCX_TEXT_STRING_GUARD] =
+        "Garde",
+        [PCX_TEXT_STRING_GUARD_OBJECT] =
+        "le garde",
+        [PCX_TEXT_STRING_GUARD_DESCRIPTION] =
+        "Évoquez une carte qui n’est pas le garde et choisissez un joueur. Si "
+        "ce joueur a cette carte, il perd la manche.",
+        [PCX_TEXT_STRING_SPY] =
+        "Espion",
+        [PCX_TEXT_STRING_SPY_OBJECT] =
+        "l’espion",
+        [PCX_TEXT_STRING_SPY_DESCRIPTION] =
+        "Regardez la main d’un autre joueur.",
+        [PCX_TEXT_STRING_BARON] =
+        "Baron",
+        [PCX_TEXT_STRING_BARON_OBJECT] =
+        "le baron",
+        [PCX_TEXT_STRING_BARON_DESCRIPTION] =
+        "Comparez votre main avec celle d’un autre joueur en secret. La "
+        "personne qui a la carte avec le moins de valeur perd la manche.",
+        [PCX_TEXT_STRING_HANDMAID] =
+        "Servante",
+        [PCX_TEXT_STRING_HANDMAID_OBJECT] =
+        "la servante",
+        [PCX_TEXT_STRING_HANDMAID_DESCRIPTION] =
+        "Jusqu’à votre prochaine tour, ignorez les effets des cartes des "
+        "autres joueuers.",
+        [PCX_TEXT_STRING_PRINCE] =
+        "Prince",
+        [PCX_TEXT_STRING_PRINCE_OBJECT] =
+        "le prince",
+        [PCX_TEXT_STRING_PRINCE_DESCRIPTION] =
+        "Choisissez un joueur (qui peut être vous même) qui défaussera sa main "
+        "et prendra une nouvelle carte.",
+        [PCX_TEXT_STRING_KING] =
+        "Roi",
+        [PCX_TEXT_STRING_KING_OBJECT] =
+        "le roi",
+        [PCX_TEXT_STRING_KING_DESCRIPTION] =
+        "Choisissez un autre joueur et échangez vos cartes avec lui.",
+        [PCX_TEXT_STRING_COMTESSE] =
+        "Comtesse",
+        [PCX_TEXT_STRING_COMTESSE_OBJECT] =
+        "la comtesse",
+        [PCX_TEXT_STRING_COMTESSE_DESCRIPTION] =
+        "Si vous avez cette carte avec le roi ou le prince dans votre main, "
+        "il faut défausser cette carte.",
+        [PCX_TEXT_STRING_PRINCESS] =
+        "Princesse",
+        [PCX_TEXT_STRING_PRINCESS_OBJECT] =
+        "la princesse",
+        [PCX_TEXT_STRING_PRINCESS_DESCRIPTION] =
+        "Si vous défaussez cette carte, vous perdez la manche.",
+        [PCX_TEXT_STRING_ONE_COPY] =
+        "1 exemplaire",
+        [PCX_TEXT_STRING_PLURAL_COPIES] =
+        "%i exemplaires",
+        [PCX_TEXT_STRING_YOUR_CARD_IS] =
+        "Votre carte est : ",
+        [PCX_TEXT_STRING_VISIBLE_CARDS] =
+        "Cartes défaussées : ",
+        [PCX_TEXT_STRING_N_CARDS] =
+        "Pioche : ",
+        [PCX_TEXT_STRING_YOUR_GO_NO_QUESTION] =
+        "<b>%p</b>, c’est a vous",
+        [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
+        "Quelle carte voulez-vous défausser ?",
+        [PCX_TEXT_STRING_EVERYONE_PROTECTED] =
+        "%p défausse %C mais tous les autres joueurs sont protegés et il n’a "
+        "pas d’effet.",
+        [PCX_TEXT_STRING_WHO_GUESS] =
+        "À qui voulez-vous diviner la carte ?",
+        [PCX_TEXT_STRING_GUESS_WHICH_CARD] =
+        "Quelle carte voulez-vous diviner ?",
+        [PCX_TEXT_STRING_GUARD_SUCCESS] =
+        "%p défausse %C et divine bien que %p avait %C. %p perd la manche.",
+        [PCX_TEXT_STRING_GUARD_FAIL] =
+        "%p défausse %C et divine à tort que %p a %C.",
+        [PCX_TEXT_STRING_WHO_SEE_CARD] =
+        "À qui voulez-vous voir sa carte ?",
+        [PCX_TEXT_STRING_SHOWS_CARD] =
+        "%p défaussé %C et force %p à montrer sa carte en secret.",
+        [PCX_TEXT_STRING_TELL_SPIED_CARD] =
+        "%p a %C",
+        [PCX_TEXT_STRING_WHO_COMPARE] =
+        "Avec qui voulez-vous comparer vos cartes ?",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p a défaussé %C et a comparé sa carte avec celle de %p. "
+        "Les deux cartes étaient égaux et personne n’a perdu la manche.",
+        [PCX_TEXT_STRING_COMPARE_LOSER] =
+        "%p a défaussé %C et a comparé sa carte avec celle de %p. "
+        "La carte de %p a moins de valeur et il perd la manche.",
+        [PCX_TEXT_STRING_TELL_COMPARE] =
+        "Vous avez %C et %p a %C",
+        [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
+        "%p défausse %C et sera protegé jusqu’à sa prochaine tour.",
+        [PCX_TEXT_STRING_WHO_PRINCE] =
+        "À qui voulez-vous faire défausser sa main ?",
+        [PCX_TEXT_STRING_PRINCE_SELF] =
+        "%p a défaussé %C et a forcé lui-même à défausser %C",
+        [PCX_TEXT_STRING_PRINCE_OTHER] =
+        "%p a défaussé %C et a forcé %p à défausser %C",
+        [PCX_TEXT_STRING_FORCE_DISCARD_PRINCESS] =
+        " et ainsi il perd la manche.",
+        [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =
+        " et prendre une nouvelle carte.",
+        [PCX_TEXT_STRING_WHO_EXCHANGE] =
+        "Avec qui voulez-vous échanger vos mains ?",
+        [PCX_TEXT_STRING_TELL_EXCHANGE] =
+        "Vous donnez %C à %p et recevez %C",
+        [PCX_TEXT_STRING_EXCHANGES] =
+        "%p défausse %C et échange sa main avec %p",
+        [PCX_TEXT_STRING_DISCARDS_COMTESSE] =
+        "%p défausse %C",
+        [PCX_TEXT_STRING_DISCARDS_PRINCESS] =
+        "%p défausse %C et perd la manche",
+        [PCX_TEXT_STRING_EVERYBODY_SHOWS_CARD] =
+        "La manche se termine et tout le monde montre sa carte :",
+        [PCX_TEXT_STRING_SET_ASIDE_CARD] =
+        "La carte cachée a été %c",
+        [PCX_TEXT_STRING_WINS_ROUND] =
+        "💘 %p remporte la manche et gagne de l’affection de la princesse",
+        [PCX_TEXT_STRING_WINS_PRINCESS] =
+        "🏆 %p a %i points d’affection et remporte la partie !",
 };

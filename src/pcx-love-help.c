@@ -39,5 +39,24 @@ pcx_love_help[] = {
         "@CARDS@\n"
         "\n"
         "Kiam iu gajnas sufiĉe da korinklino de la princino ri gajnas la "
-        "partion.\n"
+        "partion.\n",
+        [PCX_TEXT_LANGUAGE_FRENCH] =
+        "<b>RÉSUMÉ DES RÈGLES :</b>\n"
+        "\n"
+        "Vous êtes tous des prétendants de l’amour de la princesse et vous "
+        "voulez lui envoyer une lettre d’amour. Dans votre main vous avez une "
+        "carte qui représente la personne qui porte votre lettre en ce moment. "
+        "Plus ce numéro est élevé, plus la personne est proche de la "
+        "princesse. À la fin de la manche, ce qui a la carte avec le plus de "
+        "valeur envoie sa lettre à la princesse et gagne un point "
+        "d’affection.\n"
+        "\n"
+        "À chaque tour, le joueur actif pioche une carte et doit choisir entre "
+        "les deux cartes qu’il aura dans sa main pour la défausser. Chaque "
+        "carte a un effet différent lorsque on la défausse :\n"
+        "\n"
+        "@CARDS@\n"
+        "\n"
+        "Quand quelqu’un gagne assez d’affection de la princesse, il remporte "
+        "la partie.",
 };
