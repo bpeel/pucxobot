@@ -249,4 +249,45 @@ pcx_text_esperanto[] = {
         "1 perfidulo",
         [PCX_TEXT_STRING_PLURAL_SNITCHES] =
         "%i perfiduloj",
+        [PCX_TEXT_STRING_GUARD] =
+        "Gardisto",
+        [PCX_TEXT_STRING_GUARD_DESCRIPTION] =
+        "Nomu karton kiu ne estas gardisto, kaj elektu ludanton. "
+        "Se tiu ludanto havas tiun karton, ri perdas la raŭndon.",
+        [PCX_TEXT_STRING_SPY] =
+        "Spiono",
+        [PCX_TEXT_STRING_SPY_DESCRIPTION] =
+        "Rigardu la manon de alia ludanto.",
+        [PCX_TEXT_STRING_BARON] =
+        "Barono",
+        [PCX_TEXT_STRING_BARON_DESCRIPTION] =
+        "Sekrete komparu manojn kun alia ludanto. Tiu de vi ambaŭ, "
+        "kiu havas la malplej valoran karton, perdas la raŭndon.",
+        [PCX_TEXT_STRING_HANDMAID] =
+        "Servistino",
+        [PCX_TEXT_STRING_HANDMAID_DESCRIPTION] =
+        "Ĝis via sekva vico, ignoru efikojn de kartoj de ĉiuj "
+        "aliaj ludantoj.",
+        [PCX_TEXT_STRING_PRINCE] =
+        "Princo",
+        [PCX_TEXT_STRING_PRINCE_DESCRIPTION] =
+        "Elektu ludanton (povas esti vi) kiu forĵetos sian manon "
+        "kaj prenos novan karton.",
+        [PCX_TEXT_STRING_KING] =
+        "Reĝo",
+        [PCX_TEXT_STRING_KING_DESCRIPTION] =
+        "Elektu alian ludanton kaj interŝanĝu manojn kun ri.",
+        [PCX_TEXT_STRING_COMTESSE] =
+        "Grafino",
+        [PCX_TEXT_STRING_COMTESSE_DESCRIPTION] =
+        "Se vi havas ĉi tiun karton kun la reĝo aŭ la princo en "
+        "via mano, vi devas forĵeti ĉi tiun karton.",
+        [PCX_TEXT_STRING_PRINCESS] =
+        "Princino",
+        [PCX_TEXT_STRING_PRINCESS_DESCRIPTION] =
+        "Se vi forĵetas ĉi tiun karton, vi perdas la raŭndon.",
+        [PCX_TEXT_STRING_ONE_COPY] =
+        "1 ekzemplero",
+        [PCX_TEXT_STRING_PLURAL_COPIES] =
+        "%i ekzempleroj",
 };

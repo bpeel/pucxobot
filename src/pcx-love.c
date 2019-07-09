@@ -27,9 +27,112 @@
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
+#include "pcx-html.h"
+#include "pcx-love-help.h"
 
 #define PCX_LOVE_MIN_PLAYERS 2
 #define PCX_LOVE_MAX_PLAYERS 4
+
+struct pcx_love_character {
+        enum pcx_text_string name;
+        const char *symbol;
+        enum pcx_text_string description;
+        int value;
+        int count;
+        const char *keyword;
+};
+
+static const struct pcx_love_character
+guard_character = {
+        .name = PCX_TEXT_STRING_GUARD,
+        .symbol = "👮️",
+        .description = PCX_TEXT_STRING_GUARD_DESCRIPTION,
+        .value = 1,
+        .count = 5,
+        .keyword = "guard",
+};
+
+static const struct pcx_love_character
+spy_character = {
+        .name = PCX_TEXT_STRING_SPY,
+        .symbol = "🔎",
+        .description = PCX_TEXT_STRING_SPY_DESCRIPTION,
+        .value = 2,
+        .count = 2,
+        .keyword = "spy",
+};
+
+static const struct pcx_love_character
+baron_character = {
+        .name = PCX_TEXT_STRING_BARON,
+        .symbol = "⚔️",
+        .description = PCX_TEXT_STRING_BARON_DESCRIPTION,
+        .value = 3,
+        .count = 2,
+        .keyword = "baron",
+};
+
+static const struct pcx_love_character
+handmaid_character = {
+        .name = PCX_TEXT_STRING_HANDMAID,
+        .symbol = "💅",
+        .description = PCX_TEXT_STRING_HANDMAID_DESCRIPTION,
+        .value = 4,
+        .count = 2,
+        .keyword = "handmaid",
+};
+
+static const struct pcx_love_character
+prince_character = {
+        .name = PCX_TEXT_STRING_PRINCE,
+        .symbol = "🤴",
+        .description = PCX_TEXT_STRING_PRINCE_DESCRIPTION,
+        .value = 5,
+        .count = 2,
+        .keyword = "prince",
+};
+
+static const struct pcx_love_character
+king_character = {
+        .name = PCX_TEXT_STRING_KING,
+        .symbol = "👑",
+        .description = PCX_TEXT_STRING_KING_DESCRIPTION,
+        .value = 6,
+        .count = 1,
+        .keyword = "king",
+};
+
+static const struct pcx_love_character
+comtesse_character = {
+        .name = PCX_TEXT_STRING_COMTESSE,
+        .symbol = "👩‍💼",
+        .description = PCX_TEXT_STRING_COMTESSE_DESCRIPTION,
+        .value = 7,
+        .count = 1,
+        .keyword = "comtesse",
+};
+
+static const struct pcx_love_character
+princess_character = {
+        .name = PCX_TEXT_STRING_PRINCESS,
+        .symbol = "👸",
+        .description = PCX_TEXT_STRING_PRINCESS_DESCRIPTION,
+        .value = 8,
+        .count = 1,
+        .keyword = "princess",
+};
+
+static const struct pcx_love_character * const
+characters[] = {
+        &guard_character,
+        &spy_character,
+        &baron_character,
+        &handmaid_character,
+        &prince_character,
+        &king_character,
+        &comtesse_character,
+        &princess_character,
+};
 
 struct pcx_love {
         int n_players;
@@ -38,6 +141,26 @@ struct pcx_love {
         void *user_data;
         enum pcx_text_language language;
 };
+
+static void
+get_value_symbol(const struct pcx_love_character *character,
+                 struct pcx_buffer *buf)
+{
+        pcx_buffer_append_printf(buf,
+                                 "%i\xef\xb8\x8f\xe2\x83\xa3",
+                                 character->value);
+}
+
+static void
+get_long_name(enum pcx_text_language language,
+              const struct pcx_love_character *character,
+              struct pcx_buffer *buf)
+{
+        pcx_html_escape(buf, pcx_text_get(language, character->name));
+        pcx_buffer_append_c(buf, ' ');
+        pcx_buffer_append_string(buf, character->symbol);
+        get_value_symbol(character, buf);
+}
 
 static void *
 create_game_cb(const struct pcx_game_callbacks *callbacks,
@@ -63,7 +186,46 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("help");
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        const char *text = pcx_love_help[language];
+        const char *text_end = strstr(text, "@CARDS@");
+
+        assert(text_end);
+
+        pcx_buffer_append(&buf, text, text_end - text);
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(characters); i++) {
+                if (i > 0)
+                        pcx_buffer_append_string(&buf, "\n\n");
+
+                pcx_buffer_append_string(&buf, "<b>");
+                get_long_name(language, characters[i], &buf);
+                pcx_buffer_append_string(&buf, "</b> ");
+
+                if (characters[i]->count == 1) {
+                        const char *copy =
+                                pcx_text_get(language,
+                                             PCX_TEXT_STRING_ONE_COPY);
+                        pcx_buffer_append_string(&buf, copy);
+                } else {
+                        const char *copy =
+                                pcx_text_get(language,
+                                             PCX_TEXT_STRING_PLURAL_COPIES);
+                        pcx_buffer_append_printf(&buf,
+                                                 copy,
+                                                 characters[i]->count);
+                }
+
+                pcx_buffer_append_c(&buf, '\n');
+
+                const char *desc = pcx_text_get(language,
+                                                characters[i]->description);
+                pcx_html_escape(&buf, desc);
+        }
+
+        pcx_buffer_append_string(&buf, text_end + 7);
+
+        return (char *) buf.data;
 }
 
 static void
