@@ -151,6 +151,8 @@ enum pcx_text_string {
         PCX_TEXT_STRING_ONE_COPY,
         PCX_TEXT_STRING_PLURAL_COPIES,
         PCX_TEXT_STRING_YOUR_CARD_IS,
+        PCX_TEXT_STRING_VISIBLE_CARDS,
+        PCX_TEXT_STRING_N_CARDS,
 };
 
 const char *

@@ -34,6 +34,7 @@
 #define PCX_LOVE_MAX_PLAYERS 4
 
 #define PCX_LOVE_N_CARDS 16
+#define PCX_LOVE_N_HEARTS 13
 
 /* Number of cards that are immediately visible in a two-player game */
 #define PCX_LOVE_N_VISIBLE_CARDS 3
@@ -165,6 +166,18 @@ struct pcx_love {
 };
 
 static void
+start_round(struct pcx_love *love);
+
+static void
+escape_string(struct pcx_love *love,
+              struct pcx_buffer *buf,
+              enum pcx_text_string string)
+{
+        const char *value = pcx_text_get(love->language, string);
+        pcx_html_escape(buf, value);
+}
+
+static void
 get_value_symbol(const struct pcx_love_character *character,
                  struct pcx_buffer *buf)
 {
@@ -211,9 +224,7 @@ show_card(struct pcx_love *love,
 {
         const struct pcx_love_player *player = love->players + player_num;
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-        const char *note = pcx_text_get(love->language,
-                                        PCX_TEXT_STRING_YOUR_CARD_IS);
-        pcx_html_escape(&buf, note);
+        escape_string(love, &buf, PCX_TEXT_STRING_YOUR_CARD_IS);
         get_long_name(love->language, player->card, &buf);
 
         love->callbacks.send_private_message(player_num,
@@ -224,6 +235,168 @@ show_card(struct pcx_love *love,
                                              love->user_data);
 
         pcx_buffer_destroy(&buf);
+}
+
+static int
+get_player_score(const struct pcx_love_player *player)
+{
+        int score = 0;
+
+        for (unsigned i = 0; i < player->n_discarded_cards; i++)
+                score += player->discarded_cards[i]->value;
+
+        return score + (player->card->value << 8);
+}
+
+static int
+get_highest_scoring_player(struct pcx_love *love)
+{
+        int best_player = 0;
+        int best_score = -1;
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                const struct pcx_love_player *player = love->players + i;
+
+                if (!player->is_alive)
+                        continue;
+
+                int this_score = get_player_score(player);
+
+                if (this_score > best_score) {
+                        best_player = i;
+                        best_score = this_score;
+                }
+        }
+
+        return best_player;
+}
+
+static int
+get_winner(struct pcx_love *love)
+{
+        if (love->n_cards <= 0)
+                return get_highest_scoring_player(love);
+
+        int alive_player = -1;
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                if (!love->players[i].is_alive)
+                        continue;
+
+                /* It’s only a winner if there is one one alive player */
+                if (alive_player != -1)
+                        return -1;
+
+                alive_player = i;
+        }
+
+        /* It probably shouldn’t happen that there are no alive
+         * players, but in order to fail safe we’ll just declare the
+         * first player the winner.
+         */
+        return alive_player == -1 ? 0 : alive_player;
+}
+
+static void
+show_final_round_stats(struct pcx_love *love,
+                       int winner)
+{
+}
+
+static void
+end_game(struct pcx_love *love)
+{
+}
+
+static void
+send_discard_question(struct pcx_love *love)
+{
+}
+
+static void
+show_stats(struct pcx_love *love)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        if (love->n_players == 2) {
+                escape_string(love, &buf, PCX_TEXT_STRING_VISIBLE_CARDS);
+
+                for (unsigned i = 0; i < PCX_LOVE_N_VISIBLE_CARDS; i++) {
+                        const struct pcx_love_character *card =
+                                love->visible_cards[i];
+                        pcx_buffer_append_string(&buf, card->symbol);
+                }
+
+                pcx_buffer_append_c(&buf, '\n');
+        }
+
+        escape_string(love, &buf, PCX_TEXT_STRING_N_CARDS);
+        pcx_buffer_append_c(&buf, ' ');
+        pcx_buffer_append_printf(&buf, "%i", (int) love->n_cards);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                const struct pcx_love_player *player = love->players + i;
+
+                if (i == love->current_player)
+                        pcx_buffer_append_string(&buf, "👉 ");
+
+                pcx_html_escape(&buf, player->name);
+
+                if (!player->is_alive)
+                        pcx_buffer_append_string(&buf, "☠");
+                else if (player->is_protected)
+                        pcx_buffer_append_string(&buf, "🛡️");
+
+                if (player->hearts > 0) {
+                        pcx_buffer_append_c(&buf, '\n');
+                        for (int h = 0; h < player->hearts; h++)
+                                pcx_buffer_append_string(&buf, "❣️");
+                }
+
+                if (player->n_discarded_cards > 0) {
+                        pcx_buffer_append_c(&buf, '\n');
+                        for (int c = 0; c < player->n_discarded_cards; c++) {
+                                const struct pcx_love_character *card =
+                                        player->discarded_cards[c];
+                                pcx_buffer_append_string(&buf, card->symbol);
+                        }
+                }
+
+                pcx_buffer_append_string(&buf, "\n\n");
+        }
+
+        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                     (const char *) buf.data,
+                                     0, /* n_buttons */
+                                     NULL, /* buttons */
+                                     love->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+take_turn(struct pcx_love *love)
+{
+        int winner = get_winner(love);
+
+        if (winner != -1) {
+                show_final_round_stats(love, winner);
+                love->players[winner].hearts++;
+
+                if (love->players[winner].hearts >
+                    PCX_LOVE_N_HEARTS / love->n_players) {
+                        end_game(love);
+                } else {
+                        love->current_player = winner;
+                        start_round(love);
+                }
+
+                return;
+        }
+
+        send_discard_question(love);
+        show_stats(love);
 }
 
 static void
@@ -262,6 +435,8 @@ start_round(struct pcx_love *love)
                 player->n_discarded_cards = 0;
                 show_card(love, i);
         }
+
+        take_turn(love);
 }
 
 static void *

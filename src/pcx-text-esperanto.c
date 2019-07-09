@@ -292,4 +292,8 @@ pcx_text_esperanto[] = {
         "%i ekzempleroj",
         [PCX_TEXT_STRING_YOUR_CARD_IS] =
         "Via karto estas: ",
+        [PCX_TEXT_STRING_VISIBLE_CARDS] =
+        "Forĵetitaj kartoj: ",
+        [PCX_TEXT_STRING_N_CARDS] =
+        "Kartaro: ",
 };
