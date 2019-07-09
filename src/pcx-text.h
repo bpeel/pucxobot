@@ -154,6 +154,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_VISIBLE_CARDS,
         PCX_TEXT_STRING_N_CARDS,
         PCX_TEXT_STRING_YOUR_GO_NO_QUESTION,
+        PCX_TEXT_STRING_DISCARD_WHICH_CARD,
 };
 
 const char *

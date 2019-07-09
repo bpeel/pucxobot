@@ -308,9 +308,78 @@ end_game(struct pcx_love *love)
 {
 }
 
+static bool
+can_discard(struct pcx_love *love,
+            const struct pcx_love_character *card)
+{
+        const struct pcx_love_player *player =
+                love->players + love->current_player;
+
+        if (card != player->card && card != love->pending_card)
+                return false;
+
+        if (card == &king_character || card == &prince_character) {
+                return (player->card != &comtesse_character &&
+                        love->pending_card != &comtesse_character);
+        }
+
+        return true;
+}
+
+static bool
+explain_card(struct pcx_love *love,
+             struct pcx_buffer *buf,
+             struct pcx_game_button *button,
+             const struct pcx_love_character *card)
+{
+        pcx_buffer_append_string(buf, "<b>");
+        get_long_name(love->language, card, buf);
+        pcx_buffer_append_string(buf, "</b>\n");
+        escape_string(love, buf, card->description);
+
+        if (!can_discard(love, card))
+                return false;
+
+        button->text = pcx_text_get(love->language, card->name);
+        button->data = card->keyword;
+
+        return true;
+}
+
 static void
 send_discard_question(struct pcx_love *love)
 {
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(love, &buf, PCX_TEXT_STRING_DISCARD_WHICH_CARD);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        struct pcx_game_button buttons[2];
+        int n_buttons = 0;
+
+        if (explain_card(love,
+                         &buf,
+                         buttons + n_buttons,
+                         love->players[love->current_player].card))
+                n_buttons++;
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        if (explain_card(love,
+                         &buf,
+                         buttons + n_buttons,
+                         love->pending_card))
+                n_buttons++;
+
+        love->callbacks.send_private_message(love->current_player,
+                                             PCX_GAME_MESSAGE_FORMAT_HTML,
+                                             (const char *) buf.data,
+                                             n_buttons,
+                                             buttons,
+                                             love->user_data);
+
+        pcx_buffer_destroy(&buf);
 }
 
 static void
@@ -415,6 +484,11 @@ take_turn(struct pcx_love *love)
 
                 return;
         }
+
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+        love->pending_card = take_card(love);
+        current_player->is_protected = false;
 
         send_discard_question(love);
         show_stats(love);
