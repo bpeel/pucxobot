@@ -336,4 +336,16 @@ pcx_text_esperanto[] = {
         "sekrete montri sian karton.",
         [PCX_TEXT_STRING_TELL_SPIED_CARD] =
         "%p havas la %C",
+        [PCX_TEXT_STRING_WHO_COMPARE] =
+        "Kun kiu vi volas kompari kartojn?",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p forĵetis la %C kaj komparis sian "
+        "karton kun tiu de %p. La du kartoj estas "
+        "egalaj kaj neniu perdas la raŭndon.",
+        [PCX_TEXT_STRING_COMPARE_LOSER] =
+        "%p forĵetis la %C kaj komparis sian "
+        "karton kun tiu de %p. La karto de %p estas "
+        "malpli alta kaj ri perdas la raŭndon.",
+        [PCX_TEXT_STRING_TELL_COMPARE] =
+        "Vi havas la %C kaj %p havas la %C",
 };
