@@ -92,5 +92,5 @@ pcx_snitch_help[] = {
         "d’or n’est pas divisible également, des pièces de la banque sont "
         "ajoutées pour le faire égale.\n"
         "\n"
-        "Après les cinq tours, ce qui a le plus d’or remporte la partie.",
+        "Après les huit tours, ce qui a le plus d’or remporte la partie.",
 };
