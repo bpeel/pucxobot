@@ -406,10 +406,72 @@ get_winner(struct pcx_love *love)
         return alive_player == -1 ? 0 : alive_player;
 }
 
+
+static void
+add_discarded_symbols(struct pcx_buffer *buf,
+                      const struct pcx_love_player *player)
+{
+        if (player->n_discarded_cards > 0) {
+                pcx_buffer_append_c(buf, '\n');
+                for (int c = 0; c < player->n_discarded_cards; c++) {
+                        const struct pcx_love_character *card =
+                                player->discarded_cards[c];
+                        pcx_buffer_append_string(buf, card->symbol);
+                }
+        }
+}
+
 static void
 show_final_round_stats(struct pcx_love *love,
                        int winner)
 {
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(love, &buf, PCX_TEXT_STRING_EVERYBODY_SHOWS_CARD);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        for (unsigned i = 0; i < love->n_players; i++) {
+                const struct pcx_love_player *player = love->players + i;
+
+                pcx_html_escape(&buf, player->name);
+                pcx_buffer_append_string(&buf, ": ");
+
+                if (player->is_alive) {
+                        get_long_name(love->language,
+                                      player->card,
+                                      &buf,
+                                      false);
+                } else {
+                        pcx_buffer_append_string(&buf, "☠");
+                }
+
+                add_discarded_symbols(&buf, player);
+
+                pcx_buffer_append_c(&buf, '\n');
+        }
+
+        if (love->set_aside_card) {
+                pcx_buffer_append_c(&buf, '\n');
+                append_special_format(love,
+                                      &buf,
+                                      PCX_TEXT_STRING_SET_ASIDE_CARD,
+                                      love->set_aside_card);
+                pcx_buffer_append_c(&buf, '\n');
+        }
+
+        pcx_buffer_append_c(&buf, '\n');
+        append_special_format(love,
+                              &buf,
+                              PCX_TEXT_STRING_WINS_ROUND,
+                              love->players + winner);
+
+        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                     (const char *) buf.data,
+                                     0, /* n_buttons */
+                                     NULL, /* buttons */
+                                     love->user_data);
+
+        pcx_buffer_destroy(&buf);
 }
 
 static void
@@ -532,14 +594,7 @@ show_stats(struct pcx_love *love)
                                 pcx_buffer_append_string(&buf, "❣️");
                 }
 
-                if (player->n_discarded_cards > 0) {
-                        pcx_buffer_append_c(&buf, '\n');
-                        for (int c = 0; c < player->n_discarded_cards; c++) {
-                                const struct pcx_love_character *card =
-                                        player->discarded_cards[c];
-                                pcx_buffer_append_string(&buf, card->symbol);
-                        }
-                }
+                add_discarded_symbols(&buf, player);
 
                 pcx_buffer_append_string(&buf, "\n\n");
         }

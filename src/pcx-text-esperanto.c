@@ -373,4 +373,11 @@ pcx_text_esperanto[] = {
         "%p forĵetis la %C",
         [PCX_TEXT_STRING_DISCARDS_PRINCESS] =
         "%p forĵetas la %C kaj perdas la raŭndon",
+        [PCX_TEXT_STRING_EVERYBODY_SHOWS_CARD] =
+        "La raŭndo finiĝas kaj ĉiu montras sian karton:",
+        [PCX_TEXT_STRING_SET_ASIDE_CARD] =
+        "La kaŝita karto estis %c",
+        [PCX_TEXT_STRING_WINS_ROUND] =
+        "💘 %p gajnas la raŭndon kaj gajnas korinklinon "
+        "de la princino",
 };
