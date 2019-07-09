@@ -23,7 +23,7 @@
 const char *
 pcx_coup_help[] = {
         [PCX_TEXT_LANGUAGE_ESPERANTO] =
-        "<b>RESUMO DE LA REGULOJ:</b>"
+        "<b>RESUMO DE LA REGULOJ:</b>\n"
         "\n"
         "Puĉo estas kartludo de trompado kaj blufado.\n"
         "\n"
@@ -65,7 +65,7 @@ pcx_coup_help[] = {
         "Tiu kiu restas vivanta venkas.\n",
 
         [PCX_TEXT_LANGUAGE_FRENCH] =
-        "<b>RESUMÉ DES RÈGLES :</b>"
+        "<b>RESUMÉ DES RÈGLES :</b>\n"
         "\n"
         "Complot est un jeu de cartes au tour du bluff.\n"
         "\n"

@@ -23,6 +23,8 @@
 const char *
 pcx_snitch_help[] = {
         [PCX_TEXT_LANGUAGE_ESPERANTO] =
+        "<b>RESUMO DE LA REGULOJ:</b>\n"
+        "\n"
         "Perfidulo estas kartludo de duonkunlaboro kaj blufado.\n"
         "\n"
         "Vi ĉiuj estas rabistoj kiuj kunlaboras por organizi rabadojn de "
@@ -57,6 +59,8 @@ pcx_snitch_help[] = {
         "Post 8 raŭndoj, tiu kiu havas la plej multon da mono gajnas la "
         "partion.\n",
         [PCX_TEXT_LANGUAGE_FRENCH] =
+        "<b>RESUMÉ DES RÈGLES :</b>\n"
+        "\n"
         "Balance est un jeu de cartes de mi-collaboration et de bluff.\n"
         "\n"
         "Vous êtes tous des cambrioleurs qui travaillent ensembles pour "
