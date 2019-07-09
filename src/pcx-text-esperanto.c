@@ -329,4 +329,11 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_GUARD_FAIL] =
         "%p forĵetis la %C kaj malĝuste divenis "
         "ke %p havas la %C.",
+        [PCX_TEXT_STRING_WHO_SEE_CARD] =
+        "Kies karton vi volas vidi?",
+        [PCX_TEXT_STRING_SHOWS_CARD] =
+        "%p forĵetis la %C kaj devigis %p "
+        "sekrete montri sian karton.",
+        [PCX_TEXT_STRING_TELL_SPIED_CARD] =
+        "%p havas la %C",
 };

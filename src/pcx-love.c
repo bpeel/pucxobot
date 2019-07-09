@@ -925,6 +925,49 @@ discard_guard(struct pcx_love *love,
 }
 
 static void
+discard_spy(struct pcx_love *love,
+            int extra_data)
+{
+        int target = choose_target_for_discard(love,
+                                               &spy_character,
+                                               extra_data,
+                                               PCX_TEXT_STRING_WHO_SEE_CARD);
+
+        if (target < 0)
+                return;
+
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+        struct pcx_love_player *target_player =
+                love->players + target;
+
+        game_note(love,
+                  PCX_TEXT_STRING_SHOWS_CARD,
+                  current_player,
+                  &spy_character,
+                  target_player);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        append_special_format(love,
+                              &buf,
+                              PCX_TEXT_STRING_TELL_SPIED_CARD,
+                              target_player,
+                              target_player->card);
+
+        love->callbacks.send_private_message(love->current_player,
+                                             PCX_GAME_MESSAGE_FORMAT_HTML,
+                                             (const char *) buf.data,
+                                             0, /* n_buttons */
+                                             NULL, /* buttons */
+                                             love->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        do_discard(love, &spy_character);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -961,6 +1004,7 @@ handle_callback_data_cb(void *user_data,
                               int extra_data);
         } card_cbs[] = {
                 { &guard_character, discard_guard },
+                { &spy_character, discard_spy },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {
