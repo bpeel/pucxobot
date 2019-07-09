@@ -314,6 +314,25 @@ send_discard_question(struct pcx_love *love)
 }
 
 static void
+add_your_go_message(struct pcx_love *love,
+                    struct pcx_buffer *buf)
+{
+        struct pcx_buffer name_buf = PCX_BUFFER_STATIC_INIT;
+
+        const struct pcx_love_player *current_player =
+                love->players + love->current_player;
+
+        pcx_html_escape(&name_buf, current_player->name);
+
+        const char *format = pcx_text_get(love->language,
+                                          PCX_TEXT_STRING_YOUR_GO_NO_QUESTION);
+
+        pcx_buffer_append_printf(buf, format, name_buf.data);
+
+        pcx_buffer_destroy(&name_buf);
+}
+
+static void
 show_stats(struct pcx_love *love)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -365,6 +384,8 @@ show_stats(struct pcx_love *love)
 
                 pcx_buffer_append_string(&buf, "\n\n");
         }
+
+        add_your_go_message(love, &buf);
 
         love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
                                      (const char *) buf.data,

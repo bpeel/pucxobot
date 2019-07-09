@@ -296,4 +296,6 @@ pcx_text_esperanto[] = {
         "Forĵetitaj kartoj: ",
         [PCX_TEXT_STRING_N_CARDS] =
         "Kartaro: ",
+        [PCX_TEXT_STRING_YOUR_GO_NO_QUESTION] =
+        "<b>%s</b>, estas via vico",
 };
