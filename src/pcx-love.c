@@ -985,15 +985,16 @@ discard_spy(struct pcx_love *love,
 }
 
 static void
-compare_note(struct pcx_love *love,
-             int player_a,
-             int player_b)
+note_pair(struct pcx_love *love,
+          enum pcx_text_string message,
+          int player_a,
+          int player_b)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         append_special_format(love,
                               &buf,
-                              PCX_TEXT_STRING_TELL_COMPARE,
+                              message,
                               love->players[player_a].card,
                               love->players + player_b,
                               love->players[player_b].card);
@@ -1006,6 +1007,14 @@ compare_note(struct pcx_love *love,
                                              love->user_data);
 
         pcx_buffer_destroy(&buf);
+}
+
+static void
+compare_note(struct pcx_love *love,
+             int player_a,
+             int player_b)
+{
+        note_pair(love, PCX_TEXT_STRING_TELL_COMPARE, player_a, player_b);
 }
 
 static void
@@ -1152,6 +1161,50 @@ discard_prince(struct pcx_love *love,
 }
 
 static void
+exchange_note(struct pcx_love *love,
+              int player_a,
+              int player_b)
+{
+        note_pair(love, PCX_TEXT_STRING_TELL_EXCHANGE, player_a, player_b);
+}
+
+static void
+discard_king(struct pcx_love *love,
+             int extra_data)
+{
+        int target = choose_target_for_discard(love,
+                                               &king_character,
+                                               extra_data,
+                                               PCX_TEXT_STRING_WHO_EXCHANGE);
+
+        if (target < 0)
+                return;
+
+        start_discard(love, &king_character);
+
+        exchange_note(love, love->current_player, target);
+        exchange_note(love, target, love->current_player);
+
+        struct pcx_love_player *current_player =
+                love->players + love->current_player;
+        struct pcx_love_player *target_player =
+                love->players + target;
+
+        const struct pcx_love_character *t = current_player->card;
+        current_player->card = target_player->card;
+        target_player->card = t;
+
+        game_note(love,
+                  PCX_TEXT_STRING_EXCHANGES,
+                  current_player,
+                  target_player);
+
+        show_card(love, target);
+
+        finish_discard(love);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -1192,6 +1245,7 @@ handle_callback_data_cb(void *user_data,
                 { &baron_character, discard_baron },
                 { &handmaid_character, discard_handmaid },
                 { &prince_character, discard_prince },
+                { &king_character, discard_king },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(card_cbs); i++) {

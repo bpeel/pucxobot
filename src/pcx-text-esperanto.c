@@ -363,4 +363,10 @@ pcx_text_esperanto[] = {
         " kaj tial ri perdas la raŭndon.",
         [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =
         " kaj preni novan karton.",
+        [PCX_TEXT_STRING_WHO_EXCHANGE] =
+        "Kun kiu vi volas interŝanĝi manojn?",
+        [PCX_TEXT_STRING_TELL_EXCHANGE] =
+        "Vi fordonas la %C al %p kaj ricevas la %C",
+        [PCX_TEXT_STRING_EXCHANGES] =
+        "%p forĵetis la reĝon kaj interŝanĝas la manon kun %p",
 };
