@@ -927,6 +927,24 @@ check_known_id(struct pcx_bot *bot,
         return true;
 }
 
+static bool
+check_already_in_game(struct pcx_bot *bot,
+                      const struct message_info *info)
+{
+        struct game *game;
+        int player_num;
+
+        if (find_player(bot, info->from_id, &game, &player_num)) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_ALREADY_IN_GAME);
+                return false;
+        }
+
+        return true;
+}
+
 static void
 send_game_question_reply(struct pcx_bot *bot,
                          enum pcx_text_string question,
@@ -1007,6 +1025,9 @@ process_create_game(struct pcx_bot *bot,
         if (!check_known_id(bot, info))
                 return;
 
+        if (!check_already_in_game(bot, info))
+                return;
+
         game = pcx_calloc(sizeof *game);
         game->chat = info->chat_id;
         game->bot = bot;
@@ -1022,18 +1043,12 @@ process_join(struct pcx_bot *bot,
              const struct message_info *info)
 {
         struct game *game;
-        int player_num;
 
         if (!check_known_id(bot, info))
                 return;
 
-        if (find_player(bot, info->from_id, &game, &player_num)) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_ALREADY_IN_GAME);
+        if (!check_already_in_game(bot, info))
                 return;
-        }
 
         game = find_game(bot, info->chat_id);
 
