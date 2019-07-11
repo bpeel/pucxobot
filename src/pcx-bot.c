@@ -904,6 +904,8 @@ join_game(struct pcx_bot *bot,
                             info->chat_id,
                             info->message_id,
                             PCX_TEXT_STRING_WELCOME,
+                            pcx_text_get(bot->config->language,
+                                         game->type->name_string),
                             (char *) buf.data);
 
         pcx_buffer_destroy(&buf);

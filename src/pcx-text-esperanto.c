@@ -66,10 +66,12 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_FINAL_DISJUNCTION] =
         " aŭ ",
         [PCX_TEXT_STRING_WELCOME] =
-        "Bonvenon. Aliaj ludantoj tajpu "
-        "/aligxi por aliĝi al la ludo aŭ tajpu /komenci "
-        "por komenci la ludon. La aktualaj ludantoj "
-        "estas:\n"
+        "Bonvenon. Aliaj ludantoj tajpu /aligxi por aliĝi al la "
+        "ludo aŭ tajpu /komenci por komenci ĝin.\n"
+        "\n"
+        "La ludo estas: %s\n"
+        "\n"
+        "La aktualaj ludantoj estas:\n"
         "%s",
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Aliĝu al la ludo per /aligxi antaŭ ol "
