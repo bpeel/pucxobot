@@ -22,11 +22,13 @@
 
 #include "pcx-text-esperanto.h"
 #include "pcx-text-french.h"
+#include "pcx-text-english.h"
 
 static const char **
 languages[] = {
         [PCX_TEXT_LANGUAGE_ESPERANTO] = pcx_text_esperanto,
         [PCX_TEXT_LANGUAGE_FRENCH] = pcx_text_french,
+        [PCX_TEXT_LANGUAGE_ENGLISH] = pcx_text_english,
 };
 
 const char *

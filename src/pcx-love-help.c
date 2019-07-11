@@ -59,4 +59,22 @@ pcx_love_help[] = {
         "\n"
         "Quand quelqu’un gagne assez d’affection de la princesse, il remporte "
         "la partie.",
+        [PCX_TEXT_LANGUAGE_ENGLISH] =
+        "<b>SUMMARY OF THE RULES:</b>\n"
+        "\n"
+        "You are all suitors for the princess’ love and you want to send her a "
+        "love letter. In your hand you have a card which represents the person "
+        "who is currently holding your letter. The higher the number on the "
+        "card the closer that person is to the princess. At the end of the "
+        "round, the person who has the best card gets their letter to the "
+        "princess and wins one point of affection.\n"
+        "\n"
+        "On your turn you must take a card from the deck and choose between "
+        "the two cards in your hand to discard one of them. Each card has a "
+        "different effect when it is discarded:\n"
+        "\n"
+        "@CARDS@\n"
+        "\n"
+        "When someone wins enough affection from the princess they win the "
+        "game.",
 };

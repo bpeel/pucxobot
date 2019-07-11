@@ -29,6 +29,7 @@ src = [
         'src/pcx-config.c',
         'src/pcx-text-esperanto.c',
         'src/pcx-text-french.c',
+        'src/pcx-text-english.c',
         'src/pcx-text.c',
         'src/pcx-coup.c',
         'src/pcx-snitch.c',
