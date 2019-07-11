@@ -1034,6 +1034,50 @@ check_known_id(struct pcx_bot *bot,
 }
 
 static void
+send_game_question_reply(struct pcx_bot *bot,
+                         enum pcx_text_string question,
+                         const char *keyword,
+                         const struct message_info *info)
+{
+        int n_games;
+
+        for (n_games = 0; pcx_game_list[n_games]; n_games++);
+
+        struct pcx_game_button *buttons = pcx_alloc(n_games * sizeof *buttons);
+
+        int n_buttons = 0;
+
+        for (int i = 0; i < n_games; i++) {
+                if (!can_run_game(bot, pcx_game_list[i]))
+                    continue;
+
+                const struct pcx_game *game = pcx_game_list[i];
+
+                buttons[n_buttons].text = pcx_text_get(bot->config->language,
+                                                       game->name_string);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "%s:%s", keyword, game->name);
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
+        }
+
+        send_message_full(bot,
+                          info->chat_id,
+                          info->message_id,
+                          PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                          pcx_text_get(bot->config->language, question),
+                          n_buttons,
+                          buttons);
+
+        for (int i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+
+        pcx_free(buttons);
+}
+
+static void
 process_create_game(struct pcx_bot *bot,
                     const struct pcx_game *game_type,
                     const struct message_info *info)
@@ -1185,43 +1229,10 @@ process_help(struct pcx_bot *bot,
                 return;
         }
 
-        int n_games;
-
-        for (n_games = 0; pcx_game_list[n_games]; n_games++);
-
-        struct pcx_game_button *buttons = pcx_alloc(n_games * sizeof *buttons);
-
-        int n_buttons = 0;
-
-        for (int i = 0; i < n_games; i++) {
-                if (!can_run_game(bot, pcx_game_list[i]))
-                    continue;
-
-                const struct pcx_game *game = pcx_game_list[i];
-
-                buttons[n_buttons].text = pcx_text_get(bot->config->language,
-                                                       game->name_string);
-
-                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-                pcx_buffer_append_printf(&buf, "help:%s", game->name);
-                buttons[n_buttons].data = (char *) buf.data;
-
-                n_buttons++;
-        }
-
-        send_message_full(bot,
-                          info->chat_id,
-                          info->message_id,
-                          PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                          pcx_text_get(bot->config->language,
-                                       PCX_TEXT_STRING_WHICH_HELP),
-                          n_buttons,
-                          buttons);
-
-        for (int i = 0; i < n_buttons; i++)
-                pcx_free((char *) buttons[i].data);
-
-        pcx_free(buttons);
+        send_game_question_reply(bot,
+                                 PCX_TEXT_STRING_WHICH_HELP,
+                                 "help",
+                                 info);
 }
 
 static bool
