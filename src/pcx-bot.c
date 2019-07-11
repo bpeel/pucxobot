@@ -710,124 +710,6 @@ can_run_game(struct pcx_bot *bot,
                             game->start_command) != NULL;
 }
 
-static void
-process_help_callback_data(struct pcx_bot *bot,
-                           struct json_object *callback,
-                           const char *callback_data)
-{
-        const struct pcx_game *game;
-
-        for (unsigned i = 0; pcx_game_list[i]; i++) {
-                if (!strcmp(pcx_game_list[i]->name, callback_data)) {
-                        game = pcx_game_list[i];
-                        goto found_game;
-                }
-        }
-
-        return;
-
-found_game: (void) 0;
-
-        if (!can_run_game(bot, game))
-            return;
-
-        struct json_object *message;
-
-        bool ret = get_fields(callback,
-                              "message", json_type_object, &message,
-                              NULL);
-        if (!ret)
-                return;
-
-        int64_t message_id;
-        struct json_object *chat;
-
-        ret = get_fields(message,
-                         "message_id", json_type_int, &message_id,
-                         "chat", json_type_object, &chat,
-                         NULL);
-        if (!ret)
-                return;
-
-        int64_t chat_id;
-
-        ret = get_fields(chat,
-                         "id", json_type_int, &chat_id,
-                         NULL);
-        if (!ret)
-                return;
-
-        delete_message(bot, chat_id, message_id);
-
-        show_help(bot, game, chat_id, -1 /* message_id */);
-}
-
-static void
-answer_callback(struct pcx_bot *bot,
-                const char *id)
-{
-        struct json_object *args = json_object_new_object();
-
-        json_object_object_add(args,
-                               "callback_query_id",
-                               json_object_new_string(id));
-
-        send_request(bot, "answerCallbackQuery", args);
-
-        json_object_put(args);
-}
-
-static void
-process_callback(struct pcx_bot *bot,
-                 struct json_object *callback)
-{
-        const char *id;
-        const char *callback_data;
-        struct json_object *from;
-
-        bool ret = get_fields(callback,
-                              "id", json_type_string, &id,
-                              "data", json_type_string, &callback_data,
-                              "from", json_type_object, &from,
-                              NULL);
-
-        if (!ret)
-                return;
-
-        int64_t from_id;
-
-        ret = get_fields(from,
-                         "id", json_type_int, &from_id,
-                         NULL);
-
-        if (!ret)
-                return;
-
-        answer_callback(bot, id);
-
-        static const char help_prefix[] = "help:";
-
-        if (strlen(callback_data) >= sizeof help_prefix &&
-            !memcmp(callback_data, help_prefix, (sizeof help_prefix) - 1)) {
-                process_help_callback_data(bot,
-                                           callback,
-                                           callback_data +
-                                           (sizeof help_prefix) -
-                                           1);
-                return;
-        }
-
-        struct game *game;
-        int player_num;
-
-        if (find_player(bot, from_id, &game, &player_num) && game->game) {
-                set_game_timeout(game);
-                game->type->handle_callback_data_cb(game->game,
-                                                    player_num,
-                                                    callback_data);
-        }
-}
-
 struct message_info {
         const char *text;
         int64_t from_id;
@@ -1345,6 +1227,127 @@ process_message(struct pcx_bot *bot,
                         json_object_array_get_idx(entities, i);
 
                 process_entity(bot, entity, &info);
+        }
+}
+
+static bool
+get_game_callback_data(struct pcx_bot *bot,
+                       struct json_object *callback,
+                       const char *callback_data,
+                       const struct pcx_game **game,
+                       struct message_info *info)
+{
+        for (unsigned i = 0; pcx_game_list[i]; i++) {
+                if (!strcmp(pcx_game_list[i]->name, callback_data)) {
+                        *game = pcx_game_list[i];
+                        goto found_game;
+                }
+        }
+
+        return false;
+
+found_game: (void) 0;
+
+        if (!can_run_game(bot, *game))
+            return false;
+
+        struct json_object *message;
+
+        bool ret = get_fields(callback,
+                              "message", json_type_object, &message,
+                              NULL);
+        if (!ret)
+                return false;
+
+        if (!get_message_info(message, info))
+                return false;
+
+        return true;
+}
+
+static void
+process_help_callback_data(struct pcx_bot *bot,
+                           struct json_object *callback,
+                           const char *callback_data)
+{
+        const struct pcx_game *game;
+        struct message_info info;
+
+        if (!get_game_callback_data(bot,
+                                    callback,
+                                    callback_data,
+                                    &game,
+                                    &info))
+                return;
+
+        delete_message(bot, info.chat_id, info.message_id);
+
+        show_help(bot, game, info.chat_id, -1 /* message_id */);
+}
+
+static void
+answer_callback(struct pcx_bot *bot,
+                const char *id)
+{
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args,
+                               "callback_query_id",
+                               json_object_new_string(id));
+
+        send_request(bot, "answerCallbackQuery", args);
+
+        json_object_put(args);
+}
+
+static void
+process_callback(struct pcx_bot *bot,
+                 struct json_object *callback)
+{
+        const char *id;
+        const char *callback_data;
+        struct json_object *from;
+
+        bool ret = get_fields(callback,
+                              "id", json_type_string, &id,
+                              "data", json_type_string, &callback_data,
+                              "from", json_type_object, &from,
+                              NULL);
+
+        if (!ret)
+                return;
+
+        int64_t from_id;
+
+        ret = get_fields(from,
+                         "id", json_type_int, &from_id,
+                         NULL);
+
+        if (!ret)
+                return;
+
+        answer_callback(bot, id);
+
+        static const char help_prefix[] = "help:";
+
+        if (strlen(callback_data) >= sizeof help_prefix &&
+            !memcmp(callback_data, help_prefix, (sizeof help_prefix) - 1)) {
+                process_help_callback_data(bot,
+                                           callback,
+                                           callback_data +
+                                           (sizeof help_prefix) -
+                                           1);
+                return;
+        }
+
+        struct game *game;
+        int player_num;
+
+        if (find_player(bot, from_id, &game, &player_num) && game->game) {
+                set_game_timeout(game);
+                game->type->handle_callback_data_cb(game->game,
+                                                    player_num,
+                                                    callback_data);
         }
 }
 
