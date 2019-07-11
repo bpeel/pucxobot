@@ -69,7 +69,7 @@ pcx_coup_help[] = {
         "\n"
         "Complot est un jeu de cartes au tour du bluff.\n"
         "\n"
-        "Tout le monde commence avec 2 cartes (face visible) et 2 or. "
+        "Tout le monde commence avec 2 cartes (face cachée) et 2 or. "
         "Si quelqu’un perd une vie, il doit dévoiler une carte et il ne peut "
         "plus l’utiliser.\n"
         "\n"
