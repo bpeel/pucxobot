@@ -52,8 +52,8 @@ pcx_text_french[] = {
         "Vous êtes déjà dans une partie",
         [PCX_TEXT_STRING_ALREADY_GAME] =
         "Il y a déjà une partie dans ce groupe",
-        [PCX_TEXT_STRING_CREATE_BEFORE_JOIN] =
-        "Veuillez créer une partie avant d’essayer de le rejoindre.",
+        [PCX_TEXT_STRING_WHICH_GAME] =
+        "À quel jeu voulez-vous jouer ?",
         [PCX_TEXT_STRING_GAME_FULL] =
         "La partie est pleine",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =

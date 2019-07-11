@@ -53,8 +53,8 @@ pcx_text_esperanto[] = {
         "Vi jam estas en ludo",
         [PCX_TEXT_STRING_ALREADY_GAME] =
         "Jam estas ludo en ĉi tiu grupo",
-        [PCX_TEXT_STRING_CREATE_BEFORE_JOIN] =
-        "Bonvolu krei ludon antaŭ ol provi aliĝi al ĝi.",
+        [PCX_TEXT_STRING_WHICH_GAME] =
+        "Kiun ludon vi volas ludi?",
         [PCX_TEXT_STRING_GAME_FULL] =
         "La ludo jam estas plena",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =

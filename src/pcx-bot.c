@@ -721,6 +721,25 @@ struct message_info {
 };
 
 static bool
+get_message_from_info(struct json_object *from,
+                      struct message_info *info)
+{
+        bool ret = get_fields(from,
+                              "id", json_type_int, &info->from_id,
+                              NULL);
+        if (!ret)
+                return false;
+
+        ret = get_fields(from,
+                         "first_name", json_type_string, &info->first_name,
+                         NULL);
+        if (!ret)
+                info->first_name = NULL;
+
+        return true;
+}
+
+static bool
 get_message_info(struct json_object *message,
                  struct message_info *info)
 {
@@ -735,17 +754,8 @@ get_message_info(struct json_object *message,
         if (!ret)
                 return false;
 
-        ret = get_fields(from,
-                         "id", json_type_int, &info->from_id,
-                         NULL);
-        if (!ret)
+        if (!get_message_from_info(from, info))
                 return false;
-
-        ret = get_fields(from,
-                         "first_name", json_type_string, &info->first_name,
-                         NULL);
-        if (!ret)
-                info->first_name = NULL;
 
         ret = get_fields(chat,
                          "id", json_type_int, &info->chat_id,
@@ -960,6 +970,16 @@ send_game_question_reply(struct pcx_bot *bot,
 }
 
 static void
+send_create_game_question(struct pcx_bot *bot,
+                          const struct message_info *info)
+{
+        send_game_question_reply(bot,
+                                 PCX_TEXT_STRING_WHICH_GAME,
+                                 "creategame",
+                                 info);
+}
+
+static void
 process_create_game(struct pcx_bot *bot,
                     const struct pcx_game *game_type,
                     const struct message_info *info)
@@ -1016,10 +1036,7 @@ process_join(struct pcx_bot *bot,
         game = find_game(bot, info->chat_id);
 
         if (game == NULL) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_CREATE_BEFORE_JOIN);
+                send_create_game_question(bot, info);
                 return;
         }
 
@@ -1066,14 +1083,15 @@ static void
 process_start(struct pcx_bot *bot,
               const struct message_info *info)
 {
-        int player_num;
         struct game *game;
 
-        if (!find_player(bot, info->from_id, &game, &player_num)) {
-                send_message_printf(bot,
-                                    info->chat_id,
-                                    info->message_id,
-                                    PCX_TEXT_STRING_JOIN_BEFORE_START);
+        game = find_game(bot, info->chat_id);
+
+        if (game == NULL) {
+                if (!check_known_id(bot, info))
+                        return;
+
+                send_create_game_question(bot, info);
                 return;
         }
 
@@ -1082,6 +1100,16 @@ process_start(struct pcx_bot *bot,
                                     info->chat_id,
                                     info->message_id,
                                     PCX_TEXT_STRING_GAME_ALREADY_STARTED);
+                return;
+        }
+
+        int player_num = find_player_in_game(game, info->from_id);
+
+        if (player_num == -1) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_JOIN_BEFORE_START);
                 return;
         }
 
@@ -1286,6 +1314,36 @@ process_help_callback_data(struct pcx_bot *bot,
 }
 
 static void
+process_create_game_callback_data(struct pcx_bot *bot,
+                                  struct json_object *callback,
+                                  const char *callback_data)
+{
+        const struct pcx_game *game;
+        struct message_info info;
+
+        if (!get_game_callback_data(bot,
+                                    callback,
+                                    callback_data,
+                                    &game,
+                                    &info))
+                return;
+
+        struct json_object *from;
+
+        bool ret = get_fields(callback,
+                              "from", json_type_object, &from,
+                              NULL);
+
+        if (!ret)
+                return;
+
+        if (!get_message_from_info(from, &info))
+                return;
+
+        process_create_game(bot, game, &info);
+}
+
+static void
 answer_callback(struct pcx_bot *bot,
                 const char *id)
 {
@@ -1298,6 +1356,23 @@ answer_callback(struct pcx_bot *bot,
         send_request(bot, "answerCallbackQuery", args);
 
         json_object_put(args);
+}
+
+static bool
+has_callback_prefix(const char *callback_data,
+                    const char *prefix,
+                    const char **extra_data)
+{
+        int prefix_len = strlen(prefix);
+
+        if (strlen(callback_data) > prefix_len &&
+            !memcmp(callback_data, prefix, prefix_len) &&
+            callback_data[prefix_len] == ':') {
+                *extra_data = callback_data + prefix_len + 1;
+                return true;
+        } else {
+                return false;
+        }
 }
 
 static void
@@ -1328,15 +1403,15 @@ process_callback(struct pcx_bot *bot,
 
         answer_callback(bot, id);
 
-        static const char help_prefix[] = "help:";
+        const char *extra_data;
 
-        if (strlen(callback_data) >= sizeof help_prefix &&
-            !memcmp(callback_data, help_prefix, (sizeof help_prefix) - 1)) {
-                process_help_callback_data(bot,
-                                           callback,
-                                           callback_data +
-                                           (sizeof help_prefix) -
-                                           1);
+        if (has_callback_prefix(callback_data, "help", &extra_data)) {
+                process_help_callback_data(bot, callback, extra_data);
+                return;
+        }
+
+        if (has_callback_prefix(callback_data, "creategame", &extra_data)) {
+                process_create_game_callback_data(bot, callback, extra_data);
                 return;
         }
 
