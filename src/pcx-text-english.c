@@ -112,7 +112,9 @@ pcx_text_english[] = {
         "Your cards are:",
         [PCX_TEXT_STRING_NOONE] =
         "Nobody",
-        [PCX_TEXT_STRING_WON] =
+        [PCX_TEXT_STRING_WON_1] =
+        "%s won!",
+        [PCX_TEXT_STRING_WON_PLURAL] =
         "%s won!",
         [PCX_TEXT_STRING_YOUR_GO] =
         "%s, it’s your turn. What do you want to do?",

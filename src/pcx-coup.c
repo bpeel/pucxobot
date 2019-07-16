@@ -580,7 +580,7 @@ show_stats(struct pcx_coup *coup)
                 }
                 append_buffer_printf(coup,
                                      &coup->buffer,
-                                     PCX_TEXT_STRING_WON,
+                                     PCX_TEXT_STRING_WON_1,
                                      winner_name);
         } else {
                 const struct pcx_coup_player *current =

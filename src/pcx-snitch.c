@@ -643,16 +643,53 @@ static void
 end_game(struct pcx_snitch *snitch)
 {
         const struct pcx_snitch_player *best_player = snitch->players + 0;
+        int n_winners = 1;
 
         for (unsigned i = 1; i < snitch->n_players; i++) {
                 struct pcx_snitch_player *player = snitch->players + i;
 
-                if ((player->coins > best_player->coins) ||
-                    (player->coins == best_player->coins &&
-                     player->cards[PCX_SNITCH_ROLE_SNITCH] >
-                     best_player->cards[PCX_SNITCH_ROLE_SNITCH]))
+                if (player->coins > best_player->coins) {
+                        n_winners = 1;
                         best_player = player;
+                } else if (player->coins == best_player->coins) {
+                        int diff = (player->cards[PCX_SNITCH_ROLE_SNITCH] -
+                                    best_player->cards[PCX_SNITCH_ROLE_SNITCH]);
+                        if (diff > 0) {
+                                n_winners = 1;
+                                best_player = player;
+                        } else if (diff == 0) {
+                                n_winners++;
+                        }
+                }
         }
+
+        struct pcx_buffer winners = PCX_BUFFER_STATIC_INIT;
+        int winner_num = 0;
+
+        for (unsigned i = 0; i < snitch->n_players; i++) {
+                struct pcx_snitch_player *player = snitch->players + i;
+
+                if (player->coins != best_player->coins ||
+                    player->cards[PCX_SNITCH_ROLE_SNITCH] !=
+                    best_player->cards[PCX_SNITCH_ROLE_SNITCH])
+                        continue;
+
+                if (n_winners > 1) {
+                        if (winner_num >= n_winners - 1) {
+                                enum pcx_text_string sep =
+                                        PCX_TEXT_STRING_FINAL_CONJUNCTION;
+                                append_buffer_string(snitch, &winners, sep);
+                        } else if (winner_num > 0) {
+                                pcx_buffer_append_string(&winners, ", ");
+                        }
+                }
+
+                pcx_buffer_append_string(&winners, player->name);
+
+                winner_num++;
+        }
+
+        assert(winner_num == n_winners);
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
@@ -660,10 +697,17 @@ end_game(struct pcx_snitch *snitch)
 
         pcx_buffer_append_string(&buf, "🏆 ");
 
-        append_buffer_printf(snitch,
-                             &buf,
-                             PCX_TEXT_STRING_WON,
-                             best_player->name);
+        if (n_winners == 1) {
+                append_buffer_printf(snitch,
+                                     &buf,
+                                     PCX_TEXT_STRING_WON_1,
+                                     winners.data);
+        } else {
+                append_buffer_printf(snitch,
+                                     &buf,
+                                     PCX_TEXT_STRING_WON_PLURAL,
+                                     winners.data);
+        }
 
         snitch->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
                                        (const char *) buf.data,
@@ -672,6 +716,7 @@ end_game(struct pcx_snitch *snitch)
                                        snitch->user_data);
 
         pcx_buffer_destroy(&buf);
+        pcx_buffer_destroy(&winners);
 
         if (snitch->game_over_source == NULL) {
                 snitch->game_over_source =

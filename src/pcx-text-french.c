@@ -113,8 +113,10 @@ pcx_text_french[] = {
         "Vos cartes sont :",
         [PCX_TEXT_STRING_NOONE] =
         "Personne",
-        [PCX_TEXT_STRING_WON] =
+        [PCX_TEXT_STRING_WON_1] =
         "%s a gagné!",
+        [PCX_TEXT_STRING_WON_PLURAL] =
+        "%s ont gagné!",
         [PCX_TEXT_STRING_YOUR_GO] =
         "%s, c’est à vous, que voulez-vous faire ?",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =

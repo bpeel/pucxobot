@@ -115,7 +115,9 @@ pcx_text_esperanto[] = {
         "Viaj kartoj estas:",
         [PCX_TEXT_STRING_NOONE] =
         "Neniu",
-        [PCX_TEXT_STRING_WON] =
+        [PCX_TEXT_STRING_WON_1] =
+        "%s venkis!",
+        [PCX_TEXT_STRING_WON_PLURAL] =
         "%s venkis!",
         [PCX_TEXT_STRING_YOUR_GO] =
         "%s, estas via vico, "
