@@ -37,6 +37,7 @@
 #include "pcx-curl-multi.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
+#define IN_GAME_TIMEOUT (GAME_TIMEOUT * 2)
 
 struct player {
         int64_t id;
@@ -542,6 +543,10 @@ game_timeout_cb(struct pcx_main_context_source *source,
         struct game *game = user_data;
         struct pcx_bot *bot = game->bot;
 
+        int timeout = (game->game ?
+                       IN_GAME_TIMEOUT :
+                       GAME_TIMEOUT) / (60 * 1000);
+
         game->game_timeout_source = NULL;
 
         if (game->game == NULL &&
@@ -550,7 +555,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                                     game->chat,
                                     -1, /* in_reply_to */
                                     PCX_TEXT_STRING_TIMEOUT_START,
-                                    GAME_TIMEOUT / (60 * 1000));
+                                    timeout);
 
                 start_game(bot, game);
         } else {
@@ -558,7 +563,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
                                     game->chat,
                                     -1, /* in_reply_to */
                                     PCX_TEXT_STRING_TIMEOUT_ABANDON,
-                                    GAME_TIMEOUT / (60 * 1000));
+                                    timeout);
 
                 remove_game(bot, game);
         }
@@ -569,9 +574,11 @@ set_game_timeout(struct game *game)
 {
         remove_game_timeout_source(game);
 
+        int timeout = game->game ? IN_GAME_TIMEOUT : GAME_TIMEOUT;
+
         game->game_timeout_source =
                 pcx_main_context_add_timeout(NULL,
-                                             GAME_TIMEOUT,
+                                             timeout,
                                              game_timeout_cb,
                                              game);
 }
@@ -1082,8 +1089,6 @@ start_game(struct pcx_bot *bot,
 {
         assert(game->game == NULL);
 
-        set_game_timeout(game);
-
         const char *names[PCX_GAME_MAX_PLAYERS];
 
         for (unsigned i = 0; i < game->n_players; i++)
@@ -1094,6 +1099,8 @@ start_game(struct pcx_bot *bot,
                                                 bot->config->language,
                                                 game->n_players,
                                                 names);
+
+        set_game_timeout(game);
 }
 
 static void
