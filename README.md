@@ -1,45 +1,43 @@
-Ĉi tiu roboto estas por ludi kelkajn kartludojn ĉe Telegram.
+Pucxobot is a Telegram robot to play the card games Coup, Snitch and
+Love Letter.
 
-Por kompili la programon, tajpu la jenon:
+To build the bot, type the following:
 
     mkdir build && cd build
     meson ..
     ninja
 
-Nun vi devas krei agordodosieron por informi la roboton de ĝia ŝlosilo
-de la API. Vi povas krei tian ŝlosilon per la roboto
-[@BotFather](https://t.me/BotFather) ĉe telegram. Kreu dosieron ĉe
-`~/.pucxobot/config.txt` kaj enmetu ion kiel la jenon:
+Before running it, you need to create a configuration file in
+`~/.pucxobot/config.txt`. This will contain the API key for the bot
+which you can create by talking to
+[@BotFather](https://t.me/BotFather) on Telegram. It should look
+something like this:
 
     [bot]
     apikey = 123456789:AAABBEUAEUIEAIUE_auieauieauie
-    botname = mojosabot
-    language = eo
+    botname = cardgamebot
+    language = en
 
-La lingvo povas esti `fr` aŭ `eo`. Vi povas krei plurajn robotojn per
-nur unu agordodosiero se vi ripetas la sekcion `[bot]`. Tio estas
-utila se vi volas robotojn en malsamaj lingvoj.
+The language can be `en`, `fr` or `eo`. You can create several bots
+with one configuration file by repeating the `[bot]` section. That is
+useful if you want to have bots in different languages.
 
-Sekve vi povas aldoni la roboton al iu ajn grupo (aŭ al pluraj grupoj
-samtempe). Por krei partion de ludo, tajpu unu el la jenaj komandoj en
-la grupo:
+To play a game, you can add the bot to a group and type `/join`. It
+will present you with a choice of the available games to play.
 
-    /pucxo
-    /amletero
-    /perfidulo
+You can also type `/help` to get a summary of the rules of the game.
 
-Aŭ vi povas tajpi `/helpo` por vidi resumon de la reguloj.
+When you configure the bot with [@BotFather](https://t.me/BotFather),
+you can tell it what commands the bot can handle. Here is a suggestion
+of what to type there:
 
-Por agordi la roboton ĉe [@BotFather](https://t.me/BotFather), vi
-povas uzi la jenajn priskribojn de komandoj:
+    coup - Create a game of Coup
+    snitch - Create a game of Snitch Perfidulo
+    letter - Create a game of Love Letter
+    join - Join an existing game or create a new one
+    start - Start an existing game
+    help - Show a summary of the rules
 
-    pucxo - Krei ludon de Puĉo
-    perfidulo - Krei ludon de Perfidulo
-    amletero - Krei ludon de Amletero
-    aligxi - Aliĝi al jam kreita ludo
-    komenci - Komenci jam kreitan ludon
-    helpo - Montri resumon de la reguloj
-
-Alikaze, se vi simple volas ludi kun jam ekzistanta roboto, vizitu
-[ludoj.telegramo.org](https://ludoj.telegramo.org) aŭ invitu la
-roboton [@pucxobot](https://t.me/pucxobot) al via propra grupo.
+If you just want to try the bot, you can join
+[this channel](https://t.me/bluffing). Otherwise you can add
+[@bluffingbot](https://t.me/bluffingbot) to your own group and play.
