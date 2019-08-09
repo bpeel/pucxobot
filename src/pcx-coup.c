@@ -1851,7 +1851,7 @@ handle_callback_data_cb(void *user_data,
 
         assert(player_num >= 0 && player_num < coup->n_players);
 
-        if (coup->stack_pos <= 0 || is_finished(coup))
+        if (coup->stack_pos <= 0)
                 return;
 
         int extra_data;
