@@ -41,7 +41,7 @@
 /* Time before showing subsequent vote messages */
 #define LONG_VOTE_TIMEOUT (60 * 1000)
 
-#define POINTS_TO_WIN 5
+#define POINTS_TO_WIN 3
 
 struct pcx_superfight;
 
