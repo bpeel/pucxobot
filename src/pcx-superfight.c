@@ -686,6 +686,7 @@ set_fight_winner(struct pcx_superfight *superfight,
         pcx_buffer_append_c(&buf, '\n');
 
         if (player->score >= POINTS_TO_WIN) {
+                pcx_buffer_append_string(&buf, "🏆 ");
                 append_buffer_printf(superfight,
                                      &buf,
                                      PCX_TEXT_STRING_WON_1,
