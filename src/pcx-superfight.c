@@ -176,6 +176,34 @@ count_votes(struct pcx_superfight *superfight,
 }
 
 static void
+append_votes_for_fighter(struct pcx_superfight *superfight,
+                         struct pcx_buffer *buf,
+                         int fighter,
+                         int n_votes)
+{
+        int vote_num = 0;
+
+        for (unsigned i = 0; i < superfight->n_players; i++) {
+                if (superfight->players[i].vote != fighter)
+                        continue;
+
+                if (vote_num > 0) {
+                        if (vote_num == n_votes - 1) {
+                                enum pcx_text_string s =
+                                        PCX_TEXT_STRING_FINAL_CONJUNCTION;
+                                append_buffer_string(superfight, buf, s);
+                        } else {
+                                pcx_buffer_append_string(buf, ",");
+                        }
+                }
+
+                pcx_buffer_append_string(buf, superfight->players[i].name);
+
+                vote_num++;
+        }
+}
+
+static void
 append_current_votes(struct pcx_superfight *superfight,
                      struct pcx_buffer *buf)
 {
@@ -187,10 +215,17 @@ append_current_votes(struct pcx_superfight *superfight,
                 struct pcx_superfight_player *player =
                         superfight->players +
                         superfight->fighters[i].player_num;
-                pcx_buffer_append_printf(buf,
-                                         "%s: %i\n",
-                                         player->name,
-                                         votes[i]);
+                pcx_buffer_append_printf(buf, "%s: ", player->name);
+
+                if (votes[i] == 0) {
+                        append_buffer_string(superfight,
+                                             buf,
+                                             PCX_TEXT_STRING_NOONE);
+                } else {
+                        append_votes_for_fighter(superfight, buf, i, votes[i]);
+                }
+
+                pcx_buffer_append_string(buf, "\n");
         }
 }
 
