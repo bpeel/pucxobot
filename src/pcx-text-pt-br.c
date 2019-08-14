@@ -30,11 +30,11 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Carta de amor",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
-        "/coup",
+        "/golpe",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
-        "/snitch",
+        "/dedoduro",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
-        "/letter",
+        "/carta",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Para qual jogo você quer ajuda?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -65,23 +65,23 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_FINAL_DISJUNCTION] =
         " ou ",
         [PCX_TEXT_STRING_WELCOME] =
-        "Bem-vindo. Outros jogadores podem enviar /join para entrar no jogo ou você pode "
-        "enviar /start para iniciá-lo.\n"
+        "Bem-vindo. Outros jogadores podem enviar /entrar para entrar no jogo ou você pode "
+        "enviar /iniciar para iniciá-lo.\n"
         "\n"
         "Jogo: %s\n"
         "\n"
         "Os jogadores atuais são: \n"
         "%s",
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
-        "Por favor, junte-se ao jogo com /join antes de tentar iniciá-lo.",
+        "Por favor, junte-se ao jogo com /entrar antes de tentar iniciá-lo.",
         [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =
         "Pelo menos %i jogadores são necessários para jogar.",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
-        "/join",
+        "/entrar",
         [PCX_TEXT_STRING_START_COMMAND] =
-        "/start",
+        "/iniciar",
         [PCX_TEXT_STRING_HELP_COMMAND] =
-        "/help",
+        "/ajuda",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Obrigado pela mensagem. Agora você pode participar de um jogo em um grupo público.",
         [PCX_TEXT_STRING_COUP] =
@@ -95,7 +95,7 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Assassinar (Assassino)",
         [PCX_TEXT_STRING_EXCHANGE] =
-        "Câmbio (Embaixador)",
+        "Trocar (Embaixador)",
         [PCX_TEXT_STRING_STEAL] =
         "Roubar (Capitão)",
         [PCX_TEXT_STRING_ACCEPT] =
@@ -119,7 +119,7 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_YOUR_GO] =
         "%s, é sua vez. “O que você deseja fazer?”",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
-        "Qual catta você quer perder?",
+        "Qual carta você quer perder?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s desafiou e %s não tinha %s. Então %s perde uma carta.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
@@ -132,15 +132,15 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
         "%s afirma ter %s e bloqueia a ação.",
         [PCX_TEXT_STRING_DOES_SOMEBODY_CHALLENGE] =
-        "Alguém quer desafiá-los?",
+        "Alguém quer desafiar?",
         [PCX_TEXT_STRING_OR_BLOCK_NO_TARGET] =
-        "Ou alguém quer reivindicar ter %s e quer bloqueá-los?",
+        "Ou alguém quer reivindicar ter %s e bloquear?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
-        "Alguém alega ter %s e quer bloqueá-los?",
+        "Alguém alega ter %s e quer bloquear?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
-        "Ou %s, você quer reivindicar ter %s e bloqueá-los?",
+        "Ou %s, você quer reivindicar ter %s e bloquear?",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
-        "%s, você quer reivindicar ter %s e bloqueá-los?",
+        "%s, você quer reivindicar ter %s e bloquear?",
         [PCX_TEXT_STRING_WHO_TO_COUP] =
         "%s, quem você quer matar durante o golpe?",
         [PCX_TEXT_STRING_DOING_COUP] =
