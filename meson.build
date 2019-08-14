@@ -38,6 +38,9 @@ src = [
         'src/pcx-html.c',
         'src/pcx-love.c',
         'src/pcx-love-help.c',
+        'src/pcx-superfight.c',
+        'src/pcx-superfight-deck.c',
+        'src/pcx-superfight-help.c',
 ]
 
 curl = dependency('libcurl', version: '>=7.16')

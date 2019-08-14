@@ -16,18 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-game.h"
+#include "pcx-superfight-help.h"
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-superfight.h"
+#include "pcx-text.h"
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_snitch_game,
-        &pcx_love_game,
-        &pcx_superfight_game,
-        NULL
+const char *
+pcx_superfight_help[] = {
+        [PCX_TEXT_LANGUAGE_ESPERANTO] =
+        "TODO",
 };

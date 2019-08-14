@@ -16,18 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-game.h"
+#ifndef PCX_SUPERFIGHT_HELP_H
+#define PCX_SUPERFIGHT_HELP_H
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-superfight.h"
+extern const char *
+pcx_superfight_help[];
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_snitch_game,
-        &pcx_love_game,
-        &pcx_superfight_game,
-        NULL
-};
+#endif /* PCX_SUPERFIGHT_HELP_H */

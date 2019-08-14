@@ -16,18 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-game.h"
+#ifndef PCX_SUPERFIGHT_DECK_H
+#define PCX_SUPERFIGHT_DECK_H
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-superfight.h"
+#include "pcx-text.h"
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_snitch_game,
-        &pcx_love_game,
-        &pcx_superfight_game,
-        NULL
-};
+struct pcx_superfight_deck;
+
+struct pcx_superfight_deck *
+pcx_superfight_deck_load(enum pcx_text_language language,
+                         const char *filename);
+
+const char *
+pcx_superfight_deck_draw_card(struct pcx_superfight_deck *deck);
+
+void
+pcx_superfight_deck_free(struct pcx_superfight_deck *deck);
+
+#endif /* PCX_SUPERFIGHT_DECK_H */

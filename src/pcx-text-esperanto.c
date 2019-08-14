@@ -29,12 +29,16 @@ pcx_text_esperanto[] = {
         "Perfidulo",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Amletero",
+        [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
+        "Superbatalo",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/pucxo",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/perfidulo",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/amletero",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
+        "/superbatalo",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -386,4 +390,18 @@ pcx_text_esperanto[] = {
         "de la princino",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
         "🏆 %p havas %i korinklinojn kaj gajnas la partion!",
+        [PCX_TEXT_STRING_FIGHTERS_ARE] =
+        "La batalantoj en la sekva rondo estas:\n\n"
+        "%s\n"
+        "%s\n"
+        "\n"
+        "Ili nun elektas siajn batalantojn.",
+        [PCX_TEXT_STRING_POSSIBLE_ROLES] =
+        "Vi rolkartoj estas:",
+        [PCX_TEXT_STRING_POSSIBLE_ATTRIBUTES] =
+        "Vi trajtkartoj estas:",
+        [PCX_TEXT_STRING_CHOOSE_ROLE] =
+        "Bonvolu elekti rolon.",
+        [PCX_TEXT_STRING_CHOOSE_ATTRIBUTE] =
+        "Bonvolu elekti trajton.",
 };
