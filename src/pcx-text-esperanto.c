@@ -404,4 +404,6 @@ pcx_text_esperanto[] = {
         "Bonvolu elekti rolon.",
         [PCX_TEXT_STRING_CHOOSE_ATTRIBUTE] =
         "Bonvolu elekti trajton.",
+        [PCX_TEXT_STRING_YOUR_FIGHTER_IS] =
+        "Dankon. Via batalanto estas:",
 };

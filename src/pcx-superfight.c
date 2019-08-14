@@ -168,6 +168,36 @@ get_card_buttons(struct pcx_superfight *superfight,
 }
 
 static void
+send_chosen_fighter(struct pcx_superfight *superfight,
+                    struct pcx_superfight_fighter *fighter)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        append_buffer_string(superfight, &buf, PCX_TEXT_STRING_YOUR_FIGHTER_IS);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        pcx_buffer_append_string(&buf, fighter->chosen_role);
+        pcx_buffer_append_c(&buf, '\n');
+
+        pcx_buffer_append_string(&buf, fighter->chosen_attribute);
+        pcx_buffer_append_c(&buf, '\n');
+
+        pcx_buffer_append_string(&buf, fighter->forced_attribute);
+
+        enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+
+        superfight->callbacks.send_private_message(fighter->player_num,
+                                                   format,
+                                                   (const char *) buf.data,
+                                                   0, /* n_buttons */
+                                                   NULL, /* buttons */
+                                                   superfight->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
 send_card_choice(struct pcx_superfight *superfight,
                  struct pcx_superfight_fighter *fighter)
 {
@@ -296,6 +326,66 @@ get_help_cb(enum pcx_text_language language)
         return pcx_strdup(pcx_superfight_help[language]);
 }
 
+static struct pcx_superfight_fighter *
+find_fighter(struct pcx_superfight *superfight,
+             int player_num)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                if (superfight->fighters[i].player_num == player_num)
+                        return superfight->fighters + i;
+        }
+
+        return NULL;
+}
+
+static void
+choose_role(struct pcx_superfight *superfight,
+            int player_num,
+            int extra_data)
+{
+        struct pcx_superfight_fighter *fighter =
+                find_fighter(superfight, player_num);
+
+        if (fighter == NULL)
+                return;
+
+        if (fighter->chosen_role)
+                return;
+
+        if (extra_data < 0 || extra_data >= N_CARD_CHOICE)
+                return;
+
+        fighter->chosen_role = fighter->roles[extra_data];
+
+        send_card_choice(superfight, fighter);
+}
+
+static void
+choose_attribute(struct pcx_superfight *superfight,
+                 int player_num,
+                 int extra_data)
+{
+        struct pcx_superfight_fighter *fighter =
+                find_fighter(superfight, player_num);
+
+        if (fighter == NULL)
+                return;
+
+        if (fighter->chosen_role == NULL ||
+            fighter->chosen_attribute != NULL)
+                return;
+
+        if (extra_data < 0 || extra_data >= N_CARD_CHOICE)
+                return;
+
+        fighter->chosen_attribute = fighter->attributes[extra_data];
+
+        fighter->forced_attribute =
+                pcx_superfight_deck_draw_card(superfight->attributes);
+
+        send_chosen_fighter(superfight, fighter);
+}
+
 static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
@@ -304,6 +394,44 @@ handle_callback_data_cb(void *user_data,
         struct pcx_superfight *superfight = user_data;
 
         assert(player_num >= 0 && player_num < superfight->n_players);
+
+        int extra_data;
+        const char *colon = strchr(callback_data, ':');
+
+        if (colon == NULL)
+                return;
+
+        char *tail;
+
+        errno = 0;
+        extra_data = strtol(colon + 1, &tail, 10);
+
+        if (*tail || errno || extra_data < 0)
+                return;
+
+        if (colon <= callback_data)
+                return;
+
+        static const struct {
+                const char *keyword;
+                void (* func)(struct pcx_superfight *superfight,
+                              int player_num,
+                              int extra_data);
+        } action_cbs[] = {
+                { "role", choose_role },
+                { "attribute", choose_attribute },
+        };
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(action_cbs); i++) {
+                const char *keyword = action_cbs[i].keyword;
+                size_t len = strlen(keyword);
+
+                if (colon - callback_data == len &&
+                    !memcmp(keyword, callback_data, len)) {
+                        action_cbs[i].func(superfight, player_num, extra_data);
+                        break;
+                }
+        }
 }
 
 static void

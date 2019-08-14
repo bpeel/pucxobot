@@ -200,6 +200,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_POSSIBLE_ATTRIBUTES,
         PCX_TEXT_STRING_CHOOSE_ROLE,
         PCX_TEXT_STRING_CHOOSE_ATTRIBUTE,
+        PCX_TEXT_STRING_YOUR_FIGHTER_IS,
 };
 
 const char *
