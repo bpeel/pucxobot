@@ -730,6 +730,7 @@ set_fight_winner(struct pcx_superfight *superfight,
                 append_buffer_printf(superfight,
                                      &buf,
                                      PCX_TEXT_STRING_STAYS_ON,
+                                     POINTS_TO_WIN,
                                      player->name);
         }
 

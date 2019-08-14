@@ -425,5 +425,6 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_FIGHT_WINNER_IS] =
         "%s venkis la batalon! La aktualaj poentoj estas:",
         [PCX_TEXT_STRING_STAYS_ON] =
+        "La unua homo kiu gajnos %i poentojn gajnas la partion. "
         "%s restos por la sekva batalo sen ŝanĝi sian batalanton.",
 };
