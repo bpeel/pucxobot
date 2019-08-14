@@ -75,6 +75,7 @@ struct pcx_bot {
 
         CURL *request_handle;
         bool request_handle_busy;
+        struct pcx_main_context_source *start_request_source;
         struct pcx_list queued_requests;
         struct json_tokener *request_tokener;
 
@@ -277,8 +278,13 @@ request_finished_cb(CURLcode code,
 }
 
 static void
-maybe_start_request(struct pcx_bot *bot)
+start_request_cb(struct pcx_main_context_source *source,
+                 void *user_data)
 {
+        struct pcx_bot *bot = user_data;
+
+        bot->start_request_source = NULL;
+
         if (bot->request_handle_busy ||
             pcx_list_empty(&bot->queued_requests))
                 return;
@@ -305,6 +311,21 @@ maybe_start_request(struct pcx_bot *bot)
                                   bot);
 
         free_request(request);
+}
+
+static void
+maybe_start_request(struct pcx_bot *bot)
+{
+        if (bot->request_handle_busy ||
+            bot->start_request_source ||
+            pcx_list_empty(&bot->queued_requests))
+                return;
+
+        bot->start_request_source =
+                pcx_main_context_add_timeout(NULL,
+                                             0, /* ms */
+                                             start_request_cb,
+                                             bot);
 }
 
 static void
@@ -1647,6 +1668,9 @@ pcx_bot_free(struct pcx_bot *bot)
         free_games(bot);
 
         remove_restart_updates_source(bot);
+
+        if (bot->start_request_source)
+                pcx_main_context_remove_source(bot->start_request_source);
 
         pcx_buffer_destroy(&bot->known_ids);
 
