@@ -23,5 +23,28 @@
 const char *
 pcx_superfight_help[] = {
         [PCX_TEXT_LANGUAGE_ESPERANTO] =
-        "TODO",
+        "<b>SUPERBATALO</b>\n"
+        "\n"
+        "Superbatalo estas simpla ludo de ridindaj debatoj.\n"
+        "\n"
+        "La partio okazos per serio de bataloj. Por la unua batalo, la "
+        "roboto elektos du hazardajn homojn. Ĉiu el la du batalantoj "
+        "ricevos po 6 kartoj. 3 el ili surhavas rolulon kaj la aliaj 3 "
+        "surhavas trajton por la rolulo. La du batalantoj devas elektu po "
+        "unu el la du tipoj. La roboto aldonos al tiuj kartoj unu plian "
+        "trajton kiu povas aŭ helpi aŭ malhelpi. La elektitaj rolulo kaj "
+        "trajtoj iĝas via batalanto.\n"
+        "\n"
+        "Kiam ambaŭ batalantoj estas pretaj vi du devas disputi en la "
+        "grupo por konvinki la aliajn ludantojn kial via ludanto venkus en "
+        "ĝismorta batalo. Kiam ĉiu estas sufiĉe konvinkitaj ili povas "
+        "voĉdoni. La venkinto gajnas unu poenton kaj restas por la sekva "
+        "batalo sen ŝanĝi siajn kartojn. La malvenkinton anstataŭas la "
+        "sekva ludanto kiu prenas pliajn kartojn kiel supre.\n"
+        "\n"
+        "En okazo de egaleco, la du batalantoj prenas po unu hazarda "
+        "rolulo sen aldonaj trajtoj kaj devas denove batali kun tiuj ĝis "
+        "iu venkos.\n"
+        "\n"
+        "La unua homo kiu atingas 3 poentojn gajnas la partion.",
 };
