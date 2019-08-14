@@ -41,11 +41,14 @@
 /* Time before showing subsequent vote messages */
 #define LONG_VOTE_TIMEOUT (60 * 1000)
 
+#define POINTS_TO_WIN 5
+
 struct pcx_superfight;
 
 struct pcx_superfight_player {
         char *name;
         int vote;
+        int score;
 };
 
 struct pcx_superfight_fighter {
@@ -55,6 +58,7 @@ struct pcx_superfight_fighter {
         const char *chosen_attribute;
         const char *forced_attribute;
         int player_num;
+        bool complete;
 };
 
 struct pcx_superfight {
@@ -77,6 +81,9 @@ struct pcx_superfight {
 
 static void
 set_vote_timeout(struct pcx_superfight *superfight);
+
+static void
+start_argument(struct pcx_superfight *superfight);
 
 static void
 append_buffer_string(struct pcx_superfight *superfight,
@@ -159,15 +166,22 @@ free_game(struct pcx_superfight *superfight)
 }
 
 static void
+count_votes(struct pcx_superfight *superfight,
+            int *votes)
+{
+        for (unsigned i = 0; i < superfight->n_players; i++) {
+                if (superfight->players[i].vote != -1)
+                        votes[superfight->players[i].vote]++;
+        }
+}
+
+static void
 append_current_votes(struct pcx_superfight *superfight,
                      struct pcx_buffer *buf)
 {
         int votes[PCX_N_ELEMENTS(superfight->fighters)] = { 0 };
 
-        for (unsigned i = 0; i < superfight->n_players; i++) {
-                if (superfight->players[i].vote != -1)
-                        votes[superfight->players[i].vote]++;
-        }
+        count_votes(superfight, votes);
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(votes); i++) {
                 struct pcx_superfight_player *player =
@@ -291,12 +305,16 @@ append_fighter(struct pcx_superfight_fighter *fighter,
                struct pcx_buffer *buf)
 {
         pcx_buffer_append_string(buf, fighter->chosen_role);
-        pcx_buffer_append_c(buf, '\n');
 
-        pcx_buffer_append_string(buf, fighter->chosen_attribute);
-        pcx_buffer_append_c(buf, '\n');
+        if (fighter->chosen_attribute) {
+                pcx_buffer_append_c(buf, '\n');
+                pcx_buffer_append_string(buf, fighter->chosen_attribute);
+        }
 
-        pcx_buffer_append_string(buf, fighter->forced_attribute);
+        if (fighter->forced_attribute) {
+                pcx_buffer_append_c(buf, '\n');
+                pcx_buffer_append_string(buf, fighter->forced_attribute);
+        }
 }
 
 static void
@@ -398,6 +416,9 @@ start_fight(struct pcx_superfight *superfight)
                 struct pcx_superfight_fighter *fighter =
                         superfight->fighters + fighter_num;
 
+                if (fighter->complete)
+                        continue;
+
                 draw_cards(superfight->roles,
                            fighter->roles,
                            PCX_N_ELEMENTS(fighter->roles));
@@ -471,15 +492,14 @@ all_roles_chosen(struct pcx_superfight *superfight)
                 struct pcx_superfight_fighter *fighter =
                         superfight->fighters + i;
 
-                if (fighter->chosen_role == NULL ||
-                    fighter->chosen_attribute == NULL)
+                if (!fighter->complete)
                         return false;
         }
 
         return true;
 }
 
-static bool
+static void
 start_argument(struct pcx_superfight *superfight)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -513,8 +533,6 @@ start_argument(struct pcx_superfight *superfight)
 
         superfight->sent_first_vote_message = false;
         set_vote_timeout(superfight);
-
-        return true;
 }
 
 static void
@@ -528,7 +546,8 @@ choose_role(struct pcx_superfight *superfight,
         if (fighter == NULL)
                 return;
 
-        if (fighter->chosen_role)
+        if (fighter->complete ||
+            fighter->chosen_role)
                 return;
 
         if (extra_data < 0 || extra_data >= N_CARD_CHOICE)
@@ -550,7 +569,8 @@ choose_attribute(struct pcx_superfight *superfight,
         if (fighter == NULL)
                 return;
 
-        if (fighter->chosen_role == NULL ||
+        if (fighter->complete ||
+            fighter->chosen_role == NULL ||
             fighter->chosen_attribute != NULL)
                 return;
 
@@ -561,6 +581,7 @@ choose_attribute(struct pcx_superfight *superfight,
 
         fighter->forced_attribute =
                 pcx_superfight_deck_draw_card(superfight->attributes);
+        fighter->complete = true;
 
         send_chosen_fighter(superfight, fighter);
 
@@ -568,10 +589,148 @@ choose_attribute(struct pcx_superfight *superfight,
             start_argument(superfight);
 }
 
+static int
+get_winner(struct pcx_superfight *superfight)
+{
+        int votes[PCX_N_ELEMENTS(superfight->fighters)] = { 0 };
+
+        count_votes(superfight, votes);
+
+        bool is_draw = false;
+        int best = 0;
+
+        for (unsigned i = 1; i < PCX_N_ELEMENTS(votes); i++) {
+                if (votes[i] == votes[best]) {
+                        is_draw = true;
+                } else if (votes[i] > votes[best]) {
+                        is_draw = false;
+                        best = i;
+                }
+        }
+
+        return is_draw ? -1 : best;
+}
+
+static void
+game_over_cb(struct pcx_main_context_source *source,
+             void *user_data)
+{
+        struct pcx_superfight *superfight = user_data;
+        superfight->game_over_source = NULL;
+        superfight->callbacks.game_over(superfight->user_data);
+}
+
+static void
+start_next_fight(struct pcx_superfight *superfight,
+                 int winner)
+{
+        /* Scan through the players until we find the next one that
+         * wasn’t involved in the last fight
+         */
+        do {
+                superfight->current_player =
+                        (superfight->current_player + 1) %
+                        superfight->n_players;
+        } while (find_fighter(superfight, superfight->current_player));
+
+        struct pcx_superfight_fighter *loser =
+                superfight->fighters + !winner;
+
+        memset(loser, 0, sizeof *loser);
+        loser->player_num = superfight->current_player;
+
+        start_fight(superfight);
+}
+
+static void
+start_decider_fight(struct pcx_superfight *superfight)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                struct pcx_superfight_fighter *fighter =
+                        superfight->fighters + i;
+
+                fighter->chosen_role =
+                        pcx_superfight_deck_draw_card(superfight->roles);
+                fighter->chosen_attribute = NULL;
+                fighter->forced_attribute = NULL;
+        }
+
+        start_argument(superfight);
+}
+
+static void
+set_fight_winner(struct pcx_superfight *superfight,
+                 int winner)
+{
+        struct pcx_superfight_player *player =
+                superfight->players +
+                superfight->fighters[winner].player_num;
+
+        player->score++;
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        append_buffer_printf(superfight,
+                             &buf,
+                             PCX_TEXT_STRING_FIGHT_WINNER_IS,
+                             player->name);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        for (unsigned i = 0; i < superfight->n_players; i++) {
+                pcx_buffer_append_printf(&buf,
+                                         "%s: %i\n",
+                                         superfight->players[i].name,
+                                         superfight->players[i].score);
+        }
+
+        pcx_buffer_append_c(&buf, '\n');
+
+        if (player->score >= POINTS_TO_WIN) {
+                append_buffer_printf(superfight,
+                                     &buf,
+                                     PCX_TEXT_STRING_WON_1,
+                                     player->name);
+        } else {
+                append_buffer_printf(superfight,
+                                     &buf,
+                                     PCX_TEXT_STRING_STAYS_ON,
+                                     player->name);
+        }
+
+        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                           (const char *) buf.data,
+                                           0, /* n_buttons */
+                                           NULL, /* buttons */
+                                           superfight->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        if (player->score >= POINTS_TO_WIN) {
+                if (superfight->game_over_source == NULL) {
+                        superfight->game_over_source =
+                                pcx_main_context_add_timeout(NULL,
+                                                             0, /* ms */
+                                                             game_over_cb,
+                                                             superfight);
+                }
+        } else {
+                start_next_fight(superfight, winner);
+        }
+}
+
 static void
 end_argument(struct pcx_superfight *superfight)
 {
         remove_vote_timeout(superfight);
+
+        int winner = get_winner(superfight);
+
+        if (winner == -1) {
+                game_note(superfight, PCX_TEXT_STRING_FIGHT_EQUAL_RESULT);
+                start_decider_fight(superfight);
+        } else {
+                set_fight_winner(superfight, winner);
+        }
 }
 
 static bool

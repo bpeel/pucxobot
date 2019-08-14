@@ -419,4 +419,11 @@ pcx_text_esperanto[] = {
         "%s voĉdonis por %s",
         [PCX_TEXT_STRING_CURRENT_VOTES_ARE] =
         "La aktualaj voĉdonoj estas:",
+        [PCX_TEXT_STRING_FIGHT_EQUAL_RESULT] =
+        "La rezulto estas egala! Nun komenciĝos decida batalo sen aldonaj "
+        "trajtoj!",
+        [PCX_TEXT_STRING_FIGHT_WINNER_IS] =
+        "%s venkis! La aktualaj poentoj estas:",
+        [PCX_TEXT_STRING_STAYS_ON] =
+        "%s restos por la sekva batalo sen ŝanĝi sian batalanton.",
 };
