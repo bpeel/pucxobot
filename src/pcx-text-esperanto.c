@@ -415,4 +415,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_YOU_CAN_VOTE] =
         "Ĉu la debato jam finiĝis? La aliaj ludantoj povas nun voĉdoni "
         "per la subaj butonoj aŭ atendi plian disputadon.",
+        [PCX_TEXT_STRING_X_VOTED_Y] =
+        "%s voĉdonis por %s",
+        [PCX_TEXT_STRING_CURRENT_VOTES_ARE] =
+        "La aktualaj voĉdonoj estas:",
 };

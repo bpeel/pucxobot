@@ -205,6 +205,8 @@ enum pcx_text_string {
         PCX_TEXT_STRING_NOW_ARGUE,
         PCX_TEXT_STRING_DONT_FORGET_TO_VOTE,
         PCX_TEXT_STRING_YOU_CAN_VOTE,
+        PCX_TEXT_STRING_X_VOTED_Y,
+        PCX_TEXT_STRING_CURRENT_VOTES_ARE,
 };
 
 const char *

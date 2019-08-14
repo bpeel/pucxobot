@@ -569,6 +569,76 @@ choose_attribute(struct pcx_superfight *superfight,
 }
 
 static void
+end_argument(struct pcx_superfight *superfight)
+{
+        remove_vote_timeout(superfight);
+}
+
+static bool
+voting_is_finished(struct pcx_superfight *superfight)
+{
+        for (unsigned i = 0; i < superfight->n_players; i++) {
+                if (find_fighter(superfight, i) == NULL &&
+                    superfight->players[i].vote == -1)
+                        return false;
+        }
+
+        return true;
+}
+
+static void
+send_vote(struct pcx_superfight *superfight,
+          int player_num,
+          int extra_data)
+{
+        if (!all_roles_chosen(superfight))
+                return;
+
+        struct pcx_superfight_fighter *player_fighter =
+                find_fighter(superfight, player_num);
+
+        if (player_fighter != NULL)
+                return;
+
+        if (extra_data < 0 ||
+            extra_data >= PCX_N_ELEMENTS(superfight->fighters))
+                return;
+
+        struct pcx_superfight_player *player = superfight->players + player_num;
+
+        player->vote = extra_data;
+
+        struct pcx_superfight_fighter *fighter =
+                superfight->fighters + extra_data;
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        append_buffer_printf(superfight,
+                             &buf,
+                             PCX_TEXT_STRING_X_VOTED_Y,
+                             player->name,
+                             superfight->players[fighter->player_num].name);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        append_buffer_string(superfight,
+                             &buf,
+                             PCX_TEXT_STRING_CURRENT_VOTES_ARE);
+        pcx_buffer_append_string(&buf, "\n\n");
+        append_current_votes(superfight, &buf);
+
+        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                           (const char *) buf.data,
+                                           0, /* n_buttons */
+                                           NULL, /* buttons */
+                                           superfight->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        if (voting_is_finished(superfight))
+                end_argument(superfight);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
@@ -602,6 +672,7 @@ handle_callback_data_cb(void *user_data,
         } action_cbs[] = {
                 { "role", choose_role },
                 { "attribute", choose_attribute },
+                { "vote", send_vote },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(action_cbs); i++) {
