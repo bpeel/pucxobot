@@ -168,6 +168,19 @@ get_card_buttons(struct pcx_superfight *superfight,
 }
 
 static void
+append_fighter(struct pcx_superfight_fighter *fighter,
+               struct pcx_buffer *buf)
+{
+        pcx_buffer_append_string(buf, fighter->chosen_role);
+        pcx_buffer_append_c(buf, '\n');
+
+        pcx_buffer_append_string(buf, fighter->chosen_attribute);
+        pcx_buffer_append_c(buf, '\n');
+
+        pcx_buffer_append_string(buf, fighter->forced_attribute);
+}
+
+static void
 send_chosen_fighter(struct pcx_superfight *superfight,
                     struct pcx_superfight_fighter *fighter)
 {
@@ -177,13 +190,7 @@ send_chosen_fighter(struct pcx_superfight *superfight,
 
         pcx_buffer_append_string(&buf, "\n\n");
 
-        pcx_buffer_append_string(&buf, fighter->chosen_role);
-        pcx_buffer_append_c(&buf, '\n');
-
-        pcx_buffer_append_string(&buf, fighter->chosen_attribute);
-        pcx_buffer_append_c(&buf, '\n');
-
-        pcx_buffer_append_string(&buf, fighter->forced_attribute);
+        append_fighter(fighter, &buf);
 
         enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
 
@@ -338,6 +345,53 @@ find_fighter(struct pcx_superfight *superfight,
         return NULL;
 }
 
+static bool
+all_roles_chosen(struct pcx_superfight *superfight)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                struct pcx_superfight_fighter *fighter =
+                        superfight->fighters + i;
+
+                if (fighter->chosen_role == NULL ||
+                    fighter->chosen_attribute == NULL)
+                        return false;
+        }
+
+        return true;
+}
+
+static bool
+start_argument(struct pcx_superfight *superfight)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        append_buffer_string(superfight, &buf, PCX_TEXT_STRING_FIGHTERS_CHOSEN);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                struct pcx_superfight_fighter *fighter =
+                        superfight->fighters + i;
+                const char *name =
+                        superfight->players[fighter->player_num].name;
+                pcx_buffer_append_printf(&buf, "🔸 %s:\n\n", name);
+                append_fighter(fighter, &buf);
+                pcx_buffer_append_string(&buf, "\n\n");
+        }
+
+        append_buffer_string(superfight, &buf, PCX_TEXT_STRING_NOW_ARGUE);
+
+        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                           (const char *) buf.data,
+                                           0, /* n_buttons */
+                                           NULL, /* buttons */
+                                           superfight->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        return true;
+}
+
 static void
 choose_role(struct pcx_superfight *superfight,
             int player_num,
@@ -384,6 +438,9 @@ choose_attribute(struct pcx_superfight *superfight,
                 pcx_superfight_deck_draw_card(superfight->attributes);
 
         send_chosen_fighter(superfight, fighter);
+
+        if (all_roles_chosen(superfight))
+            start_argument(superfight);
 }
 
 static void

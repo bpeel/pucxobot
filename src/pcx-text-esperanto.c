@@ -406,4 +406,8 @@ pcx_text_esperanto[] = {
         "Bonvolu elekti trajton.",
         [PCX_TEXT_STRING_YOUR_FIGHTER_IS] =
         "Dankon. Via batalanto estas:",
+        [PCX_TEXT_STRING_FIGHTERS_CHOSEN] =
+        "La batalantoj estas pretaj! Ili estas:",
+        [PCX_TEXT_STRING_NOW_ARGUE] =
+        "Vi ambaŭ devas nun argumenti kial via batalanto gajnus. Ek!",
 };
