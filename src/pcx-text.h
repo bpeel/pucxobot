@@ -203,6 +203,8 @@ enum pcx_text_string {
         PCX_TEXT_STRING_YOUR_FIGHTER_IS,
         PCX_TEXT_STRING_FIGHTERS_CHOSEN,
         PCX_TEXT_STRING_NOW_ARGUE,
+        PCX_TEXT_STRING_DONT_FORGET_TO_VOTE,
+        PCX_TEXT_STRING_YOU_CAN_VOTE,
 };
 
 const char *

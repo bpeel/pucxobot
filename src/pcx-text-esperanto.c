@@ -410,4 +410,9 @@ pcx_text_esperanto[] = {
         "La batalantoj estas pretaj! Ili estas:",
         [PCX_TEXT_STRING_NOW_ARGUE] =
         "Vi ambaŭ devas nun argumenti kial via batalanto gajnus. Ek!",
+        [PCX_TEXT_STRING_DONT_FORGET_TO_VOTE] =
+        "Ne forgesu voĉdoni! La aktualaj voĉdonoj estas:",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE] =
+        "Ĉu la debato jam finiĝis? La aliaj ludantoj povas nun voĉdoni "
+        "per la subaj butonoj aŭ atendi plian disputadon.",
 };

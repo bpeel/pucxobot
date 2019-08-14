@@ -36,10 +36,16 @@
 
 #define N_CARD_CHOICE 3
 
+/* Time before showing first vote message */
+#define SHORT_VOTE_TIMEOUT (30 * 1000)
+/* Time before showing subsequent vote messages */
+#define LONG_VOTE_TIMEOUT (60 * 1000)
+
 struct pcx_superfight;
 
 struct pcx_superfight_player {
         char *name;
+        int vote;
 };
 
 struct pcx_superfight_fighter {
@@ -58,13 +64,19 @@ struct pcx_superfight {
         struct pcx_game_callbacks callbacks;
         void *user_data;
         struct pcx_main_context_source *game_over_source;
+        struct pcx_main_context_source *vote_timeout;
         enum pcx_text_language language;
 
         struct pcx_superfight_fighter fighters[2];
 
         struct pcx_superfight_deck *roles;
         struct pcx_superfight_deck *attributes;
+
+        bool sent_first_vote_message;
 };
+
+static void
+set_vote_timeout(struct pcx_superfight *superfight);
 
 static void
 append_buffer_string(struct pcx_superfight *superfight,
@@ -120,6 +132,16 @@ game_note(struct pcx_superfight *superfight,
 }
 
 static void
+remove_vote_timeout(struct pcx_superfight *superfight)
+{
+        if (superfight->vote_timeout == NULL)
+                return;
+
+        pcx_main_context_remove_source(superfight->vote_timeout);
+        superfight->vote_timeout = NULL;
+}
+
+static void
 free_game(struct pcx_superfight *superfight)
 {
         for (int i = 0; i < superfight->n_players; i++)
@@ -128,10 +150,107 @@ free_game(struct pcx_superfight *superfight)
         pcx_superfight_deck_free(superfight->roles);
         pcx_superfight_deck_free(superfight->attributes);
 
+        remove_vote_timeout(superfight);
+
         if (superfight->game_over_source)
                 pcx_main_context_remove_source(superfight->game_over_source);
 
         pcx_free(superfight);
+}
+
+static void
+append_current_votes(struct pcx_superfight *superfight,
+                     struct pcx_buffer *buf)
+{
+        int votes[PCX_N_ELEMENTS(superfight->fighters)] = { 0 };
+
+        for (unsigned i = 0; i < superfight->n_players; i++) {
+                if (superfight->players[i].vote != -1)
+                        votes[superfight->players[i].vote]++;
+        }
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(votes); i++) {
+                struct pcx_superfight_player *player =
+                        superfight->players +
+                        superfight->fighters[i].player_num;
+                pcx_buffer_append_printf(buf,
+                                         "%s: %i\n",
+                                         player->name,
+                                         votes[i]);
+        }
+}
+
+static void
+get_vote_buttons(struct pcx_superfight *superfight,
+                 struct pcx_game_button *buttons)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                struct pcx_superfight_player *player =
+                        superfight->players +
+                        superfight->fighters[i].player_num;
+
+                buttons[i].text = player->name;
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "vote:%i", i);
+                buttons[i].data = (char *) buf.data;
+        }
+}
+
+static void
+vote_timeout_cb(struct pcx_main_context_source *source,
+                void *user_data)
+{
+        struct pcx_superfight *superfight = user_data;
+
+        superfight->vote_timeout = NULL;
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        if (superfight->sent_first_vote_message) {
+                append_buffer_string(superfight,
+                                     &buf,
+                                     PCX_TEXT_STRING_DONT_FORGET_TO_VOTE);
+                pcx_buffer_append_string(&buf, "\n\n");
+                append_current_votes(superfight, &buf);
+        } else {
+                append_buffer_string(superfight,
+                                     &buf,
+                                     PCX_TEXT_STRING_YOU_CAN_VOTE);
+                superfight->sent_first_vote_message = true;
+        }
+
+        struct pcx_game_button buttons[PCX_N_ELEMENTS(superfight->fighters)];
+
+        get_vote_buttons(superfight, buttons);
+
+        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                                           (const char *) buf.data,
+                                           PCX_N_ELEMENTS(buttons),
+                                           buttons,
+                                           superfight->user_data);
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(buttons); i++)
+                pcx_free((char *) buttons[i].data);
+
+        pcx_buffer_destroy(&buf);
+
+        set_vote_timeout(superfight);
+}
+
+static void
+set_vote_timeout(struct pcx_superfight *superfight)
+{
+        long ms = (superfight->sent_first_vote_message ?
+                   LONG_VOTE_TIMEOUT :
+                   SHORT_VOTE_TIMEOUT);
+
+        remove_vote_timeout(superfight);
+
+        superfight->vote_timeout = pcx_main_context_add_timeout(NULL,
+                                                                ms,
+                                                                vote_timeout_cb,
+                                                                superfight);
 }
 
 static void
@@ -379,6 +498,9 @@ start_argument(struct pcx_superfight *superfight)
                 pcx_buffer_append_string(&buf, "\n\n");
         }
 
+        for (unsigned i = 0; i < superfight->n_players; i++)
+                superfight->players[i].vote = -1;
+
         append_buffer_string(superfight, &buf, PCX_TEXT_STRING_NOW_ARGUE);
 
         superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
@@ -388,6 +510,9 @@ start_argument(struct pcx_superfight *superfight)
                                            superfight->user_data);
 
         pcx_buffer_destroy(&buf);
+
+        superfight->sent_first_vote_message = false;
+        set_vote_timeout(superfight);
 
         return true;
 }
