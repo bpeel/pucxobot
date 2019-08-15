@@ -18,9 +18,10 @@ something like this:
     botname = cardgamebot
     language = en
 
-The language can be `en`, `fr` or `eo`. You can create several bots
-with one configuration file by repeating the `[bot]` section. That is
-useful if you want to have bots in different languages.
+The language can be `en`, `fr`, `pt-br` or `eo`. You can create
+several bots with one configuration file by repeating the `[bot]`
+section. That is useful if you want to have bots in different
+languages.
 
 To play a game, you can add the bot to a group and type `/join`. It
 will present you with a choice of the available games to play.
@@ -32,7 +33,7 @@ you can tell it what commands the bot can handle. Here is a suggestion
 of what to type there:
 
     coup - Create a game of Coup
-    snitch - Create a game of Snitch Perfidulo
+    snitch - Create a game of Snitch
     letter - Create a game of Love Letter
     join - Join an existing game or create a new one
     start - Start an existing game
