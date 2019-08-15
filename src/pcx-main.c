@@ -68,6 +68,15 @@ info_cb(struct pcx_main_context_source *source,
         }
 
         printf("Total games: %i\n", total_games);
+
+        if (signal_num == SIGUSR2) {
+                if (total_games == 0) {
+                        printf("No games running, quitting\n");
+                        data->quit = true;
+                } else {
+                        printf("Not quitting due to running games\n");
+                }
+        }
 }
 
 static bool
@@ -184,11 +193,17 @@ main(int argc, char **argv)
                                                    SIGUSR1,
                                                    info_cb,
                                                    &data);
+        struct pcx_main_context_source *usr2_source =
+                pcx_main_context_add_signal_source(NULL,
+                                                   SIGUSR2,
+                                                   info_cb,
+                                                   &data);
 
         do
                 pcx_main_context_poll(NULL);
         while (!data.quit);
 
+        pcx_main_context_remove_source(usr2_source);
         pcx_main_context_remove_source(usr1_source);
         pcx_main_context_remove_source(term_source);
         pcx_main_context_remove_source(int_source);
