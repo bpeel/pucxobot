@@ -29,95 +29,134 @@
 #include "pcx-config.h"
 #include "pcx-curl-multi.h"
 
+struct pcx_main {
+        struct pcx_tty_game *tty_game;
+        struct pcx_curl_multi *pcurl;
+        size_t n_bots;
+        struct pcx_bot **bots;
+        struct pcx_config *config;
+        bool curl_inited;
+        bool quit;
+};
+
 static void
 quit_cb(struct pcx_main_context_source *source,
         void *user_data)
 {
-        bool *quit = user_data;
-        *quit = true;
+        struct pcx_main *data = user_data;
+
+        data->quit = true;
+}
+
+static bool
+init_main_tty(struct pcx_main *data,
+              int argc,
+              char **argv)
+{
+        if (argc - 1 > PCX_GAME_MAX_PLAYERS) {
+                fprintf(stderr, "usage: pucxobot <tty_file>…\n");
+                return false;
+        }
+
+        struct pcx_error *error = NULL;
+        data->tty_game = pcx_tty_game_new(argc - 1,
+                                          (const char *const *) argv + 1,
+                                          &error);
+
+        if (data->tty_game == NULL) {
+                fprintf(stderr, "%s\n", error->message);
+                pcx_error_free(error);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+init_main_bots(struct pcx_main *data)
+{
+        struct pcx_error *error = NULL;
+
+        data->config = pcx_config_load(&error);
+        if (data->config == NULL) {
+                fprintf(stderr, "%s\n", error->message);
+                pcx_error_free(error);
+                return false;
+        }
+
+        curl_global_init(CURL_GLOBAL_ALL);
+        data->curl_inited = true;
+
+        data->pcurl = pcx_curl_multi_new();
+
+        time_t t;
+        time(&t);
+        srand(t);
+
+        struct pcx_config_bot *bot;
+
+        pcx_list_for_each(bot, &data->config->bots, link) {
+                data->n_bots++;
+        }
+
+        data->bots = pcx_alloc((sizeof *data->bots) * MAX(data->n_bots, 1));
+
+        unsigned i = 0;
+
+        pcx_list_for_each(bot, &data->config->bots, link) {
+                data->bots[i++] = pcx_bot_new(data->pcurl, bot);
+        }
+
+        return true;
+}
+
+static void
+destroy_main(struct pcx_main *data)
+{
+        if (data->tty_game)
+                pcx_tty_game_free(data->tty_game);
+        for (unsigned i = 0; i < data->n_bots; i++)
+                pcx_bot_free(data->bots[i]);
+        pcx_free(data->bots);
+        if (data->pcurl)
+                pcx_curl_multi_free(data->pcurl);
+        if (data->curl_inited)
+                curl_global_cleanup();
+        if (data->config)
+                pcx_config_free(data->config);
 }
 
 int
 main(int argc, char **argv)
 {
-        struct pcx_tty_game *tty_game = NULL;
-        struct pcx_curl_multi *pcurl = NULL;
-        size_t n_bots = 0;
-        struct pcx_bot **bots = NULL;
-        struct pcx_config *config = NULL;
-        bool curl_inited = false;
+        struct pcx_main data = {
+                .tty_game = NULL,
+                .pcurl = NULL,
+                .n_bots = 0,
+                .bots = NULL,
+                .config = NULL,
+                .curl_inited = false,
+                .quit = false,
+        };
 
         if (argc > 1) {
-                if (argc - 1 > PCX_GAME_MAX_PLAYERS) {
-                        fprintf(stderr, "usage: pucxobot <tty_file>…\n");
+                if (!init_main_tty(&data, argc, argv))
                         return EXIT_FAILURE;
-                }
-
-                struct pcx_error *error = NULL;
-                tty_game = pcx_tty_game_new(argc - 1,
-                                            (const char *const *) argv + 1,
-                                            &error);
-
-                if (tty_game == NULL) {
-                        fprintf(stderr, "%s\n", error->message);
-                        pcx_error_free(error);
-                        return EXIT_FAILURE;
-                }
         } else {
-                struct pcx_error *error = NULL;
-
-                config = pcx_config_load(&error);
-                if (config == NULL) {
-                        fprintf(stderr, "%s\n", error->message);
-                        pcx_error_free(error);
+                if (!init_main_bots(&data))
                         return EXIT_FAILURE;
-                }
-
-                curl_global_init(CURL_GLOBAL_ALL);
-                curl_inited = true;
-
-                pcurl = pcx_curl_multi_new();
-
-                time_t t;
-                time(&t);
-                srand(t);
-
-                struct pcx_config_bot *bot;
-
-                pcx_list_for_each(bot, &config->bots, link) {
-                        n_bots++;
-                }
-
-                bots = pcx_alloc((sizeof *bots) * MAX(n_bots, 1));
-
-                unsigned i = 0;
-
-                pcx_list_for_each(bot, &config->bots, link) {
-                        bots[i++] = pcx_bot_new(pcurl, bot);
-                }
         }
 
-        bool quit = false;
         struct pcx_main_context_source *quit_source =
-                pcx_main_context_add_quit(NULL, quit_cb, &quit);
+                pcx_main_context_add_quit(NULL, quit_cb, &data);
 
         do
                 pcx_main_context_poll(NULL);
-        while (!quit);
+        while (!data.quit);
 
         pcx_main_context_remove_source(quit_source);
 
-        if (tty_game)
-                pcx_tty_game_free(tty_game);
-        for (unsigned i = 0; i < n_bots; i++)
-                pcx_bot_free(bots[i]);
-        pcx_free(bots);
-        if (pcurl)
-                pcx_curl_multi_free(pcurl);
-        if (curl_inited)
-                curl_global_cleanup();
-        if (config)
-                pcx_config_free(config);
+        destroy_main(&data);
 
         pcx_main_context_free(pcx_main_context_get_default());
 
