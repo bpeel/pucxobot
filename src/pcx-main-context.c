@@ -45,18 +45,15 @@ struct pcx_main_context {
         struct pcx_buffer poll_array;
         bool poll_array_dirty;
 
-        /* List of quit sources. All of these get invoked when a quit signal
-           is received */
-        struct pcx_list quit_sources;
-
         struct pcx_list timeout_sources;
         struct pcx_list poll_sources;
+        struct pcx_list signal_sources;
 
         struct pcx_main_context_source *async_pipe_source;
         int async_pipe[2];
 
-        void (* old_int_handler)(int);
-        void (* old_term_handler)(int);
+        int signal_buf;
+        size_t signal_read;
 
         bool monotonic_time_valid;
         int64_t monotonic_time;
@@ -71,7 +68,7 @@ struct pcx_main_context_source {
         enum {
                 PCX_MAIN_CONTEXT_POLL_SOURCE,
                 PCX_MAIN_CONTEXT_TIMEOUT_SOURCE,
-                PCX_MAIN_CONTEXT_QUIT_SOURCE
+                PCX_MAIN_CONTEXT_SIGNAL_SOURCE,
         } type;
 
         union {
@@ -86,6 +83,12 @@ struct pcx_main_context_source {
                         uint64_t end_time;
                         bool busy;
                         bool removed;
+                };
+
+                /* Signal sources */
+                struct {
+                        void (* old_handler)(int);
+                        int signal_num;
                 };
         };
 
@@ -116,41 +119,64 @@ free_source(struct pcx_main_context *mc,
 }
 
 static void
+emit_signal_source(struct pcx_main_context *mc,
+                   int signal_num)
+{
+        struct pcx_main_context_source *source, *tmp;
+        pcx_main_context_signal_callback callback;
+
+        pcx_list_for_each_safe(source, tmp, &mc->signal_sources, link) {
+                if (source->signal_num != signal_num)
+                        continue;
+
+                callback = source->callback;
+                callback(source, signal_num, source->user_data);
+        }
+}
+
+static void
 async_pipe_cb(struct pcx_main_context_source *source,
               int fd,
               enum pcx_main_context_poll_flags flags,
               void *user_data)
 {
         struct pcx_main_context *mc = user_data;
-        struct pcx_main_context_source *quit_source;
-        pcx_main_context_quit_callback callback;
-        uint8_t byte;
+        ssize_t got = read(mc->async_pipe[0],
+                           (uint8_t *) &mc->signal_buf + mc->signal_read,
+                           (sizeof mc->signal_buf) - mc->signal_read);
 
-        if (read(mc->async_pipe[0], &byte, sizeof(byte)) == -1) {
+        if (got == -1) {
                 if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
                         pcx_warning("Read from quit pipe failed: %s",
                                     strerror(errno));
-        } else if (byte == 'Q') {
-                pcx_list_for_each(quit_source, &mc->quit_sources, link) {
-                        callback = quit_source->callback;
-                        callback(quit_source, quit_source->user_data);
+        } else {
+                mc->signal_read += got;
+
+                if (mc->signal_read >= sizeof mc->signal_buf) {
+                        mc->signal_read = 0;
+                        emit_signal_source(mc, mc->signal_buf);
                 }
         }
 }
 
 static void
-send_async_byte(struct pcx_main_context *mc,
-                char byte)
-{
-        while (write(mc->async_pipe[1], &byte, 1) == -1 && errno == EINTR);
-}
-
-static void
-pcx_main_context_quit_signal_cb(int signum)
+pcx_main_context_signal_cb(int signum)
 {
         struct pcx_main_context *mc = pcx_main_context_get_default();
+        size_t s = 0;
 
-        send_async_byte(mc, 'Q');
+        while (s < sizeof signum) {
+                ssize_t wrote = write(mc->async_pipe[1],
+                                      (uint8_t *) &signum + s,
+                                      (sizeof signum) - s);
+
+                if (wrote == -1) {
+                        if (errno != EINTR)
+                                break;
+                } else {
+                        s += wrote;
+                }
+        }
 }
 
 struct pcx_main_context *
@@ -165,12 +191,11 @@ pcx_main_context_new(void)
         mc->wall_time_valid = false;
         mc->poll_array_dirty = true;
         pcx_buffer_init(&mc->poll_array);
-        pcx_list_init(&mc->quit_sources);
         pcx_list_init(&mc->poll_sources);
         pcx_list_init(&mc->timeout_sources);
+        pcx_list_init(&mc->signal_sources);
 
-        mc->old_int_handler = signal(SIGINT, pcx_main_context_quit_signal_cb);
-        mc->old_term_handler = signal(SIGTERM, pcx_main_context_quit_signal_cb);
+        mc->signal_read = 0;
 
         if (pipe(mc->async_pipe) == -1) {
                 pcx_warning("Failed to create pipe: %s",
@@ -227,9 +252,10 @@ pcx_main_context_modify_poll(struct pcx_main_context_source *source,
 }
 
 struct pcx_main_context_source *
-pcx_main_context_add_quit(struct pcx_main_context *mc,
-                          pcx_main_context_quit_callback callback,
-                          void *user_data)
+pcx_main_context_add_signal_source(struct pcx_main_context *mc,
+                                   int signal_num,
+                                   pcx_main_context_signal_callback callback,
+                                   void *user_data)
 {
         struct pcx_main_context_source *source;
 
@@ -240,10 +266,12 @@ pcx_main_context_add_quit(struct pcx_main_context *mc,
 
         source->mc = mc;
         source->callback = callback;
-        source->type = PCX_MAIN_CONTEXT_QUIT_SOURCE;
+        source->type = PCX_MAIN_CONTEXT_SIGNAL_SOURCE;
         source->user_data = user_data;
+        source->signal_num = signal_num;
+        source->old_handler = signal(signal_num, pcx_main_context_signal_cb);
 
-        pcx_list_insert(&mc->quit_sources, &source->link);
+        pcx_list_insert(&mc->signal_sources, &source->link);
 
         return source;
 }
@@ -286,7 +314,8 @@ pcx_main_context_remove_source(struct pcx_main_context_source *source)
                 mc->poll_array_dirty = true;
                 break;
 
-        case PCX_MAIN_CONTEXT_QUIT_SOURCE:
+        case PCX_MAIN_CONTEXT_SIGNAL_SOURCE:
+                signal(source->signal_num, source->old_handler);
                 free_source(mc, source);
                 break;
 
@@ -536,15 +565,13 @@ pcx_main_context_get_wall_clock(struct pcx_main_context *mc)
 void
 pcx_main_context_free(struct pcx_main_context *mc)
 {
-        signal(SIGINT, mc->old_int_handler);
-        signal(SIGTERM, mc->old_term_handler);
         pcx_main_context_remove_source(mc->async_pipe_source);
         pcx_close(mc->async_pipe[0]);
         pcx_close(mc->async_pipe[1]);
 
-        assert(pcx_list_empty(&mc->quit_sources));
         assert(pcx_list_empty(&mc->poll_sources));
         assert(pcx_list_empty(&mc->timeout_sources));
+        assert(pcx_list_empty(&mc->signal_sources));
 
         pcx_buffer_destroy(&mc->poll_array);
 

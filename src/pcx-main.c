@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <curl/curl.h>
+#include <signal.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
@@ -41,6 +42,7 @@ struct pcx_main {
 
 static void
 quit_cb(struct pcx_main_context_source *source,
+        int signal_num,
         void *user_data)
 {
         struct pcx_main *data = user_data;
@@ -147,14 +149,23 @@ main(int argc, char **argv)
                         return EXIT_FAILURE;
         }
 
-        struct pcx_main_context_source *quit_source =
-                pcx_main_context_add_quit(NULL, quit_cb, &data);
+        struct pcx_main_context_source *int_source =
+                pcx_main_context_add_signal_source(NULL,
+                                                   SIGINT,
+                                                   quit_cb,
+                                                   &data);
+        struct pcx_main_context_source *term_source =
+                pcx_main_context_add_signal_source(NULL,
+                                                   SIGTERM,
+                                                   quit_cb,
+                                                   &data);
 
         do
                 pcx_main_context_poll(NULL);
         while (!data.quit);
 
-        pcx_main_context_remove_source(quit_source);
+        pcx_main_context_remove_source(term_source);
+        pcx_main_context_remove_source(int_source);
 
         destroy_main(&data);
 

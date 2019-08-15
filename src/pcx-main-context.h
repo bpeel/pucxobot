@@ -48,8 +48,9 @@ typedef void
                                        void *user_data);
 
 typedef void
-(* pcx_main_context_quit_callback) (struct pcx_main_context_source *source,
-                                    void *user_data);
+(* pcx_main_context_signal_callback) (struct pcx_main_context_source *source,
+                                      int signal_num,
+                                      void *user_data);
 
 struct pcx_main_context *
 pcx_main_context_new(void);
@@ -69,15 +70,16 @@ pcx_main_context_modify_poll(struct pcx_main_context_source *source,
                              enum pcx_main_context_poll_flags flags);
 
 struct pcx_main_context_source *
-pcx_main_context_add_quit(struct pcx_main_context *mc,
-                          pcx_main_context_quit_callback callback,
-                          void *user_data);
-
-struct pcx_main_context_source *
 pcx_main_context_add_timeout(struct pcx_main_context *mc,
                              long milliseconds,
                              pcx_main_context_timeout_callback callback,
                              void *user_data);
+
+struct pcx_main_context_source *
+pcx_main_context_add_signal_source(struct pcx_main_context *mc,
+                                   int signal_num,
+                                   pcx_main_context_signal_callback callback,
+                                   void *user_data);
 
 void
 pcx_main_context_remove_source(struct pcx_main_context_source *source);
