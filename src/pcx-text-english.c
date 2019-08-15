@@ -29,12 +29,16 @@ pcx_text_english[] = {
         "Snitch",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
+        "Superfight",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/coup",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/snitch",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/letter",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
+        "/superfight",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Which game do you want help for?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -366,4 +370,43 @@ pcx_text_english[] = {
         "💘 %p wins the round and gains a point of affection from the princess.",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
         "🏆 %p has %i points of affection and wins the game!",
+        [PCX_TEXT_STRING_FIGHTERS_ARE] =
+        "The players in the next fight are:\n"
+        "\n"
+        "%s\n"
+        "%s\n"
+        "\n"
+        "They are now choosing their fighters.",
+        [PCX_TEXT_STRING_POSSIBLE_ROLES] =
+        "Your characters are:",
+        [PCX_TEXT_STRING_POSSIBLE_ATTRIBUTES] =
+        "Your attributes are:",
+        [PCX_TEXT_STRING_CHOOSE_ROLE] =
+        "Please choose a character.",
+        [PCX_TEXT_STRING_CHOOSE_ATTRIBUTE] =
+        "Please choose an attribute.",
+        [PCX_TEXT_STRING_YOUR_FIGHTER_IS] =
+        "Thanks. Your fighter is:",
+        [PCX_TEXT_STRING_FIGHTERS_CHOSEN] =
+        "The fighters are ready! They are:",
+        [PCX_TEXT_STRING_NOW_ARGUE] =
+        "You both now have to argue why your fighter would win in a "
+        "fight to the death. Go!",
+        [PCX_TEXT_STRING_DONT_FORGET_TO_VOTE] =
+        "Don’t forget to vote! The current votes are:",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE] =
+        "Has the arguing already finished? The other players can now vote "
+        "with the buttons below or wait for the debate to finish.",
+        [PCX_TEXT_STRING_X_VOTED_Y] =
+        "%s voted for %s",
+        [PCX_TEXT_STRING_CURRENT_VOTES_ARE] =
+        "The current votes are:",
+        [PCX_TEXT_STRING_FIGHT_EQUAL_RESULT] =
+        "It’s a draw! There will now be a decider fight without "
+        "attributes.",
+        [PCX_TEXT_STRING_FIGHT_WINNER_IS] =
+        "%s won the fight! The current points are:",
+        [PCX_TEXT_STRING_STAYS_ON] =
+        "The first player to reach %i points wins the game. "
+        "%s will stay on for the next fight without changing their cards.",
 };
