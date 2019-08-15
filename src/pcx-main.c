@@ -50,6 +50,26 @@ quit_cb(struct pcx_main_context_source *source,
         data->quit = true;
 }
 
+static void
+info_cb(struct pcx_main_context_source *source,
+        int signal_num,
+        void *user_data)
+{
+        struct pcx_main *data = user_data;
+        int total_games = 0;
+        struct pcx_config_bot *bot;
+        int bot_num = 0;
+
+        pcx_list_for_each(bot, &data->config->bots, link) {
+                int n_games = pcx_bot_get_n_running_games(data->bots[bot_num]);
+                printf("@%s: %i\n", bot->botname, n_games);
+                total_games += n_games;
+                bot_num++;
+        }
+
+        printf("Total games: %i\n", total_games);
+}
+
 static bool
 init_main_tty(struct pcx_main *data,
               int argc,
@@ -159,11 +179,17 @@ main(int argc, char **argv)
                                                    SIGTERM,
                                                    quit_cb,
                                                    &data);
+        struct pcx_main_context_source *usr1_source =
+                pcx_main_context_add_signal_source(NULL,
+                                                   SIGUSR1,
+                                                   info_cb,
+                                                   &data);
 
         do
                 pcx_main_context_poll(NULL);
         while (!data.quit);
 
+        pcx_main_context_remove_source(usr1_source);
         pcx_main_context_remove_source(term_source);
         pcx_main_context_remove_source(int_source);
 
