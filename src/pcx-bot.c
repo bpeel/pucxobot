@@ -1638,6 +1638,12 @@ free_games(struct pcx_bot *bot)
         }
 }
 
+int
+pcx_bot_get_n_running_games(struct pcx_bot *bot)
+{
+        return pcx_list_length(&bot->games);
+}
+
 void
 pcx_bot_free(struct pcx_bot *bot)
 {

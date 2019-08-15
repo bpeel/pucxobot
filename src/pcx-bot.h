@@ -28,6 +28,9 @@ struct pcx_bot *
 pcx_bot_new(struct pcx_curl_multi *pcurl,
             const struct pcx_config_bot *config);
 
+int
+pcx_bot_get_n_running_games(struct pcx_bot *bot);
+
 void
 pcx_bot_free(struct pcx_bot *bot);
 
