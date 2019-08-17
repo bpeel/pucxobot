@@ -26,13 +26,13 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_NAME_COUP] =
         "Golpe",
         [PCX_TEXT_STRING_NAME_SNITCH] =
-        "Dedo duro",
+        "Informante",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Carta de amor",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/golpe",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
-        "/dedoduro",
+        "/informante",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/carta",
         [PCX_TEXT_STRING_WHICH_HELP] =
@@ -126,7 +126,7 @@ pcx_text_pt_br[] = {
         "%s desafiou, mas %s tinha %s. Então %s perdeu uma carta.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s não acredita que você tenha %s. \n"
-        "Qual cartão você quer mostrar para eles?",
+        "Qual carta você quer mostrar para eles?",
         [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
         "Ninguém desafiou. A ação foi bloqueada.",
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
@@ -204,18 +204,18 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_ROLE_NAME_LOOKOUT] =
         "Vigia",
         [PCX_TEXT_STRING_ROLE_NAME_SNITCH] =
-        "Dedo duro",
+        "Informante",
         [PCX_TEXT_STRING_ROUND_NUM] =
         "Turno %i / %i",
         [PCX_TEXT_STRING_CHOOSE_HEIST_DIFFICULTY] =
-        "%s, você é o líder da gangue. Quantos especialistas você quer no "
+        "%s, você é o líder da equipe. Quantos especialistas você quer no "
         "assalto?",
         [PCX_TEXT_STRING_HEIST_SIZE_CHOSEN] =
         "O assalto precisará dos seguintes %i especialistas:",
         [PCX_TEXT_STRING_DISCUSS_HEIST] =
-        "Agora você pode discutir entre si sobre qual especialista você "
-        "irá adicionar ao assalto. Quando estiver pronto, você pode escolher secretamente "
-        "sua carta.",
+        "Agora vocês podem discutir entre si sobre qual especialista cada um "
+        "irá adicionar ao assalto. Quando estiverem prontos, cada um deve fazer "
+        "sua escolha em segredo.",
         [PCX_TEXT_STRING_CARDS_CHOSEN] =
         "Todo mundo fez sua escolha! Os especialistas são:",
         [PCX_TEXT_STRING_NEEDED_CARDS_WERE] =
@@ -225,23 +225,23 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_WHICH_ROLE] =
         "Qual carta você quer escolher?",
         [PCX_TEXT_STRING_HEIST_SUCCESS] =
-        "O assalto foi um sucesso! Cada jogador que não escolheu o dedo duro "
-        "recebe %i moedas.",
+        "O assalto foi um sucesso! Cada jogador que não escolheu o informante "
+        "ganhou %i moedas.",
         [PCX_TEXT_STRING_HEIST_FAILED] =
-        "O assalto falhou! Todo mundo que não escolheu o dedo duro perde 1 "
+        "O assalto falhou! Todo mundo que não escolheu o informante perdeu 1 "
         "moeda.",
         [PCX_TEXT_STRING_SNITCH_GAIN_1] =
-        "Todo mundo ganha 1 moeda.",
+        "Quem escolheu o informante ganha 1 moeda.",
         [PCX_TEXT_STRING_SNITCH_GAIN_PLURAL] =
-        "Todo mundo ganha %i moedas.",
+        "Quem escolheu o informante ganha %i moedas.",
         [PCX_TEXT_STRING_EVERYONE_SNITCHED] =
-        "O assalto falhou e todo mundo dedurou! Ninguém ganha nada.",
+        "O assalto falhou e todo mundo foi informante! Ninguém ganha nada.",
         [PCX_TEXT_STRING_NOONE_SNITCHED] =
-        "Ninguém dedurou.",
+        "Ninguém escolheu o informante.",
         [PCX_TEXT_STRING_1_SNITCH] =
-        "1 dedo duro",
+        "1 informante",
         [PCX_TEXT_STRING_PLURAL_SNITCHES] =
-        "%i dedos duros",
+        "%i informante",
         [PCX_TEXT_STRING_GUARD] =
         "Guarda",
         [PCX_TEXT_STRING_GUARD_OBJECT] =
