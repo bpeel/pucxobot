@@ -36,10 +36,10 @@
 
 #define N_CARD_CHOICE 3
 
-/* Time before showing first vote message */
-#define SHORT_VOTE_TIMEOUT (30 * 1000)
-/* Time before showing subsequent vote messages */
-#define LONG_VOTE_TIMEOUT (60 * 1000)
+/* Time before showing first vote message. The timeout for subsequent
+ * messages will be double each time.
+ */
+#define BASE_VOTE_TIMEOUT (30 * 1000)
 
 #define POINTS_TO_WIN 3
 
@@ -76,7 +76,7 @@ struct pcx_superfight {
         struct pcx_superfight_deck *roles;
         struct pcx_superfight_deck *attributes;
 
-        bool sent_first_vote_message;
+        int vote_message_num;
 };
 
 static void
@@ -256,7 +256,7 @@ vote_timeout_cb(struct pcx_main_context_source *source,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        if (superfight->sent_first_vote_message) {
+        if (superfight->vote_message_num > 0) {
                 append_buffer_string(superfight,
                                      &buf,
                                      PCX_TEXT_STRING_DONT_FORGET_TO_VOTE);
@@ -266,8 +266,9 @@ vote_timeout_cb(struct pcx_main_context_source *source,
                 append_buffer_string(superfight,
                                      &buf,
                                      PCX_TEXT_STRING_YOU_CAN_VOTE);
-                superfight->sent_first_vote_message = true;
         }
+
+        superfight->vote_message_num++;
 
         struct pcx_game_button buttons[PCX_N_ELEMENTS(superfight->fighters)];
 
@@ -290,9 +291,7 @@ vote_timeout_cb(struct pcx_main_context_source *source,
 static void
 set_vote_timeout(struct pcx_superfight *superfight)
 {
-        long ms = (superfight->sent_first_vote_message ?
-                   LONG_VOTE_TIMEOUT :
-                   SHORT_VOTE_TIMEOUT);
+        long ms = BASE_VOTE_TIMEOUT << superfight->vote_message_num;
 
         remove_vote_timeout(superfight);
 
@@ -566,7 +565,7 @@ start_argument(struct pcx_superfight *superfight)
 
         pcx_buffer_destroy(&buf);
 
-        superfight->sent_first_vote_message = false;
+        superfight->vote_message_num = 0;
         set_vote_timeout(superfight);
 }
 
