@@ -467,7 +467,7 @@ add_cards_status(struct pcx_coup *coup,
 
                 if (card->dead) {
                         enum pcx_text_string name =
-                                pcx_coup_character_get_name(character);
+                                pcx_coup_characters[character].name;
                         pcx_buffer_append_string(buffer, "☠");
                         append_buffer_string(coup, buffer, name);
                         pcx_buffer_append_string(buffer, "☠");
@@ -510,7 +510,7 @@ show_cards(struct pcx_coup *coup,
         for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
                 const struct pcx_coup_card *card = player->cards + i;
                 enum pcx_text_string name =
-                        pcx_coup_character_get_name(card->character);
+                        pcx_coup_characters[card->character].name;
 
                 if (card->dead)
                         pcx_buffer_append_string(&coup->buffer, "☠");
@@ -723,7 +723,7 @@ choose_card_to_lose_idle(struct pcx_coup *coup)
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "lose:%u", i);
                 enum pcx_text_string name =
-                        pcx_coup_character_get_name(player->cards[i].character);
+                        pcx_coup_characters[player->cards[i].character].name;
 
                 buttons[n_buttons].text =
                         pcx_text_get(coup->language, name);
@@ -779,7 +779,7 @@ get_challenged_cards(struct pcx_coup *coup,
 
                 append_buffer_string(coup,
                                      buf,
-                                     pcx_coup_character_get_object_name(i));
+                                     pcx_coup_characters[i].object_name);
         }
 }
 
@@ -881,7 +881,7 @@ do_reveal(struct pcx_coup *coup,
 
         if ((data->challenged_characters & (UINT32_C(1) << character))) {
                 enum pcx_text_string character_name =
-                        pcx_coup_character_get_object_name(character);
+                        pcx_coup_characters[character].object_name;
                 const char *character_name_string =
                         pcx_text_get(coup->language, character_name);
                 coup_note(coup,
@@ -986,7 +986,7 @@ reveal_idle(struct pcx_coup *coup)
                         continue;
 
                 enum pcx_text_string name =
-                        pcx_coup_character_get_name(card->character);
+                        pcx_coup_characters[card->character].name;
 
                 buttons[n_buttons].text =
                         pcx_text_get(coup->language, name);
@@ -1587,7 +1587,7 @@ exchange_idle(struct pcx_coup *coup)
         for (unsigned i = 0; i < data->n_cards_available; i++) {
                 enum pcx_coup_character character = data->available_cards[i];
                 enum pcx_text_string name =
-                        pcx_coup_character_get_name(character);
+                        pcx_coup_characters[character].name;
                 buttons[i].text = pcx_text_get(coup->language, name);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;

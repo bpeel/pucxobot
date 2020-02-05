@@ -31,10 +31,12 @@ enum pcx_coup_character {
 
 #define PCX_COUP_CHARACTER_COUNT 5
 
-enum pcx_text_string
-pcx_coup_character_get_name(enum pcx_coup_character character);
+struct pcx_coup_character_data {
+        enum pcx_text_string name;
+        enum pcx_text_string object_name;
+};
 
-enum pcx_text_string
-pcx_coup_character_get_object_name(enum pcx_coup_character character);
+extern const struct pcx_coup_character_data
+pcx_coup_characters[PCX_COUP_CHARACTER_COUNT];
 
 #endif /* PCX_COUP_CHARACTER_H */

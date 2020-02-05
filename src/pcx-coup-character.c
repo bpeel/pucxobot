@@ -18,48 +18,26 @@
 
 #include "pcx-coup-character.h"
 
-#include <assert.h>
-
-#include "pcx-util.h"
-
-enum pcx_text_string
-pcx_coup_character_get_name(enum pcx_coup_character character)
-{
-        static const enum pcx_text_string names[] = {
-                [PCX_COUP_CHARACTER_DUKE] =
+const struct pcx_coup_character_data
+pcx_coup_characters[PCX_COUP_CHARACTER_COUNT] = {
+        [PCX_COUP_CHARACTER_DUKE] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_DUKE,
-                [PCX_COUP_CHARACTER_ASSASSIN] =
-                PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN,
-                [PCX_COUP_CHARACTER_CONTESSA] =
-                PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA,
-                [PCX_COUP_CHARACTER_CAPTAIN] =
-                PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN,
-                [PCX_COUP_CHARACTER_AMBASSADOR] =
-                PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR,
-        };
-
-        assert(character >= 0 && character < PCX_N_ELEMENTS(names));
-
-        return names[character];
-}
-
-enum pcx_text_string
-pcx_coup_character_get_object_name(enum pcx_coup_character character)
-{
-        static const enum pcx_text_string names[] = {
-                [PCX_COUP_CHARACTER_DUKE] =
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE,
-                [PCX_COUP_CHARACTER_ASSASSIN] =
+        },
+        [PCX_COUP_CHARACTER_ASSASSIN] = {
+                PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN,
-                [PCX_COUP_CHARACTER_CONTESSA] =
+        },
+        [PCX_COUP_CHARACTER_CONTESSA] = {
+                PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA,
-                [PCX_COUP_CHARACTER_CAPTAIN] =
+        },
+        [PCX_COUP_CHARACTER_CAPTAIN] = {
+                PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN,
-                [PCX_COUP_CHARACTER_AMBASSADOR] =
+        },
+        [PCX_COUP_CHARACTER_AMBASSADOR] = {
+                PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR,
-        };
-
-        assert(character >= 0 && character < PCX_N_ELEMENTS(names));
-
-        return names[character];
-}
+        },
+};
