@@ -34,10 +34,10 @@
 #define PCX_COUP_MIN_PLAYERS 2
 #define PCX_COUP_MAX_PLAYERS 6
 
-#define PCX_COUP_CARDS_PER_CHARACTER 3
+#define PCX_COUP_CARDS_PER_CLAN 3
 #define PCX_COUP_CARDS_PER_PLAYER 2
-#define PCX_COUP_TOTAL_CARDS (PCX_COUP_CHARACTER_COUNT * \
-                              PCX_COUP_CARDS_PER_CHARACTER)
+#define PCX_COUP_TOTAL_CARDS (PCX_COUP_CLAN_COUNT * \
+                              PCX_COUP_CARDS_PER_CLAN)
 #define PCX_COUP_START_COINS 2
 
 #define PCX_COUP_STACK_SIZE 8
@@ -80,6 +80,7 @@ struct pcx_coup_player {
 };
 
 struct pcx_coup {
+        enum pcx_coup_character clan_characters[PCX_COUP_CLAN_COUNT];
         enum pcx_coup_character deck[PCX_COUP_TOTAL_CARDS];
         struct pcx_coup_player players[PCX_COUP_MAX_PLAYERS];
         int n_players;
@@ -448,11 +449,22 @@ get_buttons(struct pcx_coup *coup,
         if (player->coins >= 7)
                 add_button(coup, buffer, &coup_button);
 
-        add_button(coup, buffer, &tax_button);
-        if (player->coins >= 3)
+        if (coup->clan_characters[PCX_COUP_CLAN_TAX_COLLECTORS] ==
+            PCX_COUP_CHARACTER_DUKE)
+                add_button(coup, buffer, &tax_button);
+
+        if (coup->clan_characters[PCX_COUP_CLAN_ASSASSINS] ==
+            PCX_COUP_CHARACTER_ASSASSIN &&
+            player->coins >= 3)
                 add_button(coup, buffer, &assassinate_button);
-        add_button(coup, buffer, &exchange_button);
-        add_button(coup, buffer, &steal_button);
+
+        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] ==
+            PCX_COUP_CHARACTER_AMBASSADOR)
+                add_button(coup, buffer, &exchange_button);
+
+        if (coup->clan_characters[PCX_COUP_CLAN_THIEVES] ==
+            PCX_COUP_CHARACTER_CAPTAIN)
+                add_button(coup, buffer, &steal_button);
 }
 
 static void
@@ -776,9 +788,11 @@ get_challenged_cards(struct pcx_coup *coup,
                                 pcx_buffer_append_string(buf, final_separator);
                 }
 
-                append_buffer_string(coup,
-                                     buf,
-                                     pcx_coup_characters[i].object_name);
+                enum pcx_coup_character character = coup->clan_characters[i];
+                enum pcx_text_string name =
+                        pcx_coup_characters[character].object_name;
+
+                append_buffer_string(coup, buf, name);
         }
 }
 
@@ -841,10 +855,10 @@ struct challenge_data {
         int player_num;
 
         /* If CHALLENGE_FLAG_CHALLENGE is set */
-        uint32_t challenged_characters;
+        uint32_t challenged_clans;
 
         /* If CHALLENGE_FLAG_BLOCK is set */
-        uint32_t blocking_characters;
+        uint32_t blocking_clans;
         int target_player;
         action_cb block_cb;
 };
@@ -854,7 +868,7 @@ struct reveal_data {
         void *user_data;
         int challenging_player;
         int challenged_player;
-        uint32_t challenged_characters;
+        uint32_t challenged_clans;
 };
 
 static void
@@ -877,8 +891,9 @@ do_reveal(struct pcx_coup *coup,
                 coup->players + data->challenged_player;
         struct pcx_coup_player *challenging_player =
                 coup->players + data->challenging_player;
+        enum pcx_coup_clan clan = pcx_coup_characters[character].clan;
 
-        if ((data->challenged_characters & (UINT32_C(1) << character))) {
+        if ((data->challenged_clans & (UINT32_C(1) << clan))) {
                 enum pcx_text_string character_name =
                         pcx_coup_characters[character].object_name;
                 const char *character_name_string =
@@ -900,7 +915,7 @@ do_reveal(struct pcx_coup *coup,
                 struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
                 get_challenged_cards(coup,
                                      &card_buf,
-                                     data->challenged_characters);
+                                     data->challenged_clans);
                 coup_note(coup,
                           PCX_TEXT_STRING_CHALLENGE_SUCCEEDED,
                           challenging_player->name,
@@ -964,7 +979,7 @@ reveal_idle(struct pcx_coup *coup)
         }
 
         struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
-        get_challenged_cards(coup, &cards, data->challenged_characters);
+        get_challenged_cards(coup, &cards, data->challenged_clans);
 
         pcx_buffer_set_length(&coup->buffer, 0);
         append_buffer_printf(coup,
@@ -1018,7 +1033,7 @@ static void
 reveal_card(struct pcx_coup *coup,
             int challenging_player,
             int challenged_player,
-            uint32_t challenged_characters,
+            uint32_t challenged_clans,
             action_cb cb,
             void *user_data)
 {
@@ -1026,7 +1041,7 @@ reveal_card(struct pcx_coup *coup,
 
         data->challenging_player = challenging_player;
         data->challenged_player = challenged_player;
-        data->challenged_characters = challenged_characters;
+        data->challenged_clans = challenged_clans;
         data->cb = cb;
         data->user_data = user_data;
 
@@ -1113,14 +1128,14 @@ check_challenge_callback_data(struct pcx_coup *coup,
                 remove_challenge_timeout(data);
 
                 int challenged_player = data->player_num;
-                uint32_t challenged_characters = data->challenged_characters;
+                uint32_t challenged_clans = data->challenged_clans;
                 action_cb cb = data->cb;
                 void *user_data = data->user_data;
 
                 reveal_card(coup,
                             player_num,
                             challenged_player,
-                            challenged_characters,
+                            challenged_clans,
                             cb,
                             user_data);
 
@@ -1141,7 +1156,7 @@ check_challenge_callback_data(struct pcx_coup *coup,
                 struct pcx_buffer blocked_names = PCX_BUFFER_STATIC_INIT;
                 get_challenged_cards(coup,
                                      &blocked_names,
-                                     data->blocking_characters);
+                                     data->blocking_clans);
 
                 struct challenge_data *block_data =
                         check_challenge(coup,
@@ -1155,7 +1170,7 @@ check_challenge_callback_data(struct pcx_coup *coup,
 
                 pcx_buffer_destroy(&blocked_names);
 
-                block_data->challenged_characters = data->blocking_characters;
+                block_data->challenged_clans = data->blocking_clans;
         }
 }
 
@@ -1218,7 +1233,7 @@ check_challenge_idle(struct pcx_coup *coup)
 
                 get_challenged_cards(coup,
                                      &blocking_cards,
-                                     data->blocking_characters);
+                                     data->blocking_clans);
 
                 pcx_buffer_append_c(&coup->buffer, '\n');
 
@@ -1428,7 +1443,7 @@ do_foreign_add(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_FOREIGN_AID,
                                 player->name);
 
-        data->blocking_characters = (1 << PCX_COUP_CHARACTER_DUKE);
+        data->blocking_clans = (1 << PCX_COUP_CLAN_TAX_COLLECTORS);
 }
 
 static void
@@ -1449,6 +1464,10 @@ do_accepted_tax(struct pcx_coup *coup,
 static void
 do_tax(struct pcx_coup *coup)
 {
+        if (coup->clan_characters[PCX_COUP_CLAN_TAX_COLLECTORS] !=
+            PCX_COUP_CHARACTER_DUKE)
+                return;
+
         struct pcx_coup_player *player = coup->players + coup->current_player;
 
         struct challenge_data *data =
@@ -1460,7 +1479,7 @@ do_tax(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_TAX,
                                 player->name);
 
-        data->challenged_characters = (1 << PCX_COUP_CHARACTER_DUKE);
+        data->challenged_clans = (1 << PCX_COUP_CLAN_TAX_COLLECTORS);
 }
 
 static void
@@ -1494,6 +1513,10 @@ static void
 do_assassinate(struct pcx_coup *coup,
                int extra_data)
 {
+        if (coup->clan_characters[PCX_COUP_CLAN_ASSASSINS] !=
+            PCX_COUP_CHARACTER_ASSASSIN)
+                return;
+
         struct pcx_coup_player *player = coup->players + coup->current_player;
 
         if (player->coins < 3)
@@ -1525,8 +1548,8 @@ do_assassinate(struct pcx_coup *coup,
                                 player->name,
                                 target->name);
 
-        data->challenged_characters = (1 << PCX_COUP_CHARACTER_ASSASSIN);
-        data->blocking_characters = (1 << PCX_COUP_CHARACTER_CONTESSA);
+        data->challenged_clans = (1 << PCX_COUP_CLAN_ASSASSINS);
+        data->blocking_clans = (1 << PCX_COUP_CLAN_INTOUCHABLES);
         data->block_cb = block_assassinate;
         data->target_player = extra_data;
 }
@@ -1655,6 +1678,10 @@ do_accepted_exchange(struct pcx_coup *coup,
 static void
 do_exchange(struct pcx_coup *coup)
 {
+        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] !=
+            PCX_COUP_CHARACTER_AMBASSADOR)
+                return;
+
         struct pcx_coup_player *player = coup->players + coup->current_player;
 
         struct challenge_data *data =
@@ -1666,7 +1693,7 @@ do_exchange(struct pcx_coup *coup)
                                 PCX_TEXT_STRING_DOING_EXCHANGE,
                                 player->name);
 
-        data->challenged_characters = (1 << PCX_COUP_CHARACTER_AMBASSADOR);
+        data->challenged_clans = (1 << PCX_COUP_CLAN_NEGOTIATORS);
 }
 
 static void
@@ -1692,6 +1719,10 @@ static void
 do_steal(struct pcx_coup *coup,
          int extra_data)
 {
+        if (coup->clan_characters[PCX_COUP_CLAN_THIEVES] !=
+            PCX_COUP_CHARACTER_CAPTAIN)
+                return;
+
         struct pcx_coup_player *player = coup->players + coup->current_player;
 
         if (extra_data == -1) {
@@ -1720,9 +1751,9 @@ do_steal(struct pcx_coup *coup,
                                 player->name,
                                 target->name);
 
-        data->challenged_characters = (1 << PCX_COUP_CHARACTER_CAPTAIN);
-        data->blocking_characters = ((1 << PCX_COUP_CHARACTER_AMBASSADOR) |
-                                     (1 << PCX_COUP_CHARACTER_CAPTAIN));
+        data->challenged_clans = (1 << PCX_COUP_CLAN_THIEVES);
+        data->blocking_clans = ((1 << PCX_COUP_CLAN_NEGOTIATORS) |
+                                (1 << PCX_COUP_CLAN_THIEVES));
         data->target_player = extra_data;
 }
 
@@ -1788,9 +1819,10 @@ create_deck(struct pcx_coup *coup,
 {
         coup->n_cards = PCX_COUP_TOTAL_CARDS;
 
-        for (unsigned ch = 0; ch < PCX_COUP_CHARACTER_COUNT; ch++) {
-                for (unsigned c = 0; c < PCX_COUP_CARDS_PER_CHARACTER; c++)
-                        coup->deck[ch * PCX_COUP_CARDS_PER_CHARACTER + c] = ch;
+        for (unsigned ch = 0; ch < PCX_COUP_CLAN_COUNT; ch++) {
+                for (unsigned c = 0; c < PCX_COUP_CARDS_PER_CLAN; c++)
+                        coup->deck[ch * PCX_COUP_CARDS_PER_CLAN + c] =
+                                coup->clan_characters[ch];
         }
 
         shuffle_deck(coup);
@@ -1829,6 +1861,17 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         assert(n_players > 0 && n_players <= PCX_COUP_MAX_PLAYERS);
 
         struct pcx_coup *coup = pcx_calloc(sizeof *coup);
+
+        coup->clan_characters[PCX_COUP_CLAN_TAX_COLLECTORS] =
+                PCX_COUP_CHARACTER_DUKE;
+        coup->clan_characters[PCX_COUP_CLAN_THIEVES] =
+                PCX_COUP_CHARACTER_CAPTAIN;
+        coup->clan_characters[PCX_COUP_CLAN_INTOUCHABLES] =
+                PCX_COUP_CHARACTER_CONTESSA;
+        coup->clan_characters[PCX_COUP_CLAN_ASSASSINS] =
+                PCX_COUP_CHARACTER_ASSASSIN;
+        coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] =
+                PCX_COUP_CHARACTER_AMBASSADOR;
 
         coup->language = language;
         coup->callbacks = *callbacks;

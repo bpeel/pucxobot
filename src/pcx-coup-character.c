@@ -19,25 +19,30 @@
 #include "pcx-coup-character.h"
 
 const struct pcx_coup_character_data
-pcx_coup_characters[PCX_COUP_CHARACTER_COUNT] = {
+pcx_coup_characters[] = {
         [PCX_COUP_CHARACTER_DUKE] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_DUKE,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE,
+                PCX_COUP_CLAN_TAX_COLLECTORS,
         },
         [PCX_COUP_CHARACTER_ASSASSIN] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_ASSASSIN,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN,
+                PCX_COUP_CLAN_ASSASSINS,
         },
         [PCX_COUP_CHARACTER_CONTESSA] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_CONTESSA,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CONTESSA,
+                PCX_COUP_CLAN_INTOUCHABLES,
         },
         [PCX_COUP_CHARACTER_CAPTAIN] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_CAPTAIN,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_CAPTAIN,
+                PCX_COUP_CLAN_THIEVES,
         },
         [PCX_COUP_CHARACTER_AMBASSADOR] = {
                 PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR,
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR,
+                PCX_COUP_CLAN_NEGOTIATORS,
         },
 };

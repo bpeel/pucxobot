@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2020  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,27 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_COUP_CHARACTER_H
-#define PCX_COUP_CHARACTER_H
+#ifndef PCX_COUP_CLAN_H
+#define PCX_COUP_CLAN_H
 
-#include "pcx-text.h"
-#include "pcx-coup-clan.h"
-
-enum pcx_coup_character {
-        PCX_COUP_CHARACTER_DUKE,
-        PCX_COUP_CHARACTER_ASSASSIN,
-        PCX_COUP_CHARACTER_CONTESSA,
-        PCX_COUP_CHARACTER_CAPTAIN,
-        PCX_COUP_CHARACTER_AMBASSADOR
+enum pcx_coup_clan {
+        PCX_COUP_CLAN_TAX_COLLECTORS,
+        PCX_COUP_CLAN_THIEVES,
+        PCX_COUP_CLAN_INTOUCHABLES,
+        PCX_COUP_CLAN_ASSASSINS,
+        PCX_COUP_CLAN_NEGOTIATORS,
 };
 
-struct pcx_coup_character_data {
-        enum pcx_text_string name;
-        enum pcx_text_string object_name;
-        enum pcx_coup_clan clan;
-};
+#define PCX_COUP_CLAN_COUNT 5
 
-extern const struct pcx_coup_character_data
-pcx_coup_characters[];
-
-#endif /* PCX_COUP_CHARACTER_H */
+#endif /* PCX_COUP_CLAN_H */
