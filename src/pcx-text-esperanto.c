@@ -213,6 +213,8 @@ pcx_text_esperanto[] = {
         "Kapitano",
         [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
         "Ambasadoro",
+        [PCX_TEXT_STRING_CHARACTER_NAME_INSPECTOR] =
+        "Inspektisto",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
         "la dukon",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
@@ -223,6 +225,8 @@ pcx_text_esperanto[] = {
         "la kapitanon",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "la ambasadoron",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
+        "la inspektiston",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Ŝoforo",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =

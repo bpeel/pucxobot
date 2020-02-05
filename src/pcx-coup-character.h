@@ -27,7 +27,8 @@ enum pcx_coup_character {
         PCX_COUP_CHARACTER_ASSASSIN,
         PCX_COUP_CHARACTER_CONTESSA,
         PCX_COUP_CHARACTER_CAPTAIN,
-        PCX_COUP_CHARACTER_AMBASSADOR
+        PCX_COUP_CHARACTER_AMBASSADOR,
+        PCX_COUP_CHARACTER_INSPECTOR,
 };
 
 struct pcx_coup_character_data {

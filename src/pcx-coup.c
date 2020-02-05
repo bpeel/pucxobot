@@ -458,9 +458,14 @@ get_buttons(struct pcx_coup *coup,
             player->coins >= 3)
                 add_button(coup, buffer, &assassinate_button);
 
-        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] ==
-            PCX_COUP_CHARACTER_AMBASSADOR)
+        switch (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS]) {
+        case PCX_COUP_CHARACTER_AMBASSADOR:
+        case PCX_COUP_CHARACTER_INSPECTOR:
                 add_button(coup, buffer, &exchange_button);
+                break;
+        default:
+                break;
+        }
 
         if (coup->clan_characters[PCX_COUP_CLAN_THIEVES] ==
             PCX_COUP_CHARACTER_CAPTAIN)
@@ -1661,7 +1666,15 @@ do_accepted_exchange(struct pcx_coup *coup,
                 }
         }
 
-        for (unsigned i = 0; i < CARDS_TAKEN_IN_EXCHANGE; i++) {
+        unsigned cards_to_take;
+
+        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] ==
+            PCX_COUP_CHARACTER_INSPECTOR)
+                cards_to_take = 1;
+        else
+                cards_to_take = CARDS_TAKEN_IN_EXCHANGE;
+
+        for (unsigned i = 0; i < cards_to_take; i++) {
                 data->available_cards[data->n_cards_available++] =
                         take_card(coup);
         }
@@ -1678,9 +1691,13 @@ do_accepted_exchange(struct pcx_coup *coup,
 static void
 do_exchange(struct pcx_coup *coup)
 {
-        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] !=
-            PCX_COUP_CHARACTER_AMBASSADOR)
+        switch (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS]) {
+        case PCX_COUP_CHARACTER_AMBASSADOR:
+        case PCX_COUP_CHARACTER_INSPECTOR:
+                break;
+        default:
                 return;
+        }
 
         struct pcx_coup_player *player = coup->players + coup->current_player;
 

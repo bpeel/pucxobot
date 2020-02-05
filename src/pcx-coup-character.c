@@ -45,4 +45,9 @@ pcx_coup_characters[] = {
                 PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR,
                 PCX_COUP_CLAN_NEGOTIATORS,
         },
+        [PCX_COUP_CHARACTER_INSPECTOR] = {
+                PCX_TEXT_STRING_CHARACTER_NAME_INSPECTOR,
+                PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR,
+                PCX_COUP_CLAN_NEGOTIATORS,
+        },
 };
