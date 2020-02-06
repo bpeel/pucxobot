@@ -119,39 +119,74 @@ make_card_status(struct pcx_buffer *buf,
         }
 }
 
+static bool
+is_alive(const struct player_status *player)
+{
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(player->cards); i++) {
+                if (!player->cards[i].dead)
+                        return true;
+        }
+
+        return false;
+}
+
 static char *
 make_status_message(const struct status *status)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        int winner = -1;
+        int n_alive_players = 0;
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(player_names); i++) {
-                if (status->current_player == i)
+                if (is_alive(status->players + i)) {
+                        winner = i;
+                        n_alive_players++;
+                }
+        }
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(player_names); i++) {
+                const struct player_status *player = status->players + i;
+
+                if (n_alive_players == 1) {
+                        if (winner == i)
+                                pcx_buffer_append_string(&buf, "🏆 ");
+                } else if (status->current_player == i) {
                         pcx_buffer_append_string(&buf, "👉 ");
+                }
 
                 pcx_buffer_append_printf(&buf, "%s:\n", player_names[i]);
 
                 for (unsigned card = 0;
-                     card < PCX_N_ELEMENTS(status->players[i].cards);
+                     card < PCX_N_ELEMENTS(player->cards);
                      card++) {
-                        make_card_status(&buf, status->players[i].cards + card);
+                        make_card_status(&buf, player->cards + card);
                 }
 
-                pcx_buffer_append_string(&buf, ", ");
+                if (is_alive(status->players + i)) {
+                        pcx_buffer_append_string(&buf, ", ");
 
-                if (status->players[i].coins == 1) {
-                        pcx_buffer_append_string(&buf, "1 monero");
-                } else {
-                        pcx_buffer_append_printf(&buf,
-                                                 "%i moneroj",
-                                                 status->players[i].coins);
+                        if (player->coins == 1) {
+                                pcx_buffer_append_string(&buf, "1 monero");
+                        } else {
+                                pcx_buffer_append_printf(&buf,
+                                                         "%i moneroj",
+                                                         player->coins);
+                        }
                 }
 
                 pcx_buffer_append_string(&buf, "\n\n");
         }
 
-        pcx_buffer_append_printf(&buf,
-                                 "%s, estas via vico, kion vi volas fari?",
-                                 player_names[status->current_player]);
+        if (n_alive_players == 1) {
+                pcx_buffer_append_printf(&buf,
+                                         "%s venkis!",
+                                         player_names[winner]);
+        } else {
+                pcx_buffer_append_printf(&buf,
+                                         "%s, estas via vico, "
+                                         "kion vi volas fari?",
+                                         player_names[status->current_player]);
+        }
 
 
         return (char *) buf.data;
