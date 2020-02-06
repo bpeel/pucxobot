@@ -32,6 +32,7 @@ enum message_type {
         MESSAGE_TYPE_GLOBAL,
         MESSAGE_TYPE_GAME_OVER,
         MESSAGE_TYPE_STATUS,
+        MESSAGE_TYPE_SHOW_CARDS,
 };
 
 struct message {
@@ -362,6 +363,13 @@ send_callback_data(struct test_data *data,
                 case MESSAGE_TYPE_STATUS:
                         message->type = MESSAGE_TYPE_GLOBAL;
                         message->message = make_status_message(&data->status);
+                        continue;
+                case MESSAGE_TYPE_SHOW_CARDS:
+                        message->type = MESSAGE_TYPE_PRIVATE;
+                        message->destination = va_arg(ap, int);
+                        message->message =
+                                make_show_cards_message(data->status.players +
+                                                        message->destination);
                         continue;
                 }
 
