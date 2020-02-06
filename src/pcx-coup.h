@@ -20,7 +20,19 @@
 #define PCX_COUP_H
 
 #include "pcx-game.h"
+#include "pcx-coup-character.h"
 
 extern const struct pcx_game pcx_coup_game;
+
+struct pcx_coup;
+
+struct pcx_coup *
+pcx_coup_new(const struct pcx_game_callbacks *callbacks,
+             void *user_data,
+             enum pcx_text_language language,
+             int n_players,
+             const char *const *names,
+             int n_card_overrides,
+             const enum pcx_coup_character *card_overrides);
 
 #endif /* PCX_COUP_H */
