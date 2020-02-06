@@ -466,6 +466,8 @@ create_test_data(int n_card_overrides,
         queue_message(data, MESSAGE_TYPE_GLOBAL)->message =
                 make_status_message(&data->status);
 
+        srand(0);
+
         data->coup = pcx_coup_new(&callbacks,
                                   data,
                                   PCX_TEXT_LANGUAGE_ESPERANTO,
