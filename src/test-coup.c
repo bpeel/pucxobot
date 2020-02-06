@@ -712,13 +712,260 @@ done:
         return ret;
 }
 
+static struct test_data *
+set_up_foreign_aid(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_ASSASSIN,
+                PCX_COUP_CHARACTER_AMBASSADOR
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "foreign_aid",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "💴 Bob prenas 2 monerojn per "
+                                      "eksterlanda helpo.\n"
+                                      "Ĉu iu volas pretendi havi la dukon "
+                                      "kaj bloki rin?",
+                                      -1);
+        if (!ret) {
+                free_test_data(data);
+                return NULL;
+        }
+
+        return data;
+}
+
+static bool
+test_accept_foreign_aid(void)
+{
+        struct test_data *data = set_up_foreign_aid();
+
+        if (data == NULL)
+                return false;
+
+        data->status.current_player = 0;
+        data->status.players[1].coins += 2;
+
+        /* Try block the action */
+        bool ret = send_callback_data(data,
+                                      0,
+                                      "accept",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "Neniu blokis, Bob prenas la 2 monerojn",
+                                      MESSAGE_TYPE_STATUS,
+                                      -1);
+
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+block_foreign_aid(struct test_data *data)
+{
+        return send_callback_data(data,
+                                  0,
+                                  "block",
+                                  MESSAGE_TYPE_GLOBAL,
+                                  "Alice pretendas havi la dukon kaj "
+                                  "blokas.\n"
+                                  "Ĉu iu volas defii rin?",
+                                  -1);
+}
+
+static bool
+block_and_challenge_foreign_aid(struct test_data *data)
+{
+        bool ret;
+
+        /* Try blocking the action */
+        ret = block_foreign_aid(data);
+        if (!ret)
+                return false;
+
+        /* Challenge it! */
+        ret = send_callback_data(data,
+                                 1,
+                                 "challenge",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Bob ne kredas ke vi havas la dukon.\n"
+                                 "Kiun karton vi volas montri?",
+                                 -1);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+test_accept_block_foreign_aid(void)
+{
+        struct test_data *data = set_up_foreign_aid();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = block_foreign_aid(data);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 0;
+
+        /* Accept the block */
+        ret = send_callback_data(data,
+                                 1,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis. La ago estis blokita.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_failed_challenge_block_foreign_aid(void)
+{
+        struct test_data *data = set_up_foreign_aid();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = block_and_challenge_foreign_aid(data);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].cards[0].character =
+                PCX_COUP_CHARACTER_AMBASSADOR;
+
+        /* Reveal the duke */
+        ret = send_callback_data(data,
+                                 0,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis sed Alice ja havis la dukon kaj "
+                                 "Bob perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiun karton vi volas perdi?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[0].dead = true;
+        data->status.current_player = 0;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "lose:0",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis. La ago estis blokita.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_failed_block_foreign_aid(void)
+{
+        struct test_data *data = set_up_foreign_aid();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = block_and_challenge_foreign_aid(data);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].cards[1].dead = true;
+
+        /* Reveal something other than the duke */
+        ret = send_callback_data(data,
+                                 0,
+                                 "reveal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj Alice ne havis la dukon kaj "
+                                 "Alice perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💴 Bob prenas 2 monerojn per "
+                                 "eksterlanda helpo.\n"
+                                 "Ĉu iu volas pretendi havi la dukon "
+                                 "kaj bloki rin?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Now just accept it */
+        data->status.current_player = 0;
+        data->status.players[1].coins += 2;
+
+        /* Try block the action */
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis, Bob prenas la 2 monerojn",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_foreign_aid(void)
+{
+        return (test_accept_foreign_aid() &&
+                test_accept_block_foreign_aid() &&
+                test_failed_challenge_block_foreign_aid() &&
+                test_failed_block_foreign_aid());
+}
+
 int
 main(int argc, char **argv)
 {
         int ret = EXIT_SUCCESS;
 
         if (!test_income() ||
-            !test_coup())
+            !test_coup() ||
+            !test_foreign_aid())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
