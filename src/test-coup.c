@@ -456,6 +456,32 @@ free_test_data(struct test_data *data)
 }
 
 static bool
+take_income(struct test_data *data)
+{
+        int active_player = data->status.current_player;
+
+        data->status.players[active_player].coins++;
+        data->status.current_player = active_player ^ 1;
+
+        struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
+        pcx_buffer_append_printf(&message,
+                                 "💲 %s enspezas 1 moneron",
+                                 player_names[active_player]);
+
+        bool ret = send_callback_data(data,
+                                      active_player,
+                                      "income",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      (char *) message.data,
+                                      MESSAGE_TYPE_STATUS,
+                                      -1);
+
+        pcx_buffer_destroy(&message);
+
+        return ret;
+}
+
+static bool
 test_income(void)
 {
         enum pcx_coup_character override_cards[] = {
@@ -469,27 +495,14 @@ test_income(void)
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards);
 
-        data->status.players[1].coins++;
-        data->status.current_player = 0;
+        bool ret = true;
 
-        bool ret = send_callback_data(data,
-                                      1,
-                                      "income",
-                                      MESSAGE_TYPE_GLOBAL,
-                                      "💲 Bob enspezas 1 moneron",
-                                      MESSAGE_TYPE_STATUS,
-                                      -1);
-
-        data->status.players[0].coins++;
-        data->status.current_player = 1;
-
-        ret = ret && send_callback_data(data,
-                                        0,
-                                        "income",
-                                        MESSAGE_TYPE_GLOBAL,
-                                        "💲 Alice enspezas 1 moneron",
-                                        MESSAGE_TYPE_STATUS,
-                                        -1);
+        for (int i = 0; i < 4; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        break;
+                }
+        }
 
         free_test_data(data);
 
