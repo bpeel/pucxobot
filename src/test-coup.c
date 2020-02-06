@@ -94,7 +94,12 @@ make_show_cards_message(const struct player_status *status)
         for (unsigned i = 0; i < PCX_N_ELEMENTS(status->cards); i++) {
                 const char *card_name =
                         get_card_name(status->cards[i].character);
+                bool dead = status->cards[i].dead;
+                if (dead)
+                        pcx_buffer_append_string(&buf, "☠");
                 pcx_buffer_append_string(&buf, card_name);
+                if (dead)
+                        pcx_buffer_append_string(&buf, "☠");
                 pcx_buffer_append_string(&buf, "\n");
         }
 
@@ -105,7 +110,12 @@ static void
 make_card_status(struct pcx_buffer *buf,
                  const struct card_status *card)
 {
-        pcx_buffer_append_string(buf, "🂠");
+        if (card->dead) {
+                const char *card_name = get_card_name(card->character);
+                pcx_buffer_append_printf(buf, "☠%s☠", card_name);
+        } else {
+                pcx_buffer_append_string(buf, "🂠");
+        }
 }
 
 static char *
