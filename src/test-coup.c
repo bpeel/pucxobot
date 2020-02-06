@@ -544,12 +544,179 @@ test_income(void)
         return ret;
 }
 
+static bool
+do_coup(struct test_data *data)
+{
+        int active_player = data->status.current_player;
+
+        struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
+        pcx_buffer_append_printf(&message,
+                                 "💣 %s faras puĉon kontraŭ %s",
+                                 player_names[active_player],
+                                 player_names[active_player ^ 1]);
+
+        struct pcx_buffer callback_data = PCX_BUFFER_STATIC_INIT;
+        pcx_buffer_append_printf(&callback_data, "coup:%i", active_player ^ 1);
+
+        bool ret = send_callback_data(data,
+                                      active_player,
+                                      (char *) callback_data.data,
+                                      MESSAGE_TYPE_GLOBAL,
+                                      (char *) message.data,
+                                      MESSAGE_TYPE_PRIVATE,
+                                      active_player ^ 1,
+                                      "Kiun karton vi volas perdi?",
+                                      -1);
+        if (!ret)
+                goto done;
+
+        int card_to_lose;
+
+        for (card_to_lose = 0; card_to_lose < 2; card_to_lose++) {
+                struct card_status *card =
+                        (data->status.players[active_player ^ 1].cards +
+                         card_to_lose);
+                if (!card->dead)
+                        goto found_card;
+        }
+
+        assert(!"no alive card found to reveal");
+
+found_card:
+        pcx_buffer_set_length(&callback_data, 0);
+        pcx_buffer_append_printf(&callback_data, "lose:%i", card_to_lose);
+        data->status.players[active_player].coins -= 7;
+        data->status.players[active_player ^ 1].cards[card_to_lose].dead = true;
+        data->status.current_player ^= 1;
+
+        ret = send_callback_data(data,
+                                 active_player ^ 1,
+                                 (char *) callback_data.data,
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 active_player ^ 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        pcx_buffer_destroy(&message);
+        pcx_buffer_destroy(&callback_data);
+
+        return ret;
+}
+
+static bool
+test_coup(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_ASSASSIN
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        /* Try to do a coup without having enough coins. The request
+         * should just be silently ignored.
+         */
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "coup:0",
+                                      -1);
+        if (!ret)
+                goto done;
+
+        /* Give 6 coins to each player so that Bob will have 7 */
+        for (int i = 0; i < 12; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        assert(data->status.players[1].coins == 7 &&
+               data->status.current_player == 1);
+
+        /* The coup should work this time */
+        if (!do_coup(data)) {
+                ret = false;
+                goto done;
+        }
+
+        /* Give two coins to each player. That way it should be
+         * Alice’s turn and she should have 10 coins.
+         */
+        for (int i = 0; i < 4; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        assert(data->status.players[0].coins == 10 &&
+               data->status.current_player == 0);
+
+        /* Try to take income. This should be silently ignored because
+         * Alice is forced to do a coup when she has 10 coins.
+         */
+        ret = send_callback_data(data,
+                                 0,
+                                 "income",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* The coup should work this time */
+        if (!do_coup(data)) {
+                ret = false;
+                goto done;
+        }
+
+        /* Give five coins to each player so that Bob will have 7
+         * again
+         */
+        for (int i = 0; i < 10; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        assert(data->status.players[1].coins == 7 &&
+               data->status.current_player == 1);
+
+        /* Let Bob finish the game with a coup */
+        data->status.players[1].coins = 0;
+        data->status.players[0].cards[1].dead = true;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "coup:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💣 Bob faras puĉon kontraŭ Alice",
+                                 MESSAGE_TYPE_STATUS,
+                                 MESSAGE_TYPE_GAME_OVER,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
         int ret = EXIT_SUCCESS;
 
-        if (!test_income())
+        if (!test_income() ||
+            !test_coup())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
