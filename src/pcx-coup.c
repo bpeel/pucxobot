@@ -93,6 +93,7 @@ struct pcx_coup {
         bool action_taken;
         struct pcx_main_context_source *game_over_source;
         enum pcx_text_language language;
+        int (* rand_func)(void);
 };
 
 struct coup_text_button {
@@ -618,7 +619,7 @@ shuffle_deck(struct pcx_coup *coup)
                 return;
 
         for (unsigned i = coup->n_cards - 1; i > 0; i--) {
-                int j = rand() % (i + 1);
+                int j = coup->rand_func() % (i + 1);
                 enum pcx_coup_character t = coup->deck[j];
                 coup->deck[j] = coup->deck[i];
                 coup->deck[i] = t;
@@ -1833,6 +1834,11 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         coup->callbacks = *callbacks;
         coup->user_data = user_data;
 
+        if (overrides && overrides->rand_func)
+                coup->rand_func = overrides->rand_func;
+        else
+                coup->rand_func = rand;
+
         create_deck(coup, overrides);
 
         coup->n_players = n_players;
@@ -1841,7 +1847,7 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
                        overrides->start_player < n_players);
                 coup->current_player = overrides->start_player;
         } else {
-                coup->current_player = rand() % n_players;
+                coup->current_player = coup->rand_func() % n_players;
         }
 
         for (unsigned i = 0; i < n_players; i++) {

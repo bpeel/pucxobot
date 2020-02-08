@@ -130,6 +130,12 @@ is_alive(const struct player_status *player)
         return false;
 }
 
+static int
+fake_random_number_generator(void)
+{
+        return 0x42424242;
+}
+
 static char *
 make_status_message(const struct status *status)
 {
@@ -466,12 +472,11 @@ create_test_data(int n_card_overrides,
         queue_message(data, MESSAGE_TYPE_GLOBAL)->message =
                 make_status_message(&data->status);
 
-        srand(0);
-
         struct pcx_coup_debug_overrides overrides = {
                 .n_cards = n_card_overrides,
                 .cards = card_overrides,
                 .start_player = 1,
+                .rand_func = fake_random_number_generator,
         };
 
         data->coup = pcx_coup_new(&callbacks,
@@ -725,7 +730,6 @@ set_up_foreign_aid(void)
                 PCX_COUP_CHARACTER_CAPTAIN,
                 PCX_COUP_CHARACTER_CONTESSA,
                 PCX_COUP_CHARACTER_ASSASSIN,
-                PCX_COUP_CHARACTER_AMBASSADOR
         };
 
         struct test_data *data =
@@ -860,7 +864,7 @@ test_failed_challenge_block_foreign_aid(void)
                 goto done;
 
         data->status.players[0].cards[0].character =
-                PCX_COUP_CHARACTER_AMBASSADOR;
+                PCX_COUP_CHARACTER_CONTESSA;
 
         /* Reveal the duke */
         ret = send_callback_data(data,
