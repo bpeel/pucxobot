@@ -1836,7 +1836,13 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         create_deck(coup, overrides);
 
         coup->n_players = n_players;
-        coup->current_player = rand() % n_players;
+        if (overrides) {
+                assert(overrides->start_player >= 0 &&
+                       overrides->start_player < n_players);
+                coup->current_player = overrides->start_player;
+        } else {
+                coup->current_player = rand() % n_players;
+        }
 
         for (unsigned i = 0; i < n_players; i++) {
                 coup->players[i].coins = PCX_COUP_START_COINS;

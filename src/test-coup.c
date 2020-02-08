@@ -471,6 +471,7 @@ create_test_data(int n_card_overrides,
         struct pcx_coup_debug_overrides overrides = {
                 .n_cards = n_card_overrides,
                 .cards = card_overrides,
+                .start_player = 1,
         };
 
         data->coup = pcx_coup_new(&callbacks,

@@ -29,6 +29,7 @@ struct pcx_coup;
 struct pcx_coup_debug_overrides {
         int n_cards;
         const enum pcx_coup_character *cards;
+        int start_player;
 };
 
 struct pcx_coup *
