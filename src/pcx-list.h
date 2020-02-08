@@ -71,7 +71,7 @@ void
 pcx_list_remove(struct pcx_list *elm);
 
 int
-pcx_list_length(struct pcx_list *list);
+pcx_list_length(const struct pcx_list *list);
 
 int
 pcx_list_empty(struct pcx_list *list);

@@ -54,9 +54,9 @@ pcx_list_remove(struct pcx_list *elm)
 }
 
 int
-pcx_list_length(struct pcx_list *list)
+pcx_list_length(const struct pcx_list *list)
 {
-        struct pcx_list *e;
+        const struct pcx_list *e;
         int count;
 
         count = 0;
