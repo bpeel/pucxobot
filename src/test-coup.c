@@ -33,6 +33,13 @@ enum message_type {
         MESSAGE_TYPE_GAME_OVER,
         MESSAGE_TYPE_STATUS,
         MESSAGE_TYPE_SHOW_CARDS,
+        MESSAGE_TYPE_BUTTONS,
+};
+
+struct button {
+        struct pcx_list link;
+        char *data;
+        char *text;
 };
 
 struct message {
@@ -40,6 +47,8 @@ struct message {
         enum message_type type;
         int destination;
         char *message;
+        bool check_buttons;
+        struct pcx_list buttons;
 };
 
 struct card_status {
@@ -74,6 +83,16 @@ player_names[] = {
 static void
 free_message(struct message *message)
 {
+        if (message->check_buttons) {
+                struct button *button, *tmp;
+
+                pcx_list_for_each_safe(button, tmp, &message->buttons, link) {
+                        pcx_free(button->data);
+                        pcx_free(button->text);
+                        pcx_free(button);
+                }
+        }
+
         pcx_free(message->message);
         pcx_free(message);
 }
@@ -134,6 +153,49 @@ static int
 fake_random_number_generator(void)
 {
         return 0x42424242;
+}
+
+static void
+enable_check_buttons(struct message *message)
+{
+        assert(message->check_buttons == false);
+
+        pcx_list_init(&message->buttons);
+
+        message->check_buttons = true;
+}
+
+static void
+add_button_to_message(struct message *message,
+                      const char *data,
+                      const char *text)
+{
+        assert(message->type == MESSAGE_TYPE_GLOBAL ||
+               message->type == MESSAGE_TYPE_PRIVATE);
+        assert(message->check_buttons);
+
+        struct button *button = pcx_alloc(sizeof *button);
+        button->data = pcx_strdup(data);
+        button->text = pcx_strdup(text);
+        pcx_list_insert(message->buttons.prev, &button->link);
+}
+
+static void
+add_buttons_to_message(struct message *message,
+                       va_list ap)
+{
+        enable_check_buttons(message);
+
+        while (true) {
+                const char *data = va_arg(ap, const char *);
+
+                if (data == NULL)
+                        break;
+
+                const char *text = va_arg(ap, const char *);
+
+                add_button_to_message(message, data, text);
+        }
 }
 
 static char *
@@ -199,6 +261,97 @@ make_status_message(const struct status *status)
 }
 
 static void
+add_status_buttons(struct message *message,
+                   const struct status *status)
+{
+        enable_check_buttons(message);
+
+        int n_players = 0;
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(status->players); i++) {
+                if (is_alive(status->players + i))
+                        n_players++;
+        }
+
+        if (n_players <= 1)
+                return;
+
+        const struct player_status *player =
+                status->players + status->current_player;
+
+        if (player->coins >= 10) {
+                add_button_to_message(message, "coup", "Puĉo");
+                return;
+        }
+
+        add_button_to_message(message, "income", "Enspezi");
+        add_button_to_message(message, "foreign_aid", "Eksterlanda helpo");
+
+        if (player->coins >= 7)
+                add_button_to_message(message, "coup", "Puĉo");
+
+        add_button_to_message(message, "tax", "Imposto (Duko)");
+
+        if (player->coins >= 3) {
+                add_button_to_message(message,
+                                      "assassinate",
+                                      "Murdi (Murdisto)");
+        }
+
+        add_button_to_message(message, "exchange", "Interŝanĝi (Ambasadoro)");
+        add_button_to_message(message, "steal", "Ŝteli (Kapitano)");
+}
+
+static bool
+check_buttons(const struct message *message,
+              size_t n_buttons,
+              const struct pcx_game_button *buttons)
+{
+        if (!message->check_buttons)
+                return true;
+
+        unsigned i = 0;
+        const struct button *button;
+
+        pcx_list_for_each(button, &message->buttons, link) {
+                if (i >= n_buttons) {
+                        fprintf(stderr,
+                                "message received containing %u "
+                                "buttons when %u were expected\n",
+                                (unsigned) n_buttons,
+                                (unsigned) pcx_list_length(&message->buttons));
+                        return false;
+                }
+
+                if (strcmp(button->data, buttons[i].data) ||
+                    strcmp(button->text, buttons[i].text)) {
+                        fprintf(stderr,
+                                "button does not match.\n"
+                                "Got: %s) %s\n"
+                                "Expected: %s) %s\n",
+                                buttons[i].data,
+                                buttons[i].text,
+                                button->data,
+                                button->text);
+                        return false;
+                }
+
+                i++;
+        }
+
+        if (i != n_buttons) {
+                fprintf(stderr,
+                        "message received containing %u "
+                        "buttons when %u were expected\n",
+                        (unsigned) n_buttons,
+                        (unsigned) pcx_list_length(&message->buttons));
+                return false;
+        }
+
+        return true;
+}
+
+static void
 send_private_message_cb(int user_num,
                         enum pcx_game_message_format format,
                         const char *message_text,
@@ -261,6 +414,11 @@ send_private_message_cb(int user_num,
                 return;
         }
 
+        if (!check_buttons(message, n_buttons, buttons)) {
+                data->had_error = true;
+                return;
+        }
+
         pcx_list_remove(&message->link);
         free_message(message);
 }
@@ -303,6 +461,11 @@ send_message_cb(enum pcx_game_message_format format,
                         "Expected: %s\n",
                         message_text,
                         message->message);
+                data->had_error = true;
+                return;
+        }
+
+        if (!check_buttons(message, n_buttons, buttons)) {
                 data->had_error = true;
                 return;
         }
@@ -389,6 +552,16 @@ send_callback_data(struct test_data *data,
                 if (type == -1)
                         break;
 
+                if (type == MESSAGE_TYPE_BUTTONS) {
+                        assert(!pcx_list_empty(&data->message_queue));
+                        struct message *message =
+                                pcx_container_of(data->message_queue.prev,
+                                                 struct message,
+                                                 link);
+                        add_buttons_to_message(message, ap);
+                        continue;
+                }
+
                 struct message *message = queue_message(data, type);
 
                 switch ((enum message_type) type) {
@@ -404,6 +577,7 @@ send_callback_data(struct test_data *data,
                 case MESSAGE_TYPE_STATUS:
                         message->type = MESSAGE_TYPE_GLOBAL;
                         message->message = make_status_message(&data->status);
+                        add_status_buttons(message, &data->status);
                         continue;
                 case MESSAGE_TYPE_SHOW_CARDS:
                         message->type = MESSAGE_TYPE_PRIVATE;
@@ -411,7 +585,10 @@ send_callback_data(struct test_data *data,
                         message->message =
                                 make_show_cards_message(data->status.players +
                                                         message->destination);
+                        enable_check_buttons(message);
                         continue;
+                case MESSAGE_TYPE_BUTTONS:
+                        break;
                 }
 
                 assert(!"unexpected message type");
@@ -744,6 +921,10 @@ set_up_foreign_aid(void)
                                       "eksterlanda helpo.\n"
                                       "Ĉu iu volas pretendi havi la dukon "
                                       "kaj bloki rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "block", "Bloki",
+                                      "accept", "Akcepti",
+                                      NULL,
                                       -1);
         if (!ret) {
                 free_test_data(data);
@@ -788,6 +969,10 @@ block_foreign_aid(struct test_data *data)
                                   "Alice pretendas havi la dukon kaj "
                                   "blokas.\n"
                                   "Ĉu iu volas defii rin?",
+                                  MESSAGE_TYPE_BUTTONS,
+                                  "challenge", "Defii",
+                                  "accept", "Akcepti",
+                                  NULL,
                                   -1);
 }
 
@@ -809,6 +994,10 @@ block_and_challenge_foreign_aid(struct test_data *data)
                                  0,
                                  "Bob ne kredas ke vi havas la dukon.\n"
                                  "Kiun karton vi volas montri?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Duko",
+                                 "reveal:1", "Kapitano",
+                                 NULL,
                                  -1);
         if (!ret)
                 return false;
@@ -878,6 +1067,10 @@ test_failed_challenge_block_foreign_aid(void)
                                  MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Grafino",
+                                 "lose:1", "Murdisto",
+                                 NULL,
                                  -1);
         if (!ret)
                 goto done;
@@ -933,6 +1126,10 @@ test_failed_block_foreign_aid(void)
                                  "eksterlanda helpo.\n"
                                  "Ĉu iu volas pretendi havi la dukon "
                                  "kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
                                  -1);
         if (!ret)
                 goto done;
