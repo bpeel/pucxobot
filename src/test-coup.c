@@ -468,13 +468,17 @@ create_test_data(int n_card_overrides,
 
         srand(0);
 
+        struct pcx_coup_debug_overrides overrides = {
+                .n_cards = n_card_overrides,
+                .cards = card_overrides,
+        };
+
         data->coup = pcx_coup_new(&callbacks,
                                   data,
                                   PCX_TEXT_LANGUAGE_ESPERANTO,
                                   PCX_N_ELEMENTS(player_names),
                                   player_names,
-                                  n_card_overrides,
-                                  card_overrides);
+                                  &overrides);
 
         return data;
 }

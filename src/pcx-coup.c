@@ -1783,8 +1783,7 @@ choose_action_idle(struct pcx_coup *coup)
 
 static void
 create_deck(struct pcx_coup *coup,
-            int n_card_overrides,
-            const enum pcx_coup_character *card_overrides)
+            const struct pcx_coup_debug_overrides *overrides)
 {
         coup->n_cards = PCX_COUP_TOTAL_CARDS;
 
@@ -1795,10 +1794,13 @@ create_deck(struct pcx_coup *coup,
 
         shuffle_deck(coup);
 
+        if (overrides == NULL)
+                return;
+
         int dst = coup->n_cards - 1;
 
-        for (int i = 0; i < n_card_overrides; i++) {
-                enum pcx_coup_character card = card_overrides[i];
+        for (int i = 0; i < overrides->n_cards; i++) {
+                enum pcx_coup_character card = overrides->cards[i];
                 int copy_pos;
 
                 for (copy_pos = 0; copy_pos < dst; copy_pos++) {
@@ -1821,8 +1823,7 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
              enum pcx_text_language language,
              int n_players,
              const char * const *names,
-             int n_card_overrides,
-             const enum pcx_coup_character *card_overrides)
+             const struct pcx_coup_debug_overrides *overrides)
 {
         assert(n_players > 0 && n_players <= PCX_COUP_MAX_PLAYERS);
 
@@ -1832,7 +1833,7 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         coup->callbacks = *callbacks;
         coup->user_data = user_data;
 
-        create_deck(coup, n_card_overrides, card_overrides);
+        create_deck(coup, overrides);
 
         coup->n_players = n_players;
         coup->current_player = rand() % n_players;
@@ -1875,8 +1876,7 @@ create_game_cb(const struct pcx_game_callbacks *callbacks,
                             language,
                             n_players,
                             names,
-                            0, /* n_card_overrides */
-                            NULL /* card_overrides */);
+                            NULL /* overrides */);
 }
 
 static char *
