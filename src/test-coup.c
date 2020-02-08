@@ -1360,6 +1360,233 @@ test_tax(void)
                 test_successful_challenge_tax());
 }
 
+static struct test_data *
+set_up_assassinate(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_ASSASSIN,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CONTESSA,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        /* Give two coins to Bob and one to Alice so that it will be
+         * her turn and she’ll have 3 coins.
+         */
+        for (int i = 0; i < 3; i++) {
+                if (!take_income(data))
+                        goto error;
+        }
+
+        assert(data->status.current_player == 0);
+        assert(data->status.players[0].coins == 3);
+
+        bool ret = send_callback_data(data,
+                                      0,
+                                      "assassinate:1",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "🗡 Alice volas murdi Bob\n"
+                                      "Ĉu iu volas defii rin?\n"
+                                      "Aŭ Bob, ĉu vi volas pretendi havi la "
+                                      "grafinon kaj bloki rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "challenge", "Defii",
+                                      "block", "Bloki",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret)
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_accept_assassinate(void)
+{
+        struct test_data *data = set_up_assassinate();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis aŭ defiis, Alice murdas Bob",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiun karton vi volas perdi?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[1].dead = true;
+        data->status.players[0].coins = 0;
+        data->status.current_player = 1;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "lose:1",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = take_income(data);
+        if (!ret)
+                goto done;
+
+        /* Alice shouldn’t have any coins now so trying an
+         * assassination should be ignored
+         */
+        ret = send_callback_data(data,
+                                 0,
+                                 "assassinate:1",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Give 3 coins to each player */
+        for (int i = 0; i < 6; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        /* Kill again to end the game */
+        ret = send_callback_data(data,
+                                 0,
+                                 "assassinate:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "🗡 Alice volas murdi Bob\n"
+                                 "Ĉu iu volas defii rin?\n"
+                                 "Aŭ Bob, ĉu vi volas pretendi havi la "
+                                 "grafinon kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[0].dead = true;
+        data->status.players[0].coins = 0;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis aŭ defiis, Alice murdas Bob",
+                                 MESSAGE_TYPE_STATUS,
+                                 MESSAGE_TYPE_GAME_OVER,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_block_assassinate(void)
+{
+        struct test_data *data = set_up_assassinate();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob pretendas havi la grafinon kaj "
+                                 "blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "challenge",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Alice ne kredas ke vi havas la grafinon.\n"
+                                 "Kiun karton vi volas montri?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Duko",
+                                 "reveal:1", "Grafino",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis sed Bob ja havis la grafinon "
+                                 "kaj Alice perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Murdisto",
+                                 "lose:1", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 1;
+        data->status.players[0].cards[1].dead = true;
+        data->status.players[0].coins = 0;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "lose:1",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis. La ago estis blokita.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_assassinate(void)
+{
+        return (test_accept_assassinate() &&
+                test_block_assassinate());
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1368,7 +1595,8 @@ main(int argc, char **argv)
         if (!test_income() ||
             !test_coup() ||
             !test_foreign_aid() ||
-            !test_tax())
+            !test_tax() ||
+            !test_assassinate())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
