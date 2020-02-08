@@ -1803,7 +1803,7 @@ create_deck(struct pcx_coup *coup,
                 enum pcx_coup_character card = overrides->cards[i];
                 int copy_pos;
 
-                for (copy_pos = 0; copy_pos < dst; copy_pos++) {
+                for (copy_pos = 0; copy_pos <= dst; copy_pos++) {
                         if (coup->deck[copy_pos] == card)
                                 goto found_card;
                 }
