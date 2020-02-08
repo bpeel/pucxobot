@@ -1164,6 +1164,202 @@ test_foreign_aid(void)
                 test_failed_block_foreign_aid());
 }
 
+static struct test_data *
+set_up_tax(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_ASSASSIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "tax",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "💸 Bob pretendas havi la dukon kaj "
+                                      "prenas 3 monerojn per imposto.\n"
+                                      "Ĉu iu volas defii rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "challenge", "Defii",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret) {
+                free_test_data(data);
+                return NULL;
+        }
+
+        return data;
+}
+
+static bool
+test_accept_tax(void)
+{
+        struct test_data *data = set_up_tax();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        /* Trying to block the tax should be silently ignored */
+        ret = send_callback_data(data,
+                                 0,
+                                 "block",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 0;
+        data->status.players[1].coins += 3;
+
+        /* Accept the tax */
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Bob prenas la 3 monerojn",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 NULL,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+challenge_tax(struct test_data *data)
+{
+        return send_callback_data(data,
+                                  0,
+                                  "challenge",
+                                  MESSAGE_TYPE_PRIVATE,
+                                  1,
+                                  "Alice ne kredas ke vi havas la dukon.\n"
+                                  "Kiun karton vi volas montri?",
+                                  MESSAGE_TYPE_BUTTONS,
+                                  "reveal:0", "Duko",
+                                  "reveal:1", "Murdisto",
+                                  NULL,
+                                  -1);
+}
+
+static bool
+test_failed_challenge_tax(void)
+{
+        struct test_data *data = set_up_tax();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = challenge_tax(data);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[0].character =
+                PCX_COUP_CHARACTER_CONTESSA;
+
+        /* Reveal the duke */
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis sed Bob ja havis la dukon kaj "
+                                 "Alice perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Grafino",
+                                 "lose:1", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].cards[1].dead = true;
+        data->status.current_player = 0;
+        data->status.players[1].coins += 3;
+
+        /* Lose a card */
+        ret = send_callback_data(data,
+                                 0,
+                                 "lose:1",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Bob prenas la 3 monerojn",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_successful_challenge_tax(void)
+{
+        struct test_data *data = set_up_tax();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        ret = challenge_tax(data);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[1].dead = true;
+        data->status.current_player = 0;
+
+        /* Reveal a card other than the duke */
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj Bob ne havis la dukon kaj "
+                                 "Bob perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_tax(void)
+{
+        return (test_accept_tax() &&
+                test_failed_challenge_tax() &&
+                test_successful_challenge_tax());
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1171,7 +1367,8 @@ main(int argc, char **argv)
 
         if (!test_income() ||
             !test_coup() ||
-            !test_foreign_aid())
+            !test_foreign_aid() ||
+            !test_tax())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
