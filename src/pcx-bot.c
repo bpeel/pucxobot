@@ -1175,20 +1175,24 @@ process_cancel(struct pcx_bot *bot,
               const struct message_info *info)
 {
         struct game *game;
-
         game = find_game(bot, info->chat_id);
+
+        enum pcx_text_string response;
         if (game != NULL) {
-          remove_game(bot, game);
-          send_message_printf(bot,
-                              info->chat_id,
-                              info->message_id,
-                              PCX_TEXT_STRING_CANCELED);
+          if (find_player_in_game(game, info->from_id) != -1) {
+            response = PCX_TEXT_STRING_CANCELED;
+            remove_game(bot, game);
+          } else {
+            response = PCX_TEXT_STRING_CANT_CANCEL;
+          }
         } else {
-          send_message_printf(bot,
-                              info->chat_id,
-                              info->message_id,
-                              PCX_TEXT_STRING_NO_GAME);
+          response = PCX_TEXT_STRING_NO_GAME;
         }
+
+        send_message_printf(bot,
+                    info->chat_id,
+                    info->message_id,
+                    response);
 }
 
 static void

@@ -66,6 +66,8 @@ pcx_text_english[] = {
         "There’s currently no game in this group.",
         [PCX_TEXT_STRING_CANCELED] = 
         "Game canceled.",
+        [PCX_TEXT_STRING_CANT_CANCEL] =
+        "Only players in the game can cancel it.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
         "Mx.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
