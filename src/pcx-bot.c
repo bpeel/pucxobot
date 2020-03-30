@@ -1171,6 +1171,27 @@ process_start(struct pcx_bot *bot,
 }
 
 static void
+process_cancel(struct pcx_bot *bot,
+               const struct message_info *info)
+{
+        struct game *game;
+
+        game = find_game(bot, info->chat_id);
+        if (game != NULL) {
+                remove_game(bot, game);
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_CANCELED);
+        } else {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_NO_GAME);
+        }
+}
+
+static void
 process_help(struct pcx_bot *bot,
              const struct message_info *info)
 {
@@ -1243,6 +1264,7 @@ process_entity(struct pcx_bot *bot,
                 { PCX_TEXT_STRING_JOIN_COMMAND, process_join },
                 { PCX_TEXT_STRING_START_COMMAND, process_start },
                 { PCX_TEXT_STRING_HELP_COMMAND, process_help },
+                { PCX_TEXT_STRING_CANCEL_COMMAND, process_cancel },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
