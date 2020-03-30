@@ -62,6 +62,10 @@ pcx_text_english[] = {
         "The game is already full.",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "The game has already started.",
+        [PCX_TEXT_STRING_NO_GAME] =
+        "There’s currently no game in this group.",
+        [PCX_TEXT_STRING_CANCELED] = 
+        "Game canceled.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
         "Mx.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
@@ -84,6 +88,8 @@ pcx_text_english[] = {
         "/join",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/start",
+        [PCX_TEXT_STRING_CANCEL_COMMAND] = 
+        "/cancel",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/help",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
