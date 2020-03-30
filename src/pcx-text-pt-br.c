@@ -58,6 +58,10 @@ pcx_text_pt_br[] = {
         "O jogo já está cheio.",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "O jogo já começou.",
+        [PCX_TEXT_STRING_NO_GAME] =
+        "Nenhum jogo ativo.",
+        [PCX_TEXT_STRING_CANCELED] = 
+        "Jogo cancelado.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
         "Mx.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
@@ -80,6 +84,8 @@ pcx_text_pt_br[] = {
         "/entrar",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/iniciar",
+        [PCX_TEXT_STRING_CANCEL_COMMAND] = 
+        "/cancelar",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/ajuda",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
