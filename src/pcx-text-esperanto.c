@@ -63,6 +63,12 @@ pcx_text_esperanto[] = {
         "La ludo jam estas plena",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "La ludo jam komenciĝis",
+        [PCX_TEXT_STRING_NO_GAME] =
+        "Aktuale estas neniu ludo en ĉi tiu grupo.",
+        [PCX_TEXT_STRING_CANCELED] =
+        "La ludo estas nuligita.",
+        [PCX_TEXT_STRING_CANT_CANCEL] =
+        "Nur ludantoj en la ludo rajtas nuligi ĝin.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
         "Sr.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
@@ -86,6 +92,8 @@ pcx_text_esperanto[] = {
         "/aligxi",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/komenci",
+        [PCX_TEXT_STRING_CANCEL_COMMAND] =
+        "/nuligi",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/helpo",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =

@@ -58,6 +58,12 @@ pcx_text_french[] = {
         "La partie est pleine",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "La partie a déjà commencé",
+        [PCX_TEXT_STRING_NO_GAME] =
+        "Il n’y a actuellement aucune partie dans ce groupe.",
+        [PCX_TEXT_STRING_CANCELED] =
+        "Partie annulée.",
+        [PCX_TEXT_STRING_CANT_CANCEL] =
+        "Seulement les joueurs dans la partie peuvent l’annuler.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
         "M.%s",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
@@ -80,6 +86,8 @@ pcx_text_french[] = {
         "/rejoindre",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/commencer",
+        [PCX_TEXT_STRING_CANCEL_COMMAND] =
+        "/annuler",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/aide",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
