@@ -35,8 +35,10 @@ of what to type there:
     coup - Create a game of Coup
     snitch - Create a game of Snitch
     letter - Create a game of Love Letter
+    superfight - Create a game of Superfight
     join - Join an existing game or create a new one
     start - Start an existing game
+    cancel - Cancel an existing game
     help - Show a summary of the rules
 
 If you just want to try the bot, you can join
