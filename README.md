@@ -29,17 +29,9 @@ will present you with a choice of the available games to play.
 You can also type `/help` to get a summary of the rules of the game.
 
 When you configure the bot with [@BotFather](https://t.me/BotFather),
-you can tell it what commands the bot can handle. Here is a suggestion
-of what to type there:
-
-    coup - Create a game of Coup
-    snitch - Create a game of Snitch
-    letter - Create a game of Love Letter
-    superfight - Create a game of Superfight
-    join - Join an existing game or create a new one
-    start - Start an existing game
-    cancel - Cancel an existing game
-    help - Show a summary of the rules
+you can tell it what commands the bot can handle. There is a
+suggestion of what to type for each language in
+[commands.txt](commands.txt).
 
 If you just want to try the bot, you can join
 [this channel](https://t.me/bluffing). Otherwise you can add
