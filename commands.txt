@@ -3,6 +3,7 @@ en:
 coup - Create a game of Coup
 snitch - Create a game of Snitch
 letter - Create a game of Love Letter
+zombie - Create a game of Zombie Dice
 superfight - Create a game of Superfight
 join - Join an existing game or create a new one
 start - Start an existing game
@@ -14,6 +15,7 @@ eo:
 pucxo - Krei ludon de Puĉo
 perfidulo - Krei ludon de Perfidulo
 amletero - Krei ludon de Amletero
+zombio - Krei ludon de Zombiaj Kuboj
 superbatalo - Krei ludon de Superbatalo
 aligxi - Aligxi al jam kreita ludo
 komenci - Komenci jam kreitan ludon
