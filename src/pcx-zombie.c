@@ -92,6 +92,14 @@ struct pcx_zombie {
          */
         int last_player;
 
+        /* The dice results are presented one at a time with a pause
+         * in between to add a bit of drama.
+         */
+        struct pcx_main_context_source *drama_source;
+        int n_dice_shown;
+        int n_dice_thrown;
+        struct pcx_zombie_die_and_face dice_thrown[PCX_ZOMBIE_DICE_PER_THROW];
+
         /* State of current turn */
         struct pcx_zombie_die_set box;
         struct pcx_zombie_die_set brains_thrown;
@@ -137,6 +145,9 @@ face_symbols[PCX_ZOMBIE_N_FACES] = {
         [PCX_ZOMBIE_FACE_BRAIN] = "🧠",
         [PCX_ZOMBIE_FACE_SHOTGUN] = "💥",
 };
+
+static void
+start_drama_timeout(struct pcx_zombie *zombie);
 
 static void
 escape_string(struct pcx_zombie *zombie,
@@ -370,6 +381,9 @@ free_game(struct pcx_zombie *zombie)
         if (zombie->game_over_source)
                 pcx_main_context_remove_source(zombie->game_over_source);
 
+        if (zombie->drama_source)
+                pcx_main_context_remove_source(zombie->drama_source);
+
         pcx_free(zombie);
 }
 
@@ -526,63 +540,38 @@ add_score_so_far(struct pcx_zombie *zombie,
 }
 
 static void
-do_throw(struct pcx_zombie *zombie)
+show_die(struct pcx_zombie *zombie,
+         const struct pcx_zombie_die_and_face *daf)
 {
-        struct pcx_zombie_die_set *die_set = &zombie->feet_thrown;
-
-        get_dice(zombie, die_set);
-
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        escape_string(zombie, &buf, PCX_TEXT_STRING_YOUR_DICE_ARE);
-        pcx_buffer_append_string(&buf, " ");
+        pcx_buffer_append_string(&buf, die_info[daf->die].symbol);
+        pcx_buffer_append_string(&buf, face_symbols[daf->face]);
 
-        int dice_thrown = 0;
-        struct pcx_zombie_die_and_face results[PCX_ZOMBIE_DICE_PER_THROW];
+        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                       (const char *) buf.data,
+                                       0, /* n_buttons */
+                                       NULL, /* buttons */
+                                       zombie->user_data);
 
-        for (unsigned i = 0; i < PCX_ZOMBIE_N_DICE; i++) {
-                for (int j = 0; j < die_set->dice_count[i]; j++) {
-                        pcx_buffer_append_string(&buf,
-                                                 die_info[i].symbol);
+        pcx_buffer_destroy(&buf);
+}
 
-                        assert(dice_thrown < PCX_ZOMBIE_DICE_PER_THROW);
-                        results[dice_thrown].die = i;
-                        results[dice_thrown].face = throw_die(zombie, i);
-                        dice_thrown++;
-                }
+static void
+drama_cb(struct pcx_main_context_source *source,
+         void *user_data)
+{
+        struct pcx_zombie *zombie = user_data;
+        zombie->drama_source = NULL;
+
+        if (zombie->n_dice_shown < zombie->n_dice_thrown) {
+                show_die(zombie, zombie->dice_thrown + zombie->n_dice_shown);
+                zombie->n_dice_shown++;
+                start_drama_timeout(zombie);
+                return;
         }
 
-        pcx_buffer_append_string(&buf, "\n\n");
-        pcx_buffer_append_string(&buf,
-                                 pcx_text_get(zombie->language,
-                                              PCX_TEXT_STRING_THROWING_DICE));
-        pcx_buffer_append_string(&buf, "\n\n");
-        pcx_buffer_append_string(&buf,
-                                 pcx_text_get(zombie->language,
-                                              PCX_TEXT_STRING_YOU_THREW));
-
-        for (int i = 0; i < dice_thrown; i++) {
-                const struct pcx_zombie_die_and_face *daf = results + i;
-                pcx_buffer_append_string(&buf, " ");
-                pcx_buffer_append_string(&buf, die_info[daf->die].symbol);
-                pcx_buffer_append_string(&buf, face_symbols[daf->face]);
-
-                switch (daf->face) {
-                case PCX_ZOMBIE_FACE_FEET:
-                        break;
-                case PCX_ZOMBIE_FACE_BRAIN:
-                        zombie->feet_thrown.dice_count[daf->die]--;
-                        zombie->brains_thrown.dice_count[daf->die]++;
-                        zombie->n_brains++;
-                        break;
-                case PCX_ZOMBIE_FACE_SHOTGUN:
-                        zombie->feet_thrown.dice_count[daf->die]--;
-                        zombie->n_shotguns++;
-                        break;
-                }
-        }
-
-        pcx_buffer_append_string(&buf, "\n\n");
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         add_score_so_far(zombie, &buf);
 
@@ -625,6 +614,89 @@ do_throw(struct pcx_zombie *zombie)
 }
 
 static void
+start_drama_timeout(struct pcx_zombie *zombie)
+{
+        if (zombie->drama_source)
+                return;
+
+        zombie->drama_source = pcx_main_context_add_timeout(NULL,
+                                                            1000,
+                                                            drama_cb,
+                                                            zombie);
+}
+
+static void
+score_dice(struct pcx_zombie *zombie)
+{
+        for (int i = 0; i < zombie->n_dice_thrown; i++) {
+                const struct pcx_zombie_die_and_face *daf =
+                        zombie->dice_thrown + i;
+
+                switch (daf->face) {
+                case PCX_ZOMBIE_FACE_FEET:
+                        break;
+                case PCX_ZOMBIE_FACE_BRAIN:
+                        zombie->feet_thrown.dice_count[daf->die]--;
+                        zombie->brains_thrown.dice_count[daf->die]++;
+                        zombie->n_brains++;
+                        break;
+                case PCX_ZOMBIE_FACE_SHOTGUN:
+                        zombie->feet_thrown.dice_count[daf->die]--;
+                        zombie->n_shotguns++;
+                        break;
+                }
+        }
+}
+
+static void
+do_throw(struct pcx_zombie *zombie)
+{
+        struct pcx_zombie_die_set *die_set = &zombie->feet_thrown;
+
+        get_dice(zombie, die_set);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(zombie, &buf, PCX_TEXT_STRING_YOUR_DICE_ARE);
+        pcx_buffer_append_string(&buf, " ");
+
+        int n_dice_thrown = 0;
+
+        for (unsigned i = 0; i < PCX_ZOMBIE_N_DICE; i++) {
+                for (int j = 0; j < die_set->dice_count[i]; j++) {
+                        pcx_buffer_append_string(&buf,
+                                                 die_info[i].symbol);
+
+                        assert(n_dice_thrown < PCX_ZOMBIE_DICE_PER_THROW);
+                        zombie->dice_thrown[n_dice_thrown].die = i;
+                        zombie->dice_thrown[n_dice_thrown].face =
+                                throw_die(zombie, i);
+                        n_dice_thrown++;
+                }
+        }
+
+        zombie->n_dice_thrown = n_dice_thrown;
+        zombie->n_dice_shown = 0;
+
+        score_dice(zombie);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+        pcx_buffer_append_string(&buf,
+                                 pcx_text_get(zombie->language,
+                                              PCX_TEXT_STRING_THROWING_DICE));
+
+        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
+                                       (const char *) buf.data,
+                                       0, /* n_buttons */
+                                       NULL, /* buttons */
+                                       zombie->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        start_drama_timeout(zombie);
+}
+
+static void
 do_stop(struct pcx_zombie *zombie)
 {
         struct pcx_zombie_player *player =
@@ -645,6 +717,9 @@ handle_callback_data_cb(void *user_data,
         assert(player_num >= 0 && player_num < zombie->n_players);
 
         if (player_num != zombie->current_player)
+                return;
+
+        if (zombie->drama_source != NULL)
                 return;
 
         if (!strcmp(callback_data, PCX_ZOMBIE_THROW_BUTTON_DATA))

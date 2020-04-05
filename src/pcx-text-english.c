@@ -431,8 +431,6 @@ pcx_text_english[] = {
         "Your dice are:",
         [PCX_TEXT_STRING_THROWING_DICE] =
         "Throwing dice…",
-        [PCX_TEXT_STRING_YOU_THREW] =
-        "You threw:",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Score so far:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
