@@ -27,7 +27,34 @@ pcx_zombie_help[] = {
         [PCX_TEXT_LANGUAGE_FRENCH] =
         "stub",
         [PCX_TEXT_LANGUAGE_ENGLISH] =
-        "stub",
+        "<b>SUMMARY OF THE RULES:</b>\n"
+        "\n"
+        "You are a zombie and you want to eat as many brains as possible. "
+        "During your turn you will throw 3 dice with each die representing a "
+        "person. A dice can throw can result in one of these three things "
+        "happening:\n"
+        "\n"
+        "🧠: You ate the person’s brain\n"
+        "💥: The person shot at you\n"
+        "🐾: The person escaped\n"
+        "\n"
+        "After throwing the dice you put aside all the brains🧠 and shotguns💥. "
+        "If you end up with 3 shotguns you die and lose all the brains that "
+        "you gained in this turn. Otherwise you can choose whether to continue "
+        "rolling. If you stop, you add all of the brains that you threw to "
+        "your total score.\n"
+        "\n"
+        "If you roll again, you take all of the feet🐾 dice, add more dice "
+        "from the box to get back up to three and then roll them again as "
+        "before.\n"
+        "\n"
+        "There are three colors of die: green🍏, yellow💛 and red🧨. The green "
+        "dice are more likely to throw a brain and the red dice are more "
+        "likely to throw a shotgun. The yellow dice are balanced.\n"
+        "\n"
+        "After one player scores 13 points the other players are allowed to "
+        "finish one last turn. After that the person with the highest score "
+        "wins.\n",
         [PCX_TEXT_LANGUAGE_PT_BR] =
         "stub",
 };
