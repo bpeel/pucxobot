@@ -21,15 +21,15 @@
 #include "pcx-coup.h"
 #include "pcx-snitch.h"
 #include "pcx-love.h"
-#include "pcx-superfight.h"
 #include "pcx-zombie.h"
+#include "pcx-superfight.h"
 
 const struct pcx_game * const
 pcx_game_list[] = {
         &pcx_coup_game,
         &pcx_snitch_game,
         &pcx_love_game,
-        &pcx_superfight_game,
         &pcx_zombie_game,
+        &pcx_superfight_game,
         NULL
 };
