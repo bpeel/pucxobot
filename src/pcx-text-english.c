@@ -31,6 +31,8 @@ pcx_text_english[] = {
         "Love Letter",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superfight",
+        [PCX_TEXT_STRING_NAME_ZOMBIE] =
+        "Zombie Dice",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/coup",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
@@ -39,6 +41,8 @@ pcx_text_english[] = {
         "/letter",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superfight",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
+        "/zombie",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Which game do you want help for?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -417,4 +421,29 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_STAYS_ON] =
         "The first player to reach %i points wins the game. "
         "%s will stay on for the next fight without changing their cards.",
+        [PCX_TEXT_STRING_THROW] =
+        "Throw dice",
+        [PCX_TEXT_STRING_STOP] =
+        "Stop",
+        [PCX_TEXT_STRING_THROW_FIRST_DICE] =
+        "<b>%p</b>, it’s your go, press the button to roll the dice.",
+        [PCX_TEXT_STRING_YOUR_DICE_ARE] =
+        "Your dice are:",
+        [PCX_TEXT_STRING_THROWING_DICE] =
+        "Throwing dice…",
+        [PCX_TEXT_STRING_YOU_THREW] =
+        "You threw:",
+        [PCX_TEXT_STRING_SCORE_SO_FAR] =
+        "Score so far:",
+        [PCX_TEXT_STRING_YOU_ARE_DEAD] =
+        "You got shot too many times and lose all of your points from this "
+        "turn!",
+        [PCX_TEXT_STRING_THROW_OR_STOP] =
+        "Do you want to throw the dice again or stop now?",
+        [PCX_TEXT_STRING_START_LAST_ROUND] =
+        "%p has reached %i points so this will be the final round",
+        [PCX_TEXT_STRING_WINS] =
+        "🏆 <b>%p</b> wins!",
+        [PCX_TEXT_STRING_FINAL_SCORES] =
+        "The final scores are:",
 };

@@ -44,6 +44,8 @@ src = [
         'src/pcx-superfight.c',
         'src/pcx-superfight-deck.c',
         'src/pcx-superfight-help.c',
+        'src/pcx-zombie.c',
+        'src/pcx-zombie-help.c',
 ]
 
 src += translations

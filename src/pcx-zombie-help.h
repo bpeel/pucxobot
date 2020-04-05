@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2020  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pcx-game.h"
+#ifndef PCX_ZOMBIE_HELP_H
+#define PCX_ZOMBIE_HELP_H
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-superfight.h"
-#include "pcx-zombie.h"
+extern const char *
+pcx_zombie_help[];
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_snitch_game,
-        &pcx_love_game,
-        &pcx_superfight_game,
-        &pcx_zombie_game,
-        NULL
-};
+#endif /* PCX_ZOMBIE_HELP_H */
