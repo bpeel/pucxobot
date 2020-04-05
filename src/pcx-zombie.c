@@ -704,6 +704,11 @@ do_stop(struct pcx_zombie *zombie)
 
         player->score += zombie->n_brains;
 
+        game_note(zombie,
+                  PCX_TEXT_STRING_STOP_SCORE,
+                  player,
+                  zombie->n_brains);
+
         end_turn(zombie);
 }
 
