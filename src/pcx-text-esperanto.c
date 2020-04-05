@@ -31,6 +31,8 @@ pcx_text_esperanto[] = {
         "Amletero",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superbatalo",
+        [PCX_TEXT_STRING_NAME_ZOMBIE] =
+        "Zombiaj Kuboj",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/pucxo",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
@@ -39,6 +41,8 @@ pcx_text_esperanto[] = {
         "/amletero",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
+        "/zombio",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -435,4 +439,29 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_STAYS_ON] =
         "La unua homo kiu gajnos %i poentojn gajnas la partion. "
         "%s restos por la sekva batalo sen ŝanĝi sian batalanton.",
+        [PCX_TEXT_STRING_THROW] =
+        "Ĵeti la kubojn",
+        [PCX_TEXT_STRING_STOP] =
+        "Ĉesi",
+        [PCX_TEXT_STRING_THROW_FIRST_DICE] =
+        "<b>%p</b>, estas via vico, premu la butonon por ĵeti la kubojn.",
+        [PCX_TEXT_STRING_YOUR_DICE_ARE] =
+        "Viaj ĵetkuboj estas:",
+        [PCX_TEXT_STRING_THROWING_DICE] =
+        "Ĵetas kubojn…",
+        [PCX_TEXT_STRING_STOP_SCORE] =
+        "%p ĉesas kaj aldonas %i al siaj poentoj.",
+        [PCX_TEXT_STRING_SCORE_SO_FAR] =
+        "Poentoj ĝis nun:",
+        [PCX_TEXT_STRING_YOU_ARE_DEAD] =
+        "La homoj pafis vin tro da fojoj kaj vi perdas ĉiujn viajn poentojn de "
+        "ĉi tiu vico!",
+        [PCX_TEXT_STRING_THROW_OR_STOP] =
+        "Ĉu vi volas denove ĵeti la kubojn aŭ ĉesi nun?",
+        [PCX_TEXT_STRING_START_LAST_ROUND] =
+        "%p atingis %i poentojn do ĉi tiu estas la lasta raŭndo",
+        [PCX_TEXT_STRING_WINS] =
+        "🏆 <b>%p</b> gajnis la partion!",
+        [PCX_TEXT_STRING_FINAL_SCORES] =
+        "La finaj poentoj estas:",
 };
