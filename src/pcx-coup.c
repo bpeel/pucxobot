@@ -1882,6 +1882,95 @@ create_deck(struct pcx_coup *coup)
         }
 }
 
+static void
+start_game(struct pcx_coup *coup)
+{
+        create_deck(coup);
+
+        for (int i = 0; i < coup->n_players; i++) {
+                coup->players[i].coins = PCX_COUP_START_COINS;
+                for (unsigned j = 0; j < PCX_COUP_CARDS_PER_PLAYER; j++) {
+                        struct pcx_coup_card *card = coup->players[i].cards + j;
+                        card->dead = false;
+                        card->character = take_card(coup);
+                }
+        }
+
+        if (coup->n_players == 2)
+                coup->players[coup->current_player].coins--;
+
+        stack_push(coup,
+                   choose_action,
+                   choose_action_idle);
+
+        for (unsigned i = 0; i < coup->n_players; i++)
+                show_cards(coup, i);
+
+        show_stats(coup);
+}
+
+static void
+configure_cards(struct pcx_coup *coup,
+                int player_num,
+                const char *data,
+                int extra_data)
+{
+        if (extra_data < 0 || extra_data >= PCX_COUP_CHARACTER_COUNT)
+                return;
+
+        const struct pcx_coup_character_data *character =
+                pcx_coup_characters + extra_data;
+
+        coup->clan_characters[character->clan] = extra_data;
+
+        coup_note(coup,
+                  PCX_TEXT_STRING_CHARACTER_CHOSEN,
+                  pcx_text_get(coup->language,
+                               character->name));
+
+        stack_pop(coup);
+        start_game(coup);
+}
+
+static void
+show_configure_cards_message(struct pcx_coup *coup)
+{
+        pcx_buffer_set_length(&coup->buffer, 0);
+        append_buffer_string(coup,
+                             &coup->buffer,
+                             PCX_TEXT_STRING_CONFIGURE_CARDS);
+
+        static const enum pcx_coup_character characters[] = {
+                PCX_COUP_CHARACTER_AMBASSADOR,
+                PCX_COUP_CHARACTER_INSPECTOR,
+        };
+        struct pcx_game_button buttons[PCX_N_ELEMENTS(characters)];
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(characters); i++) {
+                const struct pcx_coup_character_data *character =
+                        pcx_coup_characters + characters[i];
+                buttons[i].text = pcx_text_get(coup->language,
+                                               character->name);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf,
+                                         "configure:%i",
+                                         characters[i]);
+                buttons[i].data = (char *) buf.data;
+        };
+
+        send_buffer_message_with_buttons(coup,
+                                         PCX_N_ELEMENTS(buttons),
+                                         buttons);
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(buttons); i++)
+                pcx_free((char *) buttons[i].data);
+
+        stack_push(coup,
+                   configure_cards,
+                   NULL /* idle_cb */);
+}
+
 struct pcx_coup *
 pcx_coup_new(const struct pcx_game_callbacks *callbacks,
              void *user_data,
@@ -1921,8 +2010,6 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
                                    overrides->n_cards);
         }
 
-        create_deck(coup);
-
         coup->n_players = n_players;
         if (overrides) {
                 assert(overrides->start_player >= 0 &&
@@ -1932,28 +2019,13 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
                 coup->current_player = coup->rand_func() % n_players;
         }
 
-        for (unsigned i = 0; i < n_players; i++) {
-                coup->players[i].coins = PCX_COUP_START_COINS;
-                for (unsigned j = 0; j < PCX_COUP_CARDS_PER_PLAYER; j++) {
-                        struct pcx_coup_card *card = coup->players[i].cards + j;
-                        card->dead = false;
-                        card->character = take_card(coup);
-                }
-
-                coup->players[i].name = pcx_strdup(names[i]);
-        }
-
-        if (coup->n_players == 2)
-                coup->players[coup->current_player].coins--;
-
-        stack_push(coup,
-                   choose_action,
-                   choose_action_idle);
-
         for (unsigned i = 0; i < n_players; i++)
-                show_cards(coup, i);
+                coup->players[i].name = pcx_strdup(names[i]);
 
-        show_stats(coup);
+        if (pcx_text_get(language, PCX_TEXT_STRING_CONFIGURE_CARDS))
+                show_configure_cards_message(coup);
+        else
+                start_game(coup);
 
         return coup;
 }

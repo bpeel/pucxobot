@@ -103,6 +103,11 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Dankon pro la mesaĝo. Vi povas nun aliĝi "
         "al ludo en la ĉefa grupo.",
+        [PCX_TEXT_STRING_CONFIGURE_CARDS] =
+        "Bonvolu elekti ĉu vi volas ludi kun la ambasadoro aŭ kun "
+        "la inspektisto.",
+        [PCX_TEXT_STRING_CHARACTER_CHOSEN] =
+        "La elektita karto estas: %s",
         [PCX_TEXT_STRING_COUP] =
         "Puĉo",
         [PCX_TEXT_STRING_INCOME] =

@@ -621,6 +621,25 @@ send_callback_data(struct test_data *data,
         return !data->had_error;
 }
 
+static void
+queue_configure_cards_message(struct test_data *data)
+{
+        struct message *message = queue_message(data, MESSAGE_TYPE_GLOBAL);
+
+        message->message =
+                pcx_strdup("Bonvolu elekti ĉu vi volas ludi kun la "
+                           "ambasadoro aŭ kun la inspektisto.");
+
+        enable_check_buttons(message);
+
+        add_button_to_message(message,
+                              "configure:4",
+                              "Ambasadoro");
+        add_button_to_message(message,
+                              "configure:5",
+                              "Inspektisto");
+}
+
 static struct test_data *
 create_test_data(int n_card_overrides,
                  const enum pcx_coup_character *card_overrides)
@@ -639,15 +658,7 @@ create_test_data(int n_card_overrides,
 
                 for (unsigned j = 0; j < 2; j++)
                         player->cards[j].character = card_overrides[i * 2 + j];
-
-                struct message *message =
-                        queue_message(data, MESSAGE_TYPE_PRIVATE);
-                message->destination = i;
-                message->message = make_show_cards_message(player);
         }
-
-        queue_message(data, MESSAGE_TYPE_GLOBAL)->message =
-                make_status_message(&data->status);
 
         struct pcx_coup_debug_overrides overrides = {
                 .n_cards = n_card_overrides,
@@ -656,12 +667,26 @@ create_test_data(int n_card_overrides,
                 .rand_func = fake_random_number_generator,
         };
 
+        queue_configure_cards_message(data);
+
         data->coup = pcx_coup_new(&callbacks,
                                   data,
                                   PCX_TEXT_LANGUAGE_ESPERANTO,
                                   PCX_N_ELEMENTS(player_names),
                                   player_names,
                                   &overrides);
+
+        send_callback_data(data,
+                           0,
+                           "configure:4",
+                           MESSAGE_TYPE_GLOBAL,
+                           "La elektita karto estas: Ambasadoro",
+                           MESSAGE_TYPE_SHOW_CARDS,
+                           0,
+                           MESSAGE_TYPE_SHOW_CARDS,
+                           1,
+                           MESSAGE_TYPE_STATUS,
+                           -1);
 
         return data;
 }
