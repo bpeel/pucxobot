@@ -2018,6 +2018,91 @@ done:
         return ret;
 }
 
+static bool
+test_exchange_inspector(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_INSPECTOR,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CAPTAIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 true /* use_inspector */);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "exchange",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "🔄 Bob pretendas havi la inspektiston "
+                                      "kaj volas interŝanĝi kartojn\n"
+                                      "Ĉu iu volas defii rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "challenge", "Defii",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Bob interŝanĝas kartojn",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiujn kartojn vi volas konservi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "keep:0", "Duko",
+                                 "keep:1", "Inspektisto",
+                                 "keep:2", "Grafino",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "keep:2",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiujn kartojn vi volas konservi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "keep:0", "Duko",
+                                 "keep:1", "Inspektisto",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+
+        data->status.players[1].cards[0].character =
+                PCX_COUP_CHARACTER_CONTESSA;
+        data->status.players[1].cards[1].character =
+                PCX_COUP_CHARACTER_DUKE;
+        data->status.current_player = 0;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "keep:0",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2028,8 +2113,9 @@ main(int argc, char **argv)
             !test_foreign_aid() ||
             !test_tax() ||
             !test_assassinate() ||
+            !test_steal() ||
             !test_exchange() ||
-            !test_steal())
+            !test_exchange_inspector())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
