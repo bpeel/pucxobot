@@ -1663,7 +1663,7 @@ test_assassinate(void)
 }
 
 static bool
-test_exchange(void)
+test_normal_exchange(void)
 {
         enum pcx_coup_character override_cards[] = {
                 PCX_COUP_CHARACTER_DUKE,
@@ -1745,6 +1745,101 @@ test_exchange(void)
 done:
         free_test_data(data);
         return ret;
+}
+
+static bool
+test_one_dead_exchange(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_AMBASSADOR,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CAPTAIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        bool ret = true;
+
+        /* Give 5 to Alice and 6 to Bob so that it will be her turn
+         * and she can do a coup on Bob to kill one of his cards.
+         */
+        for (int i = 0; i < 11; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        assert(data->status.current_player == 0);
+        assert(data->status.players[0].coins == 7);
+        assert(data->status.players[1].coins == 7);
+
+        if (!do_coup(data)) {
+                ret = false;
+                goto done;
+        }
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "exchange",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "🔄 Bob pretendas havi la ambasadoron "
+                                 "kaj volas interŝanĝi kartojn\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Bob interŝanĝas kartojn",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiujn kartojn vi volas konservi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "keep:0", "Ambasadoro",
+                                 "keep:1", "Grafino",
+                                 "keep:2", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[1].character =
+                PCX_COUP_CHARACTER_CONTESSA;
+        data->status.current_player = 0;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "keep:1",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_exchange(void)
+{
+        return (test_normal_exchange() &&
+                test_one_dead_exchange());
 }
 
 int
