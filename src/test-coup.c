@@ -72,6 +72,7 @@ struct test_data {
         struct pcx_main_context_source *check_timeout_source;
         struct status status;
         bool had_error;
+        bool use_inspector;
 };
 
 static const char *const
@@ -261,9 +262,11 @@ make_status_message(const struct status *status)
 }
 
 static void
-add_status_buttons(struct message *message,
-                   const struct status *status)
+add_status_buttons(struct test_data *data,
+                   struct message *message)
 {
+        const struct status *status = &data->status;
+
         enable_check_buttons(message);
 
         int n_players = 0;
@@ -298,7 +301,16 @@ add_status_buttons(struct message *message,
                                       "Murdi (Murdisto)");
         }
 
-        add_button_to_message(message, "exchange", "Interŝanĝi (Ambasadoro)");
+        if (data->use_inspector) {
+                add_button_to_message(message,
+                                      "exchange",
+                                      "Interŝanĝi (Inspektisto)");
+        } else {
+                add_button_to_message(message,
+                                      "exchange",
+                                      "Interŝanĝi (Ambasadoro)");
+        }
+
         add_button_to_message(message, "steal", "Ŝteli (Kapitano)");
 }
 
@@ -577,7 +589,7 @@ send_callback_data(struct test_data *data,
                 case MESSAGE_TYPE_STATUS:
                         message->type = MESSAGE_TYPE_GLOBAL;
                         message->message = make_status_message(&data->status);
-                        add_status_buttons(message, &data->status);
+                        add_status_buttons(data, message);
                         continue;
                 case MESSAGE_TYPE_SHOW_CARDS:
                         message->type = MESSAGE_TYPE_PRIVATE;
@@ -642,7 +654,8 @@ queue_configure_cards_message(struct test_data *data)
 
 static struct test_data *
 create_test_data(int n_card_overrides,
-                 const enum pcx_coup_character *card_overrides)
+                 const enum pcx_coup_character *card_overrides,
+                 bool use_inspector)
 {
         struct test_data *data = pcx_calloc(sizeof *data);
 
@@ -650,6 +663,7 @@ create_test_data(int n_card_overrides,
         pcx_list_init(&data->message_queue);
 
         data->status.current_player = 1;
+        data->use_inspector = use_inspector;
 
         for (unsigned i = 0; i < 2; i++) {
                 struct player_status *player = data->status.players + i;
@@ -676,11 +690,21 @@ create_test_data(int n_card_overrides,
                                   player_names,
                                   &overrides);
 
+        const char *configure_data, *configure_note;
+
+        if (use_inspector) {
+                configure_data = "configure:5";
+                configure_note = "La elektita karto estas: Inspektisto";
+        } else {
+                configure_data = "configure:4";
+                configure_note = "La elektita karto estas: Ambasadoro";
+        }
+
         send_callback_data(data,
                            0,
-                           "configure:4",
+                           configure_data,
                            MESSAGE_TYPE_GLOBAL,
-                           "La elektita karto estas: Ambasadoro",
+                           configure_note,
                            MESSAGE_TYPE_SHOW_CARDS,
                            0,
                            MESSAGE_TYPE_SHOW_CARDS,
@@ -742,7 +766,8 @@ test_income(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = true;
 
@@ -832,7 +857,8 @@ test_coup(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         /* Try to do a coup without having enough coins. The request
          * should just be silently ignored.
@@ -936,7 +962,8 @@ set_up_foreign_aid(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1201,7 +1228,8 @@ set_up_tax(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1397,7 +1425,8 @@ set_up_assassinate(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         /* Give two coins to Bob and one to Alice so that it will be
          * her turn and she’ll have 3 coins.
@@ -1701,7 +1730,8 @@ test_normal_exchange(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1786,7 +1816,8 @@ test_one_dead_exchange(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = true;
 
@@ -1879,7 +1910,8 @@ test_steal(void)
 
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
-                                 override_cards);
+                                 override_cards,
+                                 false /* use_inspector */);
 
         bool ret = send_callback_data(data,
                                       1,
