@@ -2106,6 +2106,238 @@ done:
         return ret;
 }
 
+static struct test_data *
+set_up_inspect_can_keep(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_INSPECTOR,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CAPTAIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 true /* use_inspector */);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "inspect:0",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "🔍 Bob pretendas havi la inspektiston "
+                                      "kaj volas inspekti karton de Alice\n"
+                                      "Ĉu iu volas defii rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "challenge", "Defii",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret)
+                goto error;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Alice elektas karton por "
+                                 "montri al Bob",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Kiun karton vi montros al Bob?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "show:0", "Duko",
+                                 "show:1", "Inspektisto",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto error;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "show:1",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Nun Bob decidas ĉu vi rajtas konservi "
+                                 "la inspektiston",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Alice montras al vi la inspektiston. Ĉu "
+                                 "ri rajtas konservi ĝin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "can_keep:1", "Jes",
+                                 "can_keep:0", "Ne",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_inspect_keep(void)
+{
+        struct test_data *data =
+                set_up_inspect_can_keep();
+
+        if (data == NULL)
+                return false;
+
+        data->status.current_player = 0;
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "can_keep:1",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "Bob permesis Alice konservi la karton "
+                                      "kiun ri montris.",
+                                      MESSAGE_TYPE_STATUS,
+                                      -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_inspect_cant_keep(void)
+{
+        struct test_data *data =
+                set_up_inspect_can_keep();
+
+        if (data == NULL)
+                return false;
+
+        data->status.current_player = 0;
+        data->status.players[0].cards[1].character =
+                PCX_COUP_CHARACTER_CONTESSA;
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "can_keep:0",
+                                      MESSAGE_TYPE_SHOW_CARDS,
+                                      0,
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "Bob devigis Alice ŝanĝi la karton "
+                                      "kiun ri montris.",
+                                      MESSAGE_TYPE_STATUS,
+                                      -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_inspect_one_card(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_INSPECTOR,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CAPTAIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 true /* use_inspector */);
+
+        bool ret = true;
+
+        /* Give 6 to each player so that Bob will have enough to kill
+         * one of Alice’s cards and it will be his turn.
+         */
+        for (int i = 0; i < 12; i++) {
+                if (!take_income(data)) {
+                        ret = false;
+                        goto done;
+                }
+        }
+
+        assert(data->status.current_player == 1);
+        assert(data->status.players[0].coins == 8);
+        assert(data->status.players[1].coins == 7);
+
+        if (!do_coup(data)) {
+                ret = false;
+                goto done;
+        }
+
+        /* Make it Bob’s turn again */
+        if (!take_income(data)) {
+                ret = false;
+                goto done;
+        }
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "inspect:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "🔍 Bob pretendas havi la inspektiston "
+                                 "kaj volas inspekti karton de Alice\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Alice elektas karton por "
+                                 "montri al Bob",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Alice montras al vi la inspektiston. Ĉu "
+                                 "ri rajtas konservi ĝin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "can_keep:1", "Jes",
+                                 "can_keep:0", "Ne",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 0;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "can_keep:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob permesis Alice konservi la karton "
+                                 "kiun ri montris.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_inspect(void)
+{
+        return (test_inspect_keep() &&
+                test_inspect_cant_keep() &&
+                test_inspect_one_card());
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2118,7 +2350,8 @@ main(int argc, char **argv)
             !test_assassinate() ||
             !test_steal() ||
             !test_exchange() ||
-            !test_exchange_inspector())
+            !test_exchange_inspector() ||
+            !test_inspect())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
