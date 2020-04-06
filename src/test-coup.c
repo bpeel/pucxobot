@@ -305,6 +305,9 @@ add_status_buttons(struct test_data *data,
                 add_button_to_message(message,
                                       "exchange",
                                       "Interŝanĝi (Inspektisto)");
+                add_button_to_message(message,
+                                      "inspect",
+                                      "Inspekti (Inspektisto)");
         } else {
                 add_button_to_message(message,
                                       "exchange",

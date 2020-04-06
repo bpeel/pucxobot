@@ -122,6 +122,8 @@ pcx_text_esperanto[] = {
         "Interŝanĝi (Ambasadoro)",
         [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
         "Interŝanĝi (Inspektisto)",
+        [PCX_TEXT_STRING_INSPECT] =
+        "Inspekti (Inspektisto)",
         [PCX_TEXT_STRING_STEAL] =
         "Ŝteli (Kapitano)",
         [PCX_TEXT_STRING_ACCEPT] =
@@ -207,6 +209,26 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR] =
         "🔄 %s pretendas havi la inspektiston kaj volas "
         "interŝanĝi kartojn",
+        [PCX_TEXT_STRING_REALLY_DOING_INSPECT] =
+        "Neniu defiis, %s elektas karton por montri al %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_INSPECT] =
+        "%s, kies karton vi volas inspekti?",
+        [PCX_TEXT_STRING_DOING_INSPECT] =
+        "🔍 %s pretendas havi la inspektiston kaj volas inspekti karton de %s",
+        [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
+        "Kiun karton vi montros al %s?",
+        [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
+        "Nun %s decidas ĉu vi rajtas konservi %s",
+        [PCX_TEXT_STRING_SHOWING_CARD] =
+        "%s montras al vi %s. Ĉu ri rajtas konservi ĝin?",
+        [PCX_TEXT_STRING_YES] =
+        "Jes",
+        [PCX_TEXT_STRING_NO] =
+        "Ne",
+        [PCX_TEXT_STRING_ALLOW_KEEP] =
+        "%s permesis %s konservi la karton kiun ri montris.",
+        [PCX_TEXT_STRING_DONT_ALLOW_KEEP] =
+        "%s devigis %s ŝanĝi la karton kiun ri montris.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Neniu blokis aŭ defiis, %s ŝtelas de %s",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =

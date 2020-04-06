@@ -149,6 +149,12 @@ exchange_inspector_button = {
 };
 
 static const struct coup_text_button
+inspect_button = {
+        .text = PCX_TEXT_STRING_INSPECT,
+        .data = "inspect"
+};
+
+static const struct coup_text_button
 steal_button = {
         .text = PCX_TEXT_STRING_STEAL,
         .data = "steal"
@@ -476,6 +482,7 @@ get_buttons(struct pcx_coup *coup,
                 break;
         case PCX_COUP_CHARACTER_INSPECTOR:
                 add_button(coup, buffer, &exchange_inspector_button);
+                add_button(coup, buffer, &inspect_button);
                 break;
         default:
                 break;
@@ -1732,6 +1739,243 @@ do_exchange(struct pcx_coup *coup)
         data->challenged_clans = (1 << PCX_COUP_CLAN_NEGOTIATORS);
 }
 
+struct allow_keep_card_data {
+        struct pcx_coup_player *target;
+        enum pcx_coup_character card;
+};
+
+static void
+allow_keep_card_callback_data(struct pcx_coup *coup,
+                              int player_num,
+                              const char *command,
+                              int extra_data)
+{
+        struct allow_keep_card_data *data = get_stack_data_pointer(coup);
+
+        if (player_num != coup->current_player)
+                return;
+        if (strcmp(command, "can_keep"))
+                return;
+
+        bool can_keep = !!extra_data;
+
+        if (can_keep) {
+                coup_note(coup,
+                          PCX_TEXT_STRING_ALLOW_KEEP,
+                          coup->players[coup->current_player].name,
+                          data->target->name);
+        } else {
+                change_card(coup, data->target - coup->players, data->card);
+                coup_note(coup,
+                          PCX_TEXT_STRING_DONT_ALLOW_KEEP,
+                          coup->players[coup->current_player].name,
+                          data->target->name);
+        }
+
+        stack_pop(coup);
+        take_action(coup);
+}
+
+static void
+allow_keep_card_destroy(struct pcx_coup *coup)
+{
+        pcx_free(get_stack_data_pointer(coup));
+}
+
+static void
+do_choose_inspect_card(struct pcx_coup *coup,
+                       struct pcx_coup_player *target,
+                       enum pcx_coup_character card)
+{
+        stack_pop(coup);
+
+        const char *card_name =
+                pcx_text_get(coup->language,
+                             pcx_coup_characters[card].object_name);
+
+        pcx_buffer_set_length(&coup->buffer, 0);
+        append_buffer_printf(coup,
+                             &coup->buffer,
+                             PCX_TEXT_STRING_SHOWING_CARD,
+                             target->name,
+                             card_name);
+
+        struct pcx_game_button buttons[] = {
+                {
+                        .text = pcx_text_get(coup->language,
+                                             PCX_TEXT_STRING_YES),
+                        .data = "can_keep:1"
+                },
+                {
+                        .text = pcx_text_get(coup->language,
+                                             PCX_TEXT_STRING_NO),
+                        .data = "can_keep:0"
+                }
+        };
+
+        send_buffer_message_with_buttons_to(coup,
+                                            coup->current_player,
+                                            PCX_N_ELEMENTS(buttons),
+                                            buttons);
+
+        struct allow_keep_card_data *data = pcx_alloc(sizeof *data);
+
+        data->target = target;
+        data->card = card;
+
+        stack_push_pointer(coup,
+                           allow_keep_card_callback_data,
+                           NULL, /* idle_func */
+                           allow_keep_card_destroy, /* destroy_func */
+                           data);
+
+        take_action(coup);
+}
+
+static void
+choose_inspect_card_callback_data(struct pcx_coup *coup,
+                                  int player_num,
+                                  const char *command,
+                                  int extra_data)
+{
+        struct pcx_coup_player *target = get_stack_data_pointer(coup);
+
+        if (player_num != target - coup->players)
+                return;
+        if (strcmp(command, "show"))
+                return;
+        if (extra_data < 0 || extra_data >= PCX_COUP_CARDS_PER_PLAYER)
+                return;
+
+        struct pcx_coup_card *card = target->cards + extra_data;
+
+        if (card->dead)
+                return;
+
+        const char *card_name =
+                pcx_text_get(coup->language,
+                             pcx_coup_characters[card->character].object_name);
+
+        pcx_buffer_set_length(&coup->buffer, 0);
+        append_buffer_printf(coup,
+                             &coup->buffer,
+                             PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP,
+                             coup->players[coup->current_player].name,
+                             card_name);
+
+        send_buffer_message_to(coup, target - coup->players);
+
+        do_choose_inspect_card(coup, target, card->character);
+}
+
+static void
+choose_inspect_card_idle(struct pcx_coup *coup)
+{
+        struct pcx_coup_player *target = get_stack_data_pointer(coup);
+        enum pcx_coup_character single_card;
+
+        if (get_single_card(target, &single_card)) {
+                do_choose_inspect_card(coup, target, single_card);
+                return;
+        }
+
+        pcx_buffer_set_length(&coup->buffer, 0);
+        append_buffer_printf(coup,
+                             &coup->buffer,
+                             PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW,
+                             coup->players[coup->current_player].name);
+
+        struct pcx_game_button buttons[PCX_COUP_CARDS_PER_PLAYER];
+        int n_buttons = 0;
+
+        for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                const struct pcx_coup_card *card = target->cards + i;
+
+                if (card->dead)
+                        continue;
+
+                enum pcx_text_string name =
+                        pcx_coup_characters[card->character].name;
+
+                buttons[n_buttons].text =
+                        pcx_text_get(coup->language, name);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "show:%u", i);
+                buttons[n_buttons].data = (char *) buf.data;
+
+                n_buttons++;
+        }
+
+        send_buffer_message_with_buttons_to(coup,
+                                            target - coup->players,
+                                            n_buttons,
+                                            buttons);
+
+        for (unsigned i = 0; i < n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
+}
+
+static void
+do_accepted_inspect(struct pcx_coup *coup,
+                    void *user_data)
+{
+        struct pcx_coup_player *player = coup->players + coup->current_player;
+        struct pcx_coup_player *target = user_data;
+
+        coup_note(coup,
+                  PCX_TEXT_STRING_REALLY_DOING_INSPECT,
+                  target->name,
+                  player->name);
+
+        stack_push_pointer(coup,
+                           choose_inspect_card_callback_data,
+                           choose_inspect_card_idle,
+                           NULL, /* destroy_cb */
+                           target);
+
+        take_action(coup);
+}
+
+static void
+do_inspect(struct pcx_coup *coup,
+           int extra_data)
+{
+        if (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] !=
+            PCX_COUP_CHARACTER_INSPECTOR)
+                return;
+
+        struct pcx_coup_player *player = coup->players + coup->current_player;
+
+        if (extra_data == -1) {
+                send_select_target(coup,
+                                   PCX_TEXT_STRING_SELECT_TARGET_INSPECT,
+                                   inspect_button.data);
+                return;
+        }
+
+        if (extra_data >= coup->n_players || extra_data == coup->current_player)
+                return;
+
+        struct pcx_coup_player *target = coup->players + extra_data;
+
+        if (!is_alive(target))
+                return;
+
+        struct challenge_data *data =
+                check_challenge(coup,
+                                CHALLENGE_FLAG_CHALLENGE,
+                                coup->current_player,
+                                do_accepted_inspect,
+                                target, /* user_data */
+                                PCX_TEXT_STRING_DOING_INSPECT,
+                                player->name,
+                                target->name);
+
+        data->challenged_clans = 1 << PCX_COUP_CLAN_NEGOTIATORS;
+        data->target_player = extra_data;
+}
+
 static void
 do_accepted_steal(struct pcx_coup *coup,
                   void *user_data)
@@ -1822,6 +2066,8 @@ choose_action(struct pcx_coup *coup,
                         do_assassinate(coup, extra_data);
                 else if (is_button(data, &exchange_button))
                         do_exchange(coup);
+                else if (is_button(data, &inspect_button))
+                        do_inspect(coup, extra_data);
                 else if (is_button(data, &steal_button))
                         do_steal(coup, extra_data);
         }
