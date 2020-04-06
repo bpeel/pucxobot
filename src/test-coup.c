@@ -1504,13 +1504,13 @@ done:
         return ret;
 }
 
-static bool
-test_block_assassinate(void)
+static struct test_data *
+set_up_block_and_challenge_assassinate(void)
 {
         struct test_data *data = set_up_assassinate();
 
         if (data == NULL)
-                return false;
+                return NULL;
 
         bool ret;
 
@@ -1523,7 +1523,7 @@ test_block_assassinate(void)
                                  "Ĉu iu volas defii rin?",
                                  -1);
         if (!ret)
-                goto done;
+                goto error;
 
         ret = send_callback_data(data,
                                  0,
@@ -1538,7 +1538,24 @@ test_block_assassinate(void)
                                  NULL,
                                  -1);
         if (!ret)
-                goto done;
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_block_assassinate(void)
+{
+        struct test_data *data = set_up_block_and_challenge_assassinate();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
 
         ret = send_callback_data(data,
                                  1,
@@ -1581,10 +1598,68 @@ done:
 }
 
 static bool
+test_fail_block_assassinate(void)
+{
+        struct test_data *data = set_up_block_and_challenge_assassinate();
+
+        if (data == NULL)
+                return false;
+
+        bool ret;
+
+        data->status.players[1].cards[0].dead = true;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj Bob ne havis la grafinon "
+                                 "kaj Bob perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "🗡 Alice volas murdi Bob\n"
+                                 "Ĉu iu volas defii rin?\n"
+                                 "Aŭ Bob, ĉu vi volas pretendi havi la "
+                                 "grafinon kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Let the assassination continue. This will kill Bob’s other
+         * card and end the game.
+         */
+
+        data->status.players[1].cards[1].dead = true;
+        data->status.players[0].coins = 0;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis aŭ defiis, Alice murdas Bob",
+                                 MESSAGE_TYPE_STATUS,
+                                 MESSAGE_TYPE_GAME_OVER,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_assassinate(void)
 {
         return (test_accept_assassinate() &&
-                test_block_assassinate());
+                test_block_assassinate() &&
+                test_fail_block_assassinate());
 }
 
 int
