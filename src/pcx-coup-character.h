@@ -31,6 +31,8 @@ enum pcx_coup_character {
         PCX_COUP_CHARACTER_INSPECTOR,
 };
 
+#define PCX_COUP_CHARACTER_COUNT 6
+
 struct pcx_coup_character_data {
         enum pcx_text_string name;
         enum pcx_text_string object_name;
