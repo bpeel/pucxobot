@@ -180,7 +180,7 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
         "Which cards do you want to keep?",
         [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
-        "Nobody blocked or challenged, %s exchanges cards.",
+        "Nobody challenged, %s exchanges cards.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s claims to have the ambassador and wants to exchange cards.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =

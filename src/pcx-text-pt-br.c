@@ -172,7 +172,7 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
         "Quais cartas você quer manter?",
         [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
-        "Ninguém bloqueou ou desafiou, %s troca cartas.",
+        "Ninguém desafiou, %s troca cartas.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s afirma ter o embaixador e quer trocar cartas.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =

@@ -193,7 +193,7 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
         "Kiujn kartojn vi volas konservi?",
         [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
-        "Neniu blokis aŭ defiis, %s interŝanĝas kartojn",
+        "Neniu defiis, %s interŝanĝas kartojn",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s pretendas havi la ambasadoron kaj volas "
         "interŝanĝi kartojn",
