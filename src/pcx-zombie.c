@@ -31,7 +31,7 @@
 #include "pcx-zombie-help.h"
 #include "pcx-html.h"
 
-#define PCX_ZOMBIE_MIN_PLAYERS 1
+#define PCX_ZOMBIE_MIN_PLAYERS 2
 #define PCX_ZOMBIE_MAX_PLAYERS PCX_GAME_MAX_PLAYERS
 
 #define PCX_ZOMBIE_DICE_PER_THROW 3
