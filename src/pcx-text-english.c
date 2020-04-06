@@ -100,6 +100,11 @@ pcx_text_english[] = {
         "/help",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Thanks for the message. You can now join a game in a public group.",
+        [PCX_TEXT_STRING_CONFIGURE_CARDS] =
+        "Please pick whether you want to play with the ambassador or the "
+        "inquisitor.",
+        [PCX_TEXT_STRING_CHARACTER_CHOSEN] =
+        "The chosen card is: %s",
         [PCX_TEXT_STRING_COUP] =
         "Coup",
         [PCX_TEXT_STRING_INCOME] =
@@ -112,6 +117,10 @@ pcx_text_english[] = {
         "Assassinate (Assassin)",
         [PCX_TEXT_STRING_EXCHANGE] =
         "Exchange (Ambassador)",
+        [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
+        "Exchange (Inquisitor)",
+        [PCX_TEXT_STRING_INSPECT] =
+        "Interrogate (Inquisitor)",
         [PCX_TEXT_STRING_STEAL] =
         "Steal (Captain)",
         [PCX_TEXT_STRING_ACCEPT] =
@@ -183,6 +192,28 @@ pcx_text_english[] = {
         "Nobody challenged, %s exchanges cards.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s claims to have the ambassador and wants to exchange cards.",
+        [PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR] =
+        "🔄 %s claims to have the inquisitor and wants to exchange cards.",
+        [PCX_TEXT_STRING_REALLY_DOING_INSPECT] =
+        "Nobody challenged, %s chooses a card to show to %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_INSPECT] =
+        "%s, who do you want to interrogate?",
+        [PCX_TEXT_STRING_DOING_INSPECT] =
+        "🔍 %s claims to have the inquisitor and wants to interrogate %s",
+        [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
+        "Which card do you want to show to %s?",
+        [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
+        "%s is now deciding whether you can keep %s",
+        [PCX_TEXT_STRING_SHOWING_CARD] =
+        "%s shows %s to you. Can they keep it?",
+        [PCX_TEXT_STRING_YES] =
+        "Yes",
+        [PCX_TEXT_STRING_NO] =
+        "No",
+        [PCX_TEXT_STRING_ALLOW_KEEP] =
+        "%s let %s keep the card that they showed.",
+        [PCX_TEXT_STRING_DONT_ALLOW_KEEP] =
+        "%s made %s change the card that they showed.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Nobody blocked or challenged, %s steals from %s.",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
@@ -199,6 +230,8 @@ pcx_text_english[] = {
         "Captain",
         [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
         "Ambassador",
+        [PCX_TEXT_STRING_CHARACTER_NAME_INSPECTOR] =
+        "Inquisitor",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
         "the duke",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
@@ -209,6 +242,8 @@ pcx_text_english[] = {
         "the captain",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "the ambassador",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
+        "the inquisitor",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Driver",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
