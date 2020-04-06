@@ -1842,6 +1842,125 @@ test_exchange(void)
                 test_one_dead_exchange());
 }
 
+static bool
+test_steal(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_AMBASSADOR,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "steal:0",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "💰 Bob volas ŝteli de Alice\n"
+                                      "Ĉu iu volas defii rin?\n"
+                                      "Aŭ Alice, ĉu vi volas pretendi havi la "
+                                      "kapitanon aŭ la ambasadoron kaj bloki "
+                                      "rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "challenge", "Defii",
+                                      "block", "Bloki",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].coins = 0;
+        data->status.players[1].coins = 3;
+        data->status.current_player = 0;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis aŭ defiis, Bob ŝtelas de "
+                                 "Alice",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "steal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💰 Alice volas ŝteli de Bob\n"
+                                 "Ĉu iu volas defii rin?\n"
+                                 "Aŭ Bob, ĉu vi volas pretendi havi la "
+                                 "kapitanon aŭ la ambasadoron kaj bloki "
+                                 "rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob pretendas havi la kapitanon aŭ la "
+                                 "ambasadoron kaj blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "challenge",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Alice ne kredas ke vi havas la kapitanon "
+                                 "aŭ la ambasadoron.\n"
+                                 "Kiun karton vi volas montri?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Duko",
+                                 "reveal:1", "Ambasadoro",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[1].cards[1].character =
+                PCX_COUP_CHARACTER_CONTESSA;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis sed Bob ja havis la ambasadoron "
+                                 "kaj Alice perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Duko",
+                                 "lose:1", "Duko",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1852,7 +1971,8 @@ main(int argc, char **argv)
             !test_foreign_aid() ||
             !test_tax() ||
             !test_assassinate() ||
-            !test_exchange())
+            !test_exchange() ||
+            !test_steal())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
