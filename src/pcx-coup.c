@@ -139,6 +139,12 @@ exchange_button = {
 };
 
 static const struct coup_text_button
+exchange_inspector_button = {
+        .text = PCX_TEXT_STRING_EXCHANGE_INSPECTOR,
+        .data = exchange_button.data
+};
+
+static const struct coup_text_button
 steal_button = {
         .text = PCX_TEXT_STRING_STEAL,
         .data = "steal"
@@ -460,8 +466,10 @@ get_buttons(struct pcx_coup *coup,
 
         switch (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS]) {
         case PCX_COUP_CHARACTER_AMBASSADOR:
-        case PCX_COUP_CHARACTER_INSPECTOR:
                 add_button(coup, buffer, &exchange_button);
+                break;
+        case PCX_COUP_CHARACTER_INSPECTOR:
+                add_button(coup, buffer, &exchange_inspector_button);
                 break;
         default:
                 break;
@@ -1691,9 +1699,14 @@ do_accepted_exchange(struct pcx_coup *coup,
 static void
 do_exchange(struct pcx_coup *coup)
 {
+        enum pcx_text_string note;
+
         switch (coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS]) {
         case PCX_COUP_CHARACTER_AMBASSADOR:
+                note = PCX_TEXT_STRING_DOING_EXCHANGE;
+                break;
         case PCX_COUP_CHARACTER_INSPECTOR:
+                note = PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR;
                 break;
         default:
                 return;
@@ -1707,7 +1720,7 @@ do_exchange(struct pcx_coup *coup)
                                 coup->current_player,
                                 do_accepted_exchange,
                                 NULL, /* user_data */
-                                PCX_TEXT_STRING_DOING_EXCHANGE,
+                                note,
                                 player->name);
 
         data->challenged_clans = (1 << PCX_COUP_CLAN_NEGOTIATORS);

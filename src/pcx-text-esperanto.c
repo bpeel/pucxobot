@@ -115,6 +115,8 @@ pcx_text_esperanto[] = {
         "Murdi (Murdisto)",
         [PCX_TEXT_STRING_EXCHANGE] =
         "Interŝanĝi (Ambasadoro)",
+        [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
+        "Interŝanĝi (Inspektisto)",
         [PCX_TEXT_STRING_STEAL] =
         "Ŝteli (Kapitano)",
         [PCX_TEXT_STRING_ACCEPT] =
@@ -196,6 +198,9 @@ pcx_text_esperanto[] = {
         "Neniu defiis, %s interŝanĝas kartojn",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s pretendas havi la ambasadoron kaj volas "
+        "interŝanĝi kartojn",
+        [PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR] =
+        "🔄 %s pretendas havi la inspektiston kaj volas "
         "interŝanĝi kartojn",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Neniu blokis aŭ defiis, %s ŝtelas de %s",
