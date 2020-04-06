@@ -94,7 +94,11 @@ struct pcx_coup {
         bool action_taken;
         struct pcx_main_context_source *game_over_source;
         enum pcx_text_language language;
+
+        /* Options for unit testing */
         int (* rand_func)(void);
+        int n_card_overrides;
+        enum pcx_coup_character *card_overrides;
 };
 
 struct coup_text_button {
@@ -274,6 +278,8 @@ free_game(struct pcx_coup *coup)
 
         if (coup->game_over_source)
                 pcx_main_context_remove_source(coup->game_over_source);
+
+        pcx_free(coup->card_overrides);
 
         pcx_free(coup);
 }
@@ -1844,8 +1850,7 @@ choose_action_idle(struct pcx_coup *coup)
 }
 
 static void
-create_deck(struct pcx_coup *coup,
-            const struct pcx_coup_debug_overrides *overrides)
+create_deck(struct pcx_coup *coup)
 {
         coup->n_cards = PCX_COUP_TOTAL_CARDS;
 
@@ -1857,13 +1862,10 @@ create_deck(struct pcx_coup *coup,
 
         shuffle_deck(coup);
 
-        if (overrides == NULL)
-                return;
-
         int dst = coup->n_cards - 1;
 
-        for (int i = 0; i < overrides->n_cards; i++) {
-                enum pcx_coup_character card = overrides->cards[i];
+        for (int i = 0; i < coup->n_card_overrides; i++) {
+                enum pcx_coup_character card = coup->card_overrides[i];
                 int copy_pos;
 
                 for (copy_pos = 0; copy_pos <= dst; copy_pos++) {
@@ -1906,13 +1908,20 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         coup->language = language;
         coup->callbacks = *callbacks;
         coup->user_data = user_data;
+        coup->rand_func = rand;
 
-        if (overrides && overrides->rand_func)
-                coup->rand_func = overrides->rand_func;
-        else
-                coup->rand_func = rand;
+        if (overrides) {
+                if (overrides->rand_func)
+                        coup->rand_func = overrides->rand_func;
 
-        create_deck(coup, overrides);
+                coup->n_card_overrides = overrides->n_cards;
+                coup->card_overrides =
+                        pcx_memdup(overrides->cards,
+                                   (sizeof overrides->cards[0]) *
+                                   overrides->n_cards);
+        }
+
+        create_deck(coup);
 
         coup->n_players = n_players;
         if (overrides) {
