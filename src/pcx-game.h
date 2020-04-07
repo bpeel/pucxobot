@@ -56,6 +56,7 @@ struct pcx_game {
         enum pcx_text_string start_command;
         int min_players;
         int max_players;
+        bool needs_private_messages;
         void *(* create_game_cb)(const struct pcx_game_callbacks *callbacks,
                                  void *user_data,
                                  enum pcx_text_language language,

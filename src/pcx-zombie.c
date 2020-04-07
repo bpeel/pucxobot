@@ -742,6 +742,7 @@ pcx_zombie_game = {
         .start_command = PCX_TEXT_STRING_ZOMBIE_START_COMMAND,
         .min_players = PCX_ZOMBIE_MIN_PLAYERS,
         .max_players = PCX_ZOMBIE_MAX_PLAYERS,
+        .needs_private_messages = false,
         .create_game_cb = create_game_cb,
         .get_help_cb = get_help_cb,
         .handle_callback_data_cb = handle_callback_data_cb,

@@ -940,9 +940,13 @@ join_game(struct pcx_bot *bot,
 }
 
 static bool
-check_known_id(struct pcx_bot *bot,
-               const struct message_info *info)
+check_id_valid_for_game(struct pcx_bot *bot,
+                     const struct pcx_game *game,
+                     const struct message_info *info)
 {
+        if (!game->needs_private_messages)
+                return true;
+
         if (!is_known_id(bot, info->from_id)) {
                 send_message_printf(bot,
                                     info->chat_id,
@@ -1050,7 +1054,7 @@ process_create_game(struct pcx_bot *bot,
                 return;
         }
 
-        if (!check_known_id(bot, info))
+        if (!check_id_valid_for_game(bot, game_type, info))
                 return;
 
         if (!check_already_in_game(bot, info))
@@ -1072,9 +1076,6 @@ process_join(struct pcx_bot *bot,
 {
         struct game *game;
 
-        if (!check_known_id(bot, info))
-                return;
-
         if (!check_already_in_game(bot, info))
                 return;
 
@@ -1084,6 +1085,9 @@ process_join(struct pcx_bot *bot,
                 send_create_game_question(bot, info);
                 return;
         }
+
+        if (!check_id_valid_for_game(bot, game->type, info))
+                return;
 
         if (game->n_players >= game->type->max_players) {
                 send_message_printf(bot,
@@ -1133,9 +1137,6 @@ process_start(struct pcx_bot *bot,
         game = find_game(bot, info->chat_id);
 
         if (game == NULL) {
-                if (!check_known_id(bot, info))
-                        return;
-
                 send_create_game_question(bot, info);
                 return;
         }

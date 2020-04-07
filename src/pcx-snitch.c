@@ -899,6 +899,7 @@ pcx_snitch_game = {
         .start_command = PCX_TEXT_STRING_SNITCH_START_COMMAND,
         .min_players = PCX_SNITCH_MIN_PLAYERS,
         .max_players = PCX_SNITCH_MAX_PLAYERS,
+        .needs_private_messages = true,
         .create_game_cb = create_game_cb,
         .get_help_cb = get_help_cb,
         .handle_callback_data_cb = handle_callback_data_cb,
