@@ -47,7 +47,7 @@ pcx_zombie_help[] = {
         "ĵetkuboj pli ofte rezultas en cerbo kaj la ruĝaj pli ofte en pafo. La "
         "flavaj estas ekvilibraj.\n"
         "\n"
-        "Post kiam unu ludantoj gajnas 13 poentojn, la aliaj ludantoj rajtas "
+        "Post kiam unu ludanto gajnas 13 poentojn, la aliaj ludantoj rajtas "
         "fini unu lastan vicon. Post tio, la homo kun la plej multe da poentoj "
         "gajnas la partion.",
         [PCX_TEXT_LANGUAGE_FRENCH] =
