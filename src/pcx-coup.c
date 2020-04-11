@@ -214,6 +214,20 @@ game_type_names[] = {
         PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR,
 };
 
+struct pcx_coup_allegiance_info {
+        const char *symbol;
+};
+
+static const struct pcx_coup_allegiance_info
+allegiance_info[] = {
+        [PCX_COUP_ALLEGIANCE_LOYALIST] = {
+                .symbol = "👑"
+        },
+        [PCX_COUP_ALLEGIANCE_REFORMIST] = {
+                .symbol = "✊"
+        },
+};
+
 static struct pcx_coup_stack_entry *
 get_stack_top(struct pcx_coup *coup)
 {
@@ -555,6 +569,8 @@ add_money_status(struct pcx_coup *coup,
                  struct pcx_buffer *buffer,
                  const struct pcx_coup_player *player)
 {
+        pcx_buffer_append_string(buffer, ", ");
+
         if (player->coins == 1) {
                 append_buffer_string(coup, buffer, PCX_TEXT_STRING_1_COIN);
         } else {
@@ -563,6 +579,20 @@ add_money_status(struct pcx_coup *coup,
                                      PCX_TEXT_STRING_PLURAL_COINS,
                         player->coins);
         }
+}
+
+static void
+add_allegiance_status(struct pcx_coup *coup,
+                      struct pcx_buffer *buffer,
+                      const struct pcx_coup_player *player)
+{
+        if (!coup->reformation_extension)
+                return;
+
+        pcx_buffer_append_string(buffer, " ");
+
+        const char *symbol = allegiance_info[player->allegiance].symbol;
+        pcx_buffer_append_string(buffer, symbol);
 }
 
 static void
@@ -635,11 +665,19 @@ show_stats(struct pcx_coup *coup)
                 add_cards_status(coup, &coup->buffer, player);
 
                 if (alive) {
-                        pcx_buffer_append_string(&coup->buffer, ", ");
                         add_money_status(coup, &coup->buffer, player);
+                        add_allegiance_status(coup, &coup->buffer, player);
                         winner = player;
                 }
 
+                pcx_buffer_append_string(&coup->buffer, "\n\n");
+        }
+
+        if (coup->reformation_extension) {
+                append_buffer_printf(coup,
+                                     &coup->buffer,
+                                     PCX_TEXT_STRING_COINS_IN_TREASURY,
+                                     coup->treasury);
                 pcx_buffer_append_string(&coup->buffer, "\n\n");
         }
 

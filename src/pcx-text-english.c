@@ -260,6 +260,8 @@ pcx_text_english[] = {
         "the inquisitor",
         [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
         "The court has now been reunified. Anyone can now target anyone else.",
+        [PCX_TEXT_STRING_COINS_IN_TREASURY] =
+        "Treasury: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Driver",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
