@@ -22,7 +22,8 @@
 
 const char *
 pcx_text_pt_br[] = {
-        [PCX_TEXT_STRING_LANGUAGE_CODE] = "pt-br",
+        [PCX_TEXT_STRING_LANGUAGE_CODE] =
+        "pt-br",
         [PCX_TEXT_STRING_NAME_COUP] =
         "Golpe",
         [PCX_TEXT_STRING_NAME_SNITCH] =

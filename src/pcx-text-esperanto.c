@@ -22,7 +22,8 @@
 
 const char *
 pcx_text_esperanto[] = {
-        [PCX_TEXT_STRING_LANGUAGE_CODE] = "eo",
+        [PCX_TEXT_STRING_LANGUAGE_CODE] =
+        "eo",
         [PCX_TEXT_STRING_NAME_COUP] =
         "Puĉo",
         [PCX_TEXT_STRING_NAME_SNITCH] =

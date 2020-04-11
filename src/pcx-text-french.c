@@ -22,7 +22,8 @@
 
 const char *
 pcx_text_french[] = {
-        [PCX_TEXT_STRING_LANGUAGE_CODE] = "fr",
+        [PCX_TEXT_STRING_LANGUAGE_CODE] =
+        "fr",
         [PCX_TEXT_STRING_NAME_COUP] =
         "Complot",
         [PCX_TEXT_STRING_NAME_SNITCH] =

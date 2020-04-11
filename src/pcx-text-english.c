@@ -22,7 +22,8 @@
 
 const char *
 pcx_text_english[] = {
-        [PCX_TEXT_STRING_LANGUAGE_CODE] = "en",
+        [PCX_TEXT_STRING_LANGUAGE_CODE] =
+        "en",
         [PCX_TEXT_STRING_NAME_COUP] =
         "Coup",
         [PCX_TEXT_STRING_NAME_SNITCH] =
