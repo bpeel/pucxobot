@@ -158,6 +158,12 @@ convert_button = {
 };
 
 static const struct coup_text_button
+embezzle_button = {
+        .text = PCX_TEXT_STRING_EMBEZZLE,
+        .data = "embezzle"
+};
+
+static const struct coup_text_button
 tax_button = {
         .text = PCX_TEXT_STRING_TAX,
         .data = "tax"
@@ -376,6 +382,19 @@ is_alive(const struct pcx_coup_player *player)
         return false;
 }
 
+static int
+count_alive_cards(const struct pcx_coup_player *player)
+{
+        int n_cards = 0;
+
+        for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                if (!player->cards[i].dead)
+                        n_cards++;
+        }
+
+        return n_cards;
+}
+
 static bool
 is_finished(const struct pcx_coup *coup)
 {
@@ -526,11 +545,14 @@ get_buttons(struct pcx_coup *coup,
         if (player->coins >= 7)
                 add_button(coup, buffer, &coup_button);
 
-        if (coup->reformation_extension &&
-            !coup->reunified &&
-            player->coins >= MIN(PCX_COUP_CONVERT_COST,
-                                 PCX_COUP_CONVERT_SELF_COST))
-                add_button(coup, buffer, &convert_button);
+        if (coup->reformation_extension) {
+                if (!coup->reunified &&
+                    player->coins >= MIN(PCX_COUP_CONVERT_COST,
+                                         PCX_COUP_CONVERT_SELF_COST))
+                        add_button(coup, buffer, &convert_button);
+
+                add_button(coup, buffer, &embezzle_button);
+        }
 
         if (coup->clan_characters[PCX_COUP_CLAN_TAX_COLLECTORS] ==
             PCX_COUP_CHARACTER_DUKE)
@@ -998,6 +1020,31 @@ change_card(struct pcx_coup *coup,
         pcx_fatal("card not found in change_card");
 }
 
+static void
+change_all_cards(struct pcx_coup *coup,
+                 int player_num)
+{
+        struct pcx_coup_player *player = coup->players + player_num;
+
+        for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                struct pcx_coup_card *card = player->cards + i;
+
+                if (!card->dead)
+                        coup->deck[coup->n_cards++] = card->character;
+        }
+
+        shuffle_deck(coup);
+
+        for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                struct pcx_coup_card *card = player->cards + i;
+
+                if (!card->dead)
+                        card->character = take_card(coup);
+        }
+
+        show_cards(coup, player_num);
+}
+
 typedef void
 (* action_cb)(struct pcx_coup *coup,
               void *user_data);
@@ -1005,6 +1052,10 @@ typedef void
 enum challenge_flag {
         CHALLENGE_FLAG_CHALLENGE = (1 << 0),
         CHALLENGE_FLAG_BLOCK = (1 << 1),
+        /* If set then the player must prove that they do not have the
+         * card rather than that they have it.
+         */
+        CHALLENGE_FLAG_INVERTED = (1 << 2),
 };
 
 struct challenge_data {
@@ -1031,6 +1082,7 @@ struct reveal_data {
         int challenging_player;
         int challenged_player;
         uint32_t challenged_clans;
+        bool inverted;
 };
 
 static void
@@ -1042,6 +1094,26 @@ do_challenge_action(struct pcx_coup *coup,
         stack_pop(coup);
 
         cb(coup, user_data);
+}
+
+static bool
+has_challenged_clans(const struct pcx_coup_player *player,
+                     uint32_t challenged_clans)
+{
+        for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                const struct pcx_coup_card *card = player->cards + i;
+
+                if (card->dead)
+                        continue;
+
+                enum pcx_coup_clan clan =
+                        pcx_coup_characters[card->character].clan;
+
+                if ((challenged_clans & (UINT32_C(1) << clan)))
+                        return true;
+        }
+
+        return false;
 }
 
 static void
@@ -1105,6 +1177,86 @@ do_reveal(struct pcx_coup *coup,
 }
 
 static void
+do_concede_inverted_challenge(struct pcx_coup *coup,
+                              struct reveal_data *data)
+{
+        struct pcx_coup_player *challenged_player =
+                coup->players + data->challenged_player;
+        struct pcx_coup_player *challenging_player =
+                coup->players + data->challenging_player;
+
+        coup_note(coup,
+                  PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED,
+                  challenging_player->name,
+                  challenged_player->name,
+                  challenged_player->name);
+
+        take_action(coup);
+        stack_pop(coup);
+        /* Also pop the challenge */
+        stack_pop(coup);
+
+        lose_card(coup, challenged_player - coup->players);
+}
+
+static void
+do_show_inverted_challenge_cards(struct pcx_coup *coup,
+                                 struct reveal_data *data)
+{
+        struct pcx_coup_player *challenged_player =
+                coup->players + data->challenged_player;
+        struct pcx_coup_player *challenging_player =
+                coup->players + data->challenging_player;
+
+        int n_cards = count_alive_cards(challenged_player);
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        int n_cards_added = 0;
+
+        for (int i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
+                const struct pcx_coup_card *card =
+                        challenged_player->cards + i;
+                if (card->dead)
+                        continue;
+
+                enum pcx_text_string name =
+                        pcx_coup_characters[card->character].object_name;
+
+                append_buffer_string(coup, &buf, name);
+
+                n_cards_added++;
+
+                if (n_cards_added == n_cards - 1) {
+                        append_buffer_string(coup,
+                                             &buf,
+                                             PCX_TEXT_STRING_FINAL_CONJUNCTION);
+                } else if (n_cards_added < n_cards) {
+                        pcx_buffer_append_string(&buf, ", ");
+                }
+        }
+
+        coup_note(coup,
+                  PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED,
+                  challenging_player->name,
+                  challenged_player->name,
+                  (const char *) buf.data,
+                  challenged_player->name,
+                  challenging_player->name);
+
+        pcx_buffer_destroy(&buf);
+
+        take_action(coup);
+        stack_pop(coup);
+
+        struct challenge_data *challenge_data = get_stack_data_pointer(coup);
+        do_challenge_action(coup,
+                            challenge_data->cb,
+                            challenge_data->user_data);
+
+        change_all_cards(coup, challenged_player - coup->players);
+        lose_card(coup, challenging_player - coup->players);
+}
+
+static void
 reveal_callback_data(struct pcx_coup *coup,
                      int player_num,
                      const char *command,
@@ -1116,44 +1268,36 @@ reveal_callback_data(struct pcx_coup *coup,
                 return;
         if (strcmp(command, "reveal"))
                 return;
-        if (extra_data < 0 || extra_data >= PCX_COUP_CARDS_PER_PLAYER)
+        if (extra_data < 0)
                 return;
 
-        struct pcx_coup_player *player = coup->players + player_num;
-        struct pcx_coup_card *card = player->cards + extra_data;
+        if (data->inverted) {
+                if (extra_data == 0)
+                        do_concede_inverted_challenge(coup, data);
+                else if (extra_data == 1 &&
+                         !has_challenged_clans(coup->players +
+                                               data->challenged_player,
+                                               data->challenged_clans))
+                        do_show_inverted_challenge_cards(coup, data);
+        } else {
+                if (extra_data >= PCX_COUP_CARDS_PER_PLAYER)
+                        return;
 
-        if (card->dead)
-                return;
+                struct pcx_coup_player *player = coup->players + player_num;
+                struct pcx_coup_card *card = player->cards + extra_data;
 
-        do_reveal(coup, data, card->character);
+                if (card->dead)
+                        return;
+
+                do_reveal(coup, data, card->character);
+        }
 }
 
-static void
-reveal_idle(struct pcx_coup *coup)
+static int
+add_reveal_card_buttons(struct pcx_coup *coup,
+                        struct pcx_coup_player *challenged_player,
+                        struct pcx_game_button *buttons)
 {
-        struct reveal_data *data = get_stack_data_pointer(coup);
-        struct pcx_coup_player *challenged_player =
-                coup->players + data->challenged_player;
-        enum pcx_coup_character single_card;
-
-        if (get_single_card(challenged_player, &single_card)) {
-                do_reveal(coup, data, single_card);
-                return;
-        }
-
-        struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
-        get_challenged_cards(coup, &cards, data->challenged_clans);
-
-        pcx_buffer_set_length(&coup->buffer, 0);
-        append_buffer_printf(coup,
-                             &coup->buffer,
-                             PCX_TEXT_STRING_ANNOUNCE_CHALLENGE,
-                             coup->players[data->challenging_player].name,
-                             (char *) cards.data);
-
-        pcx_buffer_destroy(&cards);
-
-        struct pcx_game_button buttons[PCX_COUP_CARDS_PER_PLAYER];
         int n_buttons = 0;
 
         for (unsigned i = 0; i < PCX_COUP_CARDS_PER_PLAYER; i++) {
@@ -1168,11 +1312,83 @@ reveal_idle(struct pcx_coup *coup)
                 buttons[n_buttons].text =
                         pcx_text_get(coup->language, name);
 
+                n_buttons++;
+        }
+
+        return n_buttons;
+}
+
+static int
+add_choose_concede_buttons(struct pcx_coup *coup,
+                           struct pcx_coup_player *challenged_player,
+                           uint32_t challenged_clans,
+                           struct pcx_game_button *buttons)
+{
+        int n_buttons = 0;
+
+        buttons[n_buttons].text =
+                pcx_text_get(coup->language, PCX_TEXT_STRING_CONCEDE);
+        n_buttons++;
+
+        if (!has_challenged_clans(challenged_player, challenged_clans)) {
+                buttons[n_buttons].text =
+                        pcx_text_get(coup->language,
+                                     PCX_TEXT_STRING_SHOW_CARDS);
+                n_buttons++;
+        }
+
+        return n_buttons;
+}
+
+static void
+reveal_idle(struct pcx_coup *coup)
+{
+        struct reveal_data *data = get_stack_data_pointer(coup);
+        struct pcx_coup_player *challenged_player =
+                coup->players + data->challenged_player;
+        enum pcx_coup_character single_card;
+
+        if (!data->inverted &&
+            get_single_card(challenged_player, &single_card)) {
+                do_reveal(coup, data, single_card);
+                return;
+        }
+
+        struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
+        get_challenged_cards(coup, &cards, data->challenged_clans);
+
+        enum pcx_text_string note =
+                (data->inverted ?
+                 PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE :
+                 PCX_TEXT_STRING_ANNOUNCE_CHALLENGE);
+
+        pcx_buffer_set_length(&coup->buffer, 0);
+        append_buffer_printf(coup,
+                             &coup->buffer,
+                             note,
+                             coup->players[data->challenging_player].name,
+                             (char *) cards.data);
+
+        pcx_buffer_destroy(&cards);
+
+        struct pcx_game_button buttons[MAX(PCX_COUP_CARDS_PER_PLAYER, 2)];
+        int n_buttons;
+
+        if (data->inverted) {
+                n_buttons = add_choose_concede_buttons(coup,
+                                                       challenged_player,
+                                                       data->challenged_clans,
+                                                       buttons);
+        } else {
+                n_buttons = add_reveal_card_buttons(coup,
+                                                    challenged_player,
+                                                    buttons);
+        }
+
+        for (int i = 0; i < n_buttons; i++) {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "reveal:%u", i);
-                buttons[n_buttons].data = (char *) buf.data;
-
-                n_buttons++;
+                buttons[i].data = (char *) buf.data;
         }
 
         send_buffer_message_with_buttons_to(coup,
@@ -1197,6 +1413,7 @@ reveal_card(struct pcx_coup *coup,
             int challenging_player,
             int challenged_player,
             uint32_t challenged_clans,
+            bool inverted,
             action_cb cb,
             void *user_data)
 {
@@ -1205,6 +1422,7 @@ reveal_card(struct pcx_coup *coup,
         data->challenging_player = challenging_player;
         data->challenged_player = challenged_player;
         data->challenged_clans = challenged_clans;
+        data->inverted = inverted;
         data->cb = cb;
         data->user_data = user_data;
 
@@ -1309,6 +1527,7 @@ check_challenge_callback_data(struct pcx_coup *coup,
                             player_num,
                             challenged_player,
                             challenged_clans,
+                            !!(data->flags & CHALLENGE_FLAG_INVERTED),
                             cb,
                             user_data);
 
@@ -1746,6 +1965,43 @@ do_convert(struct pcx_coup *coup,
         coup->treasury += cost;
 
         check_reunification(coup);
+}
+
+static void
+do_accepted_embezzle(struct pcx_coup *coup,
+                     void *user_data)
+{
+        struct pcx_coup_player *player = coup->players + coup->current_player;
+
+        coup_note(coup,
+                  PCX_TEXT_STRING_REALLY_EMBEZZLING,
+                  player->name);
+
+        player->coins += coup->treasury;
+        coup->treasury = 0;
+
+        take_action(coup);
+}
+
+static void
+do_embezzle(struct pcx_coup *coup)
+{
+        if (!coup->reformation_extension)
+                return;
+
+        struct pcx_coup_player *player = coup->players + coup->current_player;
+
+        struct challenge_data *data =
+                check_challenge(coup,
+                                CHALLENGE_FLAG_CHALLENGE |
+                                CHALLENGE_FLAG_INVERTED,
+                                coup->current_player,
+                                do_accepted_embezzle,
+                                NULL, /* user_data */
+                                PCX_TEXT_STRING_EMBEZZLING,
+                                player->name);
+
+        data->challenged_clans = (1 << PCX_COUP_CLAN_TAX_COLLECTORS);
 }
 
 static void
@@ -2338,6 +2594,8 @@ choose_action(struct pcx_coup *coup,
                         do_foreign_aid(coup);
                 else if (is_button(data, &convert_button))
                         do_convert(coup, extra_data);
+                else if (is_button(data, &embezzle_button))
+                        do_embezzle(coup);
                 else if (is_button(data, &tax_button))
                         do_tax(coup);
                 else if (is_button(data, &assassinate_button))

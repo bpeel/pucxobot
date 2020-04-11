@@ -126,6 +126,8 @@ pcx_text_esperanto[] = {
         "Imposto (Duko)",
         [PCX_TEXT_STRING_CONVERT] =
         "Konverti",
+        [PCX_TEXT_STRING_EMBEZZLE] =
+        "Ŝteli la trezoron",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Murdi (Murdisto)",
         [PCX_TEXT_STRING_EXCHANGE] =
@@ -162,12 +164,24 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s defiis kaj %s ne havis %s kaj %s "
         "perdas karton",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
+        "%s defiis kaj %s cedis do %s perdas karton.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
         "%s defiis sed %s ja havis %s kaj %s "
         "perdas karton",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
+        "%s defiis kaj %s montris %s do %s ŝanĝas siajn kartojn kaj "
+        "%s perdas karton.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne kredas ke vi havas %s.\n"
         "Kiun karton vi volas montri?",
+        [PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE] =
+        "%s kredas ke vi ja havas %s.\n"
+        "Ĉu vi volas cedi?",
+        [PCX_TEXT_STRING_CONCEDE] =
+        "Cedi",
+        [PCX_TEXT_STRING_SHOW_CARDS] =
+        "Montri kartojn",
         [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
         "Neniu defiis. La ago estis blokita.",
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
@@ -204,6 +218,10 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s prenas 2 monerojn per eksterlanda "
         "helpo.",
+        [PCX_TEXT_STRING_EMBEZZLING] =
+        "💼 %s pretendas ne havi la dukon kaj ŝtelas la monon de la trezorejo.",
+        [PCX_TEXT_STRING_REALLY_EMBEZZLING] =
+        "Neniu defiis, %s prenas la monon de la trezorejo.",
         [PCX_TEXT_STRING_REALLY_DOING_TAX] =
         "Neniu defiis, %s prenas la 3 monerojn",
         [PCX_TEXT_STRING_DOING_TAX] =

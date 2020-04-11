@@ -123,6 +123,8 @@ pcx_text_english[] = {
         "Tax (Duke)",
         [PCX_TEXT_STRING_CONVERT] =
         "Convert",
+        [PCX_TEXT_STRING_EMBEZZLE] =
+        "Embezzle",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Assassinate (Assassin)",
         [PCX_TEXT_STRING_EXCHANGE] =
@@ -157,11 +159,23 @@ pcx_text_english[] = {
         "Which card do you want to lose?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s challenged and %s didn’t have %s so %s loses a card.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
+        "%s challenged and %s conceded so %s loses a card.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
         "%s challenged but %s did have %s so %s loses a card.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
+        "%s challenged and %s showed %s so %s changes their cards and "
+        "%s loses a card.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s doesn’t believe that you have %s.\n"
         "Which card do you want to show them?",
+        [PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE] =
+        "%s believes that you do have %s.\n"
+        "Do you want to concede?",
+        [PCX_TEXT_STRING_CONCEDE] =
+        "Concede",
+        [PCX_TEXT_STRING_SHOW_CARDS] =
+        "Show cards",
         [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
         "Nobody challenged. The action was blocked.",
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
@@ -192,6 +206,11 @@ pcx_text_english[] = {
         "Nobody blocked, %s takes the two coins",
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s receives 2 coins from foreign aid.",
+        [PCX_TEXT_STRING_EMBEZZLING] =
+        "💼 %s claims not to have the duke and embezzles the money in the "
+        "treasury.",
+        [PCX_TEXT_STRING_REALLY_EMBEZZLING] =
+        "Nobody challenged, %s takes the money in the treasury.",
         [PCX_TEXT_STRING_REALLY_DOING_TAX] =
         "Nobody challenged, %s takes the 3 coins.",
         [PCX_TEXT_STRING_DOING_TAX] =
