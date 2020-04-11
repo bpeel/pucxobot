@@ -642,17 +642,23 @@ queue_configure_cards_message(struct test_data *data)
         struct message *message = queue_message(data, MESSAGE_TYPE_GLOBAL);
 
         message->message =
-                pcx_strdup("Bonvolu elekti ĉu vi volas ludi kun la "
-                           "ambasadoro aŭ kun la inspektisto.");
+                pcx_strdup("Bonvolu elekti kiun version de la ludo vi volas "
+                           "ludi.");
 
         enable_check_buttons(message);
 
         add_button_to_message(message,
-                              "configure:4",
-                              "Ambasadoro");
+                              "game_type:0",
+                              "Originala");
         add_button_to_message(message,
-                              "configure:5",
+                              "game_type:1",
                               "Inspektisto");
+        add_button_to_message(message,
+                              "game_type:2",
+                              "Reformacio");
+        add_button_to_message(message,
+                              "game_type:3",
+                              "Reformacio + Inspektisto");
 }
 
 static struct test_data *
@@ -696,11 +702,11 @@ create_test_data(int n_card_overrides,
         const char *configure_data, *configure_note;
 
         if (use_inspector) {
-                configure_data = "configure:5";
-                configure_note = "La elektita karto estas: Inspektisto";
+                configure_data = "game_type:1";
+                configure_note = "La elektita versio estas: Inspektisto";
         } else {
-                configure_data = "configure:4";
-                configure_note = "La elektita karto estas: Ambasadoro";
+                configure_data = "game_type:0";
+                configure_note = "La elektita versio estas: Originala";
         }
 
         send_callback_data(data,

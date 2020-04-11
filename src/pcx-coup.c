@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2019, 2020  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,18 @@ typedef void
 typedef void
 (* pcx_coup_stack_destroy_func)(struct pcx_coup *coup);
 
+enum pcx_coup_allegiance {
+        PCX_COUP_ALLEGIANCE_LOYALIST,
+        PCX_COUP_ALLEGIANCE_REFORMIST
+};
+
+enum pcx_coup_game_type {
+        PCX_COUP_GAME_TYPE_ORIGINAL,
+        PCX_COUP_GAME_TYPE_INSPECTOR,
+        PCX_COUP_GAME_TYPE_REFORMATION,
+        PCX_COUP_GAME_TYPE_REFORMATION_INSPECTOR,
+};
+
 struct pcx_coup_stack_entry {
         pcx_coup_callback_data_func func;
         pcx_coup_idle_func idle_func;
@@ -77,6 +89,7 @@ struct pcx_coup_player {
         char *name;
         int coins;
         struct pcx_coup_card cards[PCX_COUP_CARDS_PER_PLAYER];
+        enum pcx_coup_allegiance allegiance;
 };
 
 struct pcx_coup {
@@ -94,6 +107,17 @@ struct pcx_coup {
         bool action_taken;
         struct pcx_main_context_source *game_over_source;
         enum pcx_text_language language;
+
+        /* Whether the game is being played with the reformation extension */
+        bool reformation_extension;
+        /* Set once all players are on the same team. It won’t be
+         * unset for the rest of the game.
+         */
+        bool reunified;
+        /* The amount of coins in the treasury. Coins paid for
+         * conversion end up here.
+         */
+        int treasury;
 
         /* Options for unit testing */
         int (* rand_func)(void);
@@ -176,6 +200,18 @@ static const struct coup_text_button
 block_button = {
         .text = PCX_TEXT_STRING_BLOCK,
         .data = "block"
+};
+
+static const enum pcx_text_string
+game_type_names[] = {
+        [PCX_COUP_GAME_TYPE_ORIGINAL] =
+        PCX_TEXT_STRING_GAME_TYPE_ORIGINAL,
+        [PCX_COUP_GAME_TYPE_INSPECTOR] =
+        PCX_TEXT_STRING_GAME_TYPE_INSPECTOR,
+        [PCX_COUP_GAME_TYPE_REFORMATION] =
+        PCX_TEXT_STRING_GAME_TYPE_REFORMATION,
+        [PCX_COUP_GAME_TYPE_REFORMATION_INSPECTOR] =
+        PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR,
 };
 
 static struct pcx_coup_stack_entry *
@@ -672,6 +708,50 @@ take_card(struct pcx_coup *coup)
 }
 
 static void
+check_reunification(struct pcx_coup *coup)
+{
+        if (!coup->reformation_extension ||
+            coup->reunified)
+                return;
+
+        int alive_player;
+
+        for (alive_player = 0; alive_player < coup->n_players; alive_player++) {
+                if (is_alive(coup->players + alive_player))
+                        goto found_alive_player;
+        }
+
+        /* Everybody dead? */
+        return;
+
+        bool found_other_player = false;
+
+found_alive_player:
+        for (int other_player = alive_player + 1;
+             other_player < coup->n_players;
+             other_player++) {
+                if (!is_alive(coup->players + other_player))
+                        continue;
+
+                found_other_player = true;
+
+                if (coup->players[alive_player].allegiance !=
+                    coup->players[other_player].allegiance)
+                        return;
+        }
+
+        coup->reunified = true;
+
+        /* Don’t bother reporting the message if it’s also the end of
+         * the game.
+         */
+        if (!found_other_player)
+                return;
+
+        coup_note(coup, PCX_TEXT_STRING_REUNIFICATION_OCCURED);
+}
+
+static void
 choose_card_to_lose(struct pcx_coup *coup,
                     int player_num,
                     const char *data,
@@ -693,6 +773,7 @@ choose_card_to_lose(struct pcx_coup *coup,
         take_action(coup);
 
         player->cards[extra_data].dead = true;
+        check_reunification(coup);
         show_cards(coup, player_num);
         stack_pop(coup);
 }
@@ -745,8 +826,10 @@ choose_card_to_lose_idle(struct pcx_coup *coup)
                                 changed = true;
                         }
                 }
-                if (changed)
+                if (changed) {
+                        check_reunification(coup);
                         show_cards(coup, player_num);
+                }
                 return;
         }
 
@@ -958,6 +1041,7 @@ do_reveal(struct pcx_coup *coup,
                                 break;
                         }
                 }
+                check_reunification(coup);
                 show_cards(coup, data->challenged_player);
 
                 take_action(coup);
@@ -1117,17 +1201,27 @@ is_accepted(struct pcx_coup *coup,
         if (data->flags == 0)
                 return true;
 
-        uint32_t alive_players = 0;
+        uint32_t need_accept = 0;
 
         for (unsigned i = 0; i < coup->n_players; i++) {
                 if (i == data->player_num)
                         continue;
 
-                if (is_alive(coup->players + i))
-                        alive_players |= UINT32_C(1) << i;
+                if (!is_alive(coup->players + i))
+                        continue;
+
+                if (coup->reformation_extension &&
+                    !coup->reunified &&
+                    (data->flags & ~CHALLENGE_FLAG_BLOCK) == 0 &&
+                    data->target_player == -1 &&
+                    coup->players[data->player_num].allegiance ==
+                    coup->players[i].allegiance)
+                        continue;
+
+                need_accept |= UINT32_C(1) << i;
         }
 
-        return (data->accepted_players & alive_players) == alive_players;
+        return (data->accepted_players & need_accept) == need_accept;
 }
 
 static void
@@ -1173,9 +1267,15 @@ check_challenge_callback_data(struct pcx_coup *coup,
                         return;
                 if (!is_alive(coup->players + player_num))
                         return;
-                if (data->target_player != -1 &&
-                    player_num != data->target_player)
+                if (data->target_player == -1) {
+                        if (coup->reformation_extension &&
+                            !coup->reunified &&
+                            coup->players[data->player_num].allegiance ==
+                            coup->players[player_num].allegiance)
+                                return;
+                } else if (player_num != data->target_player) {
                         return;
+                }
 
                 remove_challenge_timeout(data);
 
@@ -1214,6 +1314,23 @@ check_challenge_timeout(struct pcx_main_context_source *source,
         do_challenge_action(coup, data->cb, data->user_data);
 
         do_idle(coup);
+}
+
+static enum pcx_text_string
+get_no_target_block_message(struct pcx_coup *coup,
+                            struct challenge_data *data)
+{
+        if (coup->reformation_extension && !coup->reunified) {
+                if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
+                        return PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE;
+                else
+                        return PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE;
+        } else {
+                if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
+                        return PCX_TEXT_STRING_OR_BLOCK_NO_TARGET;
+                else
+                        return PCX_TEXT_STRING_BLOCK_NO_TARGET;
+        }
 }
 
 static void
@@ -1264,12 +1381,8 @@ check_challenge_idle(struct pcx_coup *coup)
                 pcx_buffer_append_c(&coup->buffer, '\n');
 
                 if (data->target_player == -1) {
-                        enum pcx_text_string format;
-
-                        if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
-                                format = PCX_TEXT_STRING_OR_BLOCK_NO_TARGET;
-                        else
-                                format = PCX_TEXT_STRING_BLOCK_NO_TARGET;
+                        enum pcx_text_string format =
+                                get_no_target_block_message(coup, data);
 
                         append_buffer_printf(coup,
                                              &coup->buffer,
@@ -1356,6 +1469,25 @@ check_challenge(struct pcx_coup *coup,
         return data;
 }
 
+static bool
+is_valid_target(struct pcx_coup *coup,
+                int player_num)
+{
+        if (player_num == coup->current_player)
+                return false;
+
+        if (!is_alive(coup->players + player_num))
+                return false;
+
+        if (coup->reformation_extension &&
+            !coup->reunified &&
+            coup->players[coup->current_player].allegiance ==
+            coup->players[player_num].allegiance)
+                return false;
+
+        return true;
+}
+
 static void
 send_select_target(struct pcx_coup *coup,
                    enum pcx_text_string message,
@@ -1366,7 +1498,7 @@ send_select_target(struct pcx_coup *coup,
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         for (unsigned i = 0; i < coup->n_players; i++) {
-                if (i == coup->current_player || !is_alive(coup->players + i))
+                if (!is_valid_target(coup, i))
                         continue;
 
                 pcx_buffer_set_length(&buf, 0);
@@ -1408,13 +1540,13 @@ do_coup(struct pcx_coup *coup,
                 return;
         }
 
-        if (extra_data >= coup->n_players || extra_data == coup->current_player)
+        if (extra_data >= coup->n_players)
+                return;
+
+        if (!is_valid_target(coup, extra_data))
                 return;
 
         struct pcx_coup_player *target = coup->players + extra_data;
-
-        if (!is_alive(target))
-                return;
 
         take_action(coup);
 
@@ -1555,13 +1687,13 @@ do_assassinate(struct pcx_coup *coup,
                 return;
         }
 
-        if (extra_data >= coup->n_players || extra_data == coup->current_player)
+        if (extra_data >= coup->n_players)
+                return;
+
+        if (!is_valid_target(coup, extra_data))
                 return;
 
         struct pcx_coup_player *target = coup->players + extra_data;
-
-        if (!is_alive(target))
-                return;
 
         struct challenge_data *data =
                 check_challenge(coup,
@@ -1954,13 +2086,13 @@ do_inspect(struct pcx_coup *coup,
                 return;
         }
 
-        if (extra_data >= coup->n_players || extra_data == coup->current_player)
+        if (extra_data >= coup->n_players)
+                return;
+
+        if (!is_valid_target(coup, extra_data))
                 return;
 
         struct pcx_coup_player *target = coup->players + extra_data;
-
-        if (!is_alive(target))
-                return;
 
         struct challenge_data *data =
                 check_challenge(coup,
@@ -2012,13 +2144,13 @@ do_steal(struct pcx_coup *coup,
                 return;
         }
 
-        if (extra_data >= coup->n_players || extra_data == coup->current_player)
+        if (extra_data >= coup->n_players)
+                return;
+
+        if (!is_valid_target(coup, extra_data))
                 return;
 
         struct pcx_coup_player *target = coup->players + extra_data;
-
-        if (!is_alive(target))
-                return;
 
         struct challenge_data *data =
                 check_challenge(coup,
@@ -2133,12 +2265,21 @@ start_game(struct pcx_coup *coup)
 {
         create_deck(coup);
 
+        int start_allegiance = coup->rand_func() & 1;
+
         for (int i = 0; i < coup->n_players; i++) {
                 coup->players[i].coins = PCX_COUP_START_COINS;
                 for (unsigned j = 0; j < PCX_COUP_CARDS_PER_PLAYER; j++) {
                         struct pcx_coup_card *card = coup->players[i].cards + j;
                         card->dead = false;
                         card->character = take_card(coup);
+                }
+
+                if (coup->reformation_extension) {
+                        coup->players[i].allegiance =
+                                start_allegiance ^ (i & 1);
+                } else {
+                        coup->players[i].allegiance = 0;
                 }
         }
 
@@ -2156,52 +2297,62 @@ start_game(struct pcx_coup *coup)
 }
 
 static void
-configure_cards(struct pcx_coup *coup,
-                int player_num,
-                const char *data,
-                int extra_data)
+choose_game_type_data(struct pcx_coup *coup,
+                      int player_num,
+                      const char *data,
+                      int extra_data)
 {
-        if (extra_data < 0 || extra_data >= PCX_COUP_CHARACTER_COUNT)
+        if (strcmp(data, "game_type"))
                 return;
 
-        const struct pcx_coup_character_data *character =
-                pcx_coup_characters + extra_data;
+        switch ((enum pcx_coup_game_type) extra_data) {
+        case PCX_COUP_GAME_TYPE_ORIGINAL:
+                goto found_game_type;
+        case PCX_COUP_GAME_TYPE_INSPECTOR:
+                coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] =
+                        PCX_COUP_CHARACTER_INSPECTOR;
+                goto found_game_type;
+        case PCX_COUP_GAME_TYPE_REFORMATION:
+                coup->reformation_extension = true;
+                goto found_game_type;
+        case PCX_COUP_GAME_TYPE_REFORMATION_INSPECTOR:
+                coup->clan_characters[PCX_COUP_CLAN_NEGOTIATORS] =
+                        PCX_COUP_CHARACTER_INSPECTOR;
+                coup->reformation_extension = true;
+                goto found_game_type;
+        }
 
-        coup->clan_characters[character->clan] = extra_data;
+        /* Invalid game type */
+        return;
 
+found_game_type:
         coup_note(coup,
-                  PCX_TEXT_STRING_CHARACTER_CHOSEN,
+                  PCX_TEXT_STRING_GAME_TYPE_CHOSEN,
                   pcx_text_get(coup->language,
-                               character->name));
+                               game_type_names[extra_data]));
 
         stack_pop(coup);
         start_game(coup);
 }
 
 static void
-show_configure_cards_message(struct pcx_coup *coup)
+show_choose_game_type_message(struct pcx_coup *coup)
 {
         pcx_buffer_set_length(&coup->buffer, 0);
         append_buffer_string(coup,
                              &coup->buffer,
-                             PCX_TEXT_STRING_CONFIGURE_CARDS);
+                             PCX_TEXT_STRING_CHOOSE_GAME_TYPE);
 
-        static const enum pcx_coup_character characters[] = {
-                PCX_COUP_CHARACTER_AMBASSADOR,
-                PCX_COUP_CHARACTER_INSPECTOR,
-        };
-        struct pcx_game_button buttons[PCX_N_ELEMENTS(characters)];
+        struct pcx_game_button buttons[PCX_N_ELEMENTS(game_type_names)];
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(characters); i++) {
-                const struct pcx_coup_character_data *character =
-                        pcx_coup_characters + characters[i];
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(game_type_names); i++) {
                 buttons[i].text = pcx_text_get(coup->language,
-                                               character->name);
+                                               game_type_names[i]);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf,
-                                         "configure:%i",
-                                         characters[i]);
+                                         "game_type:%i",
+                                         i);
                 buttons[i].data = (char *) buf.data;
         };
 
@@ -2213,7 +2364,7 @@ show_configure_cards_message(struct pcx_coup *coup)
                 pcx_free((char *) buttons[i].data);
 
         stack_push(coup,
-                   configure_cards,
+                   choose_game_type_data,
                    NULL /* idle_cb */);
 }
 
@@ -2268,8 +2419,8 @@ pcx_coup_new(const struct pcx_game_callbacks *callbacks,
         for (unsigned i = 0; i < n_players; i++)
                 coup->players[i].name = pcx_strdup(names[i]);
 
-        if (pcx_text_get(language, PCX_TEXT_STRING_CONFIGURE_CARDS))
-                show_configure_cards_message(coup);
+        if (pcx_text_get(language, PCX_TEXT_STRING_CHOOSE_GAME_TYPE))
+                show_choose_game_type_message(coup);
         else
                 start_game(coup);
 

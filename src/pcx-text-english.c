@@ -101,11 +101,18 @@ pcx_text_english[] = {
         "/help",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Thanks for the message. You can now join a game in a public group.",
-        [PCX_TEXT_STRING_CONFIGURE_CARDS] =
-        "Please pick whether you want to play with the ambassador or the "
-        "inquisitor.",
-        [PCX_TEXT_STRING_CHARACTER_CHOSEN] =
-        "The chosen card is: %s",
+        [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
+        "Please choose which version of the game you want to play.",
+        [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
+        "The chosen version is: %s",
+        [PCX_TEXT_STRING_GAME_TYPE_ORIGINAL] =
+        "Original",
+        [PCX_TEXT_STRING_GAME_TYPE_INSPECTOR] =
+        "Inquisitor",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION] =
+        "Reformation",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR] =
+        "Reformation + Inquisitor",
         [PCX_TEXT_STRING_COUP] =
         "Coup",
         [PCX_TEXT_STRING_INCOME] =
@@ -163,6 +170,12 @@ pcx_text_english[] = {
         "Or does somebody want to claim to have %s and block them?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
         "Does somebody want to claim to have %s and block them?",
+        [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
+        "Or does somebody from another allegiance want to claim to have %s "
+        "and block them?",
+        [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
+        "Does somebody from another allegiance want to claim to have %s "
+        "and block them?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
         "Or %s, do you want to claim to have %s and block them?",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
@@ -245,6 +258,8 @@ pcx_text_english[] = {
         "the ambassador",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "the inquisitor",
+        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
+        "The court has now been reunified. Anyone can now target anyone else.",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Driver",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =

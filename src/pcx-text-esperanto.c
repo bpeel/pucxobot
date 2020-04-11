@@ -104,11 +104,18 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Dankon pro la mesaĝo. Vi povas nun aliĝi "
         "al ludo en la ĉefa grupo.",
-        [PCX_TEXT_STRING_CONFIGURE_CARDS] =
-        "Bonvolu elekti ĉu vi volas ludi kun la ambasadoro aŭ kun "
-        "la inspektisto.",
-        [PCX_TEXT_STRING_CHARACTER_CHOSEN] =
-        "La elektita karto estas: %s",
+        [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
+        "Bonvolu elekti kiun version de la ludo vi volas ludi.",
+        [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
+        "La elektita versio estas: %s",
+        [PCX_TEXT_STRING_GAME_TYPE_ORIGINAL] =
+        "Originala",
+        [PCX_TEXT_STRING_GAME_TYPE_INSPECTOR] =
+        "Inspektisto",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION] =
+        "Reformacio",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR] =
+        "Reformacio + Inspektisto",
         [PCX_TEXT_STRING_COUP] =
         "Puĉo",
         [PCX_TEXT_STRING_INCOME] =
@@ -171,6 +178,12 @@ pcx_text_esperanto[] = {
         "kaj bloki rin?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
         "Ĉu iu volas pretendi havi %s kaj "
+        "bloki rin?",
+        [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
+        "Aŭ ĉu iu de alia partio volas pretendi havi %s "
+        "kaj bloki rin?",
+        [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
+        "Ĉu iu de alia partio volas pretendi havi %s kaj "
         "bloki rin?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
         "Aŭ %s, ĉu vi volas pretendi havi "
@@ -260,6 +273,8 @@ pcx_text_esperanto[] = {
         "la ambasadoron",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "la inspektiston",
+        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
+        "Restas nur unu partio. Ĉiu ajn nun povas celi iun ajn alian.",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Ŝoforo",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
