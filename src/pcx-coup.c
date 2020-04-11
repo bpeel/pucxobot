@@ -1456,7 +1456,7 @@ do_accepted_foreign_aid(struct pcx_coup *coup,
 }
 
 static void
-do_foreign_add(struct pcx_coup *coup)
+do_foreign_aid(struct pcx_coup *coup)
 {
         struct pcx_coup_player *player = coup->players + coup->current_player;
 
@@ -2059,7 +2059,7 @@ choose_action(struct pcx_coup *coup,
                 if (is_button(data, &income_button))
                         do_income(coup);
                 else if (is_button(data, &foreign_aid_button))
-                        do_foreign_add(coup);
+                        do_foreign_aid(coup);
                 else if (is_button(data, &tax_button))
                         do_tax(coup);
                 else if (is_button(data, &assassinate_button))
