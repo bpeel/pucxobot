@@ -8,6 +8,7 @@ import os
 STRINGS_START_RE = re.compile(r'^\s*pcx_text_[a-z0-9_A-Z]+\s*\[\]\s*=\s*{')
 STRINGS_END_RE = re.compile(r'^\s*}')
 STRING_RE = re.compile(r'^\s*\[([a-z0-9_A-Z]+)\]\s*=\s*')
+COMMENT_RE = re.compile(r'^\s*//')
 
 COMMENT_LINE_RE = re.compile(r'^(\s*)(\S.*)')
 
@@ -72,7 +73,8 @@ def get_string_values(filename):
             if md:
                 flush_buf()
                 current_string = md.group(1)
-            elif current_string is not None:
+            elif (COMMENT_RE.match(line) is None and
+                  current_string is not None):
                 buf.append(line)
 
         flush_buf()
