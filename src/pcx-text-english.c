@@ -121,6 +121,8 @@ pcx_text_english[] = {
         "Foreign aid",
         [PCX_TEXT_STRING_TAX] =
         "Tax (Duke)",
+        [PCX_TEXT_STRING_CONVERT] =
+        "Convert",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Assassinate (Assassin)",
         [PCX_TEXT_STRING_EXCHANGE] =
@@ -194,6 +196,12 @@ pcx_text_english[] = {
         "Nobody challenged, %s takes the 3 coins.",
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s claims to have the duke and takes 3 coins from tax.",
+        [PCX_TEXT_STRING_WHO_TO_CONVERT] =
+        "%s, who do you want to convert?",
+        [PCX_TEXT_STRING_CONVERTS_SELF] =
+        "%s pays 1 coin to the treasury and converts themself.",
+        [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
+        "%s pays 2 coins to the treasury and converts %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Nobody blocked or challenged, %s assassinates %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =

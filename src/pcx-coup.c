@@ -44,6 +44,9 @@
 
 #define PCX_COUP_WAIT_TIME (60 * 1000)
 
+#define PCX_COUP_CONVERT_COST 2
+#define PCX_COUP_CONVERT_SELF_COST 1
+
 typedef void
 (* pcx_coup_callback_data_func)(struct pcx_coup *coup,
                                 int player_num,
@@ -146,6 +149,12 @@ static const struct coup_text_button
 foreign_aid_button = {
         .text = PCX_TEXT_STRING_FOREIGN_AID,
         .data = "foreign_aid"
+};
+
+static const struct coup_text_button
+convert_button = {
+        .text = PCX_TEXT_STRING_CONVERT,
+        .data = "convert"
 };
 
 static const struct coup_text_button
@@ -516,6 +525,12 @@ get_buttons(struct pcx_coup *coup,
 
         if (player->coins >= 7)
                 add_button(coup, buffer, &coup_button);
+
+        if (coup->reformation_extension &&
+            !coup->reunified &&
+            player->coins >= MIN(PCX_COUP_CONVERT_COST,
+                                 PCX_COUP_CONVERT_SELF_COST))
+                add_button(coup, buffer, &convert_button);
 
         if (coup->clan_characters[PCX_COUP_CLAN_TAX_COLLECTORS] ==
             PCX_COUP_CHARACTER_DUKE)
@@ -1527,16 +1542,17 @@ is_valid_target(struct pcx_coup *coup,
 }
 
 static void
-send_select_target(struct pcx_coup *coup,
-                   enum pcx_text_string message,
-                   const char *data)
+send_select_target_with_targets(struct pcx_coup *coup,
+                                enum pcx_text_string message,
+                                const char *data,
+                                unsigned targets)
 {
         size_t n_buttons = 0;
         struct pcx_game_button buttons[PCX_COUP_MAX_PLAYERS];
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         for (unsigned i = 0; i < coup->n_players; i++) {
-                if (!is_valid_target(coup, i))
+                if ((targets & (1 << i)) == 0)
                         continue;
 
                 pcx_buffer_set_length(&buf, 0);
@@ -1560,6 +1576,21 @@ send_select_target(struct pcx_coup *coup,
                 pcx_free((char *) buttons[i].data);
 
         pcx_buffer_destroy(&buf);
+}
+
+static void
+send_select_target(struct pcx_coup *coup,
+                   enum pcx_text_string message,
+                   const char *data)
+{
+        unsigned targets = 0;
+
+        for (unsigned i = 0; i < coup->n_players; i++) {
+                if (is_valid_target(coup, i))
+                        targets |= 1 << i;
+        }
+
+        send_select_target_with_targets(coup, message, data, targets);
 }
 
 static void
@@ -1640,6 +1671,81 @@ do_foreign_aid(struct pcx_coup *coup)
                                 player->name);
 
         data->blocking_clans = (1 << PCX_COUP_CLAN_TAX_COLLECTORS);
+}
+
+static void
+send_select_convert_target(struct pcx_coup *coup)
+{
+        unsigned targets = 0;
+
+        for (int i = 0; i < coup->n_players; i++) {
+                int cost = (i == coup->current_player ?
+                            PCX_COUP_CONVERT_SELF_COST :
+                            PCX_COUP_CONVERT_COST);
+
+                if (coup->players[coup->current_player].coins < cost)
+                        continue;
+
+                if (!is_alive(coup->players + i))
+                        continue;
+
+                targets |= 1 << i;
+        }
+
+        send_select_target_with_targets(coup,
+                                        PCX_TEXT_STRING_WHO_TO_CONVERT,
+                                        convert_button.data,
+                                        targets);
+}
+
+static void
+do_convert(struct pcx_coup *coup,
+           int extra_data)
+{
+        if (!coup->reformation_extension ||
+            coup->reunified)
+                return;
+
+        if (extra_data == -1) {
+                send_select_convert_target(coup);
+                return;
+        }
+
+        if (extra_data >= coup->n_players)
+                return;
+
+        if (!is_alive(coup->players + extra_data))
+                return;
+
+        struct pcx_coup_player *player = coup->players + coup->current_player;
+
+        int cost = (extra_data == coup->current_player ?
+                    PCX_COUP_CONVERT_SELF_COST :
+                    PCX_COUP_CONVERT_COST);
+
+        if (player->coins < cost)
+                return;
+
+        struct pcx_coup_player *target = coup->players + extra_data;
+
+        take_action(coup);
+
+        if (extra_data == coup->current_player) {
+                coup_note(coup,
+                          PCX_TEXT_STRING_CONVERTS_SELF,
+                          player->name);
+        } else {
+                coup_note(coup,
+                          PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE,
+                          player->name,
+                          target->name);
+        }
+
+        target->allegiance ^= 1;
+        player->coins -= cost;
+        coup->treasury += cost;
+
+        check_reunification(coup);
 }
 
 static void
@@ -2230,6 +2336,8 @@ choose_action(struct pcx_coup *coup,
                         do_income(coup);
                 else if (is_button(data, &foreign_aid_button))
                         do_foreign_aid(coup);
+                else if (is_button(data, &convert_button))
+                        do_convert(coup, extra_data);
                 else if (is_button(data, &tax_button))
                         do_tax(coup);
                 else if (is_button(data, &assassinate_button))

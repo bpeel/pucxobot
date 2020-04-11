@@ -124,6 +124,8 @@ pcx_text_esperanto[] = {
         "Eksterlanda helpo",
         [PCX_TEXT_STRING_TAX] =
         "Imposto (Duko)",
+        [PCX_TEXT_STRING_CONVERT] =
+        "Konverti",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Murdi (Murdisto)",
         [PCX_TEXT_STRING_EXCHANGE] =
@@ -207,6 +209,12 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s pretendas havi la dukon kaj prenas "
         "3 monerojn per imposto.",
+        [PCX_TEXT_STRING_WHO_TO_CONVERT] =
+        "%s, kiun vi volas konverti?",
+        [PCX_TEXT_STRING_CONVERTS_SELF] =
+        "%s pagas 1 moneron al la trezorejo kaj konvertas sin mem.",
+        [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
+        "%s pagas 2 monerojn al la trezorejo kaj konvertas %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Neniu blokis aŭ defiis, %s murdas %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
