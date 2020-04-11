@@ -337,14 +337,14 @@ pcx_text_pt_br[] = {
         "%p tem %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
         "Com quem você quer comparar cartas?",
-        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
-        "%p descartou %C e comparou sua mão com %p. As cartas foram iguais "
-        "e ninguém perde a rodada.",
         [PCX_TEXT_STRING_COMPARE_LOSER] =
         "%p descartou %C e comparou sua mão com %p. %p teve a menor "
         "carta e perde o turno.",
         [PCX_TEXT_STRING_TELL_COMPARE] =
         "Você tem %C e %p tem %C",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p descartou %C e comparou sua mão com %p. As cartas foram iguais "
+        "e ninguém perde a rodada.",
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p descartou %C e ficará protegido até o próximo turno",
         [PCX_TEXT_STRING_WHO_PRINCE] =

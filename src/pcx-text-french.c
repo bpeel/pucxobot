@@ -341,14 +341,14 @@ pcx_text_french[] = {
         "%p a %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
         "Avec qui voulez-vous comparer vos cartes ?",
-        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
-        "%p a défaussé %C et a comparé sa carte avec celle de %p. "
-        "Les deux cartes étaient égaux et personne n’a perdu la manche.",
         [PCX_TEXT_STRING_COMPARE_LOSER] =
         "%p a défaussé %C et a comparé sa carte avec celle de %p. "
         "La carte de %p a moins de valeur et il perd la manche.",
         [PCX_TEXT_STRING_TELL_COMPARE] =
         "Vous avez %C et %p a %C",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p a défaussé %C et a comparé sa carte avec celle de %p. "
+        "Les deux cartes étaient égaux et personne n’a perdu la manche.",
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p défausse %C et sera protegé jusqu’à sa prochaine tour.",
         [PCX_TEXT_STRING_WHO_PRINCE] =

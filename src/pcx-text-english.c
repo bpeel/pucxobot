@@ -380,14 +380,14 @@ pcx_text_english[] = {
         "%p has %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
         "Who do you want to compare cards with?",
-        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
-        "%p discarded %C and compared their hand with %p. The cards were equal "
-        "and nobody loses the round.",
         [PCX_TEXT_STRING_COMPARE_LOSER] =
         "%p discarded %C and compared their hand with %p. %p had the lower "
         "card and loses the round.",
         [PCX_TEXT_STRING_TELL_COMPARE] =
         "You have %C and %p has %C",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p discarded %C and compared their hand with %p. The cards were equal "
+        "and nobody loses the round.",
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p discarded %C and will be protected until their next turn",
         [PCX_TEXT_STRING_WHO_PRINCE] =
@@ -461,14 +461,14 @@ pcx_text_english[] = {
         "Throw dice",
         [PCX_TEXT_STRING_STOP] =
         "Stop",
+        [PCX_TEXT_STRING_STOP_SCORE] =
+        "%p stops and adds %i to their score.",
         [PCX_TEXT_STRING_THROW_FIRST_DICE] =
         "<b>%p</b>, it’s your go, press the button to roll the dice.",
         [PCX_TEXT_STRING_YOUR_DICE_ARE] =
         "Your dice are:",
         [PCX_TEXT_STRING_THROWING_DICE] =
         "Throwing dice…",
-        [PCX_TEXT_STRING_STOP_SCORE] =
-        "%p stops and adds %i to their score.",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Score so far:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =

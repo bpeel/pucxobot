@@ -395,16 +395,16 @@ pcx_text_esperanto[] = {
         "%p havas la %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
         "Kun kiu vi volas kompari kartojn?",
-        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
-        "%p forĵetis la %C kaj komparis sian "
-        "karton kun tiu de %p. La du kartoj estas "
-        "egalaj kaj neniu perdas la raŭndon.",
         [PCX_TEXT_STRING_COMPARE_LOSER] =
         "%p forĵetis la %C kaj komparis sian "
         "karton kun tiu de %p. La karto de %p estas "
         "malpli alta kaj ri perdas la raŭndon.",
         [PCX_TEXT_STRING_TELL_COMPARE] =
         "Vi havas la %C kaj %p havas la %C",
+        [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
+        "%p forĵetis la %C kaj komparis sian "
+        "karton kun tiu de %p. La du kartoj estas "
+        "egalaj kaj neniu perdas la raŭndon.",
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p forĵetas la %C kaj estos protektata ĝis "
         "sia sekva vico",
@@ -480,14 +480,14 @@ pcx_text_esperanto[] = {
         "Ĵeti la kubojn",
         [PCX_TEXT_STRING_STOP] =
         "Ĉesi",
+        [PCX_TEXT_STRING_STOP_SCORE] =
+        "%p ĉesas kaj aldonas %i al siaj poentoj.",
         [PCX_TEXT_STRING_THROW_FIRST_DICE] =
         "<b>%p</b>, estas via vico, premu la butonon por ĵeti la kubojn.",
         [PCX_TEXT_STRING_YOUR_DICE_ARE] =
         "Viaj ĵetkuboj estas:",
         [PCX_TEXT_STRING_THROWING_DICE] =
         "Ĵetas kubojn…",
-        [PCX_TEXT_STRING_STOP_SCORE] =
-        "%p ĉesas kaj aldonas %i al siaj poentoj.",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Poentoj ĝis nun:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
