@@ -2898,12 +2898,228 @@ done:
 }
 
 static bool
+test_embezzlement(void)
+{
+        struct test_data *data = create_reformation_data();
+
+        bool ret;
+
+        /* Bob converts to put some money in the treasury */
+        data->status.players[1].allegiance = 0;
+        data->status.current_player = 2;
+        data->status.players[1].coins = 1;
+        data->status.treasury = 1;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "convert:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob pagas 1 moneron al la trezorejo kaj "
+                                 "konvertas sin mem.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Charles takes the money */
+        ret = send_callback_data(data,
+                                 2,
+                                 "embezzle",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💼 Charles pretendas ne havi la dukon kaj "
+                                 "ŝtelas la monon de la trezorejo.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Everybody accepts */
+        for (int i = 0; i < 2; i++) {
+                ret = send_callback_data(data,
+                                         (i + 3) % 4,
+                                         "accept",
+                                         -1);
+                if (!ret)
+                        goto done;
+        }
+
+        data->status.current_player = 3;
+        data->status.treasury = 0;
+        data->status.players[2].coins = 3;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Charles prenas la monon de la "
+                                 "trezorejo.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* David converts Bob back again to put some money in the treasury */
+        data->status.players[1].allegiance = 1;
+        data->status.current_player = 0;
+        data->status.players[3].coins = 0;
+        data->status.treasury = 2;
+
+        ret = send_callback_data(data,
+                                 3,
+                                 "convert:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "David pagas 2 monerojn al la trezorejo kaj "
+                                 "konvertas Bob.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Test successful challenge */
+        ret = send_callback_data(data,
+                                 0,
+                                 "embezzle",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💼 Alice pretendas ne havi la dukon kaj "
+                                 "ŝtelas la monon de la trezorejo.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "challenge",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Bob kredas ke vi ja havas la dukon.\n"
+                                 "Ĉu vi volas cedi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Cedi",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Alice has the duke so trying to show her cards should do
+         * nothing.
+         */
+        ret = send_callback_data(data,
+                                 0,
+                                 "reveal:1",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* She has to concede */
+        ret = send_callback_data(data,
+                                 0,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj Alice cedis do Alice perdas "
+                                 "karton.",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Duko",
+                                 "lose:1", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].cards[0].dead = true;
+        data->status.current_player = 1;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "lose:0",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Test unsuccessful challenge */
+        ret = send_callback_data(data,
+                                 1,
+                                 "embezzle",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💼 Bob pretendas ne havi la dukon kaj "
+                                 "ŝtelas la monon de la trezorejo.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "challenge",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Alice kredas ke vi ja havas la dukon.\n"
+                                 "Ĉu vi volas cedi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Cedi",
+                                 "reveal:1", "Montri kartojn",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 2;
+        data->status.players[0].cards[1].dead = true;
+        data->status.treasury = 0;
+        data->status.players[1].coins = 3;
+        data->status.players[1].cards[0].character =
+                PCX_COUP_CHARACTER_DUKE;
+        data->status.players[1].cards[1].character =
+                PCX_COUP_CHARACTER_ASSASSIN;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "reveal:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj Bob montris la grafinon kaj "
+                                 "la ambasadoron do Bob ŝanĝas siajn kartojn "
+                                 "kaj Alice perdas karton.",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis, Bob prenas la monon de "
+                                 "la trezorejo.",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_reformation(void)
 {
         return (test_convert() &&
                 test_death_makes_reunification() &&
                 test_targets() &&
-                test_block_other_allegiance());
+                test_block_other_allegiance() &&
+                test_embezzlement());
 }
 
 int
