@@ -2766,11 +2766,144 @@ done:
 }
 
 static bool
+test_block_other_allegiance(void)
+{
+        struct test_data *data = create_reformation_data();
+
+        bool ret;
+
+        /* Bob tries to take foreign aid */
+        ret = send_callback_data(data,
+                                 1,
+                                 "foreign_aid",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💴 Bob prenas 2 monerojn per eksterlanda "
+                                 "helpo.\n"
+                                 "Ĉu iu de alia partio volas pretendi havi "
+                                 "la dukon kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* David can not block */
+        ret = send_callback_data(data,
+                                 3,
+                                 "block",
+                                 -1);
+
+        /* But Alice can */
+        ret = send_callback_data(data,
+                                 0,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice pretendas havi la dukon kaj blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Everybody accepts */
+        for (int i = 1; i < 3; i++) {
+                ret = send_callback_data(data,
+                                         i,
+                                         "accept",
+                                         -1);
+                if (!ret)
+                        goto done;
+        }
+
+        data->status.current_player = 2;
+
+        ret = send_callback_data(data,
+                                 3,
+                                 "accept",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis. La ago estis blokita.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[2].allegiance = 1;
+        data->status.current_player = 3;
+        data->status.players[2].coins = 1;
+        data->status.treasury = 1;
+
+        /* Reunify */
+        ret = send_callback_data(data,
+                                 2,
+                                 "convert:2",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Charles pagas 1 moneron al la trezorejo kaj "
+                                 "konvertas sin mem.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].allegiance = 1;
+        data->status.players[3].coins = 0;
+        data->status.current_player = 0;
+        data->status.treasury = 3;
+
+        ret = send_callback_data(data,
+                                 3,
+                                 "convert:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "David pagas 2 monerojn al la trezorejo kaj "
+                                 "konvertas Alice.",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Restas nur unu partio. Ĉiu ajn nun povas "
+                                 "celi iun ajn alian.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Check that the blocking message is different after reunification */
+        ret = send_callback_data(data,
+                                 0,
+                                 "foreign_aid",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💴 Alice prenas 2 monerojn per eksterlanda "
+                                 "helpo.\n"
+                                 "Ĉu iu volas pretendi havi "
+                                 "la dukon kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* David can now block */
+        ret = send_callback_data(data,
+                                 3,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "David pretendas havi la dukon kaj blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_reformation(void)
 {
         return (test_convert() &&
                 test_death_makes_reunification() &&
-                test_targets());
+                test_targets() &&
+                test_block_other_allegiance());
 }
 
 int
