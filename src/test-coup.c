@@ -2711,10 +2711,66 @@ done:
 }
 
 static bool
+test_targets(void)
+{
+        struct test_data *data = create_reformation_data();
+
+        bool ret;
+
+        /* Make sure the target buttons don’t include members of the
+         * same allegiance.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "steal",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob, de kiu vi volas ŝteli?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "steal:0", "Alice",
+                                 "steal:2", "Charles",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Try to target David. This shouldn’t do anything. */
+        ret = send_callback_data(data,
+                                 1,
+                                 "steal:3",
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* But Bob can target Alice */
+        ret = send_callback_data(data,
+                                 1,
+                                 "steal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💰 Bob volas ŝteli de Alice\n"
+                                 "Ĉu iu volas defii rin?\n"
+                                 "Aŭ Alice, ĉu vi volas pretendi havi la "
+                                 "kapitanon aŭ la ambasadoron kaj bloki "
+                                 "rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_reformation(void)
 {
         return (test_convert() &&
-                test_death_makes_reunification());
+                test_death_makes_reunification() &&
+                test_targets());
 }
 
 int
