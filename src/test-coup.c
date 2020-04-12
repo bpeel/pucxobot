@@ -156,6 +156,32 @@ is_alive(const struct player_status *player)
         return false;
 }
 
+static bool
+is_reunified(const struct test_data *data)
+{
+        int first_player;
+
+        for (first_player = 0; first_player < data->n_players; first_player++) {
+                if (is_alive(data->status.players + first_player))
+                        goto found_first_player;
+        }
+
+        return true;
+
+found_first_player:
+        for (int next_player = first_player + 1;
+             next_player < data->n_players;
+             next_player++) {
+                if (!is_alive(data->status.players + next_player))
+                        continue;
+                if (data->status.players[first_player].allegiance !=
+                    data->status.players[next_player].allegiance)
+                        return false;
+        }
+
+        return true;
+}
+
 static int
 fake_random_number_generator(void)
 {
@@ -316,7 +342,7 @@ add_status_buttons(struct test_data *data,
                 add_button_to_message(message, "coup", "Puĉo");
 
         if (data->reformation) {
-                if (player->coins > 0) {
+                if (player->coins > 0 && !is_reunified(data)) {
                         add_button_to_message(message,
                                               "convert",
                                               "Konverti");
@@ -2433,6 +2459,154 @@ test_inspect(void)
                 test_inspect_one_card());
 }
 
+static struct test_data *
+create_reformation_data(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_AMBASSADOR,
+                PCX_COUP_CHARACTER_ASSASSIN,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_CONTESSA,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 false, /* use_inspector */
+                                 true, /* reformation */
+                                 4 /* n_players */);
+
+        return data;
+}
+
+static bool
+test_convert(void)
+{
+        struct test_data *data = create_reformation_data();
+
+        /* Convert yourself for one coin */
+        data->status.players[1].coins = 1;
+        data->status.players[1].allegiance = 0;
+        data->status.current_player = 2;
+        data->status.treasury = 1;
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "convert:1",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "Bob pagas 1 moneron al la trezorejo kaj "
+                                      "konvertas sin mem.",
+                                      MESSAGE_TYPE_STATUS,
+                                      -1);
+
+        if (!ret)
+                goto done;
+
+        /* Convert Bob for two coins */
+        data->status.players[2].coins = 0;
+        data->status.players[1].allegiance = 1;
+        data->status.current_player = 3;
+        data->status.treasury = 3;
+
+        ret = send_callback_data(data,
+                                 2,
+                                 "convert:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Charles pagas 2 monerojn al la "
+                                 "trezorejo kaj konvertas Bob.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+
+        if (!ret)
+                goto done;
+
+        /* Skip a few turns to make it Bob’s go */
+        for (int i = 0; i < 2; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Bob shouldn’t have enough coins to convert another player
+         * so this will do nothing.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "convert:2",
+                                 -1);
+
+        if (!ret)
+                goto done;
+
+        /* He should however have enough coins to convert himself */
+        data->status.players[1].coins = 0;
+        data->status.players[1].allegiance = 0;
+        data->status.current_player = 2;
+        data->status.treasury = 4;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "convert:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob pagas 1 moneron al la trezorejo kaj "
+                                 "konvertas sin mem.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+
+        if (!ret)
+                goto done;
+
+        /* Charles doesn’t have enough money to convert himself */
+        ret = send_callback_data(data,
+                                 2,
+                                 "convert:2",
+                                 -1);
+
+        if (!ret)
+                goto done;
+
+        /* Skip to David’s go */
+        ret = take_income(data);
+        if (!ret)
+                goto done;
+
+        /* David can convert himself. This will trigger reunification. */
+        data->status.players[3].coins = 2;
+        data->status.players[3].allegiance = 0;
+        data->status.current_player = 0;
+        data->status.treasury = 5;
+
+        ret = send_callback_data(data,
+                                 3,
+                                 "convert:3",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "David pagas 1 moneron al la trezorejo kaj "
+                                 "konvertas sin mem.",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Restas nur unu partio. Ĉiu ajn nun povas "
+                                 "celi iun ajn alian.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+
+        if (!ret)
+                goto done;
+
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_reformation(void)
+{
+        return test_convert();
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2446,7 +2620,8 @@ main(int argc, char **argv)
             !test_steal() ||
             !test_exchange() ||
             !test_exchange_inspector() ||
-            !test_inspect())
+            !test_inspect() ||
+            !test_reformation())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
