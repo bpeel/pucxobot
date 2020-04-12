@@ -59,11 +59,13 @@ struct card_status {
 struct player_status {
         struct card_status cards[2];
         int coins;
+        int allegiance;
 };
 
 struct status {
-        struct player_status players[2];
+        struct player_status players[4];
         int current_player;
+        int treasury;
 };
 
 struct test_data {
@@ -73,12 +75,16 @@ struct test_data {
         struct status status;
         bool had_error;
         bool use_inspector;
+        bool reformation;
+        int n_players;
 };
 
 static const char *const
 player_names[] = {
         "Alice",
         "Bob",
+        "Charles",
+        "David",
 };
 
 static void
@@ -200,20 +206,21 @@ add_buttons_to_message(struct message *message,
 }
 
 static char *
-make_status_message(const struct status *status)
+make_status_message(struct test_data *data)
 {
+        const struct status *status = &data->status;
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
         int winner = -1;
         int n_alive_players = 0;
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(player_names); i++) {
+        for (unsigned i = 0; i < data->n_players; i++) {
                 if (is_alive(status->players + i)) {
                         winner = i;
                         n_alive_players++;
                 }
         }
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(player_names); i++) {
+        for (unsigned i = 0; i < data->n_players; i++) {
                 const struct player_status *player = status->players + i;
 
                 if (n_alive_players == 1) {
@@ -241,9 +248,24 @@ make_status_message(const struct status *status)
                                                          "%i moneroj",
                                                          player->coins);
                         }
+
+                        if (data->reformation) {
+                                const char *sym =
+                                        player->allegiance == 0 ?
+                                        "👑" :
+                                        "✊";
+                                pcx_buffer_append_c(&buf, ' ');
+                                pcx_buffer_append_string(&buf, sym);
+                        }
                 }
 
                 pcx_buffer_append_string(&buf, "\n\n");
+        }
+
+        if (data->reformation) {
+                pcx_buffer_append_printf(&buf,
+                                         "Trezorejo: %i\n\n",
+                                         status->treasury);
         }
 
         if (n_alive_players == 1) {
@@ -271,7 +293,7 @@ add_status_buttons(struct test_data *data,
 
         int n_players = 0;
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(status->players); i++) {
+        for (unsigned i = 0; i < data->n_players; i++) {
                 if (is_alive(status->players + i))
                         n_players++;
         }
@@ -292,6 +314,17 @@ add_status_buttons(struct test_data *data,
 
         if (player->coins >= 7)
                 add_button_to_message(message, "coup", "Puĉo");
+
+        if (data->reformation) {
+                if (player->coins > 0) {
+                        add_button_to_message(message,
+                                              "convert",
+                                              "Konverti");
+                }
+                add_button_to_message(message,
+                                      "embezzle",
+                                      "Ŝteli la trezoron");
+        }
 
         add_button_to_message(message, "tax", "Imposto (Duko)");
 
@@ -591,7 +624,7 @@ send_callback_data(struct test_data *data,
                         continue;
                 case MESSAGE_TYPE_STATUS:
                         message->type = MESSAGE_TYPE_GLOBAL;
-                        message->message = make_status_message(&data->status);
+                        message->message = make_status_message(data);
                         add_status_buttons(data, message);
                         continue;
                 case MESSAGE_TYPE_SHOW_CARDS:
@@ -664,7 +697,9 @@ queue_configure_cards_message(struct test_data *data)
 static struct test_data *
 create_test_data(int n_card_overrides,
                  const enum pcx_coup_character *card_overrides,
-                 bool use_inspector)
+                 bool use_inspector,
+                 bool reformation,
+                 int n_players)
 {
         struct test_data *data = pcx_calloc(sizeof *data);
 
@@ -673,15 +708,21 @@ create_test_data(int n_card_overrides,
 
         data->status.current_player = 1;
         data->use_inspector = use_inspector;
+        data->reformation = reformation;
+        data->n_players = n_players;
 
-        for (unsigned i = 0; i < 2; i++) {
+        for (unsigned i = 0; i < n_players; i++) {
                 struct player_status *player = data->status.players + i;
 
-                player->coins = (i == data->status.current_player) ? 1 : 2;
+                player->coins = 2;
+                player->allegiance = i & 1;
 
                 for (unsigned j = 0; j < 2; j++)
                         player->cards[j].character = card_overrides[i * 2 + j];
         }
+
+        if (n_players == 2)
+                data->status.players[data->status.current_player].coins = 1;
 
         struct pcx_coup_debug_overrides overrides = {
                 .n_cards = n_card_overrides,
@@ -695,30 +736,54 @@ create_test_data(int n_card_overrides,
         data->coup = pcx_coup_new(&callbacks,
                                   data,
                                   PCX_TEXT_LANGUAGE_ESPERANTO,
-                                  PCX_N_ELEMENTS(player_names),
+                                  n_players,
                                   player_names,
                                   &overrides);
 
         const char *configure_data, *configure_note;
 
         if (use_inspector) {
-                configure_data = "game_type:1";
-                configure_note = "La elektita versio estas: Inspektisto";
+                if (reformation) {
+                        configure_data = "game_type:3";
+                        configure_note =
+                                "La elektita versio estas: "
+                                "Inspektisto + Reformacio";
+                } else {
+                        configure_data = "game_type:1";
+                        configure_note =
+                                "La elektita versio estas: Inspektisto";
+                }
+        } else if (reformation) {
+                configure_data = "game_type:2";
+                configure_note = "La elektita versio estas: Reformacio";
         } else {
                 configure_data = "game_type:0";
                 configure_note = "La elektita versio estas: Originala";
         }
 
+        struct message *note_message = queue_message(data, MESSAGE_TYPE_GLOBAL);
+        note_message->message = pcx_strdup(configure_note);
+
+        for (int i = 0; i < n_players; i++) {
+                struct message *message =
+                        queue_message(data, MESSAGE_TYPE_PRIVATE);
+
+                        message->destination = i;
+                        message->message =
+                                make_show_cards_message(data->status.players +
+                                                        message->destination);
+                        enable_check_buttons(message);
+        }
+
+        struct message *status_message =
+                queue_message(data, MESSAGE_TYPE_PRIVATE);
+        status_message->type = MESSAGE_TYPE_GLOBAL;
+        status_message->message = make_status_message(data);
+        add_status_buttons(data, status_message);
+
         send_callback_data(data,
                            0,
                            configure_data,
-                           MESSAGE_TYPE_GLOBAL,
-                           configure_note,
-                           MESSAGE_TYPE_SHOW_CARDS,
-                           0,
-                           MESSAGE_TYPE_SHOW_CARDS,
-                           1,
-                           MESSAGE_TYPE_STATUS,
                            -1);
 
         return data;
@@ -743,7 +808,8 @@ take_income(struct test_data *data)
         int active_player = data->status.current_player;
 
         data->status.players[active_player].coins++;
-        data->status.current_player = active_player ^ 1;
+        data->status.current_player =
+                (data->status.current_player + 1) % data->n_players;
 
         struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_append_printf(&message,
@@ -776,7 +842,9 @@ test_income(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = true;
 
@@ -835,7 +903,8 @@ found_card:
         pcx_buffer_append_printf(&callback_data, "lose:%i", card_to_lose);
         data->status.players[active_player].coins -= 7;
         data->status.players[active_player ^ 1].cards[card_to_lose].dead = true;
-        data->status.current_player ^= 1;
+        data->status.current_player =
+                (data->status.current_player + 1) % data->n_players;
 
         ret = send_callback_data(data,
                                  active_player ^ 1,
@@ -867,7 +936,9 @@ test_coup(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         /* Try to do a coup without having enough coins. The request
          * should just be silently ignored.
@@ -972,7 +1043,9 @@ set_up_foreign_aid(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1238,7 +1311,9 @@ set_up_tax(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1435,7 +1510,9 @@ set_up_assassinate(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         /* Give two coins to Bob and one to Alice so that it will be
          * her turn and she’ll have 3 coins.
@@ -1740,7 +1817,9 @@ test_normal_exchange(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -1826,7 +1905,9 @@ test_one_dead_exchange(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = true;
 
@@ -1920,7 +2001,9 @@ test_steal(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 false /* use_inspector */);
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -2042,7 +2125,9 @@ test_exchange_inspector(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 true /* use_inspector */);
+                                 true, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -2125,7 +2210,9 @@ set_up_inspect_can_keep(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 true /* use_inspector */);
+                                 true, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = send_callback_data(data,
                                       1,
@@ -2256,7 +2343,9 @@ test_inspect_one_card(void)
         struct test_data *data =
                 create_test_data(PCX_N_ELEMENTS(override_cards),
                                  override_cards,
-                                 true /* use_inspector */);
+                                 true, /* use_inspector */
+                                 false, /* reformation */
+                                 2 /* n_players */);
 
         bool ret = true;
 
