@@ -828,14 +828,26 @@ free_test_data(struct test_data *data)
         pcx_free(data);
 }
 
+static void
+goto_next_player(struct test_data *data)
+{
+        int start_player = data->status.current_player;
+
+        do {
+                data->status.current_player =
+                        (data->status.current_player + 1) % data->n_players;
+        } while (!is_alive(data->status.players +
+                           data->status.current_player) &&
+                 data->status.current_player != start_player);
+}
+
 static bool
 take_income(struct test_data *data)
 {
         int active_player = data->status.current_player;
 
         data->status.players[active_player].coins++;
-        data->status.current_player =
-                (data->status.current_player + 1) % data->n_players;
+        goto_next_player(data);
 
         struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_append_printf(&message,
@@ -2602,9 +2614,107 @@ done:
 }
 
 static bool
+test_death_makes_reunification(void)
+{
+        struct test_data *data = create_reformation_data();
+
+        bool ret;
+
+        /* Give everybody 5 coins so that they can all do a coup */
+        for (int i = 0; i < 20; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Everybody does a coup to kill one card of each player */
+        for (int i = 0; i < 4; i++) {
+                ret = do_coup(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Give everybody 7 coins so that they can all do a another coup */
+        for (int i = 0; i < 28; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        assert(data->status.players[1].coins == 7);
+        assert(data->status.players[3].coins == 7);
+        assert(data->status.current_player == 1);
+
+        /* Bob does an extra coup to kill Alice */
+        data->status.players[1].coins = 0;
+        data->status.current_player = 2;
+        data->status.players[0].cards[1].dead = true;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "coup:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💣 Bob faras puĉon kontraŭ Alice",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Skip to David’s go */
+        ret = take_income(data);
+        if (!ret)
+                goto done;
+
+        /* David does a coup against Charles. This causes reunification. */
+        data->status.players[3].coins = 0;
+        data->status.current_player = 1;
+        data->status.players[2].cards[1].dead = true;
+
+        ret = send_callback_data(data,
+                                 3,
+                                 "coup:2",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💣 David faras puĉon kontraŭ Charles",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Restas nur unu partio. Ĉiu ajn nun povas "
+                                 "celi iun ajn alian.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Give everybody 7 coins again */
+        for (int i = 0; i < 14; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Bob can now kill David and finish the game */
+        data->status.players[1].coins = 0;
+        data->status.players[3].cards[1].dead = true;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "coup:3",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💣 Bob faras puĉon kontraŭ David",
+                                 MESSAGE_TYPE_STATUS,
+                                 MESSAGE_TYPE_GAME_OVER,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_reformation(void)
 {
-        return test_convert();
+        return (test_convert() &&
+                test_death_makes_reunification());
 }
 
 int
