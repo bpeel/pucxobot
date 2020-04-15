@@ -48,8 +48,10 @@ pcx_text_french[] = {
         "Pour jouer, ajoutez le bot à un groupe avec vos amis et commencez le "
         "jeu là-bas.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
-        "Veuillez me envoyer un message privé à @%s "
-        "pour que je puisse vous envoyer vos cartes discretement.",
+        "Avant de rejoindre un jeu, veuillez cliquer sur @%s et envoyer un "
+        "message pour que j’aie le droit de vous envoyer vos cartes dans un "
+        "message privé. Après avoir fait ça vous pouvez retourner ici pour "
+        "rejoindre un jeu.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Vous êtes déjà dans une partie",
         [PCX_TEXT_STRING_ALREADY_GAME] =

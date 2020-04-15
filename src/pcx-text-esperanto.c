@@ -56,9 +56,9 @@ pcx_text_esperanto[] = {
         "Por ludi ludon, aldonu la roboton al grupo kun viaj amikoj "
         "kaj komencu la ludon tie.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
-        "Bonvolu sendi privatan mesaĝon al @%s "
-        "por ke mi povu sendi al vi viajn kartojn "
-        "private.",
+        "Antaŭ ol aliĝi al ludo, bonvolu alklaki @%s kaj sendi mesaĝon por ke "
+        "mi povu sendi al vi viajn kartojn en privata mesaĝo. Farinte tion, vi "
+        "povos reveni ĉi tien por aliĝi al ludo.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Vi jam estas en ludo",
         [PCX_TEXT_STRING_ALREADY_GAME] =
