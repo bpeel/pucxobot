@@ -1225,14 +1225,23 @@ process_help(struct pcx_bot *bot,
 }
 
 static bool
+is_command_str(const char *text,
+               int64_t length,
+               const char *name)
+{
+        return length == strlen(name) && !memcmp(text, name, length);
+}
+
+static bool
 is_command(struct pcx_bot *bot,
            const char *text,
            int64_t length,
            enum pcx_text_string string)
 {
-        const char *name = pcx_text_get(bot->config->language, string);
+        return is_command_str(text,
+                              length,
+                              pcx_text_get(bot->config->language, string));
 
-        return length == strlen(name) && !memcmp(text, name, length);
 }
 
 static void
@@ -1288,6 +1297,16 @@ process_entity(struct pcx_bot *bot,
 
                 commands[i].func(bot, info);
 
+                return;
+        }
+
+        /* Make /start run the start command regardless of the actual
+         * translation of the command name. Telegram encourages you to
+         * type /start in all of the bots so it’s useful if that does
+         * something in all bots.
+         */
+        if (is_command_str(info->text + offset, length, "/start")) {
+                process_start(bot, info);
                 return;
         }
 
