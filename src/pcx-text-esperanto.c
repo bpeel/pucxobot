@@ -104,7 +104,7 @@ pcx_text_esperanto[] = {
         "/helpo",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Dankon pro la mesaĝo. Vi povas nun aliĝi "
-        "al ludo en la ĉefa grupo.",
+        "al ludo en publika grupo.",
         [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
         "Bonvolu elekti kiun version de la ludo vi volas ludi.",
         [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
