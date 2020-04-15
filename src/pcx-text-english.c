@@ -53,7 +53,8 @@ pcx_text_english[] = {
         "The game has been inactive for at least %i minutes and will be "
         "abandoned.",
         [PCX_TEXT_STRING_NEED_PUBLIC_GROUP] =
-        "Please join a game in a public group.",
+        "To play a game, add the bot to a group chat with your friends and "
+        "start the game there instead.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
         "Please send a private message to @%s so that I can send you your "
         "cards in private.",

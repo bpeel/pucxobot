@@ -45,7 +45,8 @@ pcx_text_french[] = {
         "La partie a été inactive pendant plus que %i minutes "
         "et sera abandonnée.",
         [PCX_TEXT_STRING_NEED_PUBLIC_GROUP] =
-        "Veuillez rejoindre une partie dans un groupe publique.",
+        "Pour jouer, ajoutez le bot à un groupe avec vos amis et commencez le "
+        "jeu là-bas.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
         "Veuillez me envoyer un message privé à @%s "
         "pour que je puisse vous envoyer vos cartes discretement.",

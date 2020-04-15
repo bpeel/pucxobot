@@ -53,7 +53,8 @@ pcx_text_esperanto[] = {
         "La ludo estas senaktiva dum pli ol "
         "%i minutoj kaj estos forlasita.",
         [PCX_TEXT_STRING_NEED_PUBLIC_GROUP] =
-        "Bonvolu aliĝi al ludo en publika grupo.",
+        "Por ludi ludon, aldonu la roboton al grupo kun viaj amikoj "
+        "kaj komencu la ludon tie.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
         "Bonvolu sendi privatan mesaĝon al @%s "
         "por ke mi povu sendi al vi viajn kartojn "
