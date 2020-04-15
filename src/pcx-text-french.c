@@ -94,6 +94,18 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Merci pour le message. Vous pouvez désormais rejoindre une partie "
         "dans un groupe public",
+        [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
+        "Veuillez choisir à quelle version du jeu vous voulez jouer",
+        [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
+        "La version choisie est: %s",
+        [PCX_TEXT_STRING_GAME_TYPE_ORIGINAL] =
+        "Original",
+        [PCX_TEXT_STRING_GAME_TYPE_INSPECTOR] =
+        "Inquisiteur",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION] =
+        "Saint-Barthélémy",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR] =
+        "Saint-Barthélémy + Inquisiteur",
         [PCX_TEXT_STRING_COUP] =
         "Assassinat",
         [PCX_TEXT_STRING_INCOME] =
@@ -102,10 +114,18 @@ pcx_text_french[] = {
         "Aide étrangère",
         [PCX_TEXT_STRING_TAX] =
         "Taxe (Duchesse)",
+        [PCX_TEXT_STRING_CONVERT] =
+        "Conversion",
+        [PCX_TEXT_STRING_EMBEZZLE] =
+        "Détournement de fonds",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Assassiner (Assassin)",
         [PCX_TEXT_STRING_EXCHANGE] =
         "Échange (Ambassadeur)",
+        [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
+        "Échange (Inquisiteur)",
+        [PCX_TEXT_STRING_INSPECT] =
+        "Consulter carte (Inquisiteur)",
         [PCX_TEXT_STRING_STEAL] =
         "Voler (Capitaine)",
         [PCX_TEXT_STRING_ACCEPT] =
@@ -133,12 +153,24 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s a mis %s en doute et il/elle n’avait pas %s et perd "
         "une carte",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
+        "%s a mis en doute et %s concède donc %s perd une carte.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
         "%s a mis %s en doute mais il/elle avait vraiment %s et %s perd "
         "une carte",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
+        "%s a mis en doute et %s a montré %s. Donc %s change ses cartes et "
+        "%s perd une carte.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne croit pas que vous aviez %s.\n"
         "Quelle carte voulez-vous montrer ?",
+        [PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE] =
+        "%s croit que vous avez en effet %s.\n"
+        "Voulez-vous concéder ?",
+        [PCX_TEXT_STRING_CONCEDE] =
+        "Concéder",
+        [PCX_TEXT_STRING_SHOW_CARDS] =
+        "Montrer les cartes",
         [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
         "Personne n’a mis en doute. L’action est bloquée.",
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
@@ -149,6 +181,12 @@ pcx_text_french[] = {
         "Ou est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
         "Est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
+        [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
+        "Ou est-ce que quelqu’un d’une autre allégeance veut prétendre avoir "
+        "%s et le bloquer ?",
+        [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
+        "Est-ce que quelqu’un d’une autre allégeance veut prétendre avoir "
+        "%s et le bloquer ?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
         "Ou %s, voulez-vous prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
@@ -163,10 +201,21 @@ pcx_text_french[] = {
         "Personne n’a bloqué, %s prend les 2 or",
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s prend 2 or par aide étrangère.",
+        [PCX_TEXT_STRING_EMBEZZLING] =
+        "💼 %s prétend de ne pas avoir la duchesse et il détourne les fonds "
+        "de l’hospice.",
+        [PCX_TEXT_STRING_REALLY_EMBEZZLING] =
+        "Personne n’a mis en doute, %s prend les fonds de l’hospice.",
         [PCX_TEXT_STRING_REALLY_DOING_TAX] =
         "Personne n’a mis en doute, %s prend les 2 or.",
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s prétend avoir la duchesse et prend 3 or au trésor.",
+        [PCX_TEXT_STRING_WHO_TO_CONVERT] =
+        "%s, qui voulez-vous convertir ?",
+        [PCX_TEXT_STRING_CONVERTS_SELF] =
+        "%s paie une pièce à l’hospice and se convertit à soi-même.",
+        [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
+        "%s paie 2 pièces à l’hospice et convertit %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Personne n’a bloqué ou mis en doute, %s assassine %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
@@ -179,6 +228,28 @@ pcx_text_french[] = {
         "Personne n’a mis en doute, %s échange des cartes.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s prétend avoir l’ambassadeur et veut échanger des cartes.",
+        [PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR] =
+        "🔄 %s prétend avoir l’inquisiteur et veut échanger des cartes.",
+        [PCX_TEXT_STRING_REALLY_DOING_INSPECT] =
+        "Personne n’a mis en doute, %s choisit une carte à montrer à %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_INSPECT] =
+        "%s, de qui voulez-vous consulter une carte ?",
+        [PCX_TEXT_STRING_DOING_INSPECT] =
+        "🔍 %s prétend avoir l’inquisiteur et veut consulter une carte de %s",
+        [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
+        "Quelle carte voulez-vous montrer à %s?",
+        [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
+        "%s est en train de décider si vous pouvez garder %s",
+        [PCX_TEXT_STRING_SHOWING_CARD] =
+        "%s vous montre %s. Est-ce qu’il peut le garder ?",
+        [PCX_TEXT_STRING_YES] =
+        "Oui",
+        [PCX_TEXT_STRING_NO] =
+        "Non",
+        [PCX_TEXT_STRING_ALLOW_KEEP] =
+        "%s a permis à %s de garder la carte qu’il a montrée.",
+        [PCX_TEXT_STRING_DONT_ALLOW_KEEP] =
+        "%s a obligé %s de changer la carte qu’il a montrée.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Personne n’a bloqué ou mis en doute, %s vole à %s",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
@@ -195,6 +266,8 @@ pcx_text_french[] = {
         "Capitaine",
         [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
         "Ambassadeur",
+        [PCX_TEXT_STRING_CHARACTER_NAME_INSPECTOR] =
+        "Inquisiteur",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
         "la duchesse",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
@@ -205,6 +278,12 @@ pcx_text_french[] = {
         "le capitaine",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "l’ambassadeur",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
+        "l’inquisiteur",
+        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
+        "La court est réunie. Tout le monde peut cibler n’importe qui.",
+        [PCX_TEXT_STRING_COINS_IN_TREASURY] =
+        "Hospice: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Chauffeur",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
