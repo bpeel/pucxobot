@@ -1025,6 +1025,14 @@ static void
 send_create_game_question(struct pcx_bot *bot,
                           const struct message_info *info)
 {
+        if (info->is_private) {
+                send_message_printf(bot,
+                                    info->chat_id,
+                                    info->message_id,
+                                    PCX_TEXT_STRING_NEED_PUBLIC_GROUP);
+                return;
+        }
+
         send_game_question_reply(bot,
                                  PCX_TEXT_STRING_WHICH_GAME,
                                  "creategame",
