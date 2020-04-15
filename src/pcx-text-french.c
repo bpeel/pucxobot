@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2019, 2020  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WHICH_GAME] =
         "À quel jeu voulez-vous jouer ?",
         [PCX_TEXT_STRING_GAME_FULL] =
-        "La partie est pleine",
+        "La partie est complete",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "La partie a déjà commencé",
         [PCX_TEXT_STRING_NO_GAME] =
@@ -96,7 +96,7 @@ pcx_text_french[] = {
         "/aide",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Merci pour le message. Vous pouvez désormais rejoindre une partie "
-        "dans un groupe public",
+        "dans un groupe public.",
         [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
         "Veuillez choisir à quelle version du jeu vous voulez jouer",
         [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
@@ -205,7 +205,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s prend 2 or par aide étrangère.",
         [PCX_TEXT_STRING_EMBEZZLING] =
-        "💼 %s prétend de ne pas avoir la duchesse et il détourne les fonds "
+        "💼 %s prétend ne pas avoir la duchesse et il/elle détourne les fonds "
         "de l’hospice.",
         [PCX_TEXT_STRING_REALLY_EMBEZZLING] =
         "Personne n’a mis en doute, %s prend les fonds de l’hospice.",
