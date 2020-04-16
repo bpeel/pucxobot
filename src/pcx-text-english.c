@@ -165,7 +165,8 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
         "%s challenged and %s conceded so %s loses a card.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s challenged but %s did have %s so %s loses a card.",
+        "%s challenged but %s did have %s. %s loses a card and %s "
+        "receives a replacement from the deck.",
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s challenged and %s showed %s so %s changes their cards and "
         "%s loses a card.",

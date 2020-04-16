@@ -132,7 +132,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s desafiou e %s não tinha %s. Então %s perde uma carta.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s desafiou, mas %s tinha %s. Então %s perdeu uma carta.",
+        "%s desafiou, mas %s tinha %s. Então %s perdeu uma carta "
+        "e %s recebe um substituto.",
         [PCX_TEXT_STRING_CHOOSING_REVEAL] =
         "%s desafiou e agora %s está escolhendo qual cartão mortrar.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =

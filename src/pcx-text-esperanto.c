@@ -168,8 +168,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
         "%s defiis kaj %s cedis do %s perdas karton.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s defiis sed %s ja havis %s kaj %s "
-        "perdas karton",
+        "%s defiis sed %s ja havis %s. %s "
+        "perdas karton kaj %s ricevas novan anstataŭan karton.",
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s defiis kaj %s montris %s do %s ŝanĝas siajn kartojn kaj "
         "%s perdas karton.",

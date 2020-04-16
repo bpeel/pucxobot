@@ -159,8 +159,8 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
         "%s a mis en doute et %s concède donc %s perd une carte.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
-        "%s a mis %s en doute mais il/elle avait vraiment %s et %s perd "
-        "une carte",
+        "%s a mis %s en doute mais il/elle avait vraiment %s. %s perd "
+        "une carte et %s reçoit un remplacement.",
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s a mis en doute et %s a montré %s. Donc %s change ses cartes et "
         "%s perd une carte.",

@@ -1235,8 +1235,9 @@ test_failed_challenge_block_foreign_aid(void)
                                  0,
                                  "reveal:0",
                                  MESSAGE_TYPE_GLOBAL,
-                                 "Bob defiis sed Alice ja havis la dukon kaj "
-                                 "Bob perdas karton",
+                                 "Bob defiis sed Alice ja havis la dukon. "
+                                 "Bob perdas karton kaj Alice ricevas "
+                                 "novan anstataŭan karton.",
                                  MESSAGE_TYPE_SHOW_CARDS,
                                  0,
                                  MESSAGE_TYPE_PRIVATE,
@@ -1458,8 +1459,9 @@ test_failed_challenge_tax(void)
                                  1,
                                  "reveal:0",
                                  MESSAGE_TYPE_GLOBAL,
-                                 "Alice defiis sed Bob ja havis la dukon kaj "
-                                 "Alice perdas karton",
+                                 "Alice defiis sed Bob ja havis la dukon. "
+                                 "Alice perdas karton kaj Bob ricevas novan "
+                                 "anstataŭan karton.",
                                  MESSAGE_TYPE_SHOW_CARDS,
                                  1,
                                  MESSAGE_TYPE_PRIVATE,
@@ -1748,8 +1750,9 @@ test_block_assassinate(void)
                                  1,
                                  "reveal:1",
                                  MESSAGE_TYPE_GLOBAL,
-                                 "Alice defiis sed Bob ja havis la grafinon "
-                                 "kaj Alice perdas karton",
+                                 "Alice defiis sed Bob ja havis la grafinon. "
+                                 "Alice perdas karton kaj Bob ricevas novan "
+                                 "anstataŭan karton.",
                                  MESSAGE_TYPE_SHOW_CARDS,
                                  1,
                                  MESSAGE_TYPE_PRIVATE,
@@ -2140,8 +2143,9 @@ test_steal(void)
                                  1,
                                  "reveal:1",
                                  MESSAGE_TYPE_GLOBAL,
-                                 "Alice defiis sed Bob ja havis la ambasadoron "
-                                 "kaj Alice perdas karton",
+                                 "Alice defiis sed Bob ja havis "
+                                 "la ambasadoron. Alice perdas karton kaj Bob "
+                                 "ricevas novan anstataŭan karton.",
                                  MESSAGE_TYPE_SHOW_CARDS,
                                  1,
                                  MESSAGE_TYPE_PRIVATE,

@@ -1137,7 +1137,8 @@ do_reveal(struct pcx_coup *coup,
                           challenging_player->name,
                           challenged_player->name,
                           character_name_string,
-                          challenging_player->name);
+                          challenging_player->name,
+                          challenged_player->name);
                 change_card(coup, data->challenged_player, character);
                 stack_pop(coup);
                 struct challenge_data *challenge_data =
