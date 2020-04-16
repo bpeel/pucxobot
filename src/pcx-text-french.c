@@ -288,7 +288,8 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "l’inquisiteur",
         [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
-        "La court est réunie. Tout le monde peut cibler n’importe qui.",
+        "La court est réunie. Tout le monde peut cibler n’importe qui et "
+        "il n’y a plus de conversion.",
         [PCX_TEXT_STRING_COINS_IN_TREASURY] =
         "Hospice: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =

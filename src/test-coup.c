@@ -2616,7 +2616,8 @@ test_convert(void)
                                  "konvertas sin mem.",
                                  MESSAGE_TYPE_GLOBAL,
                                  "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian.",
+                                 "celi iun ajn alian kaj konvertado ne plu "
+                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
 
@@ -2693,7 +2694,8 @@ test_death_makes_reunification(void)
                                  "💣 David faras puĉon kontraŭ Charles",
                                  MESSAGE_TYPE_GLOBAL,
                                  "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian.",
+                                 "celi iun ajn alian kaj konvertado ne plu "
+                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
         if (!ret)
@@ -2874,7 +2876,8 @@ test_block_other_allegiance(void)
                                  "konvertas Alice.",
                                  MESSAGE_TYPE_GLOBAL,
                                  "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian.",
+                                 "celi iun ajn alian kaj konvertado ne plu "
+                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
         if (!ret)

@@ -305,7 +305,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "la inspektiston",
         [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
-        "Restas nur unu partio. Ĉiu ajn nun povas celi iun ajn alian.",
+        "Restas nur unu partio. Ĉiu ajn nun povas celi iun ajn alian kaj "
+        "konvertado ne plu eblas.",
         [PCX_TEXT_STRING_COINS_IN_TREASURY] =
         "Trezorejo: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
