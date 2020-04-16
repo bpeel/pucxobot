@@ -169,6 +169,10 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s challenged and %s showed %s so %s changes their cards and "
         "%s loses a card.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL] =
+        "%s challenged and now %s is choosing which card to reveal.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED] =
+        "%s challenged and now %s is choosing whether to concede.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s doesn’t believe that you have %s.\n"
         "Which card do you want to show them?",

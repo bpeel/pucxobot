@@ -1162,6 +1162,9 @@ block_and_challenge_foreign_aid(struct test_data *data)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj nun Alice elektas kiun karton "
+                                 "montri.",
                                  MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Bob ne kredas ke vi havas la dukon.\n"
@@ -1419,6 +1422,9 @@ challenge_tax(struct test_data *data)
         return send_callback_data(data,
                                   0,
                                   "challenge",
+                                  MESSAGE_TYPE_GLOBAL,
+                                  "Alice defiis kaj nun Bob elektas kiun "
+                                  "karton montri.",
                                   MESSAGE_TYPE_PRIVATE,
                                   1,
                                   "Alice ne kredas ke vi havas la dukon.\n"
@@ -1706,6 +1712,9 @@ set_up_block_and_challenge_assassinate(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj nun Bob elektas kiun karton "
+                                 "montri.",
                                  MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice ne kredas ke vi havas la grafinon.\n"
@@ -2108,6 +2117,9 @@ test_steal(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj nun Bob elektas kiun karton "
+                                 "montri.",
                                  MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice ne kredas ke vi havas la kapitanon "
@@ -2998,6 +3010,8 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj nun Alice elektas ĉu cedi.",
                                  MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Bob kredas ke vi ja havas la dukon.\n"
@@ -3069,6 +3083,8 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice defiis kaj nun Bob elektas ĉu cedi.",
                                  MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice kredas ke vi ja havas la dukon.\n"

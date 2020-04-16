@@ -173,6 +173,10 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s defiis kaj %s montris %s do %s ŝanĝas siajn kartojn kaj "
         "%s perdas karton.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL] =
+        "%s defiis kaj nun %s elektas kiun karton montri.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED] =
+        "%s defiis kaj nun %s elektas ĉu cedi.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne kredas ke vi havas %s.\n"
         "Kiun karton vi volas montri?",

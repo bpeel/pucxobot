@@ -164,6 +164,10 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
         "%s a mis en doute et %s a montré %s. Donc %s change ses cartes et "
         "%s perd une carte.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL] =
+        "%s a mis en doute et maintenant %s choisit une carte à révéler.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED] =
+        "%s a mis en doute et maintenant %s choisit s’il/elle veut concéder.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne croit pas que vous aviez %s.\n"
         "Quelle carte voulez-vous montrer ?",

@@ -1354,6 +1354,18 @@ reveal_idle(struct pcx_coup *coup)
                 return;
         }
 
+        if (data->inverted) {
+                coup_note(coup,
+                          PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED,
+                          coup->players[data->challenging_player].name,
+                          challenged_player->name);
+        } else {
+                coup_note(coup,
+                          PCX_TEXT_STRING_CHOOSING_REVEAL,
+                          coup->players[data->challenging_player].name,
+                          challenged_player->name);
+        }
+
         struct pcx_buffer cards = PCX_BUFFER_STATIC_INIT;
         get_challenged_cards(coup, &cards, data->challenged_clans);
 
