@@ -1478,12 +1478,20 @@ do_block(struct pcx_coup *coup,
         take_action(coup);
 }
 
-static bool
-is_accepted(struct pcx_coup *coup,
-            const struct challenge_data *data)
+static uint32_t
+get_players_that_need_to_accept(struct pcx_coup *coup,
+                                const struct challenge_data *data)
 {
-        if (data->flags == 0)
-                return true;
+        /* If there is no challenging and there is a target player,
+         * then only they need to accept.
+         */
+        if (data->flags == CHALLENGE_FLAG_BLOCK &&
+            data->target_player != -1) {
+                if (is_alive(coup->players + data->target_player))
+                        return 1 << data->target_player;
+                else
+                        return 0;
+        }
 
         uint32_t need_accept = 0;
 
@@ -1504,6 +1512,18 @@ is_accepted(struct pcx_coup *coup,
 
                 need_accept |= UINT32_C(1) << i;
         }
+
+        return need_accept;
+}
+
+static bool
+is_accepted(struct pcx_coup *coup,
+            const struct challenge_data *data)
+{
+        if (data->flags == 0)
+                return true;
+
+        uint32_t need_accept = get_players_that_need_to_accept(coup, data);
 
         return (data->accepted_players & need_accept) == need_accept;
 }
