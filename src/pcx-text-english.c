@@ -404,7 +404,7 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_PLURAL_COPIES] =
         "%i copies",
         [PCX_TEXT_STRING_YOUR_CARD_IS] =
-        "You card is: ",
+        "Your card is: ",
         [PCX_TEXT_STRING_VISIBLE_CARDS] =
         "Discarded cards: ",
         [PCX_TEXT_STRING_N_CARDS] =
@@ -448,7 +448,7 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_PRINCE_SELF] =
         "%p discarded %C and made themself discard %C",
         [PCX_TEXT_STRING_PRINCE_OTHER] =
-        "%p discarded %C and made %p discard their %C",
+        "%p discarded %C and made %p discard %C",
         [PCX_TEXT_STRING_FORCE_DISCARD_PRINCESS] =
         " and so they lose the round.",
         [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =

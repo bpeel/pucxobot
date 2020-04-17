@@ -464,7 +464,7 @@ pcx_text_esperanto[] = {
         "forĵeti sian %C",
         [PCX_TEXT_STRING_PRINCE_OTHER] =
         "%p forĵetis la %C kaj devigis %p "
-        "forĵeti sian %C",
+        "forĵeti %C",
         [PCX_TEXT_STRING_FORCE_DISCARD_PRINCESS] =
         " kaj tial ri perdas la raŭndon.",
         [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =
