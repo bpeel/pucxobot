@@ -32,6 +32,7 @@
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
+#include "pcx-server.h"
 #include "pcx-game.h"
 #include "pcx-main-context.h"
 #include "pcx-config.h"
@@ -46,9 +47,15 @@ struct tty_file {
 struct pcx_main {
         struct pcx_tty_game *tty_game;
         struct pcx_curl_multi *pcurl;
+
         size_t n_bots;
         struct pcx_bot **bots;
+
+        size_t n_servers;
+        struct pcx_server **servers;
+
         struct pcx_config *config;
+
         /* List of const char* pointers. The strings are assumed to
          * come from the command line arguments and are not freed.
          */
@@ -122,17 +129,16 @@ init_main_tty(struct pcx_main *data)
         return true;
 }
 
-static bool
+static void
 init_main_bots(struct pcx_main *data)
 {
+        if (pcx_list_empty(&data->config->bots))
+                return;
+
         curl_global_init(CURL_GLOBAL_ALL);
         data->curl_inited = true;
 
         data->pcurl = pcx_curl_multi_new();
-
-        time_t t;
-        time(&t);
-        srand(t);
 
         struct pcx_config_bot *bot;
 
@@ -149,6 +155,34 @@ init_main_bots(struct pcx_main *data)
                                               bot,
                                               data->pcurl);
         }
+}
+
+static bool
+init_main_servers(struct pcx_main *data)
+{
+        struct pcx_config_server *server_conf;
+        size_t n_servers = 0;
+
+        pcx_list_for_each(server_conf, &data->config->servers, link) {
+                n_servers++;
+        }
+
+        data->servers = pcx_alloc((sizeof *data->servers) *
+                                  MAX(n_servers, 1));
+
+        pcx_list_for_each(server_conf, &data->config->servers, link) {
+                struct pcx_error *error = NULL;
+                struct pcx_server *server =
+                        pcx_server_new(data->config, server_conf, &error);
+
+                if (server == NULL) {
+                        fprintf(stderr, "%s\n", error->message);
+                        pcx_error_free(error);
+                        return false;
+                }
+
+                data->servers[data->n_servers++] = server;
+        }
 
         return true;
 }
@@ -158,9 +192,14 @@ destroy_main(struct pcx_main *data)
 {
         if (data->tty_game)
                 pcx_tty_game_free(data->tty_game);
+
         for (unsigned i = 0; i < data->n_bots; i++)
                 pcx_bot_free(data->bots[i]);
         pcx_free(data->bots);
+
+        for (unsigned i = 0; i < data->n_servers; i++)
+                pcx_server_free(data->servers[i]);
+        pcx_free(data->servers);
 
         pcx_buffer_destroy(&data->tty_files);
 
@@ -390,6 +429,8 @@ main(int argc, char **argv)
                 .pcurl = NULL,
                 .n_bots = 0,
                 .bots = NULL,
+                .n_servers = 0,
+                .servers = NULL,
                 .config = NULL,
                 .curl_inited = false,
                 .quit = false,
@@ -417,6 +458,11 @@ main(int argc, char **argv)
                 goto done;
         }
 
+        if (!init_main_servers(&data)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
+
         if (data.daemonize)
                 daemonize();
 
@@ -431,10 +477,11 @@ main(int argc, char **argv)
                         goto done;
                 }
         } else {
-                if (!init_main_bots(&data)) {
-                        ret = EXIT_FAILURE;
-                        goto done;
-                }
+                time_t t;
+                time(&t);
+                srand(t);
+
+                init_main_bots(&data);
         }
 
         struct pcx_main_context_source *int_source =
