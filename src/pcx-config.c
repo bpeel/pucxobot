@@ -35,6 +35,7 @@ struct load_config_data {
         bool had_error;
         struct pcx_buffer error_buffer;
         struct pcx_config_bot *bot;
+        struct pcx_config_server *server;
 };
 
 PCX_PRINTF_FORMAT(2, 3)
@@ -88,6 +89,19 @@ bot_options[] = {
         OPTION(apikey, STRING),
         OPTION(botname, STRING),
         OPTION(announce_channel, STRING),
+        OPTION(language, LANGUAGE_CODE),
+#undef OPTION
+};
+
+static const struct option
+server_options[] = {
+#define OPTION(name, type)                                      \
+        {                                                       \
+                #name,                                          \
+                offsetof(struct pcx_config_server, name),       \
+                OPTION_TYPE_ ## type,                           \
+        }
+        OPTION(address, STRING),
         OPTION(language, LANGUAGE_CODE),
 #undef OPTION
 };
@@ -189,8 +203,16 @@ load_config_func(enum pcx_key_value_event event,
                         data->bot->language = PCX_TEXT_LANGUAGE_ESPERANTO;
                         pcx_list_insert(data->config->bots.prev,
                                         &data->bot->link);
+                        data->server = NULL;
+                } else if (!strcmp(value, "server")) {
+                        data->server = pcx_calloc(sizeof *data->server);
+                        data->server->language = PCX_TEXT_LANGUAGE_ESPERANTO;
+                        pcx_list_insert(data->config->servers.prev,
+                                        &data->server->link);
+                        data->bot = NULL;
                 } else if (!strcmp(value, "general")) {
                         data->bot = NULL;
+                        data->server = NULL;
                 } else {
                         load_config_error(data, "unknown section: %s", value);
                         data->bot = NULL;
@@ -202,6 +224,13 @@ load_config_func(enum pcx_key_value_event event,
                                          data->bot,
                                          PCX_N_ELEMENTS(bot_options),
                                          bot_options,
+                                         key,
+                                         value);
+                } else if (data->server) {
+                        set_from_options(data,
+                                         data->server,
+                                         PCX_N_ELEMENTS(server_options),
+                                         server_options,
                                          key,
                                          value);
                 } else {
@@ -243,25 +272,50 @@ validate_bot(struct pcx_config_bot *bot,
 }
 
 static bool
+validate_server(struct pcx_config_server *server,
+                const char *filename,
+                struct pcx_error **error)
+{
+        if (server->address == NULL) {
+                pcx_set_error(error,
+                              &pcx_config_error,
+                              PCX_CONFIG_ERROR_IO,
+                              "%s: missing address option",
+                              filename);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
 validate_config(struct pcx_config *config,
                 const char *filename,
                 struct pcx_error **error)
 {
+        bool found_something = false;
 
         struct pcx_config_bot *bot;
-        bool found_bot = false;
 
         pcx_list_for_each(bot, &config->bots, link) {
                 if (!validate_bot(bot, filename, error))
                         return false;
-                found_bot = true;
+                found_something = true;
         }
 
-        if (!found_bot) {
+        struct pcx_config_server *server;
+
+        pcx_list_for_each(server, &config->servers, link) {
+                if (!validate_server(server, filename, error))
+                        return false;
+                found_something = true;
+        }
+
+        if (!found_something) {
                 pcx_set_error(error,
                               &pcx_config_error,
                               PCX_CONFIG_ERROR_IO,
-                              "%s: no bots configured",
+                              "%s: no bots or servers configured",
                               filename);
                 return false;
         }
@@ -307,6 +361,7 @@ load_config(const char *fn,
                         .config = config,
                         .had_error = false,
                         .bot = NULL,
+                        .server = NULL,
                 };
 
                 pcx_buffer_init(&data.error_buffer);
@@ -342,6 +397,7 @@ pcx_config_load(const char *filename,
         struct pcx_config *config = pcx_calloc(sizeof *config);
 
         pcx_list_init(&config->bots);
+        pcx_list_init(&config->servers);
 
         if (!load_config(filename, config, error))
                 goto error;
@@ -353,8 +409,8 @@ error:
         return NULL;
 }
 
-void
-pcx_config_free(struct pcx_config *config)
+static void
+free_bots(struct pcx_config *config)
 {
         struct pcx_config_bot *bot, *tmp;
 
@@ -364,6 +420,25 @@ pcx_config_free(struct pcx_config *config)
                 pcx_free(bot->announce_channel);
                 pcx_free(bot);
         }
+}
+
+static void
+free_servers(struct pcx_config *config)
+{
+        struct pcx_config_server *server, *tmp;
+
+        pcx_list_for_each_safe(server, tmp, &config->servers, link) {
+                pcx_free(server->address);
+                pcx_free(server);
+        }
+
+}
+
+void
+pcx_config_free(struct pcx_config *config)
+{
+        free_bots(config);
+        free_servers(config);
 
         pcx_free(config->data_dir);
         pcx_free(config->log_file);
