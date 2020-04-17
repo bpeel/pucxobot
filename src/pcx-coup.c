@@ -1628,6 +1628,14 @@ check_challenge_idle(struct pcx_coup *coup)
          */
         data->accepted_players = 0;
 
+        /* The target player can end up losing all of their cards
+         * either by a failed challenge or a challenged block. If that
+         * happens then they shouldn’t be able to block anymore.
+         */
+        if (data->target_player != -1 &&
+            !is_alive(coup->players + data->target_player))
+                data->flags &= ~CHALLENGE_FLAG_BLOCK;
+
         /* Check if the action is already accepted. This can happen if
          * there was a block that caused a death and we return to this
          * challenge.
