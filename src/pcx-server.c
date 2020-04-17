@@ -264,6 +264,21 @@ parse_json_objects(struct pcx_server_connection *connection,
                    bool *need_update)
 {
         while (true) {
+                if (!connection->partial_object) {
+                        /* Skip any leading whitespace so that if
+                         * there was trailing whitespace after an
+                         * object then we don’t think it’s a partial
+                         * object.
+                         */
+                        while (buf_size > 0 && strchr("\r\n\t ", buf[0])) {
+                                buf_size--;
+                                buf++;
+                        }
+                }
+
+                if (buf_size <= 0)
+                        break;
+
                 struct json_object *object =
                         json_tokener_parse_ex(connection->tokener,
                                               buf,
@@ -291,10 +306,7 @@ parse_json_objects(struct pcx_server_connection *connection,
 
                 json_tokener_reset(connection->tokener);
 
-                if (buf_size <= 0) {
-                        connection->partial_object = false;
-                        break;
-                }
+                connection->partial_object = false;
         }
 }
 
