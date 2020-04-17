@@ -19,8 +19,6 @@
 #include "pcx-bot.h"
 
 #include <curl/curl.h>
-#include <json_object.h>
-#include <json_tokener.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +35,7 @@
 #include "pcx-curl-multi.h"
 #include "pcx-message-queue.h"
 #include "pcx-log.h"
+#include "pcx-json.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
 #define IN_GAME_TIMEOUT (GAME_TIMEOUT * 2)
@@ -114,64 +113,6 @@ static void
 get_updates_finished_cb(CURLcode code,
                         void *user_data);
 
-PCX_NULL_TERMINATED
-static bool
-get_fields(struct json_object *obj,
-           ...)
-{
-        if (!json_object_is_type(obj, json_type_object))
-                return false;
-
-        bool ret = true;
-        va_list ap;
-
-        va_start(ap, obj);
-
-        const char *key;
-
-        while ((key = va_arg(ap, const char *))) {
-                struct json_object *value;
-
-                if (!json_object_object_get_ex(obj, key, &value)) {
-                        ret = false;
-                        break;
-                }
-
-                enum json_type type = va_arg(ap, enum json_type);
-
-                if (!json_object_is_type(value, type)) {
-                        ret = false;
-                        break;
-                }
-
-                switch (type) {
-                case json_type_boolean:
-                        *va_arg(ap, bool *) = json_object_get_boolean(value);
-                        break;
-                case json_type_string:
-                        *va_arg(ap, const char **) =
-                                json_object_get_string(value);
-                        break;
-                case json_type_double:
-                        *va_arg(ap, double *) = json_object_get_double(value);
-                        break;
-                case json_type_int:
-                        *va_arg(ap, int64_t *) = json_object_get_int64(value);
-                        break;
-                case json_type_object:
-                case json_type_array:
-                        *va_arg(ap, struct json_object **) = value;
-                        break;
-                default:
-                        pcx_fatal("Unexpected json type");
-                }
-        }
-
-        va_end(ap);
-
-        return ret;
-}
-
 static void
 set_post_json_data(struct pcx_bot *bot,
                    CURL *handle,
@@ -232,15 +173,18 @@ request_write_cb(char *ptr,
 
         if (obj) {
                 bool ok;
-                bool ret = get_fields(obj,
-                                      "ok", json_type_boolean, &ok,
-                                      NULL);
+                bool ret = pcx_json_get(obj,
+                                        "ok", json_type_boolean, &ok,
+                                        NULL);
 
                 if (ret && !ok) {
                         const char *desc;
-                        ret = get_fields(obj,
-                                         "description", json_type_string, &desc,
-                                         NULL);
+
+                        ret = pcx_json_get(obj,
+                                           "description",
+                                           json_type_string,
+                                           &desc,
+                                           NULL);
                         if (ret) {
                                 pcx_log("%s: %s",
                                         bot->bot_config->botname,
@@ -838,15 +782,15 @@ static bool
 get_message_from_info(struct json_object *from,
                       struct message_info *info)
 {
-        bool ret = get_fields(from,
-                              "id", json_type_int, &info->from_id,
-                              NULL);
+        bool ret = pcx_json_get(from,
+                                "id", json_type_int, &info->from_id,
+                                NULL);
         if (!ret)
                 return false;
 
-        ret = get_fields(from,
-                         "first_name", json_type_string, &info->first_name,
-                         NULL);
+        ret = pcx_json_get(from,
+                           "first_name", json_type_string, &info->first_name,
+                           NULL);
         if (!ret)
                 info->first_name = NULL;
 
@@ -859,34 +803,34 @@ get_message_info(struct json_object *message,
 {
         struct json_object *chat, *from;
 
-        bool ret = get_fields(message,
-                              "chat", json_type_object, &chat,
-                              "from", json_type_object, &from,
-                              "text", json_type_string, &info->text,
-                              "message_id", json_type_int, &info->message_id,
-                              NULL);
+        bool ret = pcx_json_get(message,
+                                "chat", json_type_object, &chat,
+                                "from", json_type_object, &from,
+                                "text", json_type_string, &info->text,
+                                "message_id", json_type_int, &info->message_id,
+                                NULL);
         if (!ret)
                 return false;
 
         if (!get_message_from_info(from, info))
                 return false;
 
-        ret = get_fields(chat,
-                         "id", json_type_int, &info->chat_id,
-                         NULL);
+        ret = pcx_json_get(chat,
+                           "id", json_type_int, &info->chat_id,
+                           NULL);
         if (!ret)
                 return false;
 
         const char *chat_type;
 
-        ret = get_fields(chat,
-                         "type", json_type_string, &chat_type,
-                         NULL);
+        ret = pcx_json_get(chat,
+                           "type", json_type_string, &chat_type,
+                           NULL);
         info->is_private = ret && !strcmp(chat_type, "private");
 
-        ret = get_fields(chat,
-                         "username", json_type_string, &info->chat_username,
-                         NULL);
+        ret = pcx_json_get(chat,
+                           "username", json_type_string, &info->chat_username,
+                           NULL);
         if (!ret)
                 info->chat_username = NULL;
 
@@ -1383,11 +1327,11 @@ process_entity(struct pcx_bot *bot,
         int64_t offset, length;
         const char *type;
 
-        bool ret = get_fields(entity,
-                              "offset", json_type_int, &offset,
-                              "length", json_type_int, &length,
-                              "type", json_type_string, &type,
-                              NULL);
+        bool ret = pcx_json_get(entity,
+                                "offset", json_type_int, &offset,
+                                "length", json_type_int, &length,
+                                "type", json_type_string, &type,
+                                NULL);
         if (!ret)
                 return;
 
@@ -1475,9 +1419,9 @@ process_message(struct pcx_bot *bot,
 
         struct json_object *entities;
 
-        if (!get_fields(message,
-                        "entities", json_type_array, &entities,
-                        NULL))
+        if (!pcx_json_get(message,
+                          "entities", json_type_array, &entities,
+                          NULL))
                 return;
 
         for (unsigned i = 0; i < json_object_array_length(entities); i++) {
@@ -1511,9 +1455,9 @@ found_game: (void) 0;
 
         struct json_object *message;
 
-        bool ret = get_fields(callback,
-                              "message", json_type_object, &message,
-                              NULL);
+        bool ret = pcx_json_get(callback,
+                                "message", json_type_object, &message,
+                                NULL);
         if (!ret)
                 return false;
 
@@ -1560,9 +1504,9 @@ process_create_game_callback_data(struct pcx_bot *bot,
 
         struct json_object *from;
 
-        bool ret = get_fields(callback,
-                              "from", json_type_object, &from,
-                              NULL);
+        bool ret = pcx_json_get(callback,
+                                "from", json_type_object, &from,
+                                NULL);
 
         if (!ret)
                 return;
@@ -1613,20 +1557,20 @@ process_callback(struct pcx_bot *bot,
         const char *callback_data;
         struct json_object *from;
 
-        bool ret = get_fields(callback,
-                              "id", json_type_string, &id,
-                              "data", json_type_string, &callback_data,
-                              "from", json_type_object, &from,
-                              NULL);
+        bool ret = pcx_json_get(callback,
+                                "id", json_type_string, &id,
+                                "data", json_type_string, &callback_data,
+                                "from", json_type_object, &from,
+                                NULL);
 
         if (!ret)
                 return;
 
         int64_t from_id;
 
-        ret = get_fields(from,
-                         "id", json_type_int, &from_id,
-                         NULL);
+        ret = pcx_json_get(from,
+                           "id", json_type_int, &from_id,
+                           NULL);
 
         if (!ret)
                 return;
@@ -1662,10 +1606,10 @@ process_updates(struct pcx_bot *bot,
 {
         struct json_object *result;
         bool ok;
-        bool ret = get_fields(obj,
-                              "ok", json_type_boolean, &ok,
-                              "result", json_type_array, &result,
-                              NULL);
+        bool ret = pcx_json_get(obj,
+                                "ok", json_type_boolean, &ok,
+                                "result", json_type_array, &result,
+                                NULL);
         if (!ret || !ok)
                 return false;
 
@@ -1676,26 +1620,26 @@ process_updates(struct pcx_bot *bot,
                         json_object_array_get_idx(result, i);
                 int64_t update_id;
 
-                if (get_fields(update,
-                               "update_id", json_type_int, &update_id,
-                               NULL) &&
+                if (pcx_json_get(update,
+                                 "update_id", json_type_int, &update_id,
+                                 NULL) &&
                     update_id > bot->last_update_id) {
                         bot->last_update_id = update_id;
                 }
 
                 struct json_object *message;
 
-                if (get_fields(update,
-                               "message", json_type_object, &message,
-                               NULL)) {
+                if (pcx_json_get(update,
+                                 "message", json_type_object, &message,
+                                 NULL)) {
                         process_message(bot, message);
                 }
 
                 struct json_object *callback;
 
-                if (get_fields(update,
-                               "callback_query", json_type_object, &callback,
-                               NULL)) {
+                if (pcx_json_get(update,
+                                 "callback_query", json_type_object, &callback,
+                                 NULL)) {
                         process_callback(bot, callback);
                 }
         }

@@ -26,6 +26,7 @@ src = [
         'pcx-coup-help.c',
         'pcx-curl-multi.c',
         'pcx-config.c',
+        'pcx-json.c',
         'pcx-text.c',
         'pcx-coup.c',
         'pcx-snitch.c',
