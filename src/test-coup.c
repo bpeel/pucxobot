@@ -1845,11 +1845,118 @@ done:
 }
 
 static bool
+test_dead_player_cant_block(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_ASSASSIN,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_DUKE,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 4 /* n_players */);
+
+        bool ret;
+
+        /* Give enough coins to everyone so they all have 7 */
+        for (int i = 0; i < 20; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        assert(data->status.current_player == 1);
+        assert(data->status.players[0].coins == 7);
+        assert(data->status.players[1].coins == 7);
+        assert(data->status.players[2].coins == 7);
+
+        /* Everybody does a coup */
+        for (int i = 0; i < 4; i++) {
+                ret = do_coup(data);
+                if (!ret)
+                        goto done;
+        }
+
+        assert(data->status.current_player == 1);
+        assert(data->status.players[0].cards[0].dead == true);
+        assert(data->status.players[1].cards[0].dead == true);
+        assert(data->status.players[2].cards[0].dead == true);
+        assert(data->status.players[3].cards[0].dead == true);
+
+        /* Give everybody 3 coins and skip to Alice’s go */
+        for (int i = 0; i < 15; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        assert(data->status.current_player == 0);
+        assert(data->status.players[0].coins == 3);
+
+        /* Alice assassinates Bob’s last card */
+        ret = send_callback_data(data,
+                                 0,
+                                 "assassinate:1",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "🗡 Alice volas murdi Bob\n"
+                                 "Ĉu iu volas defii rin?\n"
+                                 "Aŭ Bob, ĉu vi volas pretendi havi la "
+                                 "grafinon kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].coins = 0;
+        data->status.current_player = 2;
+        data->status.players[1].cards[1].dead = true;
+
+        /* Bob desperately tries to challenge. Alice does have the
+         * assassin so this kills his last card. He shouldn’t be able
+         * to block anymore and challenging is no longer available, so
+         * the action should now happen.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis sed Alice ja havis la murdiston. "
+                                 "Bob perdas karton kaj Alice ricevas novan "
+                                 "anstataŭan karton.",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu blokis aŭ defiis, Alice murdas Bob",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_assassinate(void)
 {
         return (test_accept_assassinate() &&
                 test_block_assassinate() &&
-                test_fail_block_assassinate());
+                test_fail_block_assassinate() &&
+                test_dead_player_cant_block());
 }
 
 static bool
