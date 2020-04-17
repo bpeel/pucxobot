@@ -20,6 +20,7 @@ src = [
         'pcx-tty-game.c',
         'pcx-coup-character.c',
         'pcx-bot.c',
+        'pcx-server.c',
         'pcx-message-queue.c',
         'pcx-key-value.c',
         'pcx-coup-help.c',
