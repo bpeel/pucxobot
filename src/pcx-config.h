@@ -38,10 +38,16 @@ struct pcx_config_bot {
         enum pcx_text_language language;
 };
 
+struct pcx_config_server {
+        struct pcx_list link;
+        char *address;
+};
+
 struct pcx_config {
         char *data_dir;
         char *log_file;
         struct pcx_list bots;
+        struct pcx_list servers;
 };
 
 struct pcx_config *
