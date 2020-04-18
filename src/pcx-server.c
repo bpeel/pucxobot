@@ -18,8 +18,6 @@
 
 #include "pcx-server.h"
 
-#include <json_object.h>
-#include <json_tokener.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +38,7 @@
 #include "pcx-config.h"
 #include "pcx-buffer.h"
 #include "pcx-log.h"
+#include "pcx-json.h"
 
 struct pcx_error_domain
 pcx_server_error;
@@ -47,6 +46,43 @@ pcx_server_error;
 struct pcx_server_response {
         struct pcx_list link;
         struct json_object *object;
+};
+
+struct pcx_server_event {
+        struct pcx_list link;
+
+        /* -1 if the event is for everyone */
+        int target_person;
+
+        struct json_object *object;
+};
+
+struct pcx_server_person {
+        int64_t id;
+
+        char *name;
+
+        /* Pointer back to the owning game */
+        struct pcx_server_game *game;
+        /* List of connections watching this person */
+        struct pcx_list watching_connections;
+};
+
+struct pcx_server_game {
+        struct pcx_list link;
+
+        char *room_name;
+        const struct pcx_game *game_type;
+        enum pcx_text_language language;
+
+        void *game;
+
+        bool is_finished;
+
+        int n_people;
+        struct pcx_server_person people[PCX_GAME_MAX_PLAYERS];
+
+        struct pcx_list events;
 };
 
 struct pcx_server_connection {
@@ -87,10 +123,21 @@ struct pcx_server_connection {
          */
         struct json_object *partially_written_object;
         size_t partially_written_amount;
+        /* Updating the poll flags is done on idle because it can
+         * cause the connection to be closed.
+         */
+        struct pcx_main_context_source *update_poll_source;
 
         uint8_t write_buf[1024];
 
         struct json_tokener *tokener;
+
+        /* When this is not NULL, there will be an entry for this
+         * connection in the person’s connection list. This should end
+         * up keeping the person alive.
+         */
+        struct pcx_server_person *watching_person;
+        struct pcx_list person_link;
 };
 
 struct pcx_server {
@@ -108,6 +155,9 @@ struct pcx_server {
 
         /* Temporary buffer for reading data to feed into the tokener */
         char read_buf[1024];
+
+        /* Each pcx_server_game is owned by this list */
+        struct pcx_list games;
 };
 
 static bool
@@ -151,8 +201,64 @@ remove_responses(struct pcx_server_connection *connection)
 }
 
 static void
+destroy_person(struct pcx_server_person *person)
+{
+        assert(pcx_list_empty(&person->watching_connections));
+        pcx_free(person->name);
+}
+
+static void
+remove_events(struct pcx_server_game *game)
+{
+        struct pcx_server_event *event, *tmp;
+
+        pcx_list_for_each_safe(event, tmp, &game->events, link) {
+                json_object_put(event->object);
+                pcx_free(event);
+        }
+}
+
+static void
+free_game_game(struct pcx_server_game *game)
+{
+        if (game->game == NULL)
+                return;
+
+        game->game_type->free_game_cb(game->game);
+        game->game = NULL;
+}
+
+static void
+remove_game(struct pcx_server_game *game)
+{
+        for (unsigned i = 0; i < game->n_people; i++)
+                destroy_person(game->people + i);
+
+        pcx_free(game->room_name);
+
+        free_game_game(game);
+
+        remove_events(game);
+
+        pcx_list_remove(&game->link);
+
+        pcx_free(game);
+}
+
+static void
+unwatch_person(struct pcx_server_connection *connection)
+{
+        if (connection->watching_person) {
+                pcx_list_remove(&connection->person_link);
+                connection->watching_person = NULL;
+        }
+}
+
+static void
 remove_connection(struct pcx_server_connection *connection)
 {
+        unwatch_person(connection);
+
         remove_responses(connection);
 
         if (connection->partially_written_object)
@@ -164,6 +270,9 @@ remove_connection(struct pcx_server_connection *connection)
                 pcx_main_context_remove_source(connection->source);
         if (connection->sock != -1)
                 close(connection->sock);
+
+        if (connection->update_poll_source)
+                pcx_main_context_remove_source(connection->update_poll_source);
 
         pcx_list_remove(&connection->link);
 
@@ -183,7 +292,8 @@ update_poll(struct pcx_server_connection *connection)
             (connection->read_finished || connection->had_bad_input) &&
             pcx_list_empty(&connection->response_queue) &&
             connection->output_length == 0 &&
-            connection->partially_written_object == NULL) {
+            connection->partially_written_object == NULL &&
+            connection->watching_person == NULL) {
                 if (shutdown(connection->sock, SHUT_WR) == -1) {
                         remove_connection(connection);
                         return;
@@ -211,6 +321,32 @@ update_poll(struct pcx_server_connection *connection)
 }
 
 static void
+queue_update_poll_cb(struct pcx_main_context_source *source,
+                     void *user_data)
+{
+        struct pcx_server_connection *connection = user_data;
+
+        assert(source == connection->update_poll_source);
+
+        connection->update_poll_source = NULL;
+
+        update_poll(connection);
+}
+
+static void
+queue_update_poll(struct pcx_server_connection *connection)
+{
+        if (connection->update_poll_source)
+                return;
+
+        connection->update_poll_source =
+                pcx_main_context_add_timeout(NULL,
+                                             0, /* ms */
+                                             queue_update_poll_cb,
+                                             connection);
+}
+
+static void
 queue_response(struct pcx_server_connection *connection,
                struct json_object *obj)
 {
@@ -219,6 +355,73 @@ queue_response(struct pcx_server_connection *connection,
         response->object = json_object_get(obj);
 
         pcx_list_insert(connection->response_queue.prev, &response->link);
+
+        queue_update_poll(connection);
+}
+
+static void
+queue_result_response(struct pcx_server_connection *connection,
+                      const char *type,
+                      const char *message)
+{
+        json_object *obj = json_object_new_object();
+
+        if (message) {
+                json_object *str = json_object_new_string(message);
+                json_object_object_add(obj, "description", str);
+        }
+
+        json_object *str = json_object_new_string(type);
+        json_object_object_add(obj, "result", str);
+
+        queue_response(connection, obj);
+
+        json_object_put(obj);
+}
+
+static void
+queue_error_response(struct pcx_server_connection *connection,
+                     const char *message)
+{
+        queue_result_response(connection, "error", message);
+}
+
+static void
+queue_error_response_text(struct pcx_server_connection *connection,
+                          enum pcx_text_language language,
+                          enum pcx_text_string string)
+{
+        const char *s = pcx_text_get(language, string);
+        queue_result_response(connection, "error", s);
+}
+
+static void
+queue_error_response_textf(struct pcx_server_connection *connection,
+                           enum pcx_text_language language,
+                           enum pcx_text_string string,
+                           ...)
+{
+        const char *s = pcx_text_get(language, string);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        va_list ap;
+
+        va_start(ap, string);
+        pcx_buffer_append_vprintf(&buf, s, ap);
+        va_end(ap);
+
+        queue_result_response(connection,
+                              "error",
+                              (const char *) buf.data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+queue_ok_response(struct pcx_server_connection *connection,
+                  const char *message)
+{
+        queue_result_response(connection, "ok", message);
 }
 
 static void
@@ -226,34 +429,457 @@ set_bad_input(struct pcx_server_connection *connection)
 {
         /* Remove all other responses */
         remove_responses(connection);
+        unwatch_person(connection);
 
-        json_object *str = json_object_new_string("Invalid request");
-        json_object *obj = json_object_new_object();
-        json_object_object_add(obj, "error", str);
+        queue_error_response(connection, "Invalid request");
+
+        connection->had_bad_input = true;
+}
+
+static struct pcx_server_game *
+add_game(struct pcx_server *server,
+         const struct pcx_game *game_type,
+         const char *room_name,
+         enum pcx_text_language language)
+{
+        struct pcx_server_game *game;
+
+        /* Try to find an existing game with matching details */
+        pcx_list_for_each(game, &server->games, link) {
+                if (game->game_type == game_type &&
+                    game->language == language &&
+                    !strcmp(game->room_name, room_name) &&
+                    game->game == NULL &&
+                    !game->is_finished &&
+                    game->n_people < game_type->max_players)
+                        return game;
+        }
+
+        /* Otherwise start a new game */
+        game = pcx_calloc(sizeof *game);
+
+        game->room_name = pcx_strdup(room_name);
+        game->game_type = game_type;
+        game->language = language;
+        pcx_list_init(&game->events);
+
+        pcx_list_insert(&server->games, &game->link);
+
+        return game;
+}
+
+static int64_t
+generate_id(void)
+{
+        /* TODO: this should be less predictable */
+        int64_t id = 0;
+
+        for (unsigned i = 0; i < (sizeof id) / sizeof (int16_t); i++) {
+                int16_t part = rand();
+                id = (id << ((sizeof part) * 8)) | part;
+        }
+
+        return id;
+}
+
+static struct pcx_server_person *
+find_person(struct pcx_server *server,
+            int64_t id)
+{
+        /* FIXME: this should really be a hash table */
+
+        struct pcx_server_game *game;
+
+        pcx_list_for_each(game, &server->games, link) {
+                for (int i = 0; i < game->n_people; i++) {
+                        struct pcx_server_person *person = game->people + i;
+
+                        if (person->id == id)
+                                return person;
+                }
+        }
+
+        return NULL;
+}
+
+static struct pcx_server_person *
+add_person(struct pcx_server *server,
+           const char *player_name,
+           struct pcx_server_game *game)
+{
+        struct pcx_server_person *person =
+                game->people + game->n_people;
+
+        do {
+                person->id = generate_id();
+        } while (find_person(server, person->id));
+
+        person->name = pcx_strdup(player_name);
+
+        person->game = game;
+
+        pcx_list_init(&person->watching_connections);
+
+        game->n_people++;
+
+        return person;
+}
+
+static struct pcx_server_person *
+get_person_for_request(struct pcx_server_connection *connection,
+                       struct json_object *object)
+{
+        int64_t person_id;
+
+        if (!pcx_json_get(object,
+                          "id", json_type_int, &person_id,
+                          NULL)) {
+                queue_error_response(connection,
+                                     "Missing person ID in request");
+                return NULL;
+        }
+
+        struct pcx_server_person *person =
+                find_person(connection->server, person_id);
+
+        if (person == NULL) {
+                queue_error_response(connection,
+                                     "Unknown person ID in request");
+                return NULL;
+        }
+
+        return person;
+}
+
+static void
+broadcast_event_to_person(struct pcx_server_person *person,
+                          struct pcx_server_event *event)
+{
+        struct pcx_server_connection *connection;
+
+        pcx_list_for_each(connection,
+                          &person->watching_connections,
+                          person_link) {
+                queue_response(connection, event->object);
+        }
+}
+
+static void
+broadcast_event(struct pcx_server_game *game,
+                struct pcx_server_event *event)
+{
+        if (event->target_person == -1) {
+                for (int i = 0; i < game->n_people; i++)
+                        broadcast_event_to_person(game->people + i, event);
+        } else {
+                broadcast_event_to_person(game->people + event->target_person,
+                                          event);
+        }
+}
+
+static void
+queue_message(struct pcx_server_game *game,
+              int user_num,
+              enum pcx_game_message_format format,
+              const char *message,
+              size_t n_buttons,
+              const struct pcx_game_button *buttons)
+{
+        struct json_object *obj = json_object_new_object();
+
+        if (user_num >= 0) {
+                struct json_object *t = json_object_new_boolean(true);
+                json_object_object_add(obj, "private", t);
+        }
+
+        struct json_object *type;
+
+        switch (format) {
+        case PCX_GAME_MESSAGE_FORMAT_HTML:
+                type = json_object_new_string("html");
+                goto found_type;
+        case PCX_GAME_MESSAGE_FORMAT_PLAIN:
+                type = json_object_new_string("plain");
+                goto found_type;
+        }
+
+        assert(!"unknown message format type");
+
+found_type:
+        json_object_object_add(obj, "type", type);
+
+        struct json_object *s = json_object_new_string(message);
+        json_object_object_add(obj, "message", s);
+
+        struct pcx_server_event *event = pcx_calloc(sizeof *event);
+
+        event->target_person = user_num;
+        event->object = obj;
+
+        pcx_list_insert(game->events.prev, &event->link);
+
+        broadcast_event(game, event);
+}
+
+static void
+send_private_message_cb(int user_num,
+                        enum pcx_game_message_format format,
+                        const char *message,
+                        size_t n_buttons,
+                        const struct pcx_game_button *buttons,
+                        void *user_data)
+{
+        struct pcx_server_game *game = user_data;
+
+        assert(user_num >= 0 && user_num < game->n_people);
+
+        queue_message(game,
+                      user_num,
+                      format,
+                      message,
+                      n_buttons,
+                      buttons);
+}
+
+static void
+send_message_cb(enum pcx_game_message_format format,
+                const char *message,
+                size_t n_buttons,
+                const struct pcx_game_button *buttons,
+                void *user_data)
+{
+        struct pcx_server_game *game = user_data;
+
+        queue_message(game,
+                      -1, /* target */
+                      format,
+                      message,
+                      n_buttons,
+                      buttons);
+}
+
+static void
+game_over_cb(void *user_data)
+{
+        struct pcx_server_game *game = user_data;
+
+        pcx_log("game finished successfully");
+
+        game->is_finished = true;
+        free_game_game(game);
+}
+
+static const struct pcx_game_callbacks
+game_callbacks = {
+        .send_private_message = send_private_message_cb,
+        .send_message = send_message_cb,
+        .game_over = game_over_cb,
+};
+
+static void
+start_watch(struct pcx_server_connection *connection,
+            struct pcx_server_person *person,
+            int64_t first_event)
+{
+        unwatch_person(connection);
+
+        connection->watching_person = person;
+        pcx_list_insert(&person->watching_connections,
+                        &connection->person_link);
+
+        struct pcx_list *link = &person->game->events;
+
+        while (link->next != &person->game->events) {
+                const struct pcx_server_event *event =
+                        pcx_container_of(link->next,
+                                         struct pcx_server_event,
+                                         link);
+
+                if (event->target_person == -1 ||
+                    person->game->people + event->target_person == person) {
+                        if (first_event > 0)
+                                first_event--;
+                        else
+                                queue_response(connection, event->object);
+                }
+
+                link = link->next;
+        }
+}
+
+static void
+handle_join(struct pcx_server_connection *connection,
+            struct json_object *object)
+{
+        const char *player_name, *game_name, *room_name, *language_code;
+
+        if (!pcx_json_get(object,
+                          "name", json_type_string, &player_name,
+                          "game", json_type_string, &game_name,
+                          "room_name", json_type_string, &room_name,
+                          "language", json_type_string, &language_code,
+                          NULL)) {
+                queue_error_response(connection, "Invalid join request");
+                return;
+        }
+
+        const struct pcx_game *game_type;
+
+        for (unsigned i = 0; pcx_game_list[i]; i++) {
+                if (!strcmp(pcx_game_list[i]->name, game_name)) {
+                        game_type = pcx_game_list[i];
+                        goto found_game_type;
+                }
+        }
+
+        queue_error_response(connection, "Unknown game type");
+        return;
+
+found_game_type: (void) 0;
+
+        enum pcx_text_language language;
+
+        if (!pcx_text_lookup_language(language_code, &language)) {
+                queue_error_response(connection, "Unknown language code");
+                return;
+        }
+
+        struct pcx_server_game *game = add_game(connection->server,
+                                                game_type,
+                                                room_name,
+                                                language);
+        struct pcx_server_person *person = add_person(connection->server,
+                                                      player_name,
+                                                      game);
+
+        struct json_object *obj = json_object_new_object();
+
+        struct json_object *id = json_object_new_int64(person->id);
+        json_object_object_add(obj, "person_id", id);
 
         queue_response(connection, obj);
 
         json_object_put(obj);
 
-        connection->had_bad_input = true;
+        start_watch(connection,
+                    person,
+                    0 /* first_event */);
 }
 
 static void
-handle_request(struct pcx_server_connection *connection,
-               struct json_object *object,
-               bool *need_update)
+handle_watch(struct pcx_server_connection *connection,
+             struct json_object *object)
 {
-        /* Stub handler just queues the request as a response */
-        queue_response(connection, object);
+        struct pcx_server_person *person =
+                get_person_for_request(connection,
+                                       object);
 
-        *need_update = true;
+        if (person == NULL)
+                return;
+
+        int64_t first_event;
+
+        if (!pcx_json_get(object,
+                          "first_event", json_type_int, &first_event,
+                          NULL)) {
+                queue_error_response(connection, "Invalid watch request");
+                return;
+        }
+
+        start_watch(connection,
+                    person,
+                    first_event);
+}
+
+static void
+handle_start(struct pcx_server_connection *connection,
+             struct json_object *object)
+{
+        struct pcx_server_person *person =
+                get_person_for_request(connection,
+                                       object);
+
+        if (person == NULL)
+                return;
+
+        struct pcx_server_game *game = person->game;
+
+        if (game->is_finished || game->game) {
+                queue_error_response_text(connection,
+                                          game->language,
+                                          PCX_TEXT_STRING_GAME_ALREADY_STARTED);
+                return;
+        }
+
+        if (game->n_people < game->game_type->min_players) {
+                queue_error_response_textf(connection,
+                                           game->language,
+                                           PCX_TEXT_STRING_NEED_MIN_PLAYERS,
+                                           game->game_type->min_players);
+                return;
+        }
+
+        const struct pcx_game *game_type = game->game_type;
+        struct pcx_server *server = connection->server;
+        const char *names[PCX_GAME_MAX_PLAYERS];
+
+        pcx_log("game started with %i players", game->n_people);
+
+        for (int i = 0; i < game->n_people; i++)
+                names[i] = game->people[i].name;
+
+        game->game =
+                game_type->create_game_cb(server->config,
+                                          &game_callbacks,
+                                          game,
+                                          game->language,
+                                          game->n_people,
+                                          names);
+
+        queue_ok_response(connection, NULL);
+}
+
+struct request_handler {
+        const char *name;
+        void (* handler)(struct pcx_server_connection *connection,
+                         struct json_object *object);
+};
+
+static const struct request_handler
+request_handlers[] = {
+        { .name = "join", .handler = handle_join },
+        { .name = "watch", .handler = handle_watch },
+        { .name = "start", .handler = handle_start },
+};
+
+static void
+handle_request(struct pcx_server_connection *connection,
+               struct json_object *object)
+{
+        const char *name;
+
+        if (!pcx_json_get(object,
+                          "request", json_type_string, &name,
+                          NULL)) {
+                queue_error_response(connection, "Missing “request” parameter");
+                return;
+        }
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(request_handlers); i++) {
+                if (!strcmp(name, request_handlers[i].name)) {
+                        request_handlers[i].handler(connection,
+                                                    object);
+                        return;
+                }
+        }
+
+        queue_error_response(connection, "Unsupported request");
 }
 
 static void
 parse_json_objects(struct pcx_server_connection *connection,
                    size_t buf_size,
-                   const char *buf,
-                   bool *need_update)
+                   const char *buf)
 {
         while (true) {
                 if (!connection->partial_object) {
@@ -286,15 +912,22 @@ parse_json_objects(struct pcx_server_connection *connection,
                                 pcx_log("Invalid JSON received on %i",
                                         connection->sock);
                                 set_bad_input(connection);
-                                *need_update = true;
                         }
+                        break;
+                }
+
+                if (!json_object_is_type(object, json_type_object)) {
+                        pcx_log("Received JSON object that isn’t an object "
+                                "on %i",
+                                connection->sock);
+                        set_bad_input(connection);
                         break;
                 }
 
                 buf_size -= connection->tokener->char_offset;
                 buf += connection->tokener->char_offset;
 
-                handle_request(connection, object, need_update);
+                handle_request(connection, object);
 
                 json_object_put(object);
 
@@ -376,7 +1009,6 @@ connection_cb(struct pcx_main_context_source *source,
 {
         struct pcx_server_connection *connection = user_data;
         struct pcx_server *server = connection->server;
-        bool need_update = false;
 
         if ((flags & PCX_MAIN_CONTEXT_POLL_ERROR)) {
                 int value;
@@ -423,13 +1055,12 @@ connection_cb(struct pcx_main_context_source *source,
                                         connection->sock);
                                 set_bad_input(connection);
                         }
-                        need_update = true;
+                        queue_update_poll(connection);
                 } else {
                         if (!connection->had_bad_input) {
                                 parse_json_objects(connection,
                                                    got,
-                                                   server->read_buf,
-                                                   &need_update);
+                                                   server->read_buf);
                         }
                 }
         }
@@ -455,12 +1086,9 @@ connection_cb(struct pcx_main_context_source *source,
                                 connection->output_length - wrote);
                         connection->output_length -= wrote;
 
-                        need_update = true;
+                        queue_update_poll(connection);
                 }
         }
-
-        if (need_update)
-                update_poll(connection);
 }
 
 static void
@@ -639,6 +1267,7 @@ pcx_server_new(const struct pcx_config *config,
         server->address = pcx_strdup(server_config->address);
         server->abstract_address = server_config->abstract;
         pcx_list_init(&server->connections);
+        pcx_list_init(&server->games);
 
         if (!server_config->abstract)
                 delete_existing_socket(server_config->address);
@@ -671,10 +1300,21 @@ remove_connections(struct pcx_server *server)
         }
 }
 
+static void
+remove_games(struct pcx_server *server)
+{
+        struct pcx_server_game *game, *tmp;
+
+        pcx_list_for_each_safe(game, tmp, &server->games, link) {
+                remove_game(game);
+        }
+}
+
 void
 pcx_server_free(struct pcx_server *server)
 {
         remove_connections(server);
+        remove_games(server);
 
         if (server->server_source)
                 pcx_main_context_remove_source(server->server_source);
