@@ -30,12 +30,16 @@ pcx_text_pt_br[] = {
         "Informante",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Carta de amor",
+        [PCX_TEXT_STRING_NAME_ZOMBIE] =
+        "Dado Zumbi",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/golpe",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/informante",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/carta",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
+        "/zumbi",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Para qual jogo você quer ajuda?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -93,6 +97,18 @@ pcx_text_pt_br[] = {
         "/ajuda",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Obrigado pela mensagem. Agora você pode participar de um jogo em um grupo público.",
+        [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
+        "Por favor, escolha qual versão do jogo você quer.",
+        [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
+        "A versão escolhida foi: %s",
+        [PCX_TEXT_STRING_GAME_TYPE_ORIGINAL] =
+        "Original",
+        [PCX_TEXT_STRING_GAME_TYPE_INSPECTOR] =
+        "Inquisidor",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION] =
+        "Reforma",
+        [PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR] =
+        "Reforma + Inquisidor",
         [PCX_TEXT_STRING_COUP] =
         "Golpe",
         [PCX_TEXT_STRING_INCOME] =
@@ -101,16 +117,24 @@ pcx_text_pt_br[] = {
         "Ajuda externa",
         [PCX_TEXT_STRING_TAX] =
         "Imposto (Duque)",
+        [PCX_TEXT_STRING_CONVERT] =
+        "Converter",
+        [PCX_TEXT_STRING_EMBEZZLE] =
+        "Roubar",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "Assassinar (Assassino)",
         [PCX_TEXT_STRING_EXCHANGE] =
         "Trocar (Embaixador)",
+        [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
+        "Trocar (Inquisidor)",
+        [PCX_TEXT_STRING_INSPECT] =
+        "Interrogar (Inquisidor)",
         [PCX_TEXT_STRING_STEAL] =
         "Roubar (Capitão)",
         [PCX_TEXT_STRING_ACCEPT] =
         "Aceitar",
         [PCX_TEXT_STRING_CHALLENGE] =
-        "Desafio",
+        "Desafiar",
         [PCX_TEXT_STRING_BLOCK] =
         "Bloquear",
         [PCX_TEXT_STRING_1_COIN] =
@@ -131,14 +155,28 @@ pcx_text_pt_br[] = {
         "Qual carta você quer perder?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s desafiou e %s não tinha %s. Então %s perde uma carta.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
+        "%s desafiou e %s admitiu, então %s perde uma carta.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
         "%s desafiou, mas %s tinha %s. Então %s perdeu uma carta "
         "e %s recebe um substituto.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
+        "%s desafiou e %s mostrou %s, então %s troca suas cartas e "
+        "%s perde uma carta.",
         [PCX_TEXT_STRING_CHOOSING_REVEAL] =
-        "%s desafiou e agora %s está escolhendo qual cartão mortrar.",
+        "%s desafiou e agora %s está escolhendo qual cartão mostrar.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED] =
+        "%s desafiou e agora%s deverá escolher se admite ou não.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s não acredita que você tenha %s. \n"
         "Qual carta você quer mostrar para eles?",
+        [PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE] =
+        "%s acha que você tem %s.\n"
+        "Você vai admitir?",
+        [PCX_TEXT_STRING_CONCEDE] =
+        "Admitir",
+        [PCX_TEXT_STRING_SHOW_CARDS] =
+        "Mostrar cartas",
         [PCX_TEXT_STRING_NO_CHALLENGE_SO_BLOCK] =
         "Ninguém desafiou. A ação foi bloqueada.",
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
@@ -149,6 +187,12 @@ pcx_text_pt_br[] = {
         "Ou alguém quer reivindicar ter %s e bloquear?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
         "Alguém alega ter %s e quer bloquear?",
+        [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
+        "Ou alguém de outra lealdade alega ter %s "
+        "e bloquear?",
+        [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
+        "Alguém de outra lealdade alega ter %s "
+        "e bloquear?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
         "Ou %s, você quer reivindicar ter %s e bloquear?",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
@@ -163,10 +207,21 @@ pcx_text_pt_br[] = {
         "Ninguém bloqueado, %s leva as duas moedas",
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s recebe 2 moedas de ajuda externa.",
+        [PCX_TEXT_STRING_EMBEZZLING] =
+        "💼 %s afirma não ter o duque e rouba o dinheiro do "
+        "tesouro.",
+        [PCX_TEXT_STRING_REALLY_EMBEZZLING] =
+        "Ninguém desafiou, %s pega o dinheiro do tesouro.",
         [PCX_TEXT_STRING_REALLY_DOING_TAX] =
         "Ninguém desafiou, %s leva as 3 moedas.",
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s alega ter o duque e recebe 3 moedas do imposto",
+        [PCX_TEXT_STRING_WHO_TO_CONVERT] =
+        "%s, quem você quer converter?",
+        [PCX_TEXT_STRING_CONVERTS_SELF] =
+        "%s paga 1 moeda ao tesouro e se converte.",
+        [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
+        "%s paga 2 moedas ao tesouro e converte %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Ninguém bloqueou ou desafiou, %s assassina %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
@@ -179,6 +234,28 @@ pcx_text_pt_br[] = {
         "Ninguém desafiou, %s troca cartas.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
         "🔄 %s afirma ter o embaixador e quer trocar cartas.",
+        [PCX_TEXT_STRING_DOING_EXCHANGE_INSPECTOR] =
+        "🔄 %s afirma ter o inquisidor e quer trocar cartas.",
+        [PCX_TEXT_STRING_REALLY_DOING_INSPECT] =
+        "Ninguém desafiou, %s escolhe uma carta para mostrar a %s",
+        [PCX_TEXT_STRING_SELECT_TARGET_INSPECT] =
+        "%s, quem você quer interrogar?",
+        [PCX_TEXT_STRING_DOING_INSPECT] =
+        "🔍 %s afirma ter o inquisidor e quer interrogar %s",
+        [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
+        "Que cartas você quer mostrar a %s?",
+        [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
+        "%s está decidindo se você pode ficar com %s",
+        [PCX_TEXT_STRING_SHOWING_CARD] =
+        "%s mostra %s a você. Ele pode ficar com ele?",
+        [PCX_TEXT_STRING_YES] =
+        "Sim",
+        [PCX_TEXT_STRING_NO] =
+        "Não",
+        [PCX_TEXT_STRING_ALLOW_KEEP] =
+        "%s permitiu que %s ficasse com a carta que mostrou.",
+        [PCX_TEXT_STRING_DONT_ALLOW_KEEP] =
+        "%s fez com que %s trocasse a carta que mostrou.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Ninguém bloqueou ou desafiou, %s rouba de %s.",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
@@ -195,6 +272,8 @@ pcx_text_pt_br[] = {
         "Capitão",
         [PCX_TEXT_STRING_CHARACTER_NAME_AMBASSADOR] =
         "Embaixador",
+        [PCX_TEXT_STRING_CHARACTER_NAME_INSPECTOR] =
+        "Inquisidor",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_DUKE] =
         "o duque",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_ASSASSIN] =
@@ -205,6 +284,13 @@ pcx_text_pt_br[] = {
         "o capitão",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_AMBASSADOR] =
         "o embaixador",
+        [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
+        "o inquisidor",
+        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
+        "A corte foi reunida. Qualquer um pode ter todos como alvo "
+        "e não é possível converter.",
+        [PCX_TEXT_STRING_COINS_IN_TREASURY] =
+        "Tesouro: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
         "Motorista",
         [PCX_TEXT_STRING_ROLE_NAME_LOCKPICK] =
@@ -378,4 +464,68 @@ pcx_text_pt_br[] = {
         "💘 %p vence a rodada e ganha um ponto de afeto da princesa.",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
         "🏆 %p tem %i pontos de afeto e ganha o jogo!",
+        [PCX_TEXT_STRING_FIGHTERS_ARE] =
+        "Os jogadores na próxima luta são:\n"
+        "\n"
+        "%s\n"
+        "%s\n"
+        "\n"
+        "Eles já estão de dedos cruzados.",
+        [PCX_TEXT_STRING_POSSIBLE_ROLES] =
+        "Suas personagens são:",
+        [PCX_TEXT_STRING_POSSIBLE_ATTRIBUTES] =
+        "Seus atributos são:",
+        [PCX_TEXT_STRING_CHOOSE_ROLE] =
+        "Por favor, escolha uma personagem.",
+        [PCX_TEXT_STRING_CHOOSE_ATTRIBUTE] =
+        "Por favor, escolha um atributo.",
+        [PCX_TEXT_STRING_YOUR_FIGHTER_IS] =
+        "Obrigado. Quem vai lutar é:",
+        [PCX_TEXT_STRING_FIGHTERS_CHOSEN] =
+        "Os lutadores estão prontos! Eles são:",
+        [PCX_TEXT_STRING_NOW_ARGUE] =
+        "Agora devem discutir porque seu lutador ganharia em "
+        "uma luta até a morte. Agora!",
+        [PCX_TEXT_STRING_DONT_FORGET_TO_VOTE] =
+        "Não se esqueçam de votar! Os votos são:",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE] =
+        "A discussão terminou Os outrs jogadores agora podem votar "
+        "usando os botões abaixo ou esperar a discussão terminar.",
+        [PCX_TEXT_STRING_X_VOTED_Y] =
+        "%s votou em %s",
+        [PCX_TEXT_STRING_CURRENT_VOTES_ARE] =
+        "Os votos são:",
+        [PCX_TEXT_STRING_FIGHT_EQUAL_RESULT] =
+        "É um emparte! Agora será uma luta decisiva sem "
+        "atributos.",
+        [PCX_TEXT_STRING_FIGHT_WINNER_IS] =
+        "%s ganhou a luta! A pontuação é:",
+        [PCX_TEXT_STRING_STAYS_ON] =
+        "O primeiro jogador a atingir %i pontos ganha o jogo. "
+        "%s vai ficar para a próxima luta sem trocar de cartas.",
+        [PCX_TEXT_STRING_THROW] =
+        "Lançar dados",
+        [PCX_TEXT_STRING_STOP] =
+        "Parar",
+        [PCX_TEXT_STRING_STOP_SCORE] =
+        "%p parou e adicionou %i à sua pontuação.",
+        [PCX_TEXT_STRING_THROW_FIRST_DICE] =
+        "<b>%p</b>, é sua vez. Aperte o botão para lançar os dados.",
+        [PCX_TEXT_STRING_YOUR_DICE_ARE] =
+        "Seus dados são:",
+        [PCX_TEXT_STRING_THROWING_DICE] =
+        "Lançando dados…",
+        [PCX_TEXT_STRING_SCORE_SO_FAR] =
+        "Pontuação até agora:",
+        [PCX_TEXT_STRING_YOU_ARE_DEAD] =
+        "Você foi atingido muitas vezes e perdeu todos os seus pontos nesta "
+        "rodada!",
+        [PCX_TEXT_STRING_THROW_OR_STOP] =
+        "Você quer lançar os dados novamente ou quer parar agora?",
+        [PCX_TEXT_STRING_START_LAST_ROUND] =
+        "%p atingiu %i pontos, então essa será a última rodada",
+        [PCX_TEXT_STRING_WINS] =
+        "🏆 <b>%p</b> ganhou!",
+        [PCX_TEXT_STRING_FINAL_SCORES] =
+        "Pontuação final:",
 };
