@@ -82,5 +82,31 @@ pcx_zombie_help[] = {
         "finish one last turn. After that the person with the highest score "
         "wins.\n",
         [PCX_TEXT_LANGUAGE_PT_BR] =
-        "stub",
+        "<b>RESUMO DAS REGRAS:</b>\n"
+        "\n"
+        "Você é um zumbi e deseja comer o máximo possível de cérebros. "
+        "No seu turno, você irá jogar 3 dados, onde cada dado representa uma "
+        "pessoa. Uma jogada de dados pode resultar em uma das seguintes "
+        "situações:\n"
+        "\n"
+        "🧠: Você comeu o cérebro da pessoa\n"
+        "💥: A pessoa atirou em você\n"
+        "🐾: A pessoa escapou\n"
+        "\n"
+        "Depois de lançar os dados, você irá separar todos os cérebros🧠 e as espingardas💥. "
+        "Se você sofrer 3 tiros, você morre e perde todos os cérebros que "
+        "ganhou no turno. No entanto, você é quem escolher se continua a jogar  "
+        "ou não. Se escolher parar, todos os cérebros que você manteve são adicionados "
+        "à sua pontuação total.\n"
+        "\n"
+        "Se escolher jogar novamente, você irá pegar todos os dados de pés🐾, pegar mais dados "
+        "até obter 3, e lança-los como descrito na regra acima.\n"
+        "\n"
+        "Os dados têm 3 cores: verde🍏, amarelo💛 e vermelho🧨. No dado verde, "
+        "a probabilidade de aparecer um cérebro é maior. Nos dados vermelhos, a probabilidade de aparecer "
+        "uma espingarda é maior. No dado amarelo, as chances são as mesmas.\n"
+        "\n"
+        "Quando um jogador marcar 13 pontos, os outros jogadores poderão jogar "
+        "até terminar o turno. Por fim, a pessoa com maior pontuação "
+        "vence.\n",
 };
