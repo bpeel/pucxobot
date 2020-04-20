@@ -159,11 +159,18 @@ pcx_text_pt_br[] = {
         "Qual carta você quer perder?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s desafiou e %s não tinha %s. Então %s perde uma carta.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
+        "%s desafiou e %s admitiu, então %s perde uma carta.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
         "%s desafiou, mas %s tinha %s. Então %s perdeu uma carta "
         "e %s recebe um substituto.",
+        [PCX_TEXT_STRING_INVERTED_CHALLENGE_FAILED] =
+        "%s desafiou e %s mostrou %s, então %s troca suas cartas e "
+        "%s perde uma carta.",
         [PCX_TEXT_STRING_CHOOSING_REVEAL] =
         "%s desafiou e agora %s está escolhendo qual cartão mostrar.",
+        [PCX_TEXT_STRING_CHOOSING_REVEAL_INVERTED] =
+        "%s desafiou e agora%s deverá escolher se admite ou não.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s não acredita que você tenha %s. \n"
         "Qual carta você quer mostrar para eles?",
@@ -213,12 +220,12 @@ pcx_text_pt_br[] = {
         "Ninguém desafiou, %s leva as 3 moedas.",
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s alega ter o duque e recebe 3 moedas do imposto",
-        PCX_TEXT_STRING_WHO_TO_CONVERT] =
+        [PCX_TEXT_STRING_WHO_TO_CONVERT] =
         "%s, quem você quer converter?",
         [PCX_TEXT_STRING_CONVERTS_SELF] =
         "%s paga 1 moeda ao tesouro e se converte.",
         [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
-        "%s pays 2 coins to the treasury and converts %s.",
+        "%s paga 2 moedas ao tesouro e converte %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Ninguém bloqueou ou desafiou, %s assassina %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
