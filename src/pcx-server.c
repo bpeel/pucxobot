@@ -80,10 +80,12 @@ struct pcx_server_connection {
         struct pcx_list response_queue;
         /* How much data is in write_buf */
         size_t output_length;
-        /* How much of the first response has already been copied into
-         * write_buf
+        /* If we try to fill the buffer with a JSON object but there
+         * isn’t enough space, then this will hold a reference to the
+         * object so we can write more of it.
          */
-        size_t partial_response_written;
+        struct json_object *partially_written_object;
+        size_t partially_written_amount;
 
         uint8_t write_buf[1024];
 
@@ -151,6 +153,9 @@ remove_connection(struct pcx_server_connection *connection)
 {
         remove_responses(connection);
 
+        if (connection->partially_written_object)
+                json_object_put(connection->partially_written_object);
+
         if (connection->tokener)
                 json_tokener_free(connection->tokener);
         if (connection->source)
@@ -175,7 +180,8 @@ update_poll(struct pcx_server_connection *connection)
         if (!connection->write_finished &&
             (connection->read_finished || connection->had_bad_input) &&
             pcx_list_empty(&connection->response_queue) &&
-            connection->output_length == 0) {
+            connection->output_length == 0 &&
+            connection->partially_written_object == NULL) {
                 if (shutdown(connection->sock, SHUT_WR) == -1) {
                         remove_connection(connection);
                         return;
@@ -194,7 +200,8 @@ update_poll(struct pcx_server_connection *connection)
 
         if (!connection->write_finished) {
                 if (connection->output_length > 0 ||
-                    !pcx_list_empty(&connection->response_queue))
+                    !pcx_list_empty(&connection->response_queue) ||
+                    connection->partially_written_object != NULL)
                         flags |= PCX_MAIN_CONTEXT_POLL_OUT;
         }
 
@@ -215,25 +222,8 @@ queue_response(struct pcx_server_connection *connection,
 static void
 set_bad_input(struct pcx_server_connection *connection)
 {
-        struct pcx_server_response *partial_response = NULL;
-
-        /* If we are part way through sending a response then keep it */
-        if (connection->partial_response_written) {
-                partial_response =
-                        pcx_container_of(connection->response_queue.next,
-                                         struct pcx_server_response,
-                                         link);
-                pcx_list_remove(&partial_response->link);
-        }
-
         /* Remove all other responses */
         remove_responses(connection);
-
-        /* Add the first one back */
-        if (partial_response) {
-                pcx_list_insert(&connection->response_queue,
-                                &partial_response->link);
-        }
 
         json_object *str = json_object_new_string("Invalid request");
         json_object *obj = json_object_new_object();
@@ -313,6 +303,32 @@ parse_json_objects(struct pcx_server_connection *connection,
 static void
 fill_write_buf(struct pcx_server_connection *connection)
 {
+        if (connection->partially_written_object) {
+                struct json_object *obj = connection->partially_written_object;
+                const char *str = json_object_to_json_string(obj);
+                size_t len = strlen(str);
+                size_t to_write =
+                        MIN((sizeof connection->write_buf) -
+                            connection->output_length,
+                            len - connection->partially_written_amount);
+
+                memcpy(connection->write_buf +
+                       connection->output_length,
+                       str + connection->partially_written_amount,
+                       to_write);
+
+                connection->output_length += to_write;
+
+                if (to_write + connection->partially_written_amount >= len) {
+                        json_object_put(obj);
+                        connection->partially_written_object = NULL;
+                        connection->partially_written_amount = 0;
+                } else {
+                        connection->partially_written_amount += to_write;
+                        return;
+                }
+        }
+
         while (connection->output_length < sizeof connection->write_buf &&
                !pcx_list_empty(&connection->response_queue)) {
                 struct pcx_server_response *response =
@@ -320,26 +336,31 @@ fill_write_buf(struct pcx_server_connection *connection)
                                          struct pcx_server_response,
                                          link);
 
-                const char *str = json_object_to_json_string(response->object);
+                struct json_object *obj = json_object_get(response->object);
+
+                remove_response(response);
+
+                const char *str = json_object_to_json_string(obj);
                 size_t len = strlen(str);
                 size_t to_write =
                         MIN((sizeof connection->write_buf) -
                             connection->output_length,
-                            len - connection->partial_response_written);
+                            len);
 
                 memcpy(connection->write_buf +
                        connection->output_length,
-                       str + connection->partial_response_written,
+                       str,
                        to_write);
 
-                if (to_write + connection->partial_response_written >= len) {
-                        connection->partial_response_written = 0;
-                        remove_response(response);
-                } else {
-                        connection->partial_response_written += to_write;
-                }
-
                 connection->output_length += to_write;
+
+                if (to_write >= len) {
+                        json_object_put(obj);
+                } else {
+                        connection->partially_written_amount = to_write;
+                        connection->partially_written_object = obj;
+                        break;
+                }
         }
 }
 
