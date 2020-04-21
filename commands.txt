@@ -37,6 +37,7 @@ pt-br:
 golpe - Criar um jogo de Golpe
 informante - Criar um jogo de Informante
 carta - Criar um jogo de Carta de amor
+zumbi - Criar um jogo de Dado Zumbi
 entrar - Entrar um jogo existente ou criae um novo
 iniciar - Iniciar um jogo existente
 cancelar - Cancelar um jogo
