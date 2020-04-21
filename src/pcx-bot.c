@@ -1628,6 +1628,87 @@ set_updates_handle_options(struct pcx_bot *bot)
         json_object_put(obj);
 }
 
+static void
+add_command_description(struct pcx_bot *bot,
+                        struct json_object *commands,
+                        enum pcx_text_string command,
+                        enum pcx_text_string desc)
+{
+        struct json_object *obj = json_object_new_object();
+
+        const char *command_text = pcx_text_get(bot->config->language,
+                                                command);
+        if (command_text[0] == '/')
+                command_text++;
+
+        struct json_object *command_str =
+                json_object_new_string(command_text);
+
+        json_object_object_add(obj, "command", command_str);
+
+        struct json_object *desc_str =
+                json_object_new_string(pcx_text_get(bot->config->language,
+                                                    desc));
+        json_object_object_add(obj, "description", desc_str);
+
+        json_object_array_add(commands, obj);
+}
+
+static void
+queue_update_commands_request(struct pcx_bot *bot)
+{
+        struct json_object *commands = json_object_new_array();
+
+        for (unsigned i = 0; pcx_game_list[i]; i++) {
+                const struct pcx_game *game = pcx_game_list[i];
+
+                if (!can_run_game(bot, game))
+                        continue;
+
+                add_command_description(bot,
+                                        commands,
+                                        game->start_command,
+                                        game->start_command_description);
+        }
+
+        static const struct {
+                enum pcx_text_string command;
+                enum pcx_text_string desc;
+        } command_descs[] = {
+                {
+                        PCX_TEXT_STRING_JOIN_COMMAND,
+                        PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION
+                },
+                {
+                        PCX_TEXT_STRING_START_COMMAND,
+                        PCX_TEXT_STRING_START_COMMAND_DESCRIPTION
+                },
+                {
+                        PCX_TEXT_STRING_CANCEL_COMMAND,
+                        PCX_TEXT_STRING_CANCEL_COMMAND_DESCRIPTION
+                },
+                {
+                        PCX_TEXT_STRING_HELP_COMMAND,
+                        PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION
+                },
+        };
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(command_descs); i++) {
+                add_command_description(bot,
+                                        commands,
+                                        command_descs[i].command,
+                                        command_descs[i].desc);
+        }
+
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args, "commands", commands);
+
+        send_request(bot, "setMyCommands", args);
+
+        json_object_put(args);
+}
+
 struct pcx_bot *
 pcx_bot_new(struct pcx_curl_multi *pcurl,
             const struct pcx_config_bot *config)
@@ -1668,6 +1749,8 @@ pcx_bot_new(struct pcx_curl_multi *pcurl,
 
         bot->request_handle = curl_easy_init();
         bot->request_tokener = json_tokener_new();
+
+        queue_update_commands_request(bot);
 
         return bot;
 }

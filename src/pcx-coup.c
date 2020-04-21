@@ -2945,6 +2945,8 @@ pcx_coup_game = {
         .name = "coup",
         .name_string = PCX_TEXT_STRING_NAME_COUP,
         .start_command = PCX_TEXT_STRING_COUP_START_COMMAND,
+        .start_command_description =
+        PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION,
         .min_players = PCX_COUP_MIN_PLAYERS,
         .max_players = PCX_COUP_MAX_PLAYERS,
         .needs_private_messages = true,

@@ -28,11 +28,6 @@ will present you with a choice of the available games to play.
 
 You can also type `/help` to get a summary of the rules of the game.
 
-When you configure the bot with [@BotFather](https://t.me/BotFather),
-you can tell it what commands the bot can handle. There is a
-suggestion of what to type for each language in
-[commands.txt](commands.txt).
-
 If you just want to try the bot, you can join
 [this channel](https://t.me/bluffing). Otherwise you can add
 [@bluffingbot](https://t.me/bluffingbot) to your own group and play.

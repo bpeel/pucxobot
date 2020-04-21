@@ -36,14 +36,24 @@ pcx_text_esperanto[] = {
         "Zombiaj Kuboj",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/pucxo",
+        [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Puĉo",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/perfidulo",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Perfidulo",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/amletero",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Amletero",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Superbatalo",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zombio",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Zombiaj Kuboj",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Por kiu ludo vi volas helpon?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -96,12 +106,20 @@ pcx_text_esperanto[] = {
         "Necesas almenaŭ %i ludantoj por ludi.",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/aligxi",
+        [PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION] =
+        "Aligxi al jam kreita ludo",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/komenci",
+        [PCX_TEXT_STRING_START_COMMAND_DESCRIPTION] =
+        "Komenci jam kreitan ludon",
         [PCX_TEXT_STRING_CANCEL_COMMAND] =
         "/nuligi",
+        [PCX_TEXT_STRING_CANCEL_COMMAND_DESCRIPTION] =
+        "Nuligi jam kreitan ludon",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/helpo",
+        [PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION] =
+        "Montri resumon de la reguloj",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Dankon pro la mesaĝo. Vi povas nun aliĝi "
         "al ludo en publika grupo.",

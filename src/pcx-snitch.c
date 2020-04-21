@@ -897,6 +897,8 @@ pcx_snitch_game = {
         .name = "snitch",
         .name_string = PCX_TEXT_STRING_NAME_SNITCH,
         .start_command = PCX_TEXT_STRING_SNITCH_START_COMMAND,
+        .start_command_description =
+        PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION,
         .min_players = PCX_SNITCH_MIN_PLAYERS,
         .max_players = PCX_SNITCH_MAX_PLAYERS,
         .needs_private_messages = true,

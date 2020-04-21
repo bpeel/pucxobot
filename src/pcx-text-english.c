@@ -36,14 +36,24 @@ pcx_text_english[] = {
         "Zombie Dice",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/coup",
+        [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
+        "Create a game of Coup",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/snitch",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION] =
+        "Create a game of Snitch",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/letter",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
+        "Create a game of Love Letter",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superfight",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
+        "Create a game of Superfight",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zombie",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
+        "Create a game of Zombie Dice",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Which game do you want help for?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -96,12 +106,20 @@ pcx_text_english[] = {
         "At least %i players are needed to play.",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/join",
+        [PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION] =
+        "Join an existing game or create a new one",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/start",
+        [PCX_TEXT_STRING_START_COMMAND_DESCRIPTION] =
+        "Start an existing game",
         [PCX_TEXT_STRING_CANCEL_COMMAND] =
         "/cancel",
+        [PCX_TEXT_STRING_CANCEL_COMMAND_DESCRIPTION] =
+        "Cancel an existing game",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/help",
+        [PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION] =
+        "Show a summary of the rules",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Thanks for the message. You can now join a game in a public group.",
         [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =

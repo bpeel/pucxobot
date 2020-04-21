@@ -34,12 +34,20 @@ pcx_text_pt_br[] = {
         "Dado Zumbi",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/golpe",
+        [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
+        "Criar um jogo de Golpe",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/informante",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION] =
+        "Criar um jogo de Informante",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/carta",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
+        "Criar um jogo de Carta de amor",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zumbi",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
+        "Criar um jogo de Dado Zumbi",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Para qual jogo você quer ajuda?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -89,12 +97,20 @@ pcx_text_pt_br[] = {
         "Pelo menos %i jogadores são necessários para jogar.",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/entrar",
+        [PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION] =
+        "Entrar um jogo existente ou criae um novo",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/iniciar",
+        [PCX_TEXT_STRING_START_COMMAND_DESCRIPTION] =
+        "Iniciar um jogo existente",
         [PCX_TEXT_STRING_CANCEL_COMMAND] =
         "/cancelar",
+        [PCX_TEXT_STRING_CANCEL_COMMAND_DESCRIPTION] =
+        "Cancelar um jogo",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/ajuda",
+        [PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION] =
+        "Mostrar um resumo das regras",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Obrigado pela mensagem. Agora você pode participar de um jogo em um grupo público.",
         [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =

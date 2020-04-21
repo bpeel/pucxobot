@@ -1399,6 +1399,8 @@ pcx_love_game = {
         .name = "loveletter",
         .name_string = PCX_TEXT_STRING_NAME_LOVE,
         .start_command = PCX_TEXT_STRING_LOVE_START_COMMAND,
+        .start_command_description =
+        PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION,
         .min_players = PCX_LOVE_MIN_PLAYERS,
         .max_players = PCX_LOVE_MAX_PLAYERS,
         .needs_private_messages = true,

@@ -740,6 +740,8 @@ pcx_zombie_game = {
         .name = "zombie",
         .name_string = PCX_TEXT_STRING_NAME_ZOMBIE,
         .start_command = PCX_TEXT_STRING_ZOMBIE_START_COMMAND,
+        .start_command_description =
+        PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION,
         .min_players = PCX_ZOMBIE_MIN_PLAYERS,
         .max_players = PCX_ZOMBIE_MAX_PLAYERS,
         .needs_private_messages = false,

@@ -32,10 +32,16 @@ pcx_text_french[] = {
         "Love Letter",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/complot",
+        [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de Complot",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
         "/balance",
+        [PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de Balance",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/letter",
+        [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de Love Letter",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -88,12 +94,20 @@ pcx_text_french[] = {
         "Il faut au moins %i joeurs pour jouer",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/rejoindre",
+        [PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION] =
+        "Rejoindre un jeu déjà créé",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/commencer",
+        [PCX_TEXT_STRING_START_COMMAND_DESCRIPTION] =
+        "Commencer un jeu",
         [PCX_TEXT_STRING_CANCEL_COMMAND] =
         "/annuler",
+        [PCX_TEXT_STRING_CANCEL_COMMAND_DESCRIPTION] =
+        "Annuler un jeu",
         [PCX_TEXT_STRING_HELP_COMMAND] =
         "/aide",
+        [PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION] =
+        "Montrer un résumé des règles",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
         "Merci pour le message. Vous pouvez désormais rejoindre une partie "
         "dans un groupe public.",

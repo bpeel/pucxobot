@@ -54,6 +54,7 @@ struct pcx_game {
         const char *name;
         enum pcx_text_string name_string;
         enum pcx_text_string start_command;
+        enum pcx_text_string start_command_description;
         int min_players;
         int max_players;
         bool needs_private_messages;

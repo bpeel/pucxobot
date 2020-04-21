@@ -893,6 +893,8 @@ pcx_superfight_game = {
         .name = "superfight",
         .name_string = PCX_TEXT_STRING_NAME_SUPERFIGHT,
         .start_command = PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND,
+        .start_command_description =
+        PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION,
         .min_players = PCX_SUPERFIGHT_MIN_PLAYERS,
         .max_players = PCX_SUPERFIGHT_MAX_PLAYERS,
         .needs_private_messages = true,
