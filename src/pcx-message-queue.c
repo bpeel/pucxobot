@@ -115,32 +115,42 @@ chat_is_dead(struct pcx_message_queue_chat *chat,
         return message->time_sent + LIMIT_PERIOD <= now;
 }
 
+static struct pcx_message_queue_chat *
+find_chat(struct pcx_message_queue *mq,
+          int64_t chat_id)
+{
+        uint64_t now = pcx_main_context_get_monotonic_clock(NULL);
+        struct pcx_message_queue_chat *chat, *tmp, *found_chat = NULL;
+
+        pcx_list_for_each_safe(chat, tmp, &mq->chats, link) {
+                if (chat->chat_id == chat_id) {
+                        found_chat = chat;
+                } else {
+                        /* While we are looking, clean up any dead
+                         * chats to avoid keeping them around forever.
+                         */
+                        if (chat_is_dead(chat, now))
+                                remove_chat(chat);
+                }
+        }
+
+        return found_chat;
+}
+
 void
 pcx_message_queue_add(struct pcx_message_queue *mq,
                       int64_t chat_id,
                       struct json_object *args)
 {
-        struct pcx_message_queue_chat *chat, *tmp;
-        uint64_t now = pcx_main_context_get_monotonic_clock(NULL);
+        struct pcx_message_queue_chat *chat = find_chat(mq, chat_id);
 
-        pcx_list_for_each_safe(chat, tmp, &mq->chats, link) {
-                if (chat->chat_id == chat_id)
-                        goto found_chat;
-
-                /* If the chat is empty then we can remove it in order
-                 * to avoid keeping dead chats around forever.
-                 */
-                if (chat_is_dead(chat, now))
-                        remove_chat(chat);
+        if (chat == NULL) {
+                chat = pcx_calloc(sizeof *chat);
+                chat->chat_id = chat_id;
+                pcx_list_init(&chat->queue);
+                pcx_list_init(&chat->recent_sent_messages);
+                pcx_list_insert(&mq->chats, &chat->link);
         }
-
-        chat = pcx_calloc(sizeof *chat);
-        chat->chat_id = chat_id;
-        pcx_list_init(&chat->queue);
-        pcx_list_init(&chat->recent_sent_messages);
-        pcx_list_insert(&mq->chats, &chat->link);
-
-found_chat: (void) 0;
 
         struct pcx_message_queue_message *message = pcx_calloc(sizeof *message);
 
