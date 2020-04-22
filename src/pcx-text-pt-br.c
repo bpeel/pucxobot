@@ -533,6 +533,8 @@ pcx_text_pt_br[] = {
         "Lançando dados…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Pontuação até agora:",
+        [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
+        "Dados na caixa:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
         "Você foi atingido muitas vezes e perdeu todos os seus pontos nesta "
         "rodada!",

@@ -557,6 +557,8 @@ pcx_text_esperanto[] = {
         "Ĵetas kubojn…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Poentoj ĝis nun:",
+        [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
+        "Ĵetkuboj en la skatolo:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
         "La homoj pafis vin tro da fojoj kaj vi perdas ĉiujn viajn poentojn de "
         "ĉi tiu vico!",

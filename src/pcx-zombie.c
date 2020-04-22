@@ -528,8 +528,7 @@ add_score_so_far(struct pcx_zombie *zombie,
                                  pcx_text_get(zombie->language,
                                               PCX_TEXT_STRING_SCORE_SO_FAR));
         pcx_buffer_append_printf(buf,
-                                 " %s %i %s %i\n"
-                                 "\n",
+                                 " %s %i %s %i\n",
                                  face_symbols[PCX_ZOMBIE_FACE_BRAIN],
                                  zombie->n_brains,
                                  face_symbols[PCX_ZOMBIE_FACE_SHOTGUN],
@@ -558,6 +557,25 @@ add_dice(struct pcx_zombie *zombie,
 }
 
 static void
+add_remaining_dice_in_box(struct pcx_zombie *zombie,
+                          struct pcx_buffer *buf)
+{
+        const char *note =
+                pcx_text_get(zombie->language,
+                             PCX_TEXT_STRING_REMAINING_DICE_IN_BOX);
+        pcx_buffer_append_string(buf, note);
+
+        for (int i = 0; i < PCX_ZOMBIE_N_DICE; i++) {
+                pcx_buffer_append_printf(buf,
+                                         " %s%i",
+                                         die_info[i].symbol,
+                                         zombie->box.dice_count[i]);
+        }
+
+        pcx_buffer_append_string(buf, "\n");
+}
+
+static void
 drama_cb(struct pcx_main_context_source *source,
          void *user_data)
 {
@@ -571,6 +589,12 @@ drama_cb(struct pcx_main_context_source *source,
         pcx_buffer_append_string(&buf, "\n");
 
         add_score_so_far(zombie, &buf);
+
+        pcx_buffer_append_string(&buf, "\n");
+
+        add_remaining_dice_in_box(zombie, &buf);
+
+        pcx_buffer_append_string(&buf, "\n");
 
         enum pcx_text_string note;
         int n_buttons;

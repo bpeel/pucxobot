@@ -542,6 +542,8 @@ pcx_text_english[] = {
         "Throwing dice…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Score so far:",
+        [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
+        "Dice in box:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
         "You got shot too many times and lose all of your points from this "
         "turn!",
