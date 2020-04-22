@@ -141,7 +141,7 @@ die_info[PCX_ZOMBIE_N_DICE] = {
 
 static const char *
 face_symbols[PCX_ZOMBIE_N_FACES] = {
-        [PCX_ZOMBIE_FACE_FEET] = "🐾",
+        [PCX_ZOMBIE_FACE_FEET] = "👣",
         [PCX_ZOMBIE_FACE_BRAIN] = "🧠",
         [PCX_ZOMBIE_FACE_SHOTGUN] = "💥",
 };
