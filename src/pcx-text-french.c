@@ -30,6 +30,8 @@ pcx_text_french[] = {
         "Balance",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_ZOMBIE] =
+        "Zombie Dice",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
         "/complot",
         [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
@@ -42,6 +44,10 @@ pcx_text_french[] = {
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Créer un jeu de Love Letter",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
+        "/zombie",
+        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de Zombie Dice",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -480,4 +486,31 @@ pcx_text_french[] = {
         "💘 %p remporte la manche et gagne de l’affection de la princesse",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
         "🏆 %p a %i points d’affection et remporte la partie !",
+        [PCX_TEXT_STRING_THROW] =
+        "Lancer les dés",
+        [PCX_TEXT_STRING_STOP] =
+        "Arrêter",
+        [PCX_TEXT_STRING_STOP_SCORE] =
+        "%p arrête et ajoute %i à son score.",
+        [PCX_TEXT_STRING_THROW_FIRST_DICE] =
+        "<b>%p</b>, c’est à vous, appuyez sur le bouton pour lancer les dés.",
+        [PCX_TEXT_STRING_YOUR_DICE_ARE] =
+        "Vos dés sont:",
+        [PCX_TEXT_STRING_THROWING_DICE] =
+        "Vous lancez les dés…",
+        [PCX_TEXT_STRING_SCORE_SO_FAR] =
+        "Scores jusqu’ici:",
+        [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
+        "Dés dans la boîte:",
+        [PCX_TEXT_STRING_YOU_ARE_DEAD] =
+        "Vous vous êtes fait tirer dessus trop de fois et vous perdez tous "
+        "vos points de ce tour !",
+        [PCX_TEXT_STRING_THROW_OR_STOP] =
+        "Voulez-vous encore lancer les dés ou arretez maintenent ?",
+        [PCX_TEXT_STRING_START_LAST_ROUND] =
+        "%p a atteint %i points donc ce sera la dernière manche.",
+        [PCX_TEXT_STRING_WINS] =
+        "🏆 <b>%p</b> remporte la partie !",
+        [PCX_TEXT_STRING_FINAL_SCORES] =
+        "Les scores finals sont :",
 };
