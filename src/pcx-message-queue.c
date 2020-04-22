@@ -34,6 +34,10 @@
 struct pcx_message_queue_message {
         struct pcx_list link;
         struct json_object *args;
+        /* After the message is sent, args will be set to NULL and
+         * this will be the time it was sent.
+         */
+        uint64_t time_sent;
 };
 
 struct pcx_message_queue_chat {
@@ -43,11 +47,9 @@ struct pcx_message_queue_chat {
         /* Queue of pcx_message_queue_messages for this chat */
         struct pcx_list queue;
 
-        /* Timestamp of the first message sent in the last one-minute
-         * period.
-         */
-        uint64_t period_start;
-        int n_messages_in_period;
+        int recent_sent_messages_length;
+        /* Queue of messages that have been sent in the last minute */
+        struct pcx_list recent_sent_messages;
 };
 
 struct pcx_message_queue {
@@ -57,7 +59,8 @@ struct pcx_message_queue {
 static void
 remove_message(struct pcx_message_queue_message *message)
 {
-        json_object_put(message->args);
+        if (message->args)
+                json_object_put(message->args);
         pcx_list_remove(&message->link);
         pcx_free(message);
 }
@@ -68,6 +71,12 @@ remove_chat(struct pcx_message_queue_chat *chat)
         struct pcx_message_queue_message *message, *tmp;
 
         pcx_list_for_each_safe(message, tmp, &chat->queue, link) {
+                remove_message(message);
+        }
+
+        pcx_list_for_each_safe(message, tmp,
+                               &chat->recent_sent_messages,
+                               link) {
                 remove_message(message);
         }
 
@@ -85,6 +94,27 @@ pcx_message_queue_new(void)
         return mq;
 }
 
+static bool
+chat_is_dead(struct pcx_message_queue_chat *chat,
+             uint64_t now)
+{
+        if (!pcx_list_empty(&chat->queue))
+                return false;
+
+        if (chat->recent_sent_messages_length < 1)
+                return true;
+
+        /* Check if the last message sent was longer than the
+         * period
+         */
+        struct pcx_message_queue_message *message =
+                pcx_container_of(chat->recent_sent_messages.prev,
+                                 struct pcx_message_queue_message,
+                                 link);
+
+        return message->time_sent + LIMIT_PERIOD <= now;
+}
+
 void
 pcx_message_queue_add(struct pcx_message_queue *mq,
                       int64_t chat_id,
@@ -100,14 +130,14 @@ pcx_message_queue_add(struct pcx_message_queue *mq,
                 /* If the chat is empty then we can remove it in order
                  * to avoid keeping dead chats around forever.
                  */
-                if (now - chat->period_start >= LIMIT_PERIOD &&
-                    pcx_list_empty(&chat->queue))
+                if (chat_is_dead(chat, now))
                         remove_chat(chat);
         }
 
         chat = pcx_calloc(sizeof *chat);
         chat->chat_id = chat_id;
         pcx_list_init(&chat->queue);
+        pcx_list_init(&chat->recent_sent_messages);
         pcx_list_insert(&mq->chats, &chat->link);
 
 found_chat: (void) 0;
@@ -119,18 +149,41 @@ found_chat: (void) 0;
 }
 
 static struct json_object *
-unqueue_message(struct pcx_message_queue_chat *chat)
+unqueue_message(struct pcx_message_queue_chat *chat,
+                uint64_t now)
 {
         struct pcx_message_queue_message *message =
                 pcx_container_of(chat->queue.next,
                                  struct pcx_message_queue_message,
                                  link);
 
-        struct json_object *args = json_object_get(message->args);
+        struct json_object *args = message->args;
 
-        remove_message(message);
+        message->args = NULL;
+        message->time_sent = now;
+        pcx_list_remove(&message->link);
+        pcx_list_insert(chat->recent_sent_messages.prev, &message->link);
+        chat->recent_sent_messages_length++;
 
         return args;
+}
+
+static void
+update_recent_messages(struct pcx_message_queue_chat *chat,
+                       uint64_t now)
+{
+        struct pcx_message_queue_message *message, *tmp;
+
+        /* Remove any messages that are older than the period */
+        pcx_list_for_each_safe(message, tmp,
+                               &chat->recent_sent_messages,
+                               link) {
+                if (message->time_sent + LIMIT_PERIOD > now)
+                        break;
+
+                remove_message(message);
+                chat->recent_sent_messages_length--;
+        }
 }
 
 struct json_object *
@@ -148,23 +201,18 @@ pcx_message_queue_get(struct pcx_message_queue *mq,
                 if (pcx_list_empty(&chat->queue))
                         continue;
 
-                if (chat->n_messages_in_period < LIMIT_AMOUNT ||
-                    now - chat->period_start >= LIMIT_PERIOD) {
-                        struct json_object *args = unqueue_message(chat);
+                update_recent_messages(chat, now);
 
-                        if (chat->n_messages_in_period <= 0 ||
-                            now - chat->period_start >= LIMIT_PERIOD) {
-                                chat->period_start = now;
-                                chat->n_messages_in_period = 1;
-                        } else {
-                                chat->n_messages_in_period++;
-                        }
+                if (chat->recent_sent_messages_length < LIMIT_AMOUNT)
+                        return unqueue_message(chat, now);
 
-                        return args;
-                }
+                struct pcx_message_queue_message *message =
+                        pcx_container_of(chat->recent_sent_messages.next,
+                                         struct pcx_message_queue_message,
+                                         link);
 
                 uint64_t this_next_send_time =
-                        chat->period_start + LIMIT_PERIOD;
+                        message->time_sent + LIMIT_PERIOD;
 
                 if (this_next_send_time < next_send_time)
                         next_send_time = this_next_send_time;
