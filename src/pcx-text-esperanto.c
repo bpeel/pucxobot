@@ -557,6 +557,10 @@ pcx_text_esperanto[] = {
         "Ĵetas kubojn…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Poentoj ĝis nun:",
+        [PCX_TEXT_STRING_DICE_IN_HAND] =
+        "En via mano:",
+        [PCX_TEXT_STRING_NO_DICE_IN_HAND] =
+        "nenio",
         [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
         "Ĵetkuboj en la skatolo:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =

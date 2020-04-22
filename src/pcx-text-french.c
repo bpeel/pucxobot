@@ -500,6 +500,10 @@ pcx_text_french[] = {
         "Vous lancez les dés…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Scores jusqu’ici:",
+        [PCX_TEXT_STRING_DICE_IN_HAND] =
+        "Dans votre main :",
+        [PCX_TEXT_STRING_NO_DICE_IN_HAND] =
+        "rien",
         [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
         "Dés dans la boîte:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =

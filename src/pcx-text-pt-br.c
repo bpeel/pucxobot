@@ -533,6 +533,10 @@ pcx_text_pt_br[] = {
         "Lançando dados…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
         "Pontuação até agora:",
+        [PCX_TEXT_STRING_DICE_IN_HAND] =
+        "Na sua mão:",
+        [PCX_TEXT_STRING_NO_DICE_IN_HAND] =
+        "nada",
         [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
         "Dados na caixa:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =

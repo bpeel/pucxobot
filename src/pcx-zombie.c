@@ -557,6 +557,38 @@ add_dice(struct pcx_zombie *zombie,
 }
 
 static void
+add_dice_in_hand(struct pcx_zombie *zombie,
+                 struct pcx_buffer *buf)
+{
+        const char *note =
+                pcx_text_get(zombie->language,
+                             PCX_TEXT_STRING_DICE_IN_HAND);
+        pcx_buffer_append_string(buf, note);
+
+        bool had_die = false;
+
+        pcx_buffer_append_string(buf, " ");
+
+        for (int i = 0; i < PCX_ZOMBIE_N_DICE; i++) {
+                if (zombie->feet_thrown.dice_count[i] == 0)
+                        continue;
+
+                for (int j = 0; j < zombie->feet_thrown.dice_count[i]; j++)
+                        pcx_buffer_append_string(buf, die_info[i].symbol);
+
+                had_die = true;
+        }
+
+        if (!had_die) {
+                note = pcx_text_get(zombie->language,
+                                    PCX_TEXT_STRING_NO_DICE_IN_HAND);
+                pcx_buffer_append_string(buf, note);
+        }
+
+        pcx_buffer_append_string(buf, "\n");
+}
+
+static void
 add_remaining_dice_in_box(struct pcx_zombie *zombie,
                           struct pcx_buffer *buf)
 {
@@ -592,6 +624,7 @@ drama_cb(struct pcx_main_context_source *source,
 
         pcx_buffer_append_string(&buf, "\n");
 
+        add_dice_in_hand(zombie, &buf);
         add_remaining_dice_in_box(zombie, &buf);
 
         pcx_buffer_append_string(&buf, "\n");
