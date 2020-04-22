@@ -35,6 +35,7 @@
 #include "pcx-config.h"
 #include "pcx-buffer.h"
 #include "pcx-curl-multi.h"
+#include "pcx-message-queue.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
 #define IN_GAME_TIMEOUT (GAME_TIMEOUT * 2)
@@ -78,6 +79,12 @@ struct pcx_bot {
         struct pcx_main_context_source *start_request_source;
         struct pcx_list queued_requests;
         struct json_tokener *request_tokener;
+
+        /* Messages are stored in a separate queue so that we can
+         * rate-limit them per chat.
+         */
+        struct pcx_message_queue *message_queue;
+        struct pcx_main_context_source *message_delay_source;
 
         struct pcx_buffer known_ids;
 };
@@ -314,12 +321,80 @@ start_request_cb(struct pcx_main_context_source *source,
 }
 
 static void
+send_request_no_start(struct pcx_bot *bot,
+                      const char *method,
+                      struct json_object *args)
+{
+        struct request *request = pcx_alloc(sizeof *request);
+
+        request->args = json_object_get(args);
+        request->method = pcx_strdup(method);
+
+        pcx_list_insert(bot->queued_requests.prev, &request->link);
+}
+
+static void
+send_delay_cb(struct pcx_main_context_source *source,
+              void *user_data)
+{
+        struct pcx_bot *bot = user_data;
+
+        bot->message_delay_source = NULL;
+
+        maybe_start_request(bot);
+}
+
+static void
+start_message_delay(struct pcx_bot *bot,
+                    uint64_t send_delay)
+{
+        assert(bot->message_delay_source == NULL);
+
+        bot->message_delay_source =
+                pcx_main_context_add_timeout(NULL,
+                                             send_delay,
+                                             send_delay_cb,
+                                             bot);
+}
+
+static void
+remove_message_delay_source(struct pcx_bot *bot)
+{
+        if (bot->message_delay_source == NULL)
+                return;
+
+        pcx_main_context_remove_source(bot->message_delay_source);
+        bot->message_delay_source = NULL;
+}
+
+static void
 maybe_start_request(struct pcx_bot *bot)
 {
         if (bot->request_handle_busy ||
-            bot->start_request_source ||
-            pcx_list_empty(&bot->queued_requests))
+            bot->start_request_source)
                 return;
+
+        remove_message_delay_source(bot);
+
+        if (pcx_list_empty(&bot->queued_requests)) {
+                struct json_object *args;
+                bool has_delayed_message;
+                uint64_t send_delay;
+
+                args = pcx_message_queue_get(bot->message_queue,
+                                             &has_delayed_message,
+                                             &send_delay);
+
+                if (args) {
+                        send_request_no_start(bot, "sendMessage", args);
+                        json_object_put(args);
+                } else {
+                        if (has_delayed_message)
+                                start_message_delay(bot, send_delay);
+
+                        return;
+                }
+        }
 
         bot->start_request_source =
                 pcx_main_context_add_timeout(NULL,
@@ -333,12 +408,7 @@ send_request(struct pcx_bot *bot,
              const char *method,
              struct json_object *args)
 {
-        struct request *request = pcx_alloc(sizeof *request);
-
-        request->args = json_object_get(args);
-        request->method = pcx_strdup(method);
-
-        pcx_list_insert(bot->queued_requests.prev, &request->link);
+        send_request_no_start(bot, method, args);
 
         maybe_start_request(bot);
 }
@@ -404,9 +474,13 @@ send_message_full(struct pcx_bot *bot,
                 json_object_object_add(args, "reply_markup", reply_markup);
         }
 
-        send_request(bot, "sendMessage", args);
+        pcx_message_queue_add(bot->message_queue,
+                              chat_id,
+                              args);
 
         json_object_put(args);
+
+        maybe_start_request(bot);
 }
 
 static void
@@ -1718,6 +1792,8 @@ pcx_bot_new(struct pcx_curl_multi *pcurl,
         pcx_list_init(&bot->queued_requests);
         pcx_list_init(&bot->games);
 
+        bot->message_queue = pcx_message_queue_new();
+
         pcx_buffer_init(&bot->known_ids);
 
         bot->config = config;
@@ -1799,6 +1875,9 @@ pcx_bot_free(struct pcx_bot *bot)
         }
 
         free_requests(bot);
+
+        pcx_message_queue_free(bot->message_queue);
+        remove_message_delay_source(bot);
 
         curl_slist_free_all(bot->content_type_headers);
 
