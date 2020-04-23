@@ -222,6 +222,7 @@ load_config_func(enum pcx_key_value_event event,
                 } else if (!strcmp(value, "server")) {
                         data->server = pcx_calloc(sizeof *data->server);
                         data->server->language = PCX_TEXT_LANGUAGE_ESPERANTO;
+                        data->server->abstract = true;
                         pcx_list_insert(data->config->servers.prev,
                                         &data->server->link);
                         data->bot = NULL;
@@ -291,14 +292,8 @@ validate_server(struct pcx_config_server *server,
                 const char *filename,
                 struct pcx_error **error)
 {
-        if (server->address == NULL) {
-                pcx_set_error(error,
-                              &pcx_config_error,
-                              PCX_CONFIG_ERROR_IO,
-                              "%s: missing address option",
-                              filename);
-                return false;
-        }
+        if (server->address == NULL)
+                server->address = pcx_strdup("/tmp/pucxobot-json-server");
 
         return true;
 }
