@@ -70,6 +70,7 @@ enum option_type {
         OPTION_TYPE_STRING,
         OPTION_TYPE_INT,
         OPTION_TYPE_LANGUAGE_CODE,
+        OPTION_TYPE_BOOL,
 };
 
 struct option {
@@ -158,6 +159,19 @@ set_option(struct load_config_data *data,
                 if (errno || *tail) {
                         load_config_error(data,
                                           "invalid value for %s",
+                                          option->key);
+                }
+                break;
+        }
+        case OPTION_TYPE_BOOL: {
+                bool *ptr = (bool *) ((uint8_t *) config_item + option->offset);
+                if (!strcmp(value, "yes") || !strcmp(value, "true")) {
+                        *ptr = true;
+                } else if (!strcmp(value, "no") || !strcmp(value, "false")) {
+                        *ptr = false;
+                } else {
+                        load_config_error(data,
+                                          "invalid boolean value for %s",
                                           option->key);
                 }
                 break;
