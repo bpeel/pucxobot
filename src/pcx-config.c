@@ -104,6 +104,7 @@ server_options[] = {
         }
         OPTION(address, STRING),
         OPTION(language, LANGUAGE_CODE),
+        OPTION(abstract, BOOL),
 #undef OPTION
 };
 

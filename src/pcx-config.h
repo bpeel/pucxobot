@@ -42,6 +42,10 @@ struct pcx_config_server {
         struct pcx_list link;
         char *address;
         enum pcx_text_language language;
+        /* If true then the server will attempt to bind the address in
+         * the abstract namespace using the Linux extension.
+         */
+        bool abstract;
 };
 
 struct pcx_config {

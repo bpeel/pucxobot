@@ -95,6 +95,7 @@ struct pcx_server_connection {
 struct pcx_server {
         const struct pcx_config *config;
 
+        bool abstract_address;
         char *address;
 
         struct pcx_main_context_source *server_source;
@@ -510,6 +511,31 @@ delete_existing_socket(const char *address)
         unlink(address);
 }
 
+static void
+create_address(struct pcx_server *server,
+               size_t *address_size_out,
+               struct sockaddr_un **addr_out)
+{
+        size_t address_size = (offsetof(struct sockaddr_un, sun_path) +
+                               strlen(server->address));
+
+        if (server->abstract_address)
+                address_size++;
+
+        struct sockaddr_un *addr = pcx_alloc(address_size + 1);
+        addr->sun_family = AF_LOCAL;
+
+        if (server->abstract_address) {
+                addr->sun_path[0] = '\0';
+                strcpy(addr->sun_path + 1, server->address);
+        } else {
+                strcpy(addr->sun_path, server->address);
+        }
+
+        *address_size_out = address_size;
+        *addr_out = addr;
+}
+
 static bool
 create_socket(struct pcx_server *server,
               struct pcx_error **error)
@@ -528,12 +554,10 @@ create_socket(struct pcx_server *server,
         if (!set_nonblock(server->sock, error))
                 return false;
 
-        size_t address_size = (offsetof(struct sockaddr_un, sun_path) +
-                               strlen(server->address));
+        size_t address_size;
+        struct sockaddr_un *addr;
 
-        struct sockaddr_un *addr = pcx_alloc(address_size + 1);
-        addr->sun_family = AF_LOCAL;
-        strcpy(addr->sun_path, server->address);
+        create_address(server, &address_size, &addr);
 
         int ret;
 
@@ -576,9 +600,11 @@ pcx_server_new(const struct pcx_config *config,
         server->config = config;
         server->sock = -1;
         server->address = pcx_strdup(server_config->address);
+        server->abstract_address = server_config->abstract;
         pcx_list_init(&server->connections);
 
-        delete_existing_socket(server_config->address);
+        if (!server_config->abstract)
+                delete_existing_socket(server_config->address);
 
         if (!create_socket(server, error))
                 goto error;
@@ -619,7 +645,8 @@ pcx_server_free(struct pcx_server *server)
         if (server->sock != -1)
                 close(server->sock);
 
-        if (server->socket_bound) {
+        if (server->socket_bound &&
+            !server->abstract_address) {
                 /* Try to clean up the local socket file. It doesn’t
                  * really matter if this fails.
                  */
