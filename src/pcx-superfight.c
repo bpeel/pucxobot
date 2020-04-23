@@ -83,7 +83,8 @@ static void
 set_vote_timeout(struct pcx_superfight *superfight);
 
 static void
-start_argument(struct pcx_superfight *superfight);
+start_argument(struct pcx_superfight *superfight,
+               const struct pcx_superfight_fighter *fighter);
 
 static void
 append_buffer_string(struct pcx_superfight *superfight,
@@ -335,7 +336,7 @@ get_card_buttons(struct pcx_superfight *superfight,
 }
 
 static void
-append_fighter(struct pcx_superfight_fighter *fighter,
+append_fighter(const struct pcx_superfight_fighter *fighter,
                struct pcx_buffer *buf)
 {
         pcx_buffer_append_string(buf, fighter->chosen_role);
@@ -534,7 +535,8 @@ all_roles_chosen(struct pcx_superfight *superfight)
 }
 
 static void
-start_argument(struct pcx_superfight *superfight)
+start_argument(struct pcx_superfight *superfight,
+               const struct pcx_superfight_fighter *fighters)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
@@ -543,8 +545,7 @@ start_argument(struct pcx_superfight *superfight)
         pcx_buffer_append_string(&buf, "\n\n");
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
-                struct pcx_superfight_fighter *fighter =
-                        superfight->fighters + i;
+                const struct pcx_superfight_fighter *fighter = fighters + i;
                 const char *name =
                         superfight->players[fighter->player_num].name;
                 pcx_buffer_append_printf(&buf, "🔸 %s:\n\n", name);
@@ -620,7 +621,7 @@ choose_attribute(struct pcx_superfight *superfight,
         send_chosen_fighter(superfight, fighter);
 
         if (all_roles_chosen(superfight))
-            start_argument(superfight);
+                start_argument(superfight, superfight->fighters);
 }
 
 static int
@@ -679,9 +680,13 @@ start_next_fight(struct pcx_superfight *superfight,
 static void
 start_decider_fight(struct pcx_superfight *superfight)
 {
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
-                struct pcx_superfight_fighter *fighter =
-                        superfight->fighters + i;
+        struct pcx_superfight_fighter
+                fighters[PCX_N_ELEMENTS(superfight->fighters)];
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(fighters); i++) {
+                struct pcx_superfight_fighter *fighter = fighters + i;
+
+                *fighter = superfight->fighters[i];
 
                 fighter->chosen_role =
                         pcx_superfight_deck_draw_card(superfight->roles);
@@ -689,7 +694,7 @@ start_decider_fight(struct pcx_superfight *superfight)
                 fighter->forced_attribute = NULL;
         }
 
-        start_argument(superfight);
+        start_argument(superfight, fighters);
 }
 
 static void
