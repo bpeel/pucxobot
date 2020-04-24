@@ -57,7 +57,7 @@ pcx_zombie_help[] = {
         "\n"
         "You are a zombie and you want to eat as many brains as possible. "
         "During your turn you will throw 3 dice with each die representing a "
-        "person. A dice can throw can result in one of these three things "
+        "person. A dice throw can result in one of these three things "
         "happening:\n"
         "\n"
         "🧠: You ate the person’s brain\n"
