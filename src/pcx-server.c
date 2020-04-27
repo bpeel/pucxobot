@@ -39,6 +39,7 @@
 #include "pcx-list.h"
 #include "pcx-config.h"
 #include "pcx-buffer.h"
+#include "pcx-log.h"
 
 struct pcx_error_domain
 pcx_server_error;
@@ -282,6 +283,8 @@ parse_json_objects(struct pcx_server_connection *connection,
                         if (error == json_tokener_continue) {
                                 connection->partial_object = true;
                         } else {
+                                pcx_log("Invalid JSON received on %i",
+                                        connection->sock);
                                 set_bad_input(connection);
                                 *need_update = true;
                         }
@@ -376,6 +379,24 @@ connection_cb(struct pcx_main_context_source *source,
         bool need_update = false;
 
         if ((flags & PCX_MAIN_CONTEXT_POLL_ERROR)) {
+                int value;
+                unsigned int value_len = sizeof (value);
+
+                if (getsockopt(connection->sock,
+                               SOL_SOCKET,
+                               SO_ERROR,
+                               &value,
+                               &value_len) == -1 ||
+                    value_len != sizeof (value) ||
+                    value == 0) {
+                        pcx_log("Unknown error on socket for %i",
+                                connection->sock);
+                } else {
+                        pcx_log("Error on socket for %i: %s",
+                                connection->sock,
+                                strerror(value));
+                }
+
                 remove_connection (connection);
                 return;
         }
@@ -387,14 +408,21 @@ connection_cb(struct pcx_main_context_source *source,
 
                 if (got == -1) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN) {
+                                pcx_log("Error on %i: %s",
+                                        connection->sock,
+                                        strerror(errno));
                                 remove_connection(connection);
                                 return;
                         }
                 } else if (got == 0) {
                         connection->read_finished = true;
                         if (!connection->had_bad_input &&
-                            connection->partial_object)
+                            connection->partial_object) {
+                                pcx_log("Socket shutdown with partial JSON "
+                                        "object on %i",
+                                        connection->sock);
                                 set_bad_input(connection);
+                        }
                         need_update = true;
                 } else {
                         if (!connection->had_bad_input) {
@@ -415,6 +443,9 @@ connection_cb(struct pcx_main_context_source *source,
 
                 if (wrote == -1) {
                         if (errno != EWOULDBLOCK && errno != EAGAIN) {
+                                pcx_log("Error on %i: %s",
+                                        connection->sock,
+                                        strerror(errno));
                                 remove_connection(connection);
                                 return;
                         }
@@ -453,6 +484,8 @@ server_socket_cb(struct pcx_main_context_source *source,
 #endif
                         break;
                 case EMFILE:
+                        pcx_log("Accept failed due to too many open fds. "
+                                "Waiting for a client to disconnect.");
                         /* Run out of file descriptors. Stop listening
                          * until someone disconnects.
                          */
@@ -463,6 +496,7 @@ server_socket_cb(struct pcx_main_context_source *source,
                          * mean the poll is broken. Let’s give up
                          * listening on the socket.
                          */
+                        pcx_log("Accept failed: %s", strerror(errno));
                         pcx_main_context_remove_source(source);
                         server->server_source = NULL;
                         break;
@@ -473,7 +507,10 @@ server_socket_cb(struct pcx_main_context_source *source,
 
         struct pcx_error *error = NULL;
 
+        pcx_log("Accepted connection on %i", client_fd);
+
         if (!set_nonblock(client_fd, &error)) {
+                pcx_log("On client fd: %s", error->message);
                 pcx_error_free(error);
                 close(client_fd);
                 return;
