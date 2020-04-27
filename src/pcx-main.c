@@ -51,7 +51,7 @@ struct pcx_main {
         bool quit;
 };
 
-static const char options[] = "-ht:";
+static const char options[] = "-ht:l:";
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -168,6 +168,20 @@ destroy_main(struct pcx_main *data)
                 pcx_config_free(data->config);
 }
 
+static bool
+set_log_file(const char *filename)
+{
+        struct pcx_error *error = NULL;
+
+        if (!pcx_log_set_file(filename, &error)) {
+                fprintf(stderr, "%s\n", error->message);
+                pcx_error_free(error);
+                return false;
+        }
+
+        return true;
+}
+
 static void
 usage(void)
 {
@@ -176,6 +190,7 @@ usage(void)
                " -h                   Show this help message\n"
                " -t <file>            Specify a TTY file to listen on instead\n"
                "                      of running the Telegram bot.\n"
+               " -l <file>            Specify a log file. Defaults to stdout.\n"
                "\n");
 }
 
@@ -211,6 +226,11 @@ process_arguments(struct pcx_main *data,
                 case 'h':
                         usage();
                         return false;
+
+                case 'l':
+                        if (!set_log_file(optarg))
+                                return false;
+                        break;
                 }
         }
 
