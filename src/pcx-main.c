@@ -295,6 +295,14 @@ start_log(struct pcx_main *data)
         } else if (data->config->log_file) {
                 if (!set_log_file(data->config->log_file))
                         return false;
+        } else if (data->daemonize) {
+                char *filename = pcx_strconcat(data->config->data_dir,
+                                               "/log.txt",
+                                               NULL);
+                bool ret = set_log_file(filename);
+                pcx_free(filename);
+                if (!ret)
+                        return false;
         }
 
         pcx_log_start();
