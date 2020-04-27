@@ -43,7 +43,8 @@ struct pcx_config {
 };
 
 struct pcx_config *
-pcx_config_load(struct pcx_error **error);
+pcx_config_load(const char *filename,
+                struct pcx_error **error);
 
 void
 pcx_config_free(struct pcx_config *config);

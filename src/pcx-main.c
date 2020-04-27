@@ -47,11 +47,12 @@ struct pcx_main {
          * come from the command line arguments and are not freed.
          */
         struct pcx_buffer tty_files;
+        const char *config_filename;
         bool curl_inited;
         bool quit;
 };
 
-static const char options[] = "-ht:l:";
+static const char options[] = "-ht:l:c:";
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -185,6 +186,8 @@ usage(void)
                " -t <file>            Specify a TTY file to listen on instead\n"
                "                      of running the Telegram bot.\n"
                " -l <file>            Specify a log file. Defaults to stdout.\n"
+               " -c <file>            Specify a config file. Defaults to\n"
+               "                      ~/.pucxobot/conf.txt\n"
                "\n");
 }
 
@@ -225,6 +228,10 @@ process_arguments(struct pcx_main *data,
                         if (!set_log_file(optarg))
                                 return false;
                         break;
+
+                case 'c':
+                        data->config_filename = optarg;
+                        break;
                 }
         }
 
@@ -236,7 +243,23 @@ load_config(struct pcx_main *data)
 {
         struct pcx_error *error = NULL;
 
-        data->config = pcx_config_load(&error);
+        if (data->config_filename) {
+                data->config = pcx_config_load(data->config_filename, &error);
+        } else {
+                const char *home = getenv("HOME");
+
+                if (home == NULL) {
+                        fprintf(stderr,
+                                "HOME environment variable is not set\n");
+                        return false;
+                }
+
+                char *filename = pcx_strconcat(home,
+                                               "/.pucxobot/conf.txt",
+                                               NULL);
+                data->config = pcx_config_load(filename, &error);
+                pcx_free(filename);
+        }
 
         if (data->config == NULL) {
                 fprintf(stderr, "%s\n", error->message);
@@ -259,6 +282,7 @@ main(int argc, char **argv)
                 .curl_inited = false,
                 .quit = false,
                 .tty_files = PCX_BUFFER_STATIC_INIT,
+                .config_filename = NULL,
         };
 
         int ret = EXIT_SUCCESS;

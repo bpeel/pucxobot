@@ -228,33 +228,12 @@ validate_config(struct pcx_config *config,
         return true;
 }
 
-static char *
-get_data_file(const char *name,
-              struct pcx_error **error)
-{
-        const char *home = getenv("HOME");
-
-        if (home == NULL) {
-                pcx_set_error(error,
-                              &pcx_config_error,
-                              PCX_CONFIG_ERROR_IO,
-                              "HOME environment variable is not set");
-                return NULL;
-        }
-
-        return pcx_strconcat(home, "/.pucxobot/", name, NULL);
-}
-
 static bool
-load_config(struct pcx_config *config,
+load_config(const char *fn,
+            struct pcx_config *config,
             struct pcx_error **error)
 {
         bool ret = true;
-
-        char *fn = get_data_file("conf.txt", error);
-
-        if (fn == NULL)
-                return false;
 
         FILE *f = fopen(fn, "r");
 
@@ -297,19 +276,18 @@ load_config(struct pcx_config *config,
                 fclose(f);
         }
 
-        pcx_free(fn);
-
         return ret;
 }
 
 struct pcx_config *
-pcx_config_load(struct pcx_error **error)
+pcx_config_load(const char *filename,
+                struct pcx_error **error)
 {
         struct pcx_config *config = pcx_calloc(sizeof *config);
 
         pcx_list_init(&config->bots);
 
-        if (!load_config(config, error))
+        if (!load_config(filename, config, error))
                 goto error;
 
         return config;
