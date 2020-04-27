@@ -22,6 +22,7 @@
 #include <time.h>
 #include <curl/curl.h>
 #include <signal.h>
+#include <unistd.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
@@ -30,15 +31,26 @@
 #include "pcx-config.h"
 #include "pcx-curl-multi.h"
 
+struct tty_file {
+        struct pcx_list link;
+        const char *name;
+};
+
 struct pcx_main {
         struct pcx_tty_game *tty_game;
         struct pcx_curl_multi *pcurl;
         size_t n_bots;
         struct pcx_bot **bots;
         struct pcx_config *config;
+        /* List of const char* pointers. The strings are assumed to
+         * come from the command line arguments and are not freed.
+         */
+        struct pcx_buffer tty_files;
         bool curl_inited;
         bool quit;
 };
+
+static const char options[] = "-ht:";
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -80,18 +92,13 @@ info_cb(struct pcx_main_context_source *source,
 }
 
 static bool
-init_main_tty(struct pcx_main *data,
-              int argc,
-              char **argv)
+init_main_tty(struct pcx_main *data)
 {
-        if (argc - 1 > PCX_GAME_MAX_PLAYERS) {
-                fprintf(stderr, "usage: pucxobot <tty_file>…\n");
-                return false;
-        }
-
         struct pcx_error *error = NULL;
-        data->tty_game = pcx_tty_game_new(argc - 1,
-                                          (const char *const *) argv + 1,
+        data->tty_game = pcx_tty_game_new(data->tty_files.length /
+                                          sizeof (const char *),
+                                          (const char *const *)
+                                          data->tty_files.data,
                                           &error);
 
         if (data->tty_game == NULL) {
@@ -149,6 +156,9 @@ destroy_main(struct pcx_main *data)
         for (unsigned i = 0; i < data->n_bots; i++)
                 pcx_bot_free(data->bots[i]);
         pcx_free(data->bots);
+
+        pcx_buffer_destroy(&data->tty_files);
+
         if (data->pcurl)
                 pcx_curl_multi_free(data->pcurl);
         if (data->curl_inited)
@@ -156,6 +166,56 @@ destroy_main(struct pcx_main *data)
         if (data->config)
                 pcx_config_free(data->config);
 }
+
+static void
+usage(void)
+{
+        printf("Pucxobot - a Telegram robot to play games\n"
+               "usage: pucxobot [options]...\n"
+               " -h                   Show this help message\n"
+               " -t <file>            Specify a TTY file to listen on instead\n"
+               "                      of running the Telegram bot.\n"
+               "\n");
+}
+
+static bool
+process_arguments(struct pcx_main *data,
+                  int argc, char **argv)
+{
+        int opt;
+
+        opterr = false;
+
+        while ((opt = getopt(argc, argv, options)) != -1) {
+                switch (opt) {
+                case ':':
+                case '?':
+                        fprintf(stderr,
+                                "invalid option '%c'\n",
+                                optopt);
+                        return false;
+
+                case '\1':
+                        fprintf(stderr,
+                                "unexpected argument \"%s\"\n",
+                                optarg);
+                        return false;
+
+                case 't':
+                        pcx_buffer_append(&data->tty_files,
+                                          &optarg,
+                                          sizeof optarg);
+                        break;
+
+                case 'h':
+                        usage();
+                        return false;
+                }
+        }
+
+        return true;
+}
+
 
 int
 main(int argc, char **argv)
@@ -168,14 +228,28 @@ main(int argc, char **argv)
                 .config = NULL,
                 .curl_inited = false,
                 .quit = false,
+                .tty_files = PCX_BUFFER_STATIC_INIT,
         };
 
-        if (argc > 1) {
-                if (!init_main_tty(&data, argc, argv))
-                        return EXIT_FAILURE;
+        int ret = EXIT_SUCCESS;
+
+        pcx_main_context_get_default();
+
+        if (!process_arguments(&data, argc, argv)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
+
+        if (data.tty_files.length > 0) {
+                if (!init_main_tty(&data)) {
+                        ret = EXIT_FAILURE;
+                        goto done;
+                }
         } else {
-                if (!init_main_bots(&data))
-                        return EXIT_FAILURE;
+                if (!init_main_bots(&data)) {
+                        ret = EXIT_FAILURE;
+                        goto done;
+                }
         }
 
         struct pcx_main_context_source *int_source =
@@ -208,9 +282,10 @@ main(int argc, char **argv)
         pcx_main_context_remove_source(term_source);
         pcx_main_context_remove_source(int_source);
 
+done:
         destroy_main(&data);
 
         pcx_main_context_free(pcx_main_context_get_default());
 
-        return EXIT_SUCCESS;
+        return ret;
 }
