@@ -8,7 +8,7 @@ To build the bot, type the following:
     ninja
 
 Before running it, you need to create a configuration file in
-`~/.pucxobot/config.txt`. This will contain the API key for the bot
+`~/.pucxobot/conf.txt`. This will contain the API key for the bot
 which you can create by talking to
 [@BotFather](https://t.me/BotFather) on Telegram. It should look
 something like this:
