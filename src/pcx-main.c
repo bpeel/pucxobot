@@ -75,19 +75,19 @@ info_cb(struct pcx_main_context_source *source,
 
         pcx_list_for_each(bot, &data->config->bots, link) {
                 int n_games = pcx_bot_get_n_running_games(data->bots[bot_num]);
-                printf("@%s: %i\n", bot->botname, n_games);
+                pcx_log("@%s: %i", bot->botname, n_games);
                 total_games += n_games;
                 bot_num++;
         }
 
-        printf("Total games: %i\n", total_games);
+        pcx_log("Total games: %i", total_games);
 
         if (signal_num == SIGUSR2) {
                 if (total_games == 0) {
-                        printf("No games running, quitting\n");
+                        pcx_log("No games running, quitting");
                         data->quit = true;
                 } else {
-                        printf("Not quitting due to running games\n");
+                        pcx_log("Not quitting due to running games");
                 }
         }
 }
