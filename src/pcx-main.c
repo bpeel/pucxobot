@@ -105,7 +105,7 @@ init_main_tty(struct pcx_main *data)
                                           &error);
 
         if (data->tty_game == NULL) {
-                fprintf(stderr, "%s\n", error->message);
+                pcx_log("%s", error->message);
                 pcx_error_free(error);
                 return false;
         }

@@ -241,8 +241,11 @@ request_write_cb(char *ptr,
                         ret = get_fields(obj,
                                          "description", json_type_string, &desc,
                                          NULL);
-                        if (ret)
-                                fprintf(stderr, "%s\n", desc);
+                        if (ret) {
+                                pcx_log("%s: %s",
+                                        bot->bot_config->botname,
+                                        desc);
+                        }
                 }
 
                 json_object_put(obj);
@@ -274,8 +277,8 @@ request_finished_cb(CURLcode code,
         struct pcx_bot *bot = user_data;
 
         if (code != CURLE_OK) {
-                fprintf(stderr,
-                        "request failed: %s\n",
+                pcx_log("%s: request failed: %s\n",
+                        bot->bot_config->botname,
                         curl_easy_strerror(code));
         }
 
@@ -590,8 +593,8 @@ get_updates_finished_cb(CURLcode code,
         long timeout = 0;
 
         if (code != CURLE_OK) {
-                fprintf(stderr,
-                        "getUpdates failed: %s\n",
+                pcx_log("%s: getUpdates failed: %s\n",
+                        bot->bot_config->botname,
                         curl_easy_strerror(code));
                 timeout = 60 * 1000;
         }
