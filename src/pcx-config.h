@@ -40,6 +40,7 @@ struct pcx_config_bot {
 
 struct pcx_config {
         char *data_dir;
+        char *log_file;
         struct pcx_list bots;
 };
 

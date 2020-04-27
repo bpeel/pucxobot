@@ -101,6 +101,7 @@ general_options[] = {
                 OPTION_TYPE_ ## type,                   \
         }
         OPTION(data_dir, STRING),
+        OPTION(log_file, STRING),
 #undef OPTION
 };
 
@@ -365,6 +366,7 @@ pcx_config_free(struct pcx_config *config)
         }
 
         pcx_free(config->data_dir);
+        pcx_free(config->log_file);
 
         pcx_free(config);
 }

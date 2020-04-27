@@ -48,6 +48,7 @@ struct pcx_main {
          */
         struct pcx_buffer tty_files;
         const char *config_filename;
+        const char *log_filename;
         bool curl_inited;
         bool quit;
 };
@@ -225,8 +226,7 @@ process_arguments(struct pcx_main *data,
                         return false;
 
                 case 'l':
-                        if (!set_log_file(optarg))
-                                return false;
+                        data->log_filename = optarg;
                         break;
 
                 case 'c':
@@ -270,6 +270,22 @@ load_config(struct pcx_main *data)
         return true;
 }
 
+static bool
+start_log(struct pcx_main *data)
+{
+        if (data->log_filename) {
+                if (!set_log_file(data->log_filename))
+                        return false;
+        } else if (data->config->log_file) {
+                if (!set_log_file(data->config->log_file))
+                        return false;
+        }
+
+        pcx_log_start();
+
+        return true;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -299,7 +315,10 @@ main(int argc, char **argv)
                 goto done;
         }
 
-        pcx_log_start();
+        if (!start_log(&data)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
 
         if (data.tty_files.length > 0) {
                 if (!init_main_tty(&data)) {
