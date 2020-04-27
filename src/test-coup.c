@@ -1332,12 +1332,184 @@ done:
 }
 
 static bool
+test_multiple_people_block_foreign_aid(void)
+{
+        enum pcx_coup_character override_cards[] = {
+                PCX_COUP_CHARACTER_DUKE,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_CONTESSA,
+                PCX_COUP_CHARACTER_ASSASSIN,
+                PCX_COUP_CHARACTER_CAPTAIN,
+                PCX_COUP_CHARACTER_CAPTAIN,
+        };
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(override_cards),
+                                 override_cards,
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 3 /* n_players */);
+
+        bool ret = send_callback_data(data,
+                                      1,
+                                      "foreign_aid",
+                                      MESSAGE_TYPE_GLOBAL,
+                                      "💴 Bob prenas 2 monerojn per "
+                                      "eksterlanda helpo.\n"
+                                      "Ĉu iu volas pretendi havi la dukon "
+                                      "kaj bloki rin?",
+                                      MESSAGE_TYPE_BUTTONS,
+                                      "block", "Bloki",
+                                      "accept", "Akcepti",
+                                      NULL,
+                                      -1);
+        if (!ret)
+                goto done;
+
+        /* Charles blocks */
+        ret = send_callback_data(data,
+                                 2,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Charles pretendas havi la dukon kaj blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Bob challenges the block */
+        ret = send_callback_data(data,
+                                 1,
+                                 "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj nun Charles elektas kiun "
+                                 "karton montri.",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 2,
+                                 "Bob ne kredas ke vi havas la dukon.\n"
+                                 "Kiun karton vi volas montri?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Kapitano",
+                                 "reveal:1", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[2].cards[0].dead = true;
+
+        /* Bob fails the challenge */
+        ret = send_callback_data(data,
+                                 2,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj Charles ne havis la dukon "
+                                 "kaj Charles perdas karton",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 2,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "💴 Bob prenas 2 monerojn per "
+                                 "eksterlanda helpo.\n"
+                                 "Ĉu iu volas pretendi havi la dukon "
+                                 "kaj bloki rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "block", "Bloki",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Now Alice can block */
+        ret = send_callback_data(data,
+                                 0,
+                                 "block",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice pretendas havi la dukon kaj blokas.\n"
+                                 "Ĉu iu volas defii rin?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "challenge", "Defii",
+                                 "accept", "Akcepti",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        /* Bob challenges the block again */
+        ret = send_callback_data(data,
+                                 1,
+                                 "challenge",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis kaj nun Alice elektas kiun "
+                                 "karton montri.",
+                                 MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Bob ne kredas ke vi havas la dukon.\n"
+                                 "Kiun karton vi volas montri?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "reveal:0", "Duko",
+                                 "reveal:1", "Kapitano",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.players[0].cards[0].character =
+                PCX_COUP_CHARACTER_AMBASSADOR;
+
+        /* This time Alice really does have the duke */
+        ret = send_callback_data(data,
+                                 0,
+                                 "reveal:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Bob defiis sed Alice ja havis la dukon. "
+                                 "Bob perdas karton kaj Alice ricevas "
+                                 "novan anstataŭan karton.",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 0,
+                                 MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Kiun karton vi volas perdi?",
+                                 MESSAGE_TYPE_BUTTONS,
+                                 "lose:0", "Grafino",
+                                 "lose:1", "Murdisto",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto done;
+
+        data->status.current_player = 2;
+        data->status.players[1].cards[1].dead = true;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "lose:1",
+                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 1,
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Neniu defiis. La ago estis blokita.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
+
+done:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_foreign_aid(void)
 {
         return (test_accept_foreign_aid() &&
                 test_accept_block_foreign_aid() &&
                 test_failed_challenge_block_foreign_aid() &&
-                test_failed_block_foreign_aid());
+                test_failed_block_foreign_aid() &&
+                test_multiple_people_block_foreign_aid());
 }
 
 static struct test_data *
