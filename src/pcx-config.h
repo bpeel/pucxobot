@@ -39,6 +39,7 @@ struct pcx_config_bot {
 };
 
 struct pcx_config {
+        char *data_dir;
         struct pcx_list bots;
 };
 

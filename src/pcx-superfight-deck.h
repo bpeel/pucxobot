@@ -20,11 +20,13 @@
 #define PCX_SUPERFIGHT_DECK_H
 
 #include "pcx-text.h"
+#include "pcx-config.h"
 
 struct pcx_superfight_deck;
 
 struct pcx_superfight_deck *
-pcx_superfight_deck_load(enum pcx_text_language language,
+pcx_superfight_deck_load(const struct pcx_config *config,
+                         enum pcx_text_language language,
                          const char *filename);
 
 const char *

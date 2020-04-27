@@ -71,20 +71,53 @@ enum option_type {
         OPTION_TYPE_LANGUAGE_CODE,
 };
 
+struct option {
+        const char *key;
+        size_t offset;
+        enum option_type type;
+};
+
+static const struct option
+bot_options[] = {
+#define OPTION(name, type)                              \
+        {                                               \
+                #name,                                  \
+                offsetof(struct pcx_config_bot, name),  \
+                OPTION_TYPE_ ## type,                   \
+        }
+        OPTION(apikey, STRING),
+        OPTION(botname, STRING),
+        OPTION(announce_channel, STRING),
+        OPTION(language, LANGUAGE_CODE),
+#undef OPTION
+};
+
+static const struct option
+general_options[] = {
+#define OPTION(name, type)                              \
+        {                                               \
+                #name,                                  \
+                offsetof(struct pcx_config, name),      \
+                OPTION_TYPE_ ## type,                   \
+        }
+        OPTION(data_dir, STRING),
+#undef OPTION
+};
+
 static void
 set_option(struct load_config_data *data,
-           enum option_type type,
-           size_t offset,
-           const char *key,
+           void *config_item,
+           const struct option *option,
            const char *value)
 {
-        switch (type) {
+        switch (option->type) {
         case OPTION_TYPE_STRING: {
-                char **ptr = (char **) ((uint8_t *) data->bot + offset);
+                char **ptr = (char **) ((uint8_t *) config_item +
+                                        option->offset);
                 if (*ptr) {
                         load_config_error(data,
                                           "%s specified twice",
-                                          key);
+                                          option->key);
                 } else {
                         *ptr = pcx_strdup(value);
                 }
@@ -93,7 +126,7 @@ set_option(struct load_config_data *data,
         case OPTION_TYPE_LANGUAGE_CODE: {
                 enum pcx_text_language *ptr =
                         (enum pcx_text_language *)
-                        ((uint8_t *) data->bot + offset);
+                        ((uint8_t *) config_item + option->offset);
                 if (!pcx_text_lookup_language(value, ptr)) {
                         load_config_error(data,
                                           "invalid language: %s",
@@ -102,18 +135,41 @@ set_option(struct load_config_data *data,
                 break;
         }
         case OPTION_TYPE_INT: {
-                int64_t *ptr = (int64_t *) ((uint8_t *) data->bot + offset);
+                int64_t *ptr = (int64_t *) ((uint8_t *) config_item +
+                                            option->offset);
                 errno = 0;
                 char *tail;
                 *ptr = strtoll(value, &tail, 10);
                 if (errno || *tail) {
                         load_config_error(data,
                                           "invalid value for %s",
-                                          key);
+                                          option->key);
                 }
                 break;
         }
         }
+}
+
+static void
+set_from_options(struct load_config_data *data,
+                 void *config_item,
+                 size_t n_options,
+                 const struct option *options,
+                 const char *key,
+                 const char *value)
+{
+        for (unsigned i = 0; i < n_options; i++) {
+                if (strcmp(key, options[i].key))
+                        continue;
+
+                set_option(data,
+                           config_item,
+                           options + i,
+                           value);
+                return;
+        }
+
+        load_config_error(data, "unknown config option: %s", key);
 }
 
 static void
@@ -124,54 +180,37 @@ load_config_func(enum pcx_key_value_event event,
                  void *user_data)
 {
         struct load_config_data *data = user_data;
-        static const struct {
-                const char *key;
-                size_t offset;
-                enum option_type type;
-        } options[] = {
-#define OPTION(name, type)                                      \
-                {                                               \
-                        #name,                                  \
-                        offsetof(struct pcx_config_bot, name),  \
-                        OPTION_TYPE_ ## type,                   \
-                }
-                OPTION(apikey, STRING),
-                OPTION(botname, STRING),
-                OPTION(announce_channel, STRING),
-                OPTION(language, LANGUAGE_CODE),
-#undef OPTION
-        };
 
         switch (event) {
         case PCX_KEY_VALUE_EVENT_HEADER:
-                if (strcmp(value, "bot")) {
-                        load_config_error(data, "unknown section: %s", value);
-                        data->bot = NULL;
-                } else {
+                if (!strcmp(value, "bot")) {
                         data->bot = pcx_calloc(sizeof *data->bot);
                         data->bot->language = PCX_TEXT_LANGUAGE_ESPERANTO;
                         pcx_list_insert(data->config->bots.prev,
                                         &data->bot->link);
+                } else if (!strcmp(value, "general")) {
+                        data->bot = NULL;
+                } else {
+                        load_config_error(data, "unknown section: %s", value);
+                        data->bot = NULL;
                 }
                 break;
         case PCX_KEY_VALUE_EVENT_PROPERTY:
-                if (data->bot == NULL)
-                        break;
-
-                for (unsigned i = 0; i < PCX_N_ELEMENTS(options); i++) {
-                        if (strcmp(key, options[i].key))
-                                continue;
-
-                        set_option(data,
-                                   options[i].type,
-                                   options[i].offset,
-                                   key,
-                                   value);
-                        goto found_key;
+                if (data->bot) {
+                        set_from_options(data,
+                                         data->bot,
+                                         PCX_N_ELEMENTS(bot_options),
+                                         bot_options,
+                                         key,
+                                         value);
+                } else {
+                        set_from_options(data,
+                                         data->config,
+                                         PCX_N_ELEMENTS(general_options),
+                                         general_options,
+                                         key,
+                                         value);
                 }
-
-                load_config_error(data, "unknown config option: %s", key);
-        found_key:
                 break;
         }
 }
@@ -207,6 +246,7 @@ validate_config(struct pcx_config *config,
                 const char *filename,
                 struct pcx_error **error)
 {
+
         struct pcx_config_bot *bot;
         bool found_bot = false;
 
@@ -223,6 +263,21 @@ validate_config(struct pcx_config *config,
                               "%s: no bots configured",
                               filename);
                 return false;
+        }
+
+        if (config->data_dir == NULL) {
+                const char *home = getenv("HOME");
+
+                if (home == NULL) {
+                        pcx_set_error(error,
+                                      &pcx_config_error,
+                                      PCX_CONFIG_ERROR_IO,
+                                      "No data dir specified and HOME "
+                                      "env var not set");
+                        return false;
+                }
+
+                config->data_dir = pcx_strconcat(home, "/.pucxobot", NULL);
         }
 
         return true;
@@ -308,6 +363,8 @@ pcx_config_free(struct pcx_config *config)
                 pcx_free(bot->announce_channel);
                 pcx_free(bot);
         }
+
+        pcx_free(config->data_dir);
 
         pcx_free(config);
 }

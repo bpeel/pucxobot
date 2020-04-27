@@ -151,16 +151,12 @@ load_from_stream(struct load_data *data, FILE *in)
 }
 
 static char *
-get_full_filename(enum pcx_text_language language,
+get_full_filename(const struct pcx_config *config,
+                  enum pcx_text_language language,
                   const char *filename)
 {
-        const char *home = getenv("HOME");
-
-        if (home == NULL)
-                return NULL;
-
-        return pcx_strconcat(home,
-                             "/.pucxobot/superfight-",
+        return pcx_strconcat(config->data_dir,
+                             "/superfight-",
                              filename,
                              "-",
                              pcx_text_get(language,
@@ -170,7 +166,8 @@ get_full_filename(enum pcx_text_language language,
 }
 
 struct pcx_superfight_deck *
-pcx_superfight_deck_load(enum pcx_text_language language,
+pcx_superfight_deck_load(const struct pcx_config *config,
+                         enum pcx_text_language language,
                          const char *filename)
 {
         struct load_data data = {
@@ -179,18 +176,16 @@ pcx_superfight_deck_load(enum pcx_text_language language,
                 .slice_used = SLICE_SIZE,
         };
 
-        char *full_filename = get_full_filename(language, filename);
+        char *full_filename = get_full_filename(config, language, filename);
 
-        if (full_filename) {
-                FILE *in = fopen(full_filename, "r");
+        FILE *in = fopen(full_filename, "r");
 
-                if (in) {
-                        load_from_stream(&data, in);
-                        fclose(in);
-                }
-
-                pcx_free(full_filename);
+        if (in) {
+                load_from_stream(&data, in);
+                fclose(in);
         }
+
+        pcx_free(full_filename);
 
         while (data.cards.length < MIN_CARDS * sizeof (char *)) {
                 char name = 'A' + data.cards.length / sizeof (char *);

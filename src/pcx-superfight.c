@@ -491,9 +491,9 @@ create_game_cb(const struct pcx_config *config,
                 (superfight->current_player + 1) % n_players;
 
         superfight->roles =
-                pcx_superfight_deck_load(language, "roles");
+                pcx_superfight_deck_load(config, language, "roles");
         superfight->attributes =
-                pcx_superfight_deck_load(language, "attributes");
+                pcx_superfight_deck_load(config, language, "attributes");
 
         for (unsigned i = 0; i < n_players; i++)
                 superfight->players[i].name = pcx_strdup(names[i]);

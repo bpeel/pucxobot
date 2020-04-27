@@ -608,13 +608,8 @@ get_updates_finished_cb(CURLcode code,
 static char *
 get_known_ids_file(struct pcx_bot *bot)
 {
-        const char *home = getenv("HOME");
-
-        if (home == NULL)
-                return NULL;
-
-        return pcx_strconcat(home,
-                             "/.pucxobot/known-ids-",
+        return pcx_strconcat(bot->config->data_dir,
+                             "/known-ids-",
                              bot->bot_config->botname,
                              ".txt",
                              NULL);
@@ -914,10 +909,6 @@ static void
 save_known_ids(struct pcx_bot *bot)
 {
         char *fn = get_known_ids_file(bot);
-
-        if (fn == NULL)
-                return;
-
         char *tmp_fn = pcx_strconcat(fn, ".tmp", NULL);
         FILE *f = fopen(tmp_fn, "w");
 
@@ -941,10 +932,6 @@ static void
 load_known_ids(struct pcx_bot *bot)
 {
         char *fn = get_known_ids_file(bot);
-
-        if (fn == NULL)
-                return;
-
         FILE *f = fopen(fn, "r");
 
         if (f) {
