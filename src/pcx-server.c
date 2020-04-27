@@ -577,6 +577,29 @@ broadcast_event(struct pcx_server_game *game,
         }
 }
 
+static struct json_object *
+create_buttons(size_t n_buttons,
+               const struct pcx_game_button *buttons)
+{
+        struct json_object *a = json_object_new_array();
+
+        for (unsigned i = 0; i < n_buttons; i++) {
+                const struct pcx_game_button *button = buttons + i;
+
+                struct json_object *b = json_object_new_object();
+
+                struct json_object *t = json_object_new_string(button->text);
+                json_object_object_add(b, "text", t);
+
+                struct json_object *d = json_object_new_string(button->data);
+                json_object_object_add(b, "data", d);
+
+                json_object_array_add(a, b);
+        }
+
+        return a;
+}
+
 static void
 queue_message(struct pcx_server_game *game,
               int user_num,
@@ -590,6 +613,11 @@ queue_message(struct pcx_server_game *game,
         if (user_num >= 0) {
                 struct json_object *t = json_object_new_boolean(true);
                 json_object_object_add(obj, "private", t);
+        }
+
+        if (n_buttons > 0) {
+                struct json_object *b = create_buttons(n_buttons, buttons);
+                json_object_object_add(obj, "buttons", b);
         }
 
         struct json_object *type;
