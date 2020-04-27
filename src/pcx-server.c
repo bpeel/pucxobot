@@ -736,6 +736,40 @@ start_watch(struct pcx_server_connection *connection,
 }
 
 static void
+handle_button(struct pcx_server_connection *connection,
+              struct json_object *object)
+{
+        struct pcx_server_person *person =
+                get_person_for_request(connection,
+                                       object);
+
+        if (person == NULL)
+                return;
+
+        const char *callback_data;
+
+        if (!pcx_json_get(object,
+                          "data", json_type_string, &callback_data,
+                          NULL)) {
+                queue_error_response(connection, "Invalid button request");
+                return;
+        }
+
+        struct pcx_server_game *game = person->game;
+
+        if (game->game == NULL) {
+                queue_error_response(connection, "Game not running");
+                return;
+        }
+
+        game->game_type->handle_callback_data_cb(game->game,
+                                                 person - game->people,
+                                                 callback_data);
+
+        queue_ok_response(connection, NULL);
+}
+
+static void
 handle_join(struct pcx_server_connection *connection,
             struct json_object *object)
 {
@@ -875,6 +909,7 @@ struct request_handler {
 
 static const struct request_handler
 request_handlers[] = {
+        { .name = "button", .handler = handle_button },
         { .name = "join", .handler = handle_join },
         { .name = "watch", .handler = handle_watch },
         { .name = "start", .handler = handle_start },
