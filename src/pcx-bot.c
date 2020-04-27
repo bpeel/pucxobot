@@ -36,6 +36,7 @@
 #include "pcx-buffer.h"
 #include "pcx-curl-multi.h"
 #include "pcx-message-queue.h"
+#include "pcx-log.h"
 
 #define GAME_TIMEOUT (5 * 60 * 1000)
 #define IN_GAME_TIMEOUT (GAME_TIMEOUT * 2)
@@ -54,6 +55,7 @@ struct game {
         struct pcx_main_context_source *game_timeout_source;
         struct pcx_bot *bot;
         const struct pcx_game *type;
+        char letter_id;
 };
 
 struct pcx_bot {
@@ -87,6 +89,8 @@ struct pcx_bot {
         struct pcx_main_context_source *message_delay_source;
 
         struct pcx_buffer known_ids;
+
+        unsigned next_id;
 };
 
 struct request {
@@ -660,6 +664,13 @@ game_timeout_cb(struct pcx_main_context_source *source,
                                     PCX_TEXT_STRING_TIMEOUT_ABANDON,
                                     timeout);
 
+                if (game->game) {
+                        pcx_log("game %c timed out after starting",
+                                game->letter_id);
+                } else {
+                        pcx_log("game %c timed out without starting",
+                                game->letter_id);
+                }
                 remove_game(bot, game);
         }
 }
@@ -755,6 +766,7 @@ static void
 game_over_cb(void *user_data)
 {
         struct game *game = user_data;
+        pcx_log("game %c finished successfully", game->letter_id);
         remove_game(game->bot, game);
 }
 
@@ -820,6 +832,7 @@ struct message_info {
         bool is_private;
         /* Can be null */
         const char *first_name;
+        const char *chat_username;
 };
 
 static bool
@@ -871,6 +884,12 @@ get_message_info(struct json_object *message,
                          "type", json_type_string, &chat_type,
                          NULL);
         info->is_private = ret && !strcmp(chat_type, "private");
+
+        ret = get_fields(chat,
+                         "username", json_type_string, &info->chat_username,
+                         NULL);
+        if (!ret)
+                info->chat_username = NULL;
 
         return true;
 }
@@ -1114,6 +1133,42 @@ send_create_game_question(struct pcx_bot *bot,
 }
 
 static void
+log_start_game(struct pcx_bot *bot,
+               struct game *game,
+               const struct message_info *info)
+
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_printf(&buf,
+                                 "%c = game of %s",
+                                 game->letter_id,
+                                 game->type->name);
+
+        if (info->chat_username) {
+                pcx_buffer_append_printf(&buf,
+                                         " in %s",
+                                         info->chat_username);
+        } else {
+                pcx_buffer_append_printf(&buf,
+                                         " in %" PRIi64,
+                                         info->chat_id);
+        }
+
+        if (info->first_name) {
+                pcx_buffer_append_printf(&buf,
+                                         " by %s",
+                                         info->first_name);
+        }
+
+        pcx_buffer_append_printf(&buf, " via @%s", bot->config->botname);
+
+        pcx_log("%s", (const char *) buf.data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
 process_create_game(struct pcx_bot *bot,
                     const struct pcx_game *game_type,
                     const struct message_info *info)
@@ -1147,7 +1202,11 @@ process_create_game(struct pcx_bot *bot,
         game->bot = bot;
         game->type = game_type;
 
+        game->letter_id = bot->next_id++ % 26 + 'A';
+
         pcx_list_insert(&bot->games, &game->link);
+
+        log_start_game(bot, game, info);
 
         join_game(bot, game, info);
 }
@@ -1200,6 +1259,10 @@ start_game(struct pcx_bot *bot,
 
         for (unsigned i = 0; i < game->n_players; i++)
                 names[i] = game->players[i].name;
+
+        pcx_log("game %C started with %i players",
+                game->letter_id,
+                game->n_players);
 
         game->game = game->type->create_game_cb(&game_callbacks,
                                                 game,
@@ -1264,6 +1327,7 @@ process_cancel(struct pcx_bot *bot,
         if (game != NULL) {
                 if (find_player_in_game(game, info->from_id) != -1) {
                         response = PCX_TEXT_STRING_CANCELED;
+                        pcx_log("game %c was cancelled", game->letter_id);
                         remove_game(bot, game);
                 } else {
                         response = PCX_TEXT_STRING_CANT_CANCEL;
