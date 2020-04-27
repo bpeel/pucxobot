@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
@@ -54,6 +58,7 @@ struct pcx_main {
         bool daemonize;
         bool curl_inited;
         bool quit;
+        int lock_fd;
 };
 
 static const char options[] = "-ht:l:c:d";
@@ -165,6 +170,9 @@ destroy_main(struct pcx_main *data)
                 curl_global_cleanup();
         if (data->config)
                 pcx_config_free(data->config);
+
+        if (data->lock_fd != -1)
+                close(data->lock_fd);
 }
 
 static bool
@@ -294,6 +302,42 @@ start_log(struct pcx_main *data)
         return true;
 }
 
+static bool
+check_not_already_running(struct pcx_main *data)
+{
+        char *filename = pcx_strconcat(data->config->data_dir,
+                                       "/pucxobot-lock",
+                                       NULL);
+
+        data->lock_fd = open(filename, O_APPEND | O_CREAT, 0666);
+
+        pcx_free(filename);
+
+        if (data->lock_fd == -1) {
+                fprintf(stderr,
+                        "error opening lock file: %s\n",
+                        strerror(errno));
+                return false;
+        }
+
+        int ret = flock(data->lock_fd, LOCK_EX | LOCK_NB);
+
+        if (ret == -1) {
+                if (errno == EWOULDBLOCK) {
+                        fprintf(stderr,
+                                "pucxobot is already running\n");
+                } else {
+                        fprintf(stderr,
+                                "error getting file lock: %s\n",
+                                strerror(errno));
+                }
+
+                return false;
+        }
+
+        return true;
+}
+
 static void
 daemonize(void)
 {
@@ -343,6 +387,7 @@ main(int argc, char **argv)
                 .quit = false,
                 .tty_files = PCX_BUFFER_STATIC_INIT,
                 .config_filename = NULL,
+                .lock_fd = -1,
         };
 
         int ret = EXIT_SUCCESS;
@@ -355,6 +400,11 @@ main(int argc, char **argv)
         }
 
         if (!load_config(&data)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
+
+        if (!check_not_already_running(&data)) {
                 ret = EXIT_FAILURE;
                 goto done;
         }
