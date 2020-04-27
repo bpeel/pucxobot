@@ -30,6 +30,7 @@
 #include "pcx-main-context.h"
 #include "pcx-config.h"
 #include "pcx-curl-multi.h"
+#include "pcx-log.h"
 
 struct tty_file {
         struct pcx_list link;
@@ -240,6 +241,8 @@ main(int argc, char **argv)
                 goto done;
         }
 
+        pcx_log_start();
+
         if (data.tty_files.length > 0) {
                 if (!init_main_tty(&data)) {
                         ret = EXIT_FAILURE;
@@ -284,6 +287,7 @@ main(int argc, char **argv)
 
 done:
         destroy_main(&data);
+        pcx_log_close();
 
         pcx_main_context_free(pcx_main_context_get_default());
 

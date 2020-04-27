@@ -19,6 +19,7 @@ translations = [
 
 src = [
         'src/pcx-main.c',
+        'src/pcx-log.c',
         'src/pcx-game.c',
         'src/pcx-util.c',
         'src/pcx-main-context.c',
@@ -53,8 +54,9 @@ src += translations
 
 curl = dependency('libcurl', version: '>=7.16')
 json = dependency('json-c')
+thread_dep = dependency('threads')
 
-executable('pucxobot', src, dependencies: [curl, json])
+executable('pucxobot', src, dependencies: [curl, json, thread_dep])
 
 test_coup_src = [
         'src/pcx-util.c',
