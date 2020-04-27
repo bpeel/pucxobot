@@ -466,6 +466,8 @@ main(int argc, char **argv)
         if (data.daemonize)
                 daemonize();
 
+        signal(SIGPIPE, SIG_IGN);
+
         if (!start_log(&data)) {
                 ret = EXIT_FAILURE;
                 goto done;
