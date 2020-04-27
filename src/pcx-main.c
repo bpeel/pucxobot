@@ -23,6 +23,8 @@
 #include <curl/curl.h>
 #include <signal.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
@@ -49,11 +51,12 @@ struct pcx_main {
         struct pcx_buffer tty_files;
         const char *config_filename;
         const char *log_filename;
+        bool daemonize;
         bool curl_inited;
         bool quit;
 };
 
-static const char options[] = "-ht:l:c:";
+static const char options[] = "-ht:l:c:d";
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -189,7 +192,8 @@ usage(void)
                " -l <file>            Specify a log file. Defaults to stdout.\n"
                " -c <file>            Specify a config file. Defaults to\n"
                "                      ~/.pucxobot/conf.txt\n"
-               "\n");
+               " -d                   Fork and detach from terminal\n"
+               "                      (Daemonize)\n");
 }
 
 static bool
@@ -231,6 +235,10 @@ process_arguments(struct pcx_main *data,
 
                 case 'c':
                         data->config_filename = optarg;
+                        break;
+
+                case 'd':
+                        data->daemonize = true;
                         break;
                 }
         }
@@ -286,6 +294,42 @@ start_log(struct pcx_main *data)
         return true;
 }
 
+static void
+daemonize(void)
+{
+        pid_t pid, sid;
+
+        pid = fork();
+
+        if (pid < 0) {
+                pcx_warning("fork failed: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+        }
+        if (pid > 0) {
+                /* Parent process, we can just quit */
+                exit(EXIT_SUCCESS);
+        }
+
+        /* Create a new SID for the child process */
+        sid = setsid();
+        if (sid < 0) {
+                pcx_warning("setsid failed: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+        }
+
+        /* Change the working directory so we're resilient against it being
+           removed */
+        if (chdir("/") < 0) {
+                pcx_warning("chdir failed: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+        }
+
+        /* Redirect standard files to /dev/null */
+        stdin = freopen("/dev/null", "r", stdin);
+        stdout = freopen("/dev/null", "w", stdout);
+        stderr = freopen("/dev/null", "w", stderr);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -314,6 +358,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
                 goto done;
         }
+
+        if (data.daemonize)
+                daemonize();
 
         if (!start_log(&data)) {
                 ret = EXIT_FAILURE;
