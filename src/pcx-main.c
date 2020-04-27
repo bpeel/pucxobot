@@ -96,7 +96,8 @@ static bool
 init_main_tty(struct pcx_main *data)
 {
         struct pcx_error *error = NULL;
-        data->tty_game = pcx_tty_game_new(data->tty_files.length /
+        data->tty_game = pcx_tty_game_new(data->config,
+                                          data->tty_files.length /
                                           sizeof (const char *),
                                           (const char *const *)
                                           data->tty_files.data,
@@ -114,15 +115,6 @@ init_main_tty(struct pcx_main *data)
 static bool
 init_main_bots(struct pcx_main *data)
 {
-        struct pcx_error *error = NULL;
-
-        data->config = pcx_config_load(&error);
-        if (data->config == NULL) {
-                fprintf(stderr, "%s\n", error->message);
-                pcx_error_free(error);
-                return false;
-        }
-
         curl_global_init(CURL_GLOBAL_ALL);
         data->curl_inited = true;
 
@@ -143,7 +135,9 @@ init_main_bots(struct pcx_main *data)
         unsigned i = 0;
 
         pcx_list_for_each(bot, &data->config->bots, link) {
-                data->bots[i++] = pcx_bot_new(data->pcurl, bot);
+                data->bots[i++] = pcx_bot_new(data->config,
+                                              bot,
+                                              data->pcurl);
         }
 
         return true;
@@ -237,6 +231,21 @@ process_arguments(struct pcx_main *data,
         return true;
 }
 
+static bool
+load_config(struct pcx_main *data)
+{
+        struct pcx_error *error = NULL;
+
+        data->config = pcx_config_load(&error);
+
+        if (data->config == NULL) {
+                fprintf(stderr, "%s\n", error->message);
+                pcx_error_free(error);
+                return false;
+        }
+
+        return true;
+}
 
 int
 main(int argc, char **argv)
@@ -257,6 +266,11 @@ main(int argc, char **argv)
         pcx_main_context_get_default();
 
         if (!process_arguments(&data, argc, argv)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
+
+        if (!load_config(&data)) {
                 ret = EXIT_FAILURE;
                 goto done;
         }

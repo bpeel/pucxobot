@@ -427,7 +427,8 @@ pcx_zombie_new(const struct pcx_game_callbacks *callbacks,
 }
 
 static void *
-create_game_cb(const struct pcx_game_callbacks *callbacks,
+create_game_cb(const struct pcx_config *config,
+               const struct pcx_game_callbacks *callbacks,
                void *user_data,
                enum pcx_text_language language,
                int n_players,

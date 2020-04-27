@@ -210,7 +210,8 @@ get_basename(const char *filename)
 }
 
 struct pcx_tty_game *
-pcx_tty_game_new(int n_players,
+pcx_tty_game_new(const struct pcx_config *config,
+                 int n_players,
                  const char * const *files,
                  struct pcx_error **error)
 {
@@ -256,7 +257,8 @@ pcx_tty_game_new(int n_players,
                 names[i] = get_basename(files[i]);
 
         game->game_data =
-                game->game->create_game_cb(&callbacks,
+                game->game->create_game_cb(config,
+                                           &callbacks,
                                            game,
                                            PCX_TEXT_LANGUAGE_ESPERANTO,
                                            n_players,

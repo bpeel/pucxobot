@@ -20,6 +20,7 @@
 #define PCX_TTY_GAME_H
 
 #include "pcx-error.h"
+#include "pcx-config.h"
 
 extern struct pcx_error_domain
 pcx_tty_game_error;
@@ -31,7 +32,8 @@ enum pcx_tty_game_error {
 struct pcx_tty_game;
 
 struct pcx_tty_game *
-pcx_tty_game_new(int n_players,
+pcx_tty_game_new(const struct pcx_config *config,
+                 int n_players,
                  const char * const *files,
                  struct pcx_error **error);
 

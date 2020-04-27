@@ -63,7 +63,8 @@ struct pcx_bot {
 
         struct pcx_main_context_source *restart_updates_source;
 
-        const struct pcx_config_bot *config;
+        const struct pcx_config *config;
+        const struct pcx_config_bot *bot_config;
 
         char *url_base;
 
@@ -200,7 +201,7 @@ text_append_vprintf(struct pcx_bot *bot,
                     enum pcx_text_string string,
                     va_list ap)
 {
-        const char *format = pcx_text_get(bot->config->language, string);
+        const char *format = pcx_text_get(bot->bot_config->language, string);
         pcx_buffer_append_vprintf(buf, format, ap);
 }
 
@@ -511,7 +512,7 @@ send_message_vprintf(struct pcx_bot *bot,
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        const char *format = pcx_text_get(bot->config->language, string);
+        const char *format = pcx_text_get(bot->bot_config->language, string);
         pcx_buffer_append_vprintf(&buf, format, ap);
 
         send_message(bot,
@@ -614,7 +615,7 @@ get_known_ids_file(struct pcx_bot *bot)
 
         return pcx_strconcat(home,
                              "/.pucxobot/known-ids-",
-                             bot->config->botname,
+                             bot->bot_config->botname,
                              ".txt",
                              NULL);
 }
@@ -802,7 +803,7 @@ show_help(struct pcx_bot *bot,
           int64_t chat_id,
           int64_t message_id)
 {
-        char *help = game->get_help_cb(bot->config->language);
+        char *help = game->get_help_cb(bot->bot_config->language);
 
         send_message_full(bot,
                           chat_id,
@@ -820,7 +821,7 @@ can_run_game(struct pcx_bot *bot,
              const struct pcx_game *game)
 {
         /* Skip games that don’t have a translation */
-        return pcx_text_get(bot->config->language,
+        return pcx_text_get(bot->bot_config->language,
                             game->start_command) != NULL;
 }
 
@@ -1008,7 +1009,7 @@ join_game(struct pcx_bot *bot,
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         const char *final_separator =
-                pcx_text_get(bot->config->language,
+                pcx_text_get(bot->bot_config->language,
                              PCX_TEXT_STRING_FINAL_CONJUNCTION);
 
         for (unsigned i = 0; i < game->n_players; i++) {
@@ -1025,7 +1026,7 @@ join_game(struct pcx_bot *bot,
                             info->chat_id,
                             info->message_id,
                             PCX_TEXT_STRING_WELCOME,
-                            pcx_text_get(bot->config->language,
+                            pcx_text_get(bot->bot_config->language,
                                          game->type->name_string),
                             (char *) buf.data);
 
@@ -1045,7 +1046,7 @@ check_id_valid_for_game(struct pcx_bot *bot,
                                     info->chat_id,
                                     info->message_id,
                                     PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE,
-                                    bot->config->botname);
+                                    bot->bot_config->botname);
                 return false;
         }
 
@@ -1090,8 +1091,9 @@ send_game_question_reply(struct pcx_bot *bot,
 
                 const struct pcx_game *game = pcx_game_list[i];
 
-                buttons[n_buttons].text = pcx_text_get(bot->config->language,
-                                                       game->name_string);
+                buttons[n_buttons].text =
+                        pcx_text_get(bot->bot_config->language,
+                                     game->name_string);
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&buf, "%s:%s", keyword, game->name);
@@ -1104,7 +1106,7 @@ send_game_question_reply(struct pcx_bot *bot,
                           info->chat_id,
                           info->message_id,
                           PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                          pcx_text_get(bot->config->language, question),
+                          pcx_text_get(bot->bot_config->language, question),
                           n_buttons,
                           buttons);
 
@@ -1161,7 +1163,7 @@ log_start_game(struct pcx_bot *bot,
                                          info->first_name);
         }
 
-        pcx_buffer_append_printf(&buf, " via @%s", bot->config->botname);
+        pcx_buffer_append_printf(&buf, " via @%s", bot->bot_config->botname);
 
         pcx_log("%s", (const char *) buf.data);
 
@@ -1264,9 +1266,10 @@ start_game(struct pcx_bot *bot,
                 game->letter_id,
                 game->n_players);
 
-        game->game = game->type->create_game_cb(&game_callbacks,
+        game->game = game->type->create_game_cb(bot->config,
+                                                &game_callbacks,
                                                 game,
-                                                bot->config->language,
+                                                bot->bot_config->language,
                                                 game->n_players,
                                                 names);
 
@@ -1378,7 +1381,7 @@ is_command(struct pcx_bot *bot,
 {
         return is_command_str(text,
                               length,
-                              pcx_text_get(bot->config->language, string));
+                              pcx_text_get(bot->bot_config->language, string));
 
 }
 
@@ -1407,9 +1410,9 @@ process_entity(struct pcx_bot *bot,
         const char *at = memchr(info->text + offset, '@', length);
 
         if (at) {
-                size_t botname_len = strlen(bot->config->botname);
+                size_t botname_len = strlen(bot->bot_config->botname);
                 if (info->text + offset + length - at - 1 != botname_len ||
-                    memcmp(at + 1, bot->config->botname, botname_len)) {
+                    memcmp(at + 1, bot->bot_config->botname, botname_len)) {
                         return;
                 }
 
@@ -1774,7 +1777,7 @@ add_command_description(struct pcx_bot *bot,
 {
         struct json_object *obj = json_object_new_object();
 
-        const char *command_text = pcx_text_get(bot->config->language,
+        const char *command_text = pcx_text_get(bot->bot_config->language,
                                                 command);
         if (command_text[0] == '/')
                 command_text++;
@@ -1785,7 +1788,7 @@ add_command_description(struct pcx_bot *bot,
         json_object_object_add(obj, "command", command_str);
 
         struct json_object *desc_str =
-                json_object_new_string(pcx_text_get(bot->config->language,
+                json_object_new_string(pcx_text_get(bot->bot_config->language,
                                                     desc));
         json_object_object_add(obj, "description", desc_str);
 
@@ -1848,8 +1851,9 @@ queue_update_commands_request(struct pcx_bot *bot)
 }
 
 struct pcx_bot *
-pcx_bot_new(struct pcx_curl_multi *pcurl,
-            const struct pcx_config_bot *config)
+pcx_bot_new(const struct pcx_config *config,
+            const struct pcx_config_bot *bot_config,
+            struct pcx_curl_multi *pcurl)
 {
         struct pcx_bot *bot = pcx_calloc(sizeof *bot);
 
@@ -1861,13 +1865,14 @@ pcx_bot_new(struct pcx_curl_multi *pcurl,
         pcx_buffer_init(&bot->known_ids);
 
         bot->config = config;
+        bot->bot_config = bot_config;
 
         load_known_ids(bot);
 
         bot->tokener = json_tokener_new();
 
         bot->url_base = pcx_strconcat("https://api.telegram.org/bot",
-                                      bot->config->apikey,
+                                      bot->bot_config->apikey,
                                       "/",
                                       NULL);
 
