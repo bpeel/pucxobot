@@ -113,10 +113,6 @@ struct pcx_coup {
 
         /* Whether the game is being played with the reformation extension */
         bool reformation_extension;
-        /* Set once all players are on the same team. It won’t be
-         * unset for the rest of the game.
-         */
-        bool reunified;
         /* The amount of coins in the treasury. Coins paid for
          * conversion end up here.
          */
@@ -546,8 +542,7 @@ get_buttons(struct pcx_coup *coup,
                 add_button(coup, buffer, &coup_button);
 
         if (coup->reformation_extension) {
-                if (!coup->reunified &&
-                    player->coins >= MIN(PCX_COUP_CONVERT_COST,
+                if (player->coins >= MIN(PCX_COUP_CONVERT_COST,
                                          PCX_COUP_CONVERT_SELF_COST))
                         add_button(coup, buffer, &convert_button);
 
@@ -782,13 +777,9 @@ take_card(struct pcx_coup *coup)
         return coup->deck[--coup->n_cards];
 }
 
-static void
-check_reunification(struct pcx_coup *coup)
+static bool
+is_reunified(struct pcx_coup *coup)
 {
-        if (!coup->reformation_extension ||
-            coup->reunified)
-                return;
-
         int alive_player;
 
         for (alive_player = 0; alive_player < coup->n_players; alive_player++) {
@@ -797,9 +788,7 @@ check_reunification(struct pcx_coup *coup)
         }
 
         /* Everybody dead? */
-        return;
-
-        bool found_other_player = false;
+        return true;
 
 found_alive_player:
         for (int other_player = alive_player + 1;
@@ -808,22 +797,12 @@ found_alive_player:
                 if (!is_alive(coup->players + other_player))
                         continue;
 
-                found_other_player = true;
-
                 if (coup->players[alive_player].allegiance !=
                     coup->players[other_player].allegiance)
-                        return;
+                        return false;
         }
 
-        coup->reunified = true;
-
-        /* Don’t bother reporting the message if it’s also the end of
-         * the game.
-         */
-        if (!found_other_player)
-                return;
-
-        coup_note(coup, PCX_TEXT_STRING_REUNIFICATION_OCCURED);
+        return true;
 }
 
 static void
@@ -848,7 +827,6 @@ choose_card_to_lose(struct pcx_coup *coup,
         take_action(coup);
 
         player->cards[extra_data].dead = true;
-        check_reunification(coup);
         show_cards(coup, player_num);
         stack_pop(coup);
 }
@@ -901,10 +879,8 @@ choose_card_to_lose_idle(struct pcx_coup *coup)
                                 changed = true;
                         }
                 }
-                if (changed) {
-                        check_reunification(coup);
+                if (changed)
                         show_cards(coup, player_num);
-                }
                 return;
         }
 
@@ -1167,7 +1143,6 @@ do_reveal(struct pcx_coup *coup,
                                 break;
                         }
                 }
-                check_reunification(coup);
                 show_cards(coup, data->challenged_player);
 
                 take_action(coup);
@@ -1503,11 +1478,11 @@ get_players_that_need_to_accept(struct pcx_coup *coup,
                         continue;
 
                 if (coup->reformation_extension &&
-                    !coup->reunified &&
                     (data->flags & ~CHALLENGE_FLAG_BLOCK) == 0 &&
                     data->target_player == -1 &&
                     coup->players[data->player_num].allegiance ==
-                    coup->players[i].allegiance)
+                    coup->players[i].allegiance &&
+                    !is_reunified(coup))
                         continue;
 
                 need_accept |= UINT32_C(1) << i;
@@ -1574,9 +1549,9 @@ check_challenge_callback_data(struct pcx_coup *coup,
                         return;
                 if (data->target_player == -1) {
                         if (coup->reformation_extension &&
-                            !coup->reunified &&
                             coup->players[data->player_num].allegiance ==
-                            coup->players[player_num].allegiance)
+                            coup->players[player_num].allegiance &&
+                            !is_reunified(coup))
                                 return;
                 } else if (player_num != data->target_player) {
                         return;
@@ -1631,7 +1606,7 @@ static enum pcx_text_string
 get_no_target_block_message(struct pcx_coup *coup,
                             struct challenge_data *data)
 {
-        if (coup->reformation_extension && !coup->reunified) {
+        if (coup->reformation_extension && !is_reunified(coup)) {
                 if ((data->flags & ~(CHALLENGE_FLAG_BLOCK)))
                         return PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE;
                 else
@@ -1799,9 +1774,9 @@ is_valid_target(struct pcx_coup *coup,
                 return false;
 
         if (coup->reformation_extension &&
-            !coup->reunified &&
             coup->players[coup->current_player].allegiance ==
-            coup->players[player_num].allegiance)
+            coup->players[player_num].allegiance &&
+            !is_reunified(coup))
                 return false;
 
         return true;
@@ -1968,8 +1943,7 @@ static void
 do_convert(struct pcx_coup *coup,
            int extra_data)
 {
-        if (!coup->reformation_extension ||
-            coup->reunified)
+        if (!coup->reformation_extension)
                 return;
 
         if (extra_data == -1) {
@@ -2010,8 +1984,6 @@ do_convert(struct pcx_coup *coup,
         target->allegiance ^= 1;
         player->coins -= cost;
         coup->treasury += cost;
-
-        check_reunification(coup);
 }
 
 static void

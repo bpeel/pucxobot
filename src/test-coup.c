@@ -156,32 +156,6 @@ is_alive(const struct player_status *player)
         return false;
 }
 
-static bool
-is_reunified(const struct test_data *data)
-{
-        int first_player;
-
-        for (first_player = 0; first_player < data->n_players; first_player++) {
-                if (is_alive(data->status.players + first_player))
-                        goto found_first_player;
-        }
-
-        return true;
-
-found_first_player:
-        for (int next_player = first_player + 1;
-             next_player < data->n_players;
-             next_player++) {
-                if (!is_alive(data->status.players + next_player))
-                        continue;
-                if (data->status.players[first_player].allegiance !=
-                    data->status.players[next_player].allegiance)
-                        return false;
-        }
-
-        return true;
-}
-
 static int
 fake_random_number_generator(void)
 {
@@ -342,7 +316,7 @@ add_status_buttons(struct test_data *data,
                 add_button_to_message(message, "coup", "Puĉo");
 
         if (data->reformation) {
-                if (player->coins > 0 && !is_reunified(data)) {
+                if (player->coins > 0) {
                         add_button_to_message(message,
                                               "convert",
                                               "Konverti");
@@ -2878,7 +2852,7 @@ test_convert(void)
         if (!ret)
                 goto done;
 
-        /* David can convert himself. This will trigger reunification. */
+        /* David can convert himself */
         data->status.players[3].coins = 2;
         data->status.players[3].allegiance = 0;
         data->status.current_player = 0;
@@ -2890,16 +2864,30 @@ test_convert(void)
                                  MESSAGE_TYPE_GLOBAL,
                                  "David pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_GLOBAL,
-                                 "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian kaj konvertado ne plu "
-                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
 
         if (!ret)
                 goto done;
 
+        /* Everybody is on the same team, but conversion is still
+         * allowed.
+         */
+        data->status.players[0].coins = 2;
+        data->status.players[0].allegiance = 1;
+        data->status.current_player= 1;
+        data->status.treasury = 6;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "convert:0",
+                                 MESSAGE_TYPE_GLOBAL,
+                                 "Alice pagas 1 moneron al la trezorejo kaj "
+                                 "konvertas sin mem.",
+                                 MESSAGE_TYPE_STATUS,
+                                 -1);
+        if (!ret)
+                goto done;
 
 done:
         free_test_data(data);
@@ -2968,10 +2956,6 @@ test_death_makes_reunification(void)
                                  "coup:2",
                                  MESSAGE_TYPE_GLOBAL,
                                  "💣 David faras puĉon kontraŭ Charles",
-                                 MESSAGE_TYPE_GLOBAL,
-                                 "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian kaj konvertado ne plu "
-                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
         if (!ret)
@@ -3150,10 +3134,6 @@ test_block_other_allegiance(void)
                                  MESSAGE_TYPE_GLOBAL,
                                  "David pagas 2 monerojn al la trezorejo kaj "
                                  "konvertas Alice.",
-                                 MESSAGE_TYPE_GLOBAL,
-                                 "Restas nur unu partio. Ĉiu ajn nun povas "
-                                 "celi iun ajn alian kaj konvertado ne plu "
-                                 "eblas.",
                                  MESSAGE_TYPE_STATUS,
                                  -1);
         if (!ret)

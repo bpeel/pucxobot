@@ -302,9 +302,6 @@ pcx_text_pt_br[] = {
         "o embaixador",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "o inquisidor",
-        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
-        "A corte foi reunida. Qualquer um pode ter todos como alvo "
-        "e não é possível converter.",
         [PCX_TEXT_STRING_COINS_IN_TREASURY] =
         "Tesouro: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =

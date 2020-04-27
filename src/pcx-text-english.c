@@ -311,9 +311,6 @@ pcx_text_english[] = {
         "the ambassador",
         [PCX_TEXT_STRING_CHARACTER_OBJECT_NAME_INSPECTOR] =
         "the inquisitor",
-        [PCX_TEXT_STRING_REUNIFICATION_OCCURED] =
-        "The court has now been reunified. Anyone can now target anyone else "
-        "and conversion is no longer possible.",
         [PCX_TEXT_STRING_COINS_IN_TREASURY] =
         "Treasury: %i",
         [PCX_TEXT_STRING_ROLE_NAME_DRIVER] =
