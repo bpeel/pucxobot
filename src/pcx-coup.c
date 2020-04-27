@@ -1582,6 +1582,12 @@ check_challenge_callback_data(struct pcx_coup *coup,
                         return;
                 }
 
+                /* If the action has a target then don’t let the
+                 * player block twice.
+                 */
+                if (data->target_player != -1)
+                        data->flags &= ~CHALLENGE_FLAG_BLOCK;
+
                 remove_challenge_timeout(data);
 
                 struct pcx_buffer blocked_names = PCX_BUFFER_STATIC_INIT;

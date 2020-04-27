@@ -1809,12 +1809,9 @@ test_fail_block_assassinate(void)
                                  1,
                                  MESSAGE_TYPE_GLOBAL,
                                  "🗡 Alice volas murdi Bob\n"
-                                 "Ĉu iu volas defii rin?\n"
-                                 "Aŭ Bob, ĉu vi volas pretendi havi la "
-                                 "grafinon kaj bloki rin?",
+                                 "Ĉu iu volas defii rin?",
                                  MESSAGE_TYPE_BUTTONS,
                                  "challenge", "Defii",
-                                 "block", "Bloki",
                                  "accept", "Akcepti",
                                  NULL,
                                  -1);
