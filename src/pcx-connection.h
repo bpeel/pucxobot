@@ -28,6 +28,7 @@
 #include "pcx-buffer.h"
 #include "pcx-main-context.h"
 #include "pcx-signal.h"
+#include "pcx-player.h"
 
 enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_ERROR,
@@ -57,6 +58,14 @@ pcx_connection_get_remote_address_string(struct pcx_connection *conn);
 
 const struct pcx_netaddress *
 pcx_connection_get_remote_address(struct pcx_connection *conn);
+
+struct pcx_player *
+pcx_connection_get_player(struct pcx_connection *conn);
+
+void
+pcx_connection_set_player(struct pcx_connection *conn,
+                          struct pcx_player *player,
+                          bool from_reconnect);
 
 uint64_t
 pcx_connection_get_last_update_time(struct pcx_connection *conn);

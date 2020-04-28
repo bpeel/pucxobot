@@ -54,6 +54,11 @@ struct pcx_connection {
         uint8_t write_buf[1024];
         size_t write_buf_pos;
 
+        struct pcx_player *player;
+        struct pcx_listener conversation_listener;
+
+        bool sent_player_id;
+
         /* If pong_queued is non-zero then pong_data then we need to
          * send a pong control frame with the payload given payload.
          */
@@ -167,6 +172,11 @@ connection_is_ready_to_write(struct pcx_connection *conn)
         if (conn->pong_queued)
                 return true;
 
+        if (conn->player) {
+                if (!conn->sent_player_id)
+                        return true;
+        }
+
         return false;
 }
 
@@ -179,6 +189,51 @@ update_poll_flags(struct pcx_connection *conn)
                 flags |= PCX_MAIN_CONTEXT_POLL_OUT;
 
         pcx_main_context_modify_poll(conn->socket_source, flags);
+}
+
+static int
+write_command(struct pcx_connection *conn,
+              uint16_t command,
+              ...)
+{
+        int ret;
+        va_list ap;
+
+        va_start(ap, command);
+
+        ret = pcx_proto_write_command_v(conn->write_buf +
+                                        conn->write_buf_pos,
+                                        sizeof conn->write_buf -
+                                        conn->write_buf_pos,
+                                        command,
+                                        ap);
+
+        va_end(ap);
+
+        return ret;
+}
+
+static bool
+write_player_id(struct pcx_connection *conn)
+{
+        int wrote;
+
+        wrote = write_command(conn,
+
+                              PCX_PROTO_PLAYER_ID,
+
+                              PCX_PROTO_TYPE_UINT64,
+                              conn->player->id,
+
+                              PCX_PROTO_TYPE_NONE);
+
+        if (wrote == -1)
+                return false;
+
+        conn->write_buf_pos += wrote;
+        conn->sent_player_id = true;
+
+        return true;
 }
 
 static bool
@@ -204,6 +259,13 @@ static void
 fill_write_buf(struct pcx_connection *conn)
 {
         if (conn->pong_queued && !write_pong(conn))
+                return;
+
+        if (conn->player == NULL)
+                return;
+
+        if (!conn->sent_player_id &&
+            !write_player_id(conn))
                 return;
 }
 
@@ -657,6 +719,11 @@ pcx_connection_free(struct pcx_connection *conn)
         pcx_free(conn->remote_address_string);
         pcx_close(conn->sock);
 
+        if (conn->player) {
+                pcx_list_remove(&conn->conversation_listener.link);
+                conn->player->ref_count--;
+        }
+
         if (conn->ws_parser)
                 pcx_free(conn->ws_parser);
 
@@ -747,4 +814,50 @@ uint64_t
 pcx_connection_get_last_update_time(struct pcx_connection *conn)
 {
         return conn->last_update_time;
+}
+
+static bool
+conversation_event_cb(struct pcx_listener *listener,
+                      void *data)
+{
+        struct pcx_connection *connection =
+               pcx_container_of(listener,
+                                struct pcx_connection,
+                                conversation_listener);
+        const struct pcx_conversation_event *event = data;
+
+        switch (event->type) {
+        case PCX_CONVERSATION_EVENT_STARTED:
+        case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
+        case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
+                break;
+        }
+
+        return true;
+}
+
+void
+pcx_connection_set_player(struct pcx_connection *conn,
+                          struct pcx_player *player,
+                          bool from_reconnect)
+{
+        assert(conn->player == NULL);
+        assert(player != NULL);
+
+        player->ref_count++;
+
+        conn->player = player;
+        pcx_signal_add(&player->conversation->event_signal,
+                       &conn->conversation_listener);
+        conn->conversation_listener.notify = conversation_event_cb;
+
+        conn->sent_player_id = from_reconnect;
+
+        update_poll_flags(conn);
+}
+
+struct pcx_player *
+pcx_connection_get_player(struct pcx_connection *conn)
+{
+        return conn->player;
 }
