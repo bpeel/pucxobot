@@ -22,7 +22,8 @@
 #include "pcx-main-context.h"
 
 struct pcx_player *
-pcx_player_new(uint64_t id)
+pcx_player_new(uint64_t id,
+               struct pcx_conversation *conversation)
 {
         struct pcx_player *player = pcx_alloc(sizeof *player);
 
@@ -30,11 +31,17 @@ pcx_player_new(uint64_t id)
         player->ref_count = 0;
         player->last_update_time = pcx_main_context_get_monotonic_clock(NULL);
 
+        pcx_conversation_ref(conversation);
+        player->conversation = conversation;
+
+        player->player_num = pcx_conversation_add_player(conversation);
+
         return player;
 }
 
 void
 pcx_player_free(struct pcx_player *player)
 {
+        pcx_conversation_unref(player->conversation);
         pcx_free(player);
 }

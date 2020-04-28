@@ -22,6 +22,7 @@
 #include <stdint.h>
 
 #include "pcx-player.h"
+#include "pcx-conversation.h"
 
 struct pcx_playerbase *
 pcx_playerbase_new(void);
@@ -32,6 +33,7 @@ pcx_playerbase_get_player_by_id(struct pcx_playerbase *playerbase,
 
 struct pcx_player *
 pcx_playerbase_add_player(struct pcx_playerbase *playerbase,
+                          struct pcx_conversation *conversation,
                           uint64_t id);
 
 void

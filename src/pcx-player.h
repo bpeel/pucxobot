@@ -22,12 +22,18 @@
 #include <stdint.h>
 
 #include "pcx-list.h"
+#include "pcx-conversation.h"
 
 struct pcx_player {
         /* This is the randomly generated globally unique ID for the
          * player that is used like a password for the clients.
          */
         uint64_t id;
+
+        /* Player index within the conversation */
+        int player_num;
+
+        struct pcx_conversation *conversation;
 
         /* The number of connections listening to this player. The
          * player is a candidate for garbage collection if this
@@ -49,7 +55,8 @@ struct pcx_player {
 };
 
 struct pcx_player *
-pcx_player_new(uint64_t id);
+pcx_player_new(uint64_t id,
+               struct pcx_conversation *conversation);
 
 void
 pcx_player_free(struct pcx_player *player);
