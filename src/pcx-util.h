@@ -43,6 +43,52 @@
 #define PCX_N_ELEMENTS(array) \
   (sizeof (array) / sizeof ((array)[0]))
 
+#define PCX_SWAP_UINT16(x)                      \
+  ((uint16_t)                                   \
+   (((uint16_t) (x) >> 8) |                     \
+    ((uint16_t) (x) << 8)))
+#define PCX_SWAP_UINT32(x)                               \
+  ((uint32_t)                                           \
+   ((((uint32_t) (x) & UINT32_C (0x000000ff)) << 24) |  \
+    (((uint32_t) (x) & UINT32_C (0x0000ff00)) << 8) |   \
+    (((uint32_t) (x) & UINT32_C (0x00ff0000)) >> 8) |   \
+    (((uint32_t) (x) & UINT32_C (0xff000000)) >> 24)))
+#define PCX_SWAP_UINT64(x)                                               \
+  ((uint64_t)                                                           \
+   ((((uint64_t) (x) & (uint64_t) UINT64_C (0x00000000000000ff)) << 56) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x000000000000ff00)) << 40) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x0000000000ff0000)) << 24) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x00000000ff000000)) << 8) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x000000ff00000000)) >> 8) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x0000ff0000000000)) >> 24) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0x00ff000000000000)) >> 40) | \
+    (((uint64_t) (x) & (uint64_t) UINT64_C (0xff00000000000000)) >> 56)))
+
+#if defined(HAVE_BIG_ENDIAN)
+#define PCX_UINT16_FROM_BE(x) ((uint16_t) (x))
+#define PCX_UINT32_FROM_BE(x) ((uint32_t) (x))
+#define PCX_UINT64_FROM_BE(x) ((uint64_t) (x))
+#define PCX_UINT16_FROM_LE(x) PCX_SWAP_UINT16((uint16_t) (x))
+#define PCX_UINT32_FROM_LE(x) PCX_SWAP_UINT32((uint32_t) (x))
+#define PCX_UINT64_FROM_LE(x) PCX_SWAP_UINT64((uint64_t) (x))
+#elif defined(HAVE_LITTLE_ENDIAN)
+#define PCX_UINT16_FROM_LE(x) ((uint16_t) (x))
+#define PCX_UINT32_FROM_LE(x) ((uint32_t) (x))
+#define PCX_UINT64_FROM_LE(x) ((uint64_t) (x))
+#define PCX_UINT16_FROM_BE(x) PCX_SWAP_UINT16((uint16_t) (x))
+#define PCX_UINT32_FROM_BE(x) PCX_SWAP_UINT32((uint32_t) (x))
+#define PCX_UINT64_FROM_BE(x) PCX_SWAP_UINT64((uint64_t) (x))
+#else
+#error Platform is neither little-endian nor big-endian
+#endif
+
+#define PCX_UINT16_TO_LE(x) PCX_UINT16_FROM_LE(x)
+#define PCX_UINT16_TO_BE(x) PCX_UINT16_FROM_BE(x)
+#define PCX_UINT32_TO_LE(x) PCX_UINT32_FROM_LE(x)
+#define PCX_UINT32_TO_BE(x) PCX_UINT32_FROM_BE(x)
+#define PCX_UINT64_TO_LE(x) PCX_UINT64_FROM_LE(x)
+#define PCX_UINT64_TO_BE(x) PCX_UINT64_FROM_BE(x)
+
 void *
 pcx_alloc(size_t size);
 
