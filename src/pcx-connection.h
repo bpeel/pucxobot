@@ -36,6 +36,7 @@ enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_NEW_PLAYER,
         PCX_CONNECTION_EVENT_RECONNECT,
         PCX_CONNECTION_EVENT_START,
+        PCX_CONNECTION_EVENT_BUTTON,
 };
 
 struct pcx_connection_event {
@@ -46,6 +47,11 @@ struct pcx_connection_event {
 struct pcx_connection_reconnect_event {
         struct pcx_connection_event base;
         uint64_t player_id;
+};
+
+struct pcx_connection_button_event {
+        struct pcx_connection_event base;
+        const char *button_data;
 };
 
 struct pcx_connection;

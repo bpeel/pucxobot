@@ -408,6 +408,29 @@ handle_start(struct pcx_connection *conn)
 }
 
 static bool
+handle_button(struct pcx_connection *conn)
+{
+        struct pcx_connection_button_event event;
+
+        if (conn->message_data_length <= 1) {
+                pcx_log("Invalid button command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        char *button_data = pcx_strndup((char *) conn->message_data + 1,
+                                        conn->message_data_length - 1);
+        event.button_data = button_data;
+
+        emit_event(conn, PCX_CONNECTION_EVENT_BUTTON, &event.base);
+
+        pcx_free(button_data);
+
+        return true;
+}
+
+static bool
 handle_keep_alive(struct pcx_connection *conn)
 {
         if (!pcx_proto_read_payload(conn->message_data + 1,
@@ -432,6 +455,8 @@ process_message(struct pcx_connection *conn)
                 return handle_reconnect(conn);
         case PCX_PROTO_START:
                 return handle_start(conn);
+        case PCX_PROTO_BUTTON:
+                return handle_button(conn);
         case PCX_PROTO_KEEP_ALIVE:
                 return handle_keep_alive(conn);
         }

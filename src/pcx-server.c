@@ -288,6 +288,30 @@ handle_start(struct pcx_server *server,
 }
 
 static bool
+handle_button(struct pcx_server *server,
+              struct pcx_server_client *client,
+              struct pcx_connection_button_event *event)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player == NULL) {
+                pcx_log("Client %s sent a button command before a hello",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        pcx_conversation_push_button(player->conversation,
+                                     player->player_num,
+                                     event->button_data);
+
+        return true;
+}
+
+static bool
 connection_event_cb(struct pcx_listener *listener,
                     void *data)
 {
@@ -313,6 +337,12 @@ connection_event_cb(struct pcx_listener *listener,
 
         case PCX_CONNECTION_EVENT_START:
                 return handle_start(server, client);
+
+        case PCX_CONNECTION_EVENT_BUTTON: {
+                struct pcx_connection_button_event *de = (void *) event;
+                return handle_button(server, client, de);
+        }
+
         }
 
         return true;
