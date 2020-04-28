@@ -43,6 +43,7 @@ src = [
         'pcx-superfight-help.c',
         'pcx-zombie.c',
         'pcx-zombie-help.c',
+        'sha1.c',
 ]
 
 src += translations
