@@ -11,3 +11,4 @@ foreach a : ['-Wall', '-Wuninitialized', '-Wempty-body', '-Wformat',
 endforeach
 
 subdir('src')
+subdir('web')
