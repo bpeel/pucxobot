@@ -37,6 +37,9 @@
 #include "pcx-file-error.h"
 #include "pcx-socket.h"
 #include "pcx-main-context.h"
+#include "pcx-ws-parser.h"
+#include "pcx-base64.h"
+#include "sha1.h"
 
 struct pcx_connection {
         struct pcx_netaddress remote_address;
@@ -56,7 +59,29 @@ struct pcx_connection {
          * connection. This is used for garbage collection.
          */
         uint64_t last_update_time;
+
+        /* This is freed and becomes NULL once the headers have all
+         * been parsed.
+         */
+        struct pcx_ws_parser *ws_parser;
+        /* This is allocated temporarily between getting the WebSocket
+         * key header and finishing all of the headers.
+         */
+        SHA1_CTX *sha1_ctx;
 };
+
+static const char
+ws_sec_key_guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+static const char
+ws_header_prefix[] =
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: ";
+
+static const char
+ws_header_postfix[] = "\r\n\r\n";
 
 static bool
 emit_event(struct pcx_connection *conn,
@@ -140,6 +165,148 @@ fill_write_buf(struct pcx_connection *conn)
 }
 
 static void
+process_frames(struct pcx_connection *conn)
+{
+        conn->read_buf_pos = 0;
+}
+
+static bool
+ws_request_line_received_cb(const char *method,
+                            const char *uri,
+                            void *user_data)
+{
+        return true;
+}
+
+static bool
+ws_header_received_cb(const char *field_name,
+                      const char *value,
+                      void *user_data)
+{
+        struct pcx_connection *conn = user_data;
+
+        if (!pcx_ascii_string_case_equal(field_name, "sec-websocket-key"))
+                return true;
+
+        if (conn->sha1_ctx != NULL) {
+                pcx_log("Client at %s sent a WebSocket header with multiple "
+                        "Sec-WebSocket-Key headers",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        conn->sha1_ctx = pcx_alloc(sizeof *conn->sha1_ctx);
+        SHA1Init(conn->sha1_ctx);
+        SHA1Update(conn->sha1_ctx, (const uint8_t *) value, strlen(value));
+
+        return true;
+}
+
+static bool
+ws_headers_finished(struct pcx_connection *conn)
+{
+        uint8_t sha1_hash[SHA1_DIGEST_LENGTH];
+        size_t encoded_size;
+
+        if (conn->sha1_ctx == NULL) {
+                pcx_log("Client at %s sent a WebSocket header without a "
+                        "Sec-WebSocket-Key header",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        SHA1Update(conn->sha1_ctx,
+                   (const uint8_t *) ws_sec_key_guid,
+                   sizeof ws_sec_key_guid - 1);
+        SHA1Final(sha1_hash, conn->sha1_ctx);
+        pcx_free(conn->sha1_ctx);
+        conn->sha1_ctx = NULL;
+
+        /* Send the WebSocket protocol response. This is the first
+         * thing we'll send to the client so there should always be
+         * enough space in the write buffer.
+         */
+
+        {
+                _Static_assert(PCX_BASE64_ENCODED_SIZE(SHA1_DIGEST_LENGTH) +
+                               sizeof ws_header_prefix - 1 +
+                               sizeof ws_header_postfix - 1 <=
+                               sizeof conn->write_buf,
+                               "The write buffer is too small to contain the "
+                               "WebSocket protocol reply");
+        }
+
+        memcpy(conn->write_buf,
+               ws_header_prefix,
+               sizeof ws_header_prefix - 1);
+        encoded_size = pcx_base64_encode(sha1_hash,
+                                         sizeof sha1_hash,
+                                         (char *) conn->write_buf +
+                                         sizeof ws_header_prefix - 1);
+        assert(encoded_size == PCX_BASE64_ENCODED_SIZE(SHA1_DIGEST_LENGTH));
+        memcpy(conn->write_buf + sizeof ws_header_prefix - 1 + encoded_size,
+               ws_header_postfix,
+               sizeof ws_header_postfix - 1);
+
+        conn->write_buf_pos = (PCX_BASE64_ENCODED_SIZE(SHA1_DIGEST_LENGTH) +
+                               sizeof ws_header_prefix - 1 +
+                               sizeof ws_header_postfix - 1);
+
+        update_poll_flags(conn);
+
+        return true;
+}
+
+static const struct pcx_ws_parser_vtable
+ws_parser_vtable = {
+        .request_line_received = ws_request_line_received_cb,
+        .header_received = ws_header_received_cb
+};
+
+static void
+handle_ws_data(struct pcx_connection *conn,
+               size_t got)
+{
+        struct pcx_error *error = NULL;
+        enum pcx_ws_parser_result result;
+        size_t consumed;
+
+        result = pcx_ws_parser_parse_data(conn->ws_parser,
+                                          conn->read_buf,
+                                          got,
+                                          &consumed,
+                                          &error);
+
+        switch (result) {
+        case PCX_WS_PARSER_RESULT_NEED_MORE_DATA:
+                break;
+        case PCX_WS_PARSER_RESULT_FINISHED:
+                pcx_ws_parser_free(conn->ws_parser);
+                conn->ws_parser = NULL;
+                memmove(conn->read_buf,
+                        conn->read_buf + consumed,
+                        got - consumed);
+                conn->read_buf_pos = got - consumed;
+
+                if (ws_headers_finished(conn))
+                        process_frames(conn);
+                break;
+        case PCX_WS_PARSER_RESULT_ERROR:
+                if (error->domain != &pcx_ws_parser_error ||
+                    error->code != PCX_WS_PARSER_ERROR_CANCELLED) {
+                        pcx_log("WebSocket protocol error from %s: %s",
+                                conn->remote_address_string,
+                                error->message);
+                        set_error_state(conn);
+                }
+                pcx_error_free(error);
+                break;
+        }
+}
+
+static void
 handle_read_error(struct pcx_connection *conn,
                   size_t got)
 {
@@ -176,6 +343,14 @@ handle_read(struct pcx_connection *conn)
                 now = pcx_main_context_get_monotonic_clock(NULL);
 
                 conn->last_update_time = now;
+
+                if (conn->ws_parser) {
+                        handle_ws_data(conn, got);
+                } else {
+                        conn->read_buf_pos += got;
+
+                        process_frames(conn);
+                }
         }
 }
 
@@ -234,6 +409,12 @@ pcx_connection_free(struct pcx_connection *conn)
         pcx_free(conn->remote_address_string);
         pcx_close(conn->sock);
 
+        if (conn->ws_parser)
+                pcx_free(conn->ws_parser);
+
+        if (conn->sha1_ctx)
+                pcx_free(conn->sha1_ctx);
+
         pcx_free(conn);
 }
 
@@ -248,6 +429,7 @@ new_for_socket(int sock,
         conn->sock = sock;
         conn->remote_address = *remote_address;
         conn->remote_address_string = pcx_netaddress_to_string(remote_address);
+        conn->ws_parser = pcx_ws_parser_new(&ws_parser_vtable, conn);
 
         pcx_signal_init(&conn->event_signal);
 
