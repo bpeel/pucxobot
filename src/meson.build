@@ -22,6 +22,7 @@ src = [
         'pcx-bot.c',
         'pcx-server.c',
         'pcx-netaddress.c',
+        'pcx-socket.c',
         'pcx-file-error.c',
         'pcx-message-queue.c',
         'pcx-key-value.c',
