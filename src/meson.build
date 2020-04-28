@@ -23,6 +23,7 @@ src = [
         'pcx-server.c',
         'pcx-player.c',
         'pcx-playerbase.c',
+        'pcx-conversation.c',
         'pcx-proto.c',
         'pcx-base64.c',
         'pcx-ws-parser.c',
