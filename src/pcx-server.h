@@ -27,7 +27,7 @@ extern struct pcx_error_domain
 pcx_server_error;
 
 enum pcx_server_error {
-        PCX_SERVER_ERROR_IO
+        PCX_SERVER_ERROR_INVALID_ADDRESS
 };
 
 struct pcx_server *
