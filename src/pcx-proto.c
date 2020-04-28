@@ -52,6 +52,36 @@ get_payload_length(va_list ap)
 
 #undef PCX_PROTO_TYPE
 
+size_t
+pcx_proto_get_frame_header_length(size_t payload_length)
+{
+        size_t frame_header_length = 2;
+
+        if (payload_length > 0xffff)
+                frame_header_length += sizeof (uint64_t);
+        else if (payload_length >= 126)
+                frame_header_length += sizeof (uint16_t);
+
+        return frame_header_length;
+}
+
+void
+pcx_proto_write_frame_header(uint8_t *buffer,
+                             size_t payload_length)
+{
+        /* opcode (2) (binary) with FIN bit set */
+        buffer[0] = 0x82;
+        if (payload_length > 0xffff) {
+                buffer[1] = 127;
+                pcx_proto_write_uint64_t(buffer + 2, payload_length);
+        } else if (payload_length >= 126) {
+                buffer[1] = 126;
+                pcx_proto_write_uint16_t(buffer + 2, payload_length);
+        } else {
+                buffer[1] = payload_length;
+        }
+}
+
 #define PCX_PROTO_TYPE(enum_name, type_name, ap_type_name)              \
         case enum_name:                                                 \
         pcx_proto_write_ ## type_name(buffer + pos,                     \
@@ -77,26 +107,12 @@ pcx_proto_write_command_v(uint8_t *buffer,
         payload_length = get_payload_length(ap_copy);
         va_end(ap_copy);
 
-        frame_header_length = 2;
-        if (payload_length > 0xffff)
-                frame_header_length += sizeof (uint64_t);
-        else if (payload_length >= 126)
-                frame_header_length += sizeof (uint16_t);
+        frame_header_length = pcx_proto_get_frame_header_length(payload_length);
 
         if (frame_header_length + payload_length > buffer_length)
                 return -1;
 
-        /* opcode (2) (binary) with FIN bit set */
-        buffer[0] = 0x82;
-        if (payload_length > 0xffff) {
-                buffer[1] = 127;
-                pcx_proto_write_uint64_t(buffer + 2, payload_length);
-        } else if (payload_length >= 126) {
-                buffer[1] = 126;
-                pcx_proto_write_uint16_t(buffer + 2, payload_length);
-        } else {
-                buffer[1] = payload_length;
-        }
+        pcx_proto_write_frame_header(buffer, payload_length);
 
         buffer[frame_header_length] = command;
 

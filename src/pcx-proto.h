@@ -147,4 +147,11 @@ pcx_proto_read_payload(const uint8_t *buffer,
                        size_t length,
                        ...);
 
+size_t
+pcx_proto_get_frame_header_length(size_t payload_length);
+
+void
+pcx_proto_write_frame_header(uint8_t *buffer,
+                             size_t payload_length);
+
 #endif /* PCX_PROTO_H */
