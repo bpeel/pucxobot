@@ -21,9 +21,11 @@
 #include "pcx-conversation.h"
 
 #include <assert.h>
+#include <string.h>
 
 #include "pcx-log.h"
 #include "pcx-util.h"
+#include "pcx-proto.h"
 
 struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config)
@@ -59,6 +61,14 @@ emit_event(struct pcx_conversation *conv,
 }
 
 static void
+add_string(uint8_t **p, const char *s)
+{
+        int len = strlen(s) + 1;
+        memcpy(*p, s, len);
+        *p += len;
+}
+
+static void
 queue_message(struct pcx_conversation *conv,
               int user_num,
               enum pcx_game_message_format format,
@@ -66,22 +76,49 @@ queue_message(struct pcx_conversation *conv,
               size_t n_buttons,
               const struct pcx_game_button *buttons)
 {
+        size_t payload_length =
+                1 +
+                1 +
+                strlen(text) + 1;
+
+        for (unsigned i = 0; i < n_buttons; i++) {
+                payload_length +=
+                        strlen(buttons[i].text) + 1 +
+                        strlen(buttons[i].data) + 1;
+        }
+
+        size_t frame_header_length =
+                pcx_proto_get_frame_header_length(payload_length);
+
+        uint8_t *buf = pcx_alloc(frame_header_length + payload_length);
+
+        pcx_proto_write_frame_header(buf, payload_length);
+
+        uint8_t *p = buf + frame_header_length;
+
+        *(p++) = PCX_PROTO_MESSAGE;
+
+        *p = format == PCX_GAME_MESSAGE_FORMAT_HTML ? 1 : 0;
+
+        if (user_num != -1)
+                *p |= 2;
+
+        p++;
+
+        add_string(&p, text);
+
+        for (unsigned i = 0; i < n_buttons; i++) {
+                add_string(&p, buttons[i].text);
+                add_string(&p, buttons[i].data);
+        }
+
+        assert(p - buf == frame_header_length + payload_length);
+
         struct pcx_conversation_message *message = pcx_calloc(sizeof *message);
 
         message->target_player = user_num;
-        message->format = format;
-        message->text = pcx_strdup(text);
-        message->n_buttons = n_buttons;
-
-        if (n_buttons > 0) {
-                message->buttons = pcx_alloc(n_buttons *
-                                             sizeof message->buttons[0]);
-
-                for (unsigned i = 0; i < n_buttons; i++) {
-                        message->buttons[i].text = pcx_strdup(buttons[i].text);
-                        message->buttons[i].data = pcx_strdup(buttons[i].data);
-                }
-        }
+        message->data = buf;
+        message->length = frame_header_length + payload_length;
 
         pcx_list_insert(conv->messages.prev, &message->link);
 
@@ -224,20 +261,9 @@ pcx_conversation_ref(struct pcx_conversation *conv)
 }
 
 static void
-destroy_button(struct pcx_game_button *button)
-{
-        pcx_free((char *) button->text);
-        pcx_free((char *) button->data);
-}
-
-static void
 free_message(struct pcx_conversation_message *message)
 {
-        for (unsigned i = 0; i < message->n_buttons; i++)
-                destroy_button(message->buttons + i);
-
-        pcx_free(message->text);
-        pcx_free(message->buttons);
+        pcx_free(message->data);
         pcx_free(message);
 }
 

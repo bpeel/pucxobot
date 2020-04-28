@@ -43,12 +43,12 @@ struct pcx_conversation_message {
         /* -1 if the message is a public message for all players */
         int target_player;
 
-        enum pcx_game_message_format format;
-
-        char *text;
-
-        size_t n_buttons;
-        struct pcx_game_button *buttons;
+        /* The message is encoded into a WebSocket frame just once and
+         * stored here so that it can be easily copied into all of the
+         * clients.
+         */
+        uint8_t *data;
+        size_t length;
 };
 
 struct pcx_conversation {
