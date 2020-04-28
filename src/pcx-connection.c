@@ -39,6 +39,7 @@
 #include "pcx-main-context.h"
 #include "pcx-ws-parser.h"
 #include "pcx-base64.h"
+#include "pcx-proto.h"
 #include "sha1.h"
 
 struct pcx_connection {
@@ -52,6 +53,24 @@ struct pcx_connection {
 
         uint8_t write_buf[1024];
         size_t write_buf_pos;
+
+        /* If pong_queued is non-zero then pong_data then we need to
+         * send a pong control frame with the payload given payload.
+         */
+        bool pong_queued;
+        _Static_assert(PCX_PROTO_MAX_CONTROL_FRAME_PAYLOAD <= UINT8_MAX,
+                       "The max pong data length is too for a uint8_t");
+        uint8_t pong_data_length;
+        uint8_t pong_data[PCX_PROTO_MAX_CONTROL_FRAME_PAYLOAD];
+
+        /* If message_data_length is non-zero then we are part way
+         * through reading a message whose data is stored in
+         * message_data.
+         */
+        _Static_assert(PCX_PROTO_MAX_MESSAGE_SIZE <= UINT8_MAX,
+                       "The message size is too long for a uint8_t");
+        uint8_t message_data_length;
+        uint8_t message_data[PCX_PROTO_MAX_MESSAGE_SIZE];
 
         struct pcx_signal event_signal;
 
@@ -145,6 +164,9 @@ connection_is_ready_to_write(struct pcx_connection *conn)
         if (conn->write_buf_pos > 0)
                 return true;
 
+        if (conn->pong_queued)
+                return true;
+
         return false;
 }
 
@@ -159,15 +181,220 @@ update_poll_flags(struct pcx_connection *conn)
         pcx_main_context_modify_poll(conn->socket_source, flags);
 }
 
+static bool
+write_pong(struct pcx_connection *conn)
+{
+        if (conn->write_buf_pos + conn->pong_data_length + 2 >
+            sizeof (conn->write_buf))
+                return false;
+
+        /* FIN bit + opcode 0xa (pong) */
+        conn->write_buf[conn->write_buf_pos++] = 0x8a;
+        conn->write_buf[conn->write_buf_pos++] = conn->pong_data_length;
+        memcpy(conn->write_buf + conn->write_buf_pos,
+               conn->pong_data,
+               conn->pong_data_length);
+        conn->write_buf_pos += conn->pong_data_length;
+        conn->pong_queued = false;
+
+        return true;
+}
+
 static void
 fill_write_buf(struct pcx_connection *conn)
 {
+        if (conn->pong_queued && !write_pong(conn))
+                return;
+}
+
+static bool
+process_control_frame(struct pcx_connection *conn,
+                      int opcode,
+                      const uint8_t *data,
+                      size_t data_length)
+{
+        switch (opcode) {
+        case 0x8:
+                pcx_log("Client %s sent a close control frame",
+                       conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        case 0x9:
+                assert(data_length < sizeof conn->pong_data);
+                memcpy(conn->pong_data, data, data_length);
+                conn->pong_data_length = data_length;
+                conn->pong_queued = true;
+                update_poll_flags(conn);
+                break;
+        case 0xa:
+                /* pong, ignore */
+                break;
+        default:
+                pcx_log("Client %s sent an unknown control frame",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+process_message(struct pcx_connection *conn)
+{
+        switch (conn->message_data[0]) {
+        }
+
+        pcx_log("Client %s sent an unknown message ID (0x%u)",
+                conn->remote_address_string,
+                conn->message_data[0]);
+        set_error_state(conn);
+
+        return false;
+}
+
+static void
+unmask_data(uint32_t mask,
+            uint8_t *buffer,
+            size_t buffer_length)
+{
+        uint32_t val;
+        int i;
+
+        for (i = 0; i + sizeof mask <= buffer_length; i += sizeof mask) {
+                memcpy(&val, buffer + i, sizeof val);
+                val ^= mask;
+                memcpy(buffer + i, &val, sizeof val);
+        }
+
+        for (; i < buffer_length; i++)
+                buffer[i] ^= ((uint8_t *) &mask)[i % 4];
 }
 
 static void
 process_frames(struct pcx_connection *conn)
 {
-        conn->read_buf_pos = 0;
+        uint8_t *data = conn->read_buf;
+        size_t length = conn->read_buf_pos;
+        bool has_mask;
+        bool is_fin;
+        uint32_t mask;
+        uint8_t payload_length;
+        uint8_t opcode;
+
+        while (true) {
+                if (length < 2)
+                        break;
+
+                is_fin = data[0] & 0x80;
+                opcode = data[0] & 0xf;
+                has_mask = data[1] & 0x80;
+                /* The extended payload lengths are currently just
+                 * treated as lengths of 126 and 127 because any
+                 * length greater than 125 will be caught by one of
+                 * the error conditions below anyway.
+                 */
+                payload_length = data[1] & 0x7f;
+
+                /* RSV bits must be zero */
+                if (data[0] & 0x70) {
+                        pcx_log("Client %s sent a frame with non-zero "
+                                "RSV bits",
+                                conn->remote_address_string);
+                        set_error_state(conn);
+                        return;
+                }
+
+                if (opcode & 0x8) {
+                        /* Control frame */
+                        if (payload_length >
+                            PCX_PROTO_MAX_CONTROL_FRAME_PAYLOAD) {
+                                pcx_log("Client %s sent a control frame (0x%x) "
+                                        "that is too long (%u)",
+                                        conn->remote_address_string,
+                                        opcode,
+                                        payload_length);
+                                set_error_state(conn);
+                                return;
+                        }
+                        if (!is_fin) {
+                                pcx_log("Client %s sent a fragmented "
+                                        "control frame",
+                                        conn->remote_address_string);
+                                set_error_state(conn);
+                                return;
+                        }
+                } else if (opcode == 0x2 || opcode == 0x0) {
+                        if (payload_length + conn->message_data_length >
+                            PCX_PROTO_MAX_MESSAGE_SIZE) {
+                                pcx_log("Client %s sent a message (0x%x) "
+                                        "that is too long (%u)",
+                                        conn->remote_address_string,
+                                        opcode,
+                                        payload_length);
+                                set_error_state(conn);
+                                return;
+                        }
+                        if (opcode == 0x0 && conn->message_data_length == 0) {
+                                pcx_log("Client %s sent a continuation frame "
+                                        "without starting a message",
+                                        conn->remote_address_string);
+                                return;
+                        }
+                        if (payload_length == 0 && !is_fin) {
+                                pcx_log("Client %s sent an empty fragmented "
+                                        "message",
+                                        conn->remote_address_string);
+                                set_error_state(conn);
+                                return;
+                        }
+                } else {
+                        pcx_log("Client %s sent a frame opcode (0x%x) which "
+                                "the server doesn't understand",
+                                conn->remote_address_string,
+                                opcode);
+                        set_error_state(conn);
+                }
+
+                if (payload_length + 2 + (has_mask ? sizeof mask : 0) > length)
+                        break;
+
+                data += 2;
+                length -= 2;
+
+                if (has_mask) {
+                        memcpy(&mask, data, sizeof mask);
+                        data += sizeof mask;
+                        length -= sizeof mask;
+                        unmask_data(mask, data, payload_length);
+                }
+
+                if (opcode & 0x8) {
+                        if (!process_control_frame(conn,
+                                                   opcode,
+                                                   data,
+                                                   payload_length))
+                                return;
+                } else {
+                        memcpy(conn->message_data + conn->message_data_length,
+                               data,
+                               payload_length);
+                        conn->message_data_length += payload_length;
+
+                        if (is_fin) {
+                                if (!process_message(conn))
+                                        return;
+
+                                conn->message_data_length = 0;
+                        }
+                }
+
+                data += payload_length;
+                length -= payload_length;
+        }
+
+        memmove(conn->read_buf, data, length);
+        conn->read_buf_pos = length;
 }
 
 static bool
