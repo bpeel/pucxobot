@@ -92,6 +92,12 @@ struct pcx_connection {
          * key header and finishing all of the headers.
          */
         SHA1_CTX *sha1_ctx;
+
+        /* A pointer to the list node of the last message that was
+         * sent from the conversation. This point to the header node
+         * if no messages have been sent yet.
+         */
+        struct pcx_list *last_message_sent;
 };
 
 static const char
@@ -175,6 +181,13 @@ connection_is_ready_to_write(struct pcx_connection *conn)
         if (conn->player) {
                 if (!conn->sent_player_id)
                         return true;
+
+                /* If the last message we sent isn’t the last one then
+                 * we have messages to send.
+                 */
+                if (conn->last_message_sent->next !=
+                    &conn->player->conversation->messages)
+                        return true;
         }
 
         return false;
@@ -211,6 +224,35 @@ write_command(struct pcx_connection *conn,
         va_end(ap);
 
         return ret;
+}
+
+static bool
+write_messages(struct pcx_connection *conn)
+{
+        struct pcx_conversation *conv = conn->player->conversation;
+
+        for (; conn->last_message_sent->next != &conv->messages;
+             conn->last_message_sent = conn->last_message_sent->next) {
+                struct pcx_conversation_message *message =
+                        pcx_container_of(conn->last_message_sent->next,
+                                         struct pcx_conversation_message,
+                                         link);
+
+                if (message->target_player != -1 &&
+                    message->target_player != conn->player->player_num)
+                        continue;
+
+                if (message->length + conn->write_buf_pos >
+                    sizeof conn->write_buf)
+                        return false;
+
+                memcpy(conn->write_buf + conn->write_buf_pos,
+                       message->data,
+                       message->length);
+                conn->write_buf_pos += message->length;
+        }
+
+        return true;
 }
 
 static bool
@@ -266,6 +308,9 @@ fill_write_buf(struct pcx_connection *conn)
 
         if (!conn->sent_player_id &&
             !write_player_id(conn))
+                return;
+
+        if (!write_messages(conn))
                 return;
 }
 
@@ -829,7 +874,9 @@ conversation_event_cb(struct pcx_listener *listener,
         switch (event->type) {
         case PCX_CONVERSATION_EVENT_STARTED:
         case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
+                break;
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
+                update_poll_flags(connection);
                 break;
         }
 
@@ -852,6 +899,8 @@ pcx_connection_set_player(struct pcx_connection *conn,
         conn->conversation_listener.notify = conversation_event_cb;
 
         conn->sent_player_id = from_reconnect;
+
+        conn->last_message_sent = &player->conversation->messages;
 
         update_poll_flags(conn);
 }
