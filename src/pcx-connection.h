@@ -34,6 +34,7 @@ enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_ERROR,
 
         PCX_CONNECTION_EVENT_NEW_PLAYER,
+        PCX_CONNECTION_EVENT_START,
 };
 
 struct pcx_connection_event {

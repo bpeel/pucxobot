@@ -366,11 +366,32 @@ handle_new_player(struct pcx_connection *conn)
 }
 
 static bool
+handle_start(struct pcx_connection *conn)
+{
+        struct pcx_connection_event event;
+
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                   conn->message_data_length - 1,
+                                   PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid start command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return emit_event(conn,
+                          PCX_CONNECTION_EVENT_START,
+                          &event);
+}
+
+static bool
 process_message(struct pcx_connection *conn)
 {
         switch (conn->message_data[0]) {
         case PCX_PROTO_NEW_PLAYER:
                 return handle_new_player(conn);
+        case PCX_PROTO_START:
+                return handle_start(conn);
         }
 
         pcx_log("Client %s sent an unknown message ID (0x%u)",
