@@ -81,6 +81,26 @@ remove_client(struct pcx_server *server,
         }
 }
 
+static bool
+connection_event_cb(struct pcx_listener *listener,
+                    void *data)
+{
+        struct pcx_connection_event *event = data;
+        struct pcx_server_client *client =
+                pcx_container_of(listener,
+                                 struct pcx_server_client,
+                                 event_listener);
+        struct pcx_server *server = client->server;
+
+        switch (event->type) {
+        case PCX_CONNECTION_EVENT_ERROR:
+                remove_client(server, client);
+                return false;
+        }
+
+        return true;
+}
+
 static int
 create_socket_for_netaddress(const struct pcx_netaddress *netaddress,
                              struct pcx_error **error)
@@ -201,6 +221,11 @@ add_client(struct pcx_server *server,
 
         client->server = server;
         client->connection = conn;
+
+        struct pcx_signal *
+                command_signal = pcx_connection_get_event_signal(conn);
+        pcx_signal_add(command_signal, &client->event_listener);
+        client->event_listener.notify = connection_event_cb;
 
         pcx_list_insert(&server->clients, &client->link);
 
