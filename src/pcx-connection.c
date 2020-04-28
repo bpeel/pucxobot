@@ -408,6 +408,21 @@ handle_start(struct pcx_connection *conn)
 }
 
 static bool
+handle_keep_alive(struct pcx_connection *conn)
+{
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                    conn->message_data_length - 1,
+                                    PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid keep alive command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
 process_message(struct pcx_connection *conn)
 {
         switch (conn->message_data[0]) {
@@ -417,6 +432,8 @@ process_message(struct pcx_connection *conn)
                 return handle_reconnect(conn);
         case PCX_PROTO_START:
                 return handle_start(conn);
+        case PCX_PROTO_KEEP_ALIVE:
+                return handle_keep_alive(conn);
         }
 
         pcx_log("Client %s sent an unknown message ID (0x%u)",
