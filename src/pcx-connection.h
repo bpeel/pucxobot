@@ -34,12 +34,18 @@ enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_ERROR,
 
         PCX_CONNECTION_EVENT_NEW_PLAYER,
+        PCX_CONNECTION_EVENT_RECONNECT,
         PCX_CONNECTION_EVENT_START,
 };
 
 struct pcx_connection_event {
         enum pcx_connection_event_type type;
         struct pcx_connection *connection;
+};
+
+struct pcx_connection_reconnect_event {
+        struct pcx_connection_event base;
+        uint64_t player_id;
 };
 
 struct pcx_connection;

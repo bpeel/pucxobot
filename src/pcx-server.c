@@ -233,6 +233,39 @@ handle_new_player(struct pcx_server *server,
 }
 
 static bool
+handle_reconnect(struct pcx_server *server,
+                 struct pcx_server_client *client,
+                 struct pcx_connection_reconnect_event *event)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player != NULL) {
+                pcx_log("Client %s sent multiple hello messages",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        player = pcx_playerbase_get_player_by_id(server->playerbase,
+                                                 event->player_id);
+
+        /* If the client requested a player that doesn't exist then
+         * divert it to a new player instead.
+         */
+        if (player == NULL)
+                return handle_new_player(server, client);
+
+        pcx_connection_set_player(client->connection,
+                                  player,
+                                  true /* from_reconnect */);
+
+        return true;
+}
+
+static bool
 handle_start(struct pcx_server *server,
              struct pcx_server_client *client)
 {
@@ -269,8 +302,15 @@ connection_event_cb(struct pcx_listener *listener,
         case PCX_CONNECTION_EVENT_ERROR:
                 remove_client(server, client);
                 return false;
+
         case PCX_CONNECTION_EVENT_NEW_PLAYER:
                 return handle_new_player(server, client);
+
+        case PCX_CONNECTION_EVENT_RECONNECT: {
+                struct pcx_connection_reconnect_event *de = (void *) event;
+                return handle_reconnect(server, client, de);
+        }
+
         case PCX_CONNECTION_EVENT_START:
                 return handle_start(server, client);
         }
