@@ -37,6 +37,9 @@
 #include "pcx-socket.h"
 #include "pcx-file-error.h"
 #include "pcx-netaddress.h"
+#include "pcx-connection.h"
+#include "pcx-signal.h"
+#include "pcx-log.h"
 
 #define DEFAULT_PORT 3648
 
@@ -46,7 +49,35 @@ pcx_server_error;
 struct pcx_server {
         const struct pcx_config *config;
         int listen_sock;
+        struct pcx_main_context_source *listen_source;
+        struct pcx_list clients;
 };
+
+struct pcx_server_client {
+        struct pcx_list link;
+        struct pcx_connection *connection;
+        struct pcx_listener event_listener;
+        struct pcx_server *server;
+};
+
+static void
+remove_client(struct pcx_server *server,
+              struct pcx_server_client *client)
+{
+        pcx_connection_free(client->connection);
+
+        pcx_list_remove(&client->link);
+        pcx_free(client);
+
+        /* If we remove a connection then any previous disabled accept
+         * might start working again.
+         */
+        if (server->listen_source) {
+                pcx_main_context_modify_poll(server->listen_source,
+                                             PCX_MAIN_CONTEXT_POLL_IN |
+                                             PCX_MAIN_CONTEXT_POLL_ERROR);
+        }
+}
 
 static int
 create_socket_for_netaddress(const struct pcx_netaddress *netaddress,
@@ -160,6 +191,58 @@ create_socket_for_address(const char *address,
         return create_socket_for_netaddress(&netaddress, error);
 }
 
+static struct pcx_server_client *
+add_client(struct pcx_server *server,
+           struct pcx_connection *conn)
+{
+        struct pcx_server_client *client = pcx_calloc(sizeof *client);
+
+        client->server = server;
+        client->connection = conn;
+
+        pcx_list_insert(&server->clients, &client->link);
+
+        return client;
+}
+
+static void
+listen_sock_cb(struct pcx_main_context_source *source,
+               int fd,
+               enum pcx_main_context_poll_flags flags,
+               void *user_data)
+{
+        struct pcx_server *server = user_data;
+        struct pcx_connection *conn;
+        struct pcx_error *error = NULL;
+
+        conn = pcx_connection_accept(fd, &error);
+
+        if (conn == NULL) {
+                if (error->domain == &pcx_file_error &&
+                    error->code == PCX_FILE_ERROR_MFILE) {
+                        pcx_log("Accept failed due to too many open fds. "
+                                "Waiting for a client to disconnect.");
+                        /* Run out of file descriptors. Stop listening
+                         * until someone disconnects.
+                         */
+                        pcx_main_context_modify_poll(source, 0);
+                } else if (error->domain != &pcx_file_error ||
+                           (error->code != PCX_FILE_ERROR_AGAIN &&
+                            error->code != PCX_FILE_ERROR_INTR)) {
+                        pcx_log("%s", error->message);
+                        pcx_main_context_remove_source(source);
+                        server->listen_source = NULL;
+                }
+                pcx_error_free(error);
+                return;
+        }
+
+        pcx_log("Accepted connection from %s",
+                pcx_connection_get_remote_address_string(conn));
+
+        add_client(server, conn);
+}
+
 struct pcx_server *
 pcx_server_new(const struct pcx_config *config,
                const struct pcx_config_server *server_config,
@@ -177,15 +260,36 @@ pcx_server_new(const struct pcx_config *config,
 
         struct pcx_server *server = pcx_calloc(sizeof *server);
 
+        pcx_list_init(&server->clients);
+
         server->config = config;
         server->listen_sock = sock;
+        server->listen_source =
+                pcx_main_context_add_poll(NULL,
+                                          sock,
+                                          PCX_MAIN_CONTEXT_POLL_IN,
+                                          listen_sock_cb,
+                                          server);
 
         return server;
+}
+
+static void
+free_clients(struct pcx_server *server)
+{
+        struct pcx_server_client *client, *tmp;
+
+        pcx_list_for_each_safe(client, tmp, &server->clients, link)
+                remove_client(server, client);
 }
 
 void
 pcx_server_free(struct pcx_server *server)
 {
+        free_clients(server);
+
+        if (server->listen_source)
+                pcx_main_context_remove_source(server->listen_source);
         if (server->listen_sock != -1)
                 pcx_close(server->listen_sock);
 

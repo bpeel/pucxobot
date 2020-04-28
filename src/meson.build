@@ -21,6 +21,7 @@ src = [
         'pcx-coup-character.c',
         'pcx-bot.c',
         'pcx-server.c',
+        'pcx-connection.c',
         'pcx-netaddress.c',
         'pcx-socket.c',
         'pcx-file-error.c',
