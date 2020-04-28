@@ -20,6 +20,7 @@
 #define PCX_UTIL_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #ifdef __GNUC__
 #define PCX_NO_RETURN __attribute__((noreturn))
@@ -76,5 +77,26 @@ pcx_warning(const char *format, ...);
 
 int
 pcx_close(int fd);
+
+static inline char
+pcx_ascii_tolower(char ch)
+{
+        if (ch >= 'A' && ch <= 'Z')
+                return ch - 'A' + 'a';
+        else
+                return ch;
+}
+
+static inline bool
+pcx_ascii_isdigit(char ch)
+{
+        return ch >= '0' && ch <= '9';
+}
+
+/* Returns true if the given strings are the same, ignoring case. The
+ * case is compared ignoring the locale and operates on ASCII only.
+ */
+bool
+pcx_ascii_string_case_equal(const char *a, const char *b);
 
 #endif /* PCX_UTIL_H */

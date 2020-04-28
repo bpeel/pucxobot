@@ -179,3 +179,16 @@ pcx_close(int fd)
 
         return ret;
 }
+
+bool
+pcx_ascii_string_case_equal(const char *a, const char *b)
+{
+        while (true) {
+                if (pcx_ascii_tolower(*a) != pcx_ascii_tolower(*b))
+                        return false;
+                if (*a == 0)
+                        return true;
+                a++;
+                b++;
+        }
+}
