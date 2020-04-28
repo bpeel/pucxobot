@@ -21,6 +21,8 @@
  * OF THIS SOFTWARE.
  */
 
+#include "config.h"
+
 #include <stdint.h>
 
 #include "pcx-slab.h"

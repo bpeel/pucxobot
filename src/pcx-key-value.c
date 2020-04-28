@@ -21,6 +21,8 @@
  * OF THIS SOFTWARE.
  */
 
+#include "config.h"
+
 #include "pcx-key-value.h"
 
 #include <stdint.h>

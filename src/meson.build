@@ -51,7 +51,9 @@ curl = dependency('libcurl', version: '>=7.16')
 json = dependency('json-c')
 thread_dep = dependency('threads')
 
-executable('pucxobot', src, dependencies: [curl, json, thread_dep])
+executable('pucxobot', src,
+           dependencies: [curl, json, thread_dep],
+           include_directories: configinc)
 
 test_coup_src = [
         'pcx-util.c',
@@ -70,5 +72,6 @@ test_coup_src = [
 
 test_coup_src += translations
 
-test_coup = executable('test-coup', test_coup_src)
+test_coup = executable('test-coup', test_coup_src,
+                       include_directories: configinc)
 test('coup', test_coup)

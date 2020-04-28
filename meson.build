@@ -10,4 +10,10 @@ foreach a : ['-Wall', '-Wuninitialized', '-Wempty-body', '-Wformat',
   endif
 endforeach
 
+configinc = include_directories('.')
+
+cdata = configuration_data()
+
 subdir('src')
+
+configure_file(output : 'config.h', configuration : cdata)

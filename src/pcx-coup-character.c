@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include "pcx-coup-character.h"
 
 const struct pcx_coup_character_data

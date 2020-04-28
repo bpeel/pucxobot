@@ -21,6 +21,8 @@
  * OF THIS SOFTWARE.
  */
 
+#include "config.h"
+
 /* This list implementation is based on the Wayland source code */
 
 #include <stdlib.h>
