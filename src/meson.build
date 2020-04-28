@@ -21,6 +21,7 @@ src = [
         'pcx-coup-character.c',
         'pcx-bot.c',
         'pcx-server.c',
+        'pcx-base64.c',
         'pcx-ws-parser.c',
         'pcx-connection.c',
         'pcx-netaddress.c',
