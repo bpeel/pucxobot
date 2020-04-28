@@ -42,6 +42,8 @@
 #include "pcx-connection.h"
 #include "pcx-signal.h"
 #include "pcx-log.h"
+#include "pcx-conversation.h"
+#include "pcx-playerbase.h"
 
 #define DEFAULT_PORT 3648
 
@@ -53,6 +55,14 @@ struct pcx_server {
         int listen_sock;
         struct pcx_main_context_source *listen_source;
         struct pcx_list clients;
+
+        struct pcx_playerbase *playerbase;
+
+        /* If there is a game that hasn’t started yet then it will be
+         * stored here so that people can join it.
+         */
+        struct pcx_conversation *pending_conversation;
+        struct pcx_listener pending_conversation_listener;
 };
 
 struct pcx_server_client {
@@ -81,6 +91,147 @@ remove_client(struct pcx_server *server,
         }
 }
 
+static void
+remove_pending_conversation(struct pcx_server *server)
+{
+        if (server->pending_conversation == NULL)
+                return;
+
+        pcx_list_remove(&server->pending_conversation_listener.link);
+        pcx_conversation_unref(server->pending_conversation);
+        server->pending_conversation = NULL;
+}
+
+static bool
+pending_conversation_event_cb(struct pcx_listener *listener,
+                              void *data)
+{
+        struct pcx_server *server =
+               pcx_container_of(listener,
+                                struct pcx_server,
+                                pending_conversation_listener);
+        const struct pcx_conversation_event *event = data;
+
+        switch (event->type) {
+        case PCX_CONVERSATION_EVENT_STARTED:
+                remove_pending_conversation(server);
+                break;
+        case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
+                if (event->conversation->n_players >=
+                    event->conversation->game_type->max_players)
+                        remove_pending_conversation(server);
+                break;
+        case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
+                break;
+        }
+
+        return true;
+}
+
+static struct pcx_conversation *
+ref_pending_conversation(struct pcx_server *server)
+{
+        if (server->pending_conversation == NULL) {
+                struct pcx_conversation *conv =
+                        pcx_conversation_new(server->config);
+                server->pending_conversation = conv;
+                pcx_signal_add(&conv->event_signal,
+                               &server->pending_conversation_listener);
+        }
+
+        pcx_conversation_ref(server->pending_conversation);
+
+        return server->pending_conversation;
+}
+
+static void
+xor_bytes(uint64_t *id,
+          const uint8_t *data,
+          size_t data_length)
+{
+        uint8_t *id_bytes = (uint8_t *) id;
+        int data_pos = 0;
+        int i;
+
+        for (i = 0; i < sizeof (*id); i++) {
+                id_bytes[i] ^= data[data_pos];
+                data_pos = (data_pos + 1) % data_length;
+        }
+}
+
+static uint64_t
+generate_id(const struct pcx_netaddress *remote_address)
+{
+        uint16_t random_data;
+        uint64_t id = 0;
+        int i;
+
+        for (i = 0; i < sizeof id / sizeof random_data; i++) {
+                random_data = rand();
+                memcpy((uint8_t *) &id + i * sizeof random_data,
+                       &random_data,
+                       sizeof random_data);
+        }
+
+        /* XOR in the bytes of the client's address so that even if
+         * the client can predict the random number sequence it'll
+         * still be hard to guess a number of another client
+         */
+        xor_bytes(&id,
+                  (uint8_t *) &remote_address->port,
+                  sizeof remote_address->port);
+        if (remote_address->family == AF_INET6)
+                xor_bytes(&id,
+                          (uint8_t *) &remote_address->ipv6,
+                          sizeof remote_address->ipv6);
+        else
+                xor_bytes(&id,
+                          (uint8_t *) &remote_address->ipv4,
+                          sizeof remote_address->ipv4);
+
+        return id;
+}
+
+static bool
+handle_new_player(struct pcx_server *server,
+                  struct pcx_server_client *client)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player != NULL) {
+                pcx_log("Client %s sent multiple hello messages",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        const struct pcx_netaddress *remote_address =
+                pcx_connection_get_remote_address(client->connection);
+        uint64_t id;
+
+        do {
+                id = generate_id(remote_address);
+        } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
+
+        struct pcx_conversation *conversation =
+                ref_pending_conversation(server);
+
+        player = pcx_playerbase_add_player(server->playerbase,
+                                           conversation,
+                                           id);
+
+        pcx_connection_set_player(client->connection,
+                                  player,
+                                  false /* from_reconnect */);
+
+        pcx_conversation_unref(conversation);
+
+        return true;
+}
+
 static bool
 connection_event_cb(struct pcx_listener *listener,
                     void *data)
@@ -96,6 +247,8 @@ connection_event_cb(struct pcx_listener *listener,
         case PCX_CONNECTION_EVENT_ERROR:
                 remove_client(server, client);
                 return false;
+        case PCX_CONNECTION_EVENT_NEW_PLAYER:
+                return handle_new_player(server, client);
         }
 
         return true;
@@ -289,6 +442,8 @@ pcx_server_new(const struct pcx_config *config,
 
         pcx_list_init(&server->clients);
 
+        server->playerbase = pcx_playerbase_new();
+
         server->config = config;
         server->listen_sock = sock;
         server->listen_source =
@@ -297,6 +452,9 @@ pcx_server_new(const struct pcx_config *config,
                                           PCX_MAIN_CONTEXT_POLL_IN,
                                           listen_sock_cb,
                                           server);
+
+        server->pending_conversation_listener.notify =
+                pending_conversation_event_cb;
 
         return server;
 }
@@ -314,6 +472,10 @@ void
 pcx_server_free(struct pcx_server *server)
 {
         free_clients(server);
+
+        remove_pending_conversation(server);
+
+        pcx_playerbase_free(server->playerbase);
 
         if (server->listen_source)
                 pcx_main_context_remove_source(server->listen_source);
