@@ -22,6 +22,7 @@ function Pucxo()
   this.sockHandlers = [];
   this.connected = false;
   this.playerId = null;
+  this.playerName = null;
   this.messagesDiv = document.getElementById("messages");
   this.reconnectTimeout = null;
   this.numMessagesDisplayed = 0;
@@ -32,7 +33,48 @@ function Pucxo()
 
   this.keepAliveTimeout = null;
 
+  this.namebox = document.getElementById("namebox");
+  this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
+  this.namebox.oninput = this.updatePlayButton.bind(this);
+  this.namebox.onpropertychange = this.updatePlayButton.bind(this);
+
+  this.playButton = document.getElementById("playButton");
+  this.playButton.onclick = this.playButtonClickCb.bind(this);
+
   window.onunload = this.unloadCb.bind(this);
+
+  this.updatePlayButton();
+};
+
+Pucxo.prototype.isNameEntered = function()
+{
+  return this.namebox.value.match(/\S/) != null;
+};
+
+Pucxo.prototype.updatePlayButton = function()
+{
+  this.playButton.disabled = !this.isNameEntered();
+};
+
+Pucxo.prototype.start = function()
+{
+  this.playerName = this.namebox.value;
+  document.getElementById("welcomeOverlay").style.display = "none";
+
+  if (!this.connected)
+    this.doConnect();
+};
+
+Pucxo.prototype.nameboxKeyCb = function(event)
+{
+  if ((event.which == 10 || event.which == 13) && this.isNameEntered())
+    this.start();
+};
+
+Pucxo.prototype.playButtonClickCb = function()
+{
+  if (this.isNameEntered())
+    this.start();
 };
 
 Pucxo.prototype.utf8ToString = function(ba)
@@ -49,6 +91,34 @@ Pucxo.prototype.utf8ToString = function(ba)
   }
 
   return decodeURIComponent(s);
+};
+
+Pucxo.prototype.stringToUtf8 = function(s)
+{
+  s = encodeURIComponent(s);
+
+  var length = 0;
+  var i;
+
+  for (i = 0; i < s.length; i++) {
+    if (s[i] == '%')
+      i += 2;
+    length++;
+  }
+
+  var ba = new Uint8Array(length);
+  var p = 0;
+
+  for (i = 0; i < s.length; i++) {
+    if (s[i] == '%') {
+      ba[p++] = parseInt("0x" + s.substring(i + 1, i + 3));
+      i += 2;
+    } else {
+      ba[p++] = s.charCodeAt(i);
+    }
+  }
+
+  return ba;
 };
 
 Pucxo.prototype.clearKeepAliveTimeout = function()
@@ -136,9 +206,20 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
 {
   var msgSize = 1;
   var i;
+  var stringArgs = null;
 
-  for (i = 0; i < argTypes.length; i++)
-    msgSize += this.argSizes[argTypes.charAt(i)];
+  for (i = 0; i < argTypes.length; i++) {
+    var ch = argTypes.charAt(i);
+    if (ch == "s") {
+      if (stringArgs == null)
+        stringArgs = [];
+      stringArgs.push(this.stringToUtf8(arguments[i + 2]));
+      msgSize += stringArgs[stringArgs.length - 1].length + 1;
+    }
+    else {
+      msgSize += this.argSizes[ch];
+    }
+  }
 
   var ab = new ArrayBuffer(msgSize);
   var dv = new DataView(ab);
@@ -146,15 +227,22 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
   dv.setUint8(0, msgType);
 
   var pos = 1;
+  var stringArg = 0;
 
   for (i = 0; i < argTypes.length; i++) {
     var arg = arguments[i + 2];
     var t = argTypes.charAt(i);
 
-    if (t == 'U')
+    if (t == 'U') {
       dv.setBigUint64(pos, arg, true);
-
-    pos += this.argSizes[t];
+      pos += 8;
+    } else if (t == 's') {
+      arg = stringArgs[stringArg++];
+      var j;
+      for (j = 0; j < arg.length; j++)
+        dv.setUint8(pos++, arg[j]);
+      dv.setUint8(pos++, 0);
+    }
   }
 
   this.sock.send(ab);
@@ -171,7 +259,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   if (this.playerId != null)
     this.sendMessage(0x81, "U", this.playerId);
   else
-    this.sendMessage(0x80, "");
+    this.sendMessage(0x80, "s", this.playerName);
 };
 
 Pucxo.prototype.splitStrings = function(ba, pos)
@@ -325,7 +413,6 @@ Pucxo.prototype.unloadCb = function()
    function loadCb()
    {
      pucxo = new Pucxo();
-     pucxo.doConnect();
    }
 
    window.onload = loadCb;

@@ -3,6 +3,46 @@ body {
     font-family: sans-serif;
 }
 
+#welcomeOverlay {
+    width: 98%;
+    height: 98%;
+    position: absolute;
+    z-index: 3;
+}
+
+#welcomeBox {
+    margin-top: 5em;
+    max-width: 30em;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid rgb(227, 227, 227);
+    background-color: rgb(245, 245, 245);
+    border-radius: 4px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.5), 0px 1px 0px rgba(255, 255, 255, 0.9) inset;
+}
+
+#welcomeBox input {
+    width: 100%;
+}
+
+#welcomeBox p {
+    padding-left: 2em;
+    padding-right: 2em;
+}
+
+#welcomeBox button {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: x-large;
+    font-weight: bold;
+    border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
 #content {
     display: flex;
     flex-direction: column;
