@@ -20,6 +20,7 @@ function Pucxo()
 {
   this.sock = null;
   this.sockHandlers = [];
+  this.connected = false;
   this.playerId = null;
   this.messagesDiv = document.getElementById("messages");
   this.reconnectTimeout = null;
@@ -30,6 +31,8 @@ function Pucxo()
   this.numMessagesReceived = 0;
 
   this.keepAliveTimeout = null;
+
+  window.onunload = this.unloadCb.bind(this);
 };
 
 Pucxo.prototype.utf8ToString = function(ba)
@@ -117,6 +120,7 @@ Pucxo.prototype.sockErrorCb = function(e)
   this.clearKeepAliveTimeout();
   this.sock.close();
   this.sock = null;
+  this.connected = false;
 
   if (this.reconnectTimeout == null) {
     this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
@@ -161,6 +165,9 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
 Pucxo.prototype.sockOpenCb = function(e)
 {
   console.log("connected!");
+
+  this.connected = true;
+
   if (this.playerId != null)
     this.sendMessage(0x81, "U", this.playerId);
   else
@@ -262,6 +269,13 @@ Pucxo.prototype.messageCb = function(e)
 Pucxo.prototype.start = function()
 {
   this.sendMessage(0x84, "");
+};
+
+Pucxo.prototype.unloadCb = function()
+{
+  /* Try to let the server know the player is going. */
+  if (this.connected)
+    this.sendMessage(0x85, "");
 };
 
 (function ()
