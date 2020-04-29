@@ -98,6 +98,15 @@ pcx_text_esperanto[] = {
         "ludo aŭ tajpu /komenci por komenci ĝin.",
         [PCX_TEXT_STRING_WELCOME_FULL] =
         "Bonvenon. La ludo nun estas plena kaj tuj komenciĝos.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS] =
+        "%s aliĝis al la ludo. Vi povas atendi pliajn ludantojn aŭ alklaki la "
+        "suban butonon por komenci.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW] =
+        "%s aliĝis al la ludo.  Atendu pliajn ludantojn por komenci la ludon.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
+        "%s aliĝis al la ludo.  La ludo nun estas plena kaj tuj komenciĝos.",
+        [PCX_TEXT_STRING_START_BUTTON] =
+        "Komenci",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "La ludo estas: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =

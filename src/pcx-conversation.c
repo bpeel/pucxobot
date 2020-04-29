@@ -192,6 +192,74 @@ game_callbacks = {
         .game_over = game_over_cb,
 };
 
+static void
+append_current_players_message(struct pcx_conversation *conv,
+                               struct pcx_buffer *buf)
+{
+        pcx_buffer_append_string(buf,
+                                 pcx_text_get(conv->language,
+                                              PCX_TEXT_STRING_CURRENT_PLAYERS));
+        pcx_buffer_append_string(buf, "\n");
+
+        const char *final_separator =
+                pcx_text_get(conv->language,
+                             PCX_TEXT_STRING_FINAL_CONJUNCTION);
+
+        for (unsigned i = 0; i < conv->n_players; i++) {
+                if (i > 0) {
+                        if (i == conv->n_players - 1)
+                                pcx_buffer_append_string(buf, final_separator);
+                        else
+                                pcx_buffer_append_string(buf, ", ");
+                }
+                pcx_buffer_append_string(buf, conv->player_names[i]);
+        }
+}
+
+static void
+send_welcome_message(struct pcx_conversation *conv,
+                     int new_player_num)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        enum pcx_text_string welcome_note =
+                conv->n_players < conv->game_type->min_players ?
+                PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW :
+                conv->n_players < conv->game_type->max_players ?
+                PCX_TEXT_STRING_WELCOME_BUTTONS :
+                PCX_TEXT_STRING_WELCOME_BUTTONS_FULL;
+
+        pcx_buffer_append_printf(&buf,
+                                 pcx_text_get(conv->language,
+                                              welcome_note),
+                                 conv->player_names[new_player_num]);
+
+        if (conv->n_players < conv->game_type->max_players) {
+                pcx_buffer_append_string(&buf, "\n\n");
+                append_current_players_message(conv, &buf);
+        }
+
+        struct pcx_game_button start_button = {
+                .text = pcx_text_get(conv->language,
+                                     PCX_TEXT_STRING_START_BUTTON),
+                .data = "start",
+        };
+
+        int n_buttons = ((conv->n_players >= conv->game_type->min_players &&
+                          conv->n_players < conv->game_type->max_players) ?
+                         1 :
+                         0);
+
+        queue_message(conv,
+                      -1, /* user_num */
+                      PCX_GAME_MESSAGE_FORMAT_PLAIN,
+                      (char *) buf.data,
+                      n_buttons,
+                      &start_button);
+
+        pcx_buffer_destroy(&buf);
+}
+
 int
 pcx_conversation_add_player(struct pcx_conversation *conv)
 {
@@ -217,6 +285,8 @@ pcx_conversation_add_player(struct pcx_conversation *conv)
         pcx_conversation_ref(conv);
 
         emit_event(conv, PCX_CONVERSATION_EVENT_PLAYER_ADDED);
+
+        send_welcome_message(conv, player_num);
 
         pcx_conversation_unref(conv);
 
@@ -269,18 +339,19 @@ pcx_conversation_push_button(struct pcx_conversation *conv,
                              int player_num,
                              const char *button_data)
 {
-        if (conv->game == NULL)
-                return;
-
         assert(player_num >= 0 && player_num < conv->n_players);
 
-        pcx_conversation_ref(conv);
+        if (!strcmp(button_data, "start")) {
+                pcx_conversation_start(conv);
+        } else if (conv->game != NULL) {
+                pcx_conversation_ref(conv);
 
-        conv->game_type->handle_callback_data_cb(conv->game,
-                                                 player_num,
-                                                 button_data);
+                conv->game_type->handle_callback_data_cb(conv->game,
+                                                         player_num,
+                                                         button_data);
 
-        pcx_conversation_unref(conv);
+                pcx_conversation_unref(conv);
+        }
 }
 
 void

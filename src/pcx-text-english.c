@@ -99,6 +99,11 @@ pcx_text_english[] = {
         "type /start to start it.",
         [PCX_TEXT_STRING_WELCOME_FULL] =
         "Welcome. The game is now full and will start immediately.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS] =
+        "%s joined the game. You can wait for more players or click the "
+        "button below to begin.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
+        "%s joined the game. The game is now full and will start immediately.",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Game: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =
