@@ -95,6 +95,8 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_WELCOME] =
         "Welcome. Other players can type /join to join the game or you can "
         "type /start to start it.",
+        [PCX_TEXT_STRING_WELCOME_FULL] =
+        "Welcome. The game is now full and will start immediately.",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Game: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =

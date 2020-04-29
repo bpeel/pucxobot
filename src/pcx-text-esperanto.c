@@ -94,6 +94,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_WELCOME] =
         "Bonvenon. Aliaj ludantoj tajpu /aligxi por aliĝi al la "
         "ludo aŭ tajpu /komenci por komenci ĝin.",
+        [PCX_TEXT_STRING_WELCOME_FULL] =
+        "Bonvenon. La ludo nun estas plena kaj tuj komenciĝos.",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "La ludo estas: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =

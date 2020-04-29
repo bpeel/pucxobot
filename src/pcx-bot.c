@@ -975,6 +975,31 @@ find_game(struct pcx_bot *bot,
 }
 
 static void
+append_current_players_message(struct pcx_bot *bot,
+                               struct game *game,
+                               struct pcx_buffer *buf)
+{
+        pcx_buffer_append_string(buf,
+                                 pcx_text_get(bot->bot_config->language,
+                                              PCX_TEXT_STRING_CURRENT_PLAYERS));
+        pcx_buffer_append_string(buf, "\n");
+
+        const char *final_separator =
+                pcx_text_get(bot->bot_config->language,
+                             PCX_TEXT_STRING_FINAL_CONJUNCTION);
+
+        for (unsigned i = 0; i < game->n_players; i++) {
+                if (i > 0) {
+                        if (i == game->n_players - 1)
+                                pcx_buffer_append_string(buf, final_separator);
+                        else
+                                pcx_buffer_append_string(buf, ", ");
+                }
+                pcx_buffer_append_string(buf, game->players[i].name);
+        }
+}
+
+static void
 join_game(struct pcx_bot *bot,
           struct game *game,
           const struct message_info *info)
@@ -998,9 +1023,14 @@ join_game(struct pcx_bot *bot,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        enum pcx_text_string welcome_note =
+                game->n_players < game->type->max_players ?
+                PCX_TEXT_STRING_WELCOME :
+                PCX_TEXT_STRING_WELCOME_FULL;
+
         pcx_buffer_append_string(&buf,
                                  pcx_text_get(bot->bot_config->language,
-                                              PCX_TEXT_STRING_WELCOME));
+                                              welcome_note));
 
         pcx_buffer_append_string(&buf, "\n\n");
 
@@ -1009,25 +1039,9 @@ join_game(struct pcx_bot *bot,
                            pcx_text_get(bot->bot_config->language,
                                         game->type->name_string));
 
-        pcx_buffer_append_string(&buf, "\n\n");
-
-        pcx_buffer_append_string(&buf,
-                                 pcx_text_get(bot->bot_config->language,
-                                              PCX_TEXT_STRING_CURRENT_PLAYERS));
-        pcx_buffer_append_string(&buf, "\n");
-
-        const char *final_separator =
-                pcx_text_get(bot->bot_config->language,
-                             PCX_TEXT_STRING_FINAL_CONJUNCTION);
-
-        for (unsigned i = 0; i < game->n_players; i++) {
-                if (i > 0) {
-                        if (i == game->n_players - 1)
-                                pcx_buffer_append_string(&buf, final_separator);
-                        else
-                                pcx_buffer_append_string(&buf, ", ");
-                }
-                pcx_buffer_append_string(&buf, game->players[i].name);
+        if (game->n_players < game->type->max_players) {
+                pcx_buffer_append_string(&buf, "\n\n");
+                append_current_players_message(bot, game, &buf);
         }
 
         send_message(bot,
@@ -1036,6 +1050,9 @@ join_game(struct pcx_bot *bot,
                      (char *) buf.data);
 
         pcx_buffer_destroy(&buf);
+
+        if (game->n_players >= game->type->max_players)
+                start_game(bot, game);
 }
 
 static bool

@@ -89,6 +89,9 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WELCOME] =
         "Bienvenue. Les autres joueurs peuvent taper /rejoindre pour rejoindre "
         "la partie ou vous pouvez taper /commencer pour la commencer.",
+        [PCX_TEXT_STRING_WELCOME_FULL] =
+        "Bienvenue. La partie et maintenant complète et commencera "
+        "tout de suite.",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Le jeu est : %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =

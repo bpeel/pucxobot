@@ -86,6 +86,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_WELCOME] =
         "Bem-vindo. Outros jogadores podem enviar /entrar para entrar no jogo "
         "ou você pode enviar /iniciar para iniciá-lo.",
+        [PCX_TEXT_STRING_WELCOME_FULL] =
+        "Bem-vindo. O jogo está agora cheio e começará imediatamente.",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Jogo: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =
