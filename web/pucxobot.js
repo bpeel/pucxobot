@@ -311,16 +311,11 @@ Pucxo.prototype.messageCb = function(e)
   }
 };
 
-Pucxo.prototype.start = function()
-{
-  this.sendMessage(0x84, "");
-};
-
 Pucxo.prototype.unloadCb = function()
 {
   /* Try to let the server know the player is going. */
   if (this.connected)
-    this.sendMessage(0x85, "");
+    this.sendMessage(0x84, "");
 };
 
 (function ()

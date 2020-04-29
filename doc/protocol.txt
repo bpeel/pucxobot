@@ -59,14 +59,7 @@ Some data must be sent by the client at least every minute or the
 server will close the connection. If nothing else needs to be sent the
 client can send this empty message. No response is sent.
 
-START (0x84)
-------------
-
-• No payload
-
-Start the current game if it hasn’t already started.
-
-LEAVE (0x85)
+LEAVE (0x84)
 ------------
 
 Leave the current game. This doesn’t actually affect the player and it

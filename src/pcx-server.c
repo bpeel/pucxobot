@@ -368,28 +368,6 @@ handle_reconnect(struct pcx_server *server,
 }
 
 static bool
-handle_start(struct pcx_server *server,
-             struct pcx_server_client *client)
-{
-        const char *remote_address_string =
-                pcx_connection_get_remote_address_string(client->connection);
-        struct pcx_player *player =
-                pcx_connection_get_player(client->connection);
-
-        if (player == NULL) {
-                pcx_log("Client at %s sent a start message without sending "
-                        "a hello",
-                       remote_address_string);
-                remove_client(server, client);
-                return false;
-        }
-
-        pcx_conversation_start(player->conversation);
-
-        return true;
-}
-
-static bool
 handle_leave(struct pcx_server *server,
              struct pcx_server_client *client)
 {
@@ -454,9 +432,6 @@ connection_event_cb(struct pcx_listener *listener,
                 struct pcx_connection_reconnect_event *de = (void *) event;
                 return handle_reconnect(server, client, de);
         }
-
-        case PCX_CONNECTION_EVENT_START:
-                return handle_start(server, client);
 
         case PCX_CONNECTION_EVENT_LEAVE:
                 return handle_leave(server, client);
