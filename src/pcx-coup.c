@@ -436,24 +436,14 @@ send_buffer_message_with_buttons_to(struct pcx_coup *coup,
                                     size_t n_buttons,
                                     const struct pcx_game_button *buttons)
 {
-        const char *msg = (const char *) coup->buffer.data;
-        enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        if (target_player < 0) {
-                coup->callbacks.send_message(format,
-                                             msg,
-                                             n_buttons,
-                                             buttons,
-                                             coup->user_data);
-        } else {
-                assert(target_player < coup->n_players);
-                coup->callbacks.send_private_message(target_player,
-                                                     format,
-                                                     msg,
-                                                     n_buttons,
-                                                     buttons,
-                                                     coup->user_data);
-        }
+        message.text = (const char *) coup->buffer.data;
+        message.target = target_player;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        coup->callbacks.send_message(&message, coup->user_data);
 }
 
 static void

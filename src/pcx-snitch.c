@@ -278,11 +278,13 @@ start_round(struct pcx_snitch *snitch)
                 n_buttons++;
         }
 
-        snitch->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                       (const char *) buf.data,
-                                       n_buttons,
-                                       buttons,
-                                       snitch->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         for (int i = 0; i < n_buttons; i++) {
                 pcx_free((char *) buttons[i].text);
@@ -379,15 +381,15 @@ send_card_choice(struct pcx_snitch *snitch,
                 n_buttons++;
         }
 
-        const char *message = pcx_text_get(snitch->language,
-                                           PCX_TEXT_STRING_WHICH_ROLE);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        snitch->callbacks.send_private_message(player_num,
-                                               PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                               message,
-                                               n_buttons, /* n_buttons */
-                                               buttons, /* buttons */
-                                               snitch->user_data);
+        message.text = pcx_text_get(snitch->language,
+                                    PCX_TEXT_STRING_WHICH_ROLE);
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+        message.target = player_num;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         for (unsigned i = 0; i < n_buttons; i++)
                 pcx_free((char *) buttons[i].text);
@@ -447,11 +449,11 @@ handle_set_heist_size(struct pcx_snitch *snitch,
                              &buf,
                              PCX_TEXT_STRING_DISCUSS_HEIST);
 
-        snitch->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       snitch->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -712,11 +714,11 @@ end_game(struct pcx_snitch *snitch)
                                      winners.data);
         }
 
-        snitch->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       snitch->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         pcx_buffer_destroy(&buf);
         pcx_buffer_destroy(&winners);
@@ -769,11 +771,11 @@ end_round(struct pcx_snitch *snitch)
         else
                 handle_failed_heist(snitch, &buf);
 
-        snitch->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       snitch->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -799,12 +801,12 @@ send_chosen_card(struct pcx_snitch *snitch,
         pcx_buffer_append_c(&buf, ' ');
         append_buffer_string(snitch, &buf, role_infos[role].name);
 
-        snitch->callbacks.send_private_message(player_num,
-                                               PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                               (const char *) buf.data,
-                                               0, /* n_buttons */
-                                               NULL, /* buttons */
-                                               snitch->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+        message.target = player_num;
+
+        snitch->callbacks.send_message(&message, snitch->user_data);
 
         pcx_buffer_destroy(&buf);
 }

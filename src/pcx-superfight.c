@@ -132,11 +132,11 @@ game_note(struct pcx_superfight *superfight,
         append_buffer_vprintf(superfight, &buf, format, ap);
         va_end(ap);
 
-        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                           (const char *) buf.data,
-                                           0, /* n_buttons */
-                                           NULL, /* buttons */
-                                           superfight->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -277,11 +277,13 @@ vote_timeout_cb(struct pcx_main_context_source *source,
 
         get_vote_buttons(superfight, buttons);
 
-        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                           (const char *) buf.data,
-                                           PCX_N_ELEMENTS(buttons),
-                                           buttons,
-                                           superfight->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+        message.n_buttons = PCX_N_ELEMENTS(buttons);
+        message.buttons = buttons;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(buttons); i++)
                 pcx_free((char *) buttons[i].data);
@@ -366,14 +368,12 @@ send_chosen_fighter(struct pcx_superfight *superfight,
 
         append_fighter(fighter, &buf);
 
-        enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        superfight->callbacks.send_private_message(fighter->player_num,
-                                                   format,
-                                                   (const char *) buf.data,
-                                                   0, /* n_buttons */
-                                                   NULL, /* buttons */
-                                                   superfight->user_data);
+        message.text = (const char *) buf.data;
+        message.target = fighter->player_num;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -413,14 +413,14 @@ send_card_choice(struct pcx_superfight *superfight,
                                  buttons);
         }
 
-        enum pcx_game_message_format format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        superfight->callbacks.send_private_message(fighter->player_num,
-                                                   format,
-                                                   (const char *) buf.data,
-                                                   N_CARD_CHOICE,
-                                                   buttons,
-                                                   superfight->user_data);
+        message.text = (const char *) buf.data;
+        message.target = fighter->player_num;
+        message.n_buttons = N_CARD_CHOICE;
+        message.buttons = buttons;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(buttons); i++) {
                 pcx_free((char *) buttons[i].text);
@@ -561,11 +561,11 @@ start_argument(struct pcx_superfight *superfight,
 
         append_buffer_string(superfight, &buf, PCX_TEXT_STRING_NOW_ARGUE);
 
-        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                           (const char *) buf.data,
-                                           0, /* n_buttons */
-                                           NULL, /* buttons */
-                                           superfight->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -741,11 +741,11 @@ set_fight_winner(struct pcx_superfight *superfight,
                                      player->name);
         }
 
-        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                           (const char *) buf.data,
-                                           0, /* n_buttons */
-                                           NULL, /* buttons */
-                                           superfight->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -829,11 +829,11 @@ send_vote(struct pcx_superfight *superfight,
         pcx_buffer_append_string(&buf, "\n\n");
         append_current_votes(superfight, &buf);
 
-        superfight->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                                           (const char *) buf.data,
-                                           0, /* n_buttons */
-                                           NULL, /* buttons */
-                                           superfight->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        superfight->callbacks.send_message(&message, superfight->user_data);
 
         pcx_buffer_destroy(&buf);
 

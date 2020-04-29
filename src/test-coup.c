@@ -402,19 +402,13 @@ check_buttons(const struct message *message,
 }
 
 static void
-send_private_message_cb(int user_num,
-                        enum pcx_game_message_format format,
-                        const char *message_text,
-                        size_t n_buttons,
-                        const struct pcx_game_button *buttons,
-                        void *user_data)
+handle_private_message(struct test_data *data,
+                       const struct pcx_game_message *msg)
 {
-        struct test_data *data = user_data;
-
-        if (user_num < 0 || user_num >= PCX_N_ELEMENTS(player_names)) {
+        if (msg->target < 0 || msg->target >= PCX_N_ELEMENTS(player_names)) {
                 fprintf(stderr,
-                        "Private message sent to invalide player %i\n",
-                        user_num);
+                        "Private message sent to invalid player %i\n",
+                        msg->target);
                 data->had_error = true;
                 return;
         }
@@ -422,8 +416,8 @@ send_private_message_cb(int user_num,
         if (pcx_list_empty(&data->message_queue)) {
                 fprintf(stderr,
                         "Unexpected message sent to “%s”: %s\n",
-                        player_names[user_num],
-                        message_text);
+                        player_names[msg->target],
+                        msg->text);
                 data->had_error = true;
                 return;
         }
@@ -437,34 +431,34 @@ send_private_message_cb(int user_num,
                 fprintf(stderr,
                         "Private message to “%s” received when a different "
                         "type was expected: %s\n",
-                        player_names[user_num],
-                        message_text);
+                        player_names[msg->target],
+                        msg->text);
                 data->had_error = true;
                 return;
         }
 
-        if (message->destination != user_num) {
+        if (message->destination != msg->target) {
                 fprintf(stderr,
                         "Message sent to “%s” but expected to “%s”\n",
-                        player_names[user_num],
+                        player_names[msg->target],
                         player_names[message->destination]);
                 data->had_error = true;
                 return;
         }
 
-        if (strcmp(message_text, message->message)) {
+        if (strcmp(msg->text, message->message)) {
                 fprintf(stderr,
                         "Message to “%s” does not match expected message.\n"
                         "Got: %s\n"
                         "Expected: %s\n",
-                        player_names[user_num],
-                        message_text,
+                        player_names[msg->target],
+                        msg->text,
                         message->message);
                 data->had_error = true;
                 return;
         }
 
-        if (!check_buttons(message, n_buttons, buttons)) {
+        if (!check_buttons(message, msg->n_buttons, msg->buttons)) {
                 data->had_error = true;
                 return;
         }
@@ -474,18 +468,13 @@ send_private_message_cb(int user_num,
 }
 
 static void
-send_message_cb(enum pcx_game_message_format format,
-                const char *message_text,
-                size_t n_buttons,
-                const struct pcx_game_button *buttons,
-                void *user_data)
+handle_public_message(struct test_data *data,
+                      const struct pcx_game_message *msg)
 {
-        struct test_data *data = user_data;
-
         if (pcx_list_empty(&data->message_queue)) {
                 fprintf(stderr,
                         "Unexpected global message sent: %s\n",
-                        message_text);
+                        msg->text);
                 data->had_error = true;
                 return;
         }
@@ -499,29 +488,41 @@ send_message_cb(enum pcx_game_message_format format,
                 fprintf(stderr,
                         "Global message received when a different "
                         "type was expected: %s\n",
-                        message_text);
+                        msg->text);
                 data->had_error = true;
                 return;
         }
 
-        if (strcmp(message_text, message->message)) {
+        if (strcmp(msg->text, message->message)) {
                 fprintf(stderr,
                         "Global Message does not match expected message.\n"
                         "Got: %s\n"
                         "Expected: %s\n",
-                        message_text,
+                        msg->text,
                         message->message);
                 data->had_error = true;
                 return;
         }
 
-        if (!check_buttons(message, n_buttons, buttons)) {
+        if (!check_buttons(message, msg->n_buttons, msg->buttons)) {
                 data->had_error = true;
                 return;
         }
 
         pcx_list_remove(&message->link);
         free_message(message);
+}
+
+static void
+send_message_cb(const struct pcx_game_message *message,
+                void *user_data)
+{
+        struct test_data *data = user_data;
+
+        if (message->target == -1)
+                handle_public_message(data, message);
+        else
+                handle_private_message(data, message);
 }
 
 static void
@@ -554,7 +555,6 @@ game_over_cb(void *user_data)
 
 static const struct pcx_game_callbacks
 callbacks = {
-        .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
         .game_over = game_over_cb,
 };

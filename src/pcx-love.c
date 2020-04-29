@@ -302,11 +302,12 @@ game_note(struct pcx_love *love,
         append_special_vformat(love, &buf, format, ap);
         va_end(ap);
 
-        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                     (const char *) buf.data,
-                                     0, /* n_buttons */
-                                     NULL, /* buttons */
-                                     love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -345,12 +346,13 @@ show_card(struct pcx_love *love,
         escape_string(love, &buf, PCX_TEXT_STRING_YOUR_CARD_IS);
         get_long_name(love->language, player->card, &buf, false);
 
-        love->callbacks.send_private_message(player_num,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             (const char *) buf.data,
-                                             0, /* n_buttons */
-                                             NULL, /* buttons */
-                                             love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.target = player_num;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -474,11 +476,12 @@ show_final_round_stats(struct pcx_love *love,
                               PCX_TEXT_STRING_WINS_ROUND,
                               love->players + winner);
 
-        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                     (const char *) buf.data,
-                                     0, /* n_buttons */
-                                     NULL, /* buttons */
-                                     love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -574,12 +577,15 @@ send_discard_question(struct pcx_love *love)
                          love->pending_card))
                 n_buttons++;
 
-        love->callbacks.send_private_message(love->current_player,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             (const char *) buf.data,
-                                             n_buttons,
-                                             buttons,
-                                             love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.target = love->current_player;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -635,11 +641,12 @@ show_stats(struct pcx_love *love)
                               PCX_TEXT_STRING_YOUR_GO_NO_QUESTION,
                               love->players + love->current_player);
 
-        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                     (const char *) buf.data,
-                                     0, /* n_buttons */
-                                     NULL, /* buttons */
-                                     love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -873,13 +880,15 @@ choose_target(struct pcx_love *love,
                 n_buttons++;
         }
 
-        love->callbacks.send_private_message(love->current_player,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             pcx_text_get(love->language,
-                                                          question),
-                                             n_buttons,
-                                             buttons,
-                                             love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = pcx_text_get(love->language, question);
+        message.target = love->current_player;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         for (int i = 0; i < n_buttons; i++)
                 pcx_free((char *) buttons[i].data);
@@ -959,15 +968,16 @@ guess_card(struct pcx_love *love,
                 n_buttons++;
         }
 
-        const char *question = pcx_text_get(love->language,
-                                            PCX_TEXT_STRING_GUESS_WHICH_CARD);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        love->callbacks.send_private_message(love->current_player,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             question,
-                                             n_buttons,
-                                             buttons,
-                                             love->user_data);
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = pcx_text_get(love->language,
+                                    PCX_TEXT_STRING_GUESS_WHICH_CARD);
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+        message.target = love->current_player;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         for (int i = 0; i < n_buttons; i++) {
                 pcx_free((char *) buttons[i].text);
@@ -1059,12 +1069,13 @@ discard_spy(struct pcx_love *love,
                               target_player,
                               target_player->card);
 
-        love->callbacks.send_private_message(love->current_player,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             (const char *) buf.data,
-                                             0, /* n_buttons */
-                                             NULL, /* buttons */
-                                             love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.target = love->current_player;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -1073,7 +1084,7 @@ discard_spy(struct pcx_love *love,
 
 static void
 note_pair(struct pcx_love *love,
-          enum pcx_text_string message,
+          enum pcx_text_string note,
           int player_a,
           int player_b)
 {
@@ -1081,17 +1092,18 @@ note_pair(struct pcx_love *love,
 
         append_special_format(love,
                               &buf,
-                              message,
+                              note,
                               love->players[player_a].card,
                               love->players + player_b,
                               love->players[player_b].card);
 
-        love->callbacks.send_private_message(player_a,
-                                             PCX_GAME_MESSAGE_FORMAT_HTML,
-                                             (const char *) buf.data,
-                                             0, /* n_buttons */
-                                             NULL, /* buttons */
-                                             love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.target = player_a;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -1236,11 +1248,12 @@ discard_prince(struct pcx_love *love,
                                       PCX_TEXT_STRING_FORCE_DISCARD_OTHER);
         }
 
-        love->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                     (const char *) buf.data,
-                                     0, /* n_buttons */
-                                     NULL, /* buttons */
-                                     love->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        love->callbacks.send_message(&message, love->user_data);
 
         pcx_buffer_destroy(&buf);
 

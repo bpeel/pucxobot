@@ -80,21 +80,17 @@ add_string(uint8_t **p, const char *s)
 
 static void
 queue_message(struct pcx_conversation *conv,
-              int user_num,
-              enum pcx_game_message_format format,
-              const char *text,
-              size_t n_buttons,
-              const struct pcx_game_button *buttons)
+              const struct pcx_game_message *message)
 {
         size_t payload_length =
                 1 +
                 1 +
-                strlen(text) + 1;
+                strlen(message->text) + 1;
 
-        for (unsigned i = 0; i < n_buttons; i++) {
+        for (unsigned i = 0; i < message->n_buttons; i++) {
                 payload_length +=
-                        strlen(buttons[i].text) + 1 +
-                        strlen(buttons[i].data) + 1;
+                        strlen(message->buttons[i].text) + 1 +
+                        strlen(message->buttons[i].data) + 1;
         }
 
         size_t frame_header_length =
@@ -108,68 +104,43 @@ queue_message(struct pcx_conversation *conv,
 
         *(p++) = PCX_PROTO_MESSAGE;
 
-        *p = format == PCX_GAME_MESSAGE_FORMAT_HTML ? 1 : 0;
+        *p = message->format == PCX_GAME_MESSAGE_FORMAT_HTML ? 1 : 0;
 
-        if (user_num != -1)
+        if (message->target != -1)
                 *p |= 2;
 
         p++;
 
-        add_string(&p, text);
+        add_string(&p, message->text);
 
-        for (unsigned i = 0; i < n_buttons; i++) {
-                add_string(&p, buttons[i].text);
-                add_string(&p, buttons[i].data);
+        for (unsigned i = 0; i < message->n_buttons; i++) {
+                add_string(&p, message->buttons[i].text);
+                add_string(&p, message->buttons[i].data);
         }
 
         assert(p - buf == frame_header_length + payload_length);
 
-        struct pcx_conversation_message *message = pcx_calloc(sizeof *message);
+        struct pcx_conversation_message *cmessage =
+                pcx_calloc(sizeof *cmessage);
 
-        message->target_player = user_num;
-        message->data = buf;
-        message->length = frame_header_length + payload_length;
+        cmessage->target_player = message->target;
+        cmessage->data = buf;
+        cmessage->length = frame_header_length + payload_length;
 
-        pcx_list_insert(conv->messages.prev, &message->link);
+        pcx_list_insert(conv->messages.prev, &cmessage->link);
 
         emit_event(conv, PCX_CONVERSATION_EVENT_NEW_MESSAGE);
 }
 
 static void
-send_private_message_cb(int user_num,
-                        enum pcx_game_message_format format,
-                        const char *message,
-                        size_t n_buttons,
-                        const struct pcx_game_button *buttons,
-                        void *user_data)
-{
-        struct pcx_conversation *conv = user_data;
-
-        assert(user_num >= 0 && user_num < conv->n_players);
-
-        queue_message(conv,
-                      user_num,
-                      format,
-                      message,
-                      n_buttons,
-                      buttons);
-}
-
-static void
-send_message_cb(enum pcx_game_message_format format,
-                const char *message,
-                size_t n_buttons,
-                const struct pcx_game_button *buttons,
+send_message_cb(const struct pcx_game_message *message,
                 void *user_data)
 {
         struct pcx_conversation *conv = user_data;
 
-        queue_message(conv,
-                      -1, /* target */
-                      format,
-                      message,
-                      n_buttons,
-                      buttons);
+        assert(message->target >= -1 && message->target < conv->n_players);
+
+        queue_message(conv, message);
 }
 
 static void
@@ -188,7 +159,6 @@ game_over_cb(void *user_data)
 
 static const struct pcx_game_callbacks
 game_callbacks = {
-        .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
         .game_over = game_over_cb,
 };
@@ -251,12 +221,13 @@ send_welcome_message(struct pcx_conversation *conv,
                          1 :
                          0);
 
-        queue_message(conv,
-                      -1, /* user_num */
-                      PCX_GAME_MESSAGE_FORMAT_PLAIN,
-                      (char *) buf.data,
-                      n_buttons,
-                      &start_button);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (char *) buf.data;
+        message.n_buttons = n_buttons;
+        message.buttons = &start_button;
+
+        queue_message(conv, &message);
 
         pcx_buffer_destroy(&buf);
 }

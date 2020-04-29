@@ -723,44 +723,23 @@ find_player(struct pcx_bot *bot,
 }
 
 static void
-send_private_message_cb(int user_num,
-                        enum pcx_game_message_format format,
-                        const char *message,
-                        size_t n_buttons,
-                        const struct pcx_game_button *buttons,
-                        void *user_data)
-{
-        struct game *game = user_data;
-        struct pcx_bot *bot = game->bot;
-
-        assert(user_num >= 0 && user_num < game->n_players);
-
-        send_message_full(bot,
-                          game->players[user_num].id,
-                          -1, /* in_reply_to */
-                          format,
-                          message,
-                          n_buttons,
-                          buttons);
-}
-
-static void
-send_message_cb(enum pcx_game_message_format format,
-                const char *message,
-                size_t n_buttons,
-                const struct pcx_game_button *buttons,
+send_message_cb(const struct pcx_game_message *message,
                 void *user_data)
 {
         struct game *game = user_data;
         struct pcx_bot *bot = game->bot;
 
+        int64_t chat_id = (message->target == -1 ?
+                           game->chat :
+                           game->players[message->target].id);
+
         send_message_full(bot,
-                          game->chat,
+                          chat_id,
                           -1, /* in_reply_to */
-                          format,
-                          message,
-                          n_buttons,
-                          buttons);
+                          message->format,
+                          message->text,
+                          message->n_buttons,
+                          message->buttons);
 }
 
 static void
@@ -773,7 +752,6 @@ game_over_cb(void *user_data)
 
 static const struct pcx_game_callbacks
 game_callbacks = {
-        .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
         .game_over = game_over_cb,
 };

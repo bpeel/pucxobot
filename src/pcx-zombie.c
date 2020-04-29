@@ -232,11 +232,12 @@ game_note(struct pcx_zombie *zombie,
         append_special_vformat(zombie, &buf, format, ap);
         va_end(ap);
 
-        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       zombie->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        zombie->callbacks.send_message(&message, zombie->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -362,11 +363,14 @@ start_turn(struct pcx_zombie *zombie)
                 .data = PCX_ZOMBIE_THROW_BUTTON_DATA,
         };
 
-        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                       (const char *) buf.data,
-                                       1, /* n_buttons */
-                                       &throw_button, /* buttons */
-                                       zombie->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.n_buttons = 1;
+        message.buttons = &throw_button;
+
+        zombie->callbacks.send_message(&message, zombie->user_data);
 
         pcx_buffer_destroy(&buf);
 }
@@ -480,11 +484,12 @@ end_game(struct pcx_zombie *zombie)
                               PCX_TEXT_STRING_WINS,
                               zombie->players + winner);
 
-        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       zombie->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        zombie->callbacks.send_message(&message, zombie->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -658,11 +663,14 @@ drama_cb(struct pcx_main_context_source *source,
                 },
         };
 
-        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                       (const char *) buf.data,
-                                       n_buttons,
-                                       buttons,
-                                       zombie->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        zombie->callbacks.send_message(&message, zombie->user_data);
 
         pcx_buffer_destroy(&buf);
 
@@ -741,11 +749,12 @@ do_throw(struct pcx_zombie *zombie)
                                  pcx_text_get(zombie->language,
                                               PCX_TEXT_STRING_THROWING_DICE));
 
-        zombie->callbacks.send_message(PCX_GAME_MESSAGE_FORMAT_HTML,
-                                       (const char *) buf.data,
-                                       0, /* n_buttons */
-                                       NULL, /* buttons */
-                                       zombie->user_data);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        zombie->callbacks.send_message(&message, zombie->user_data);
 
         pcx_buffer_destroy(&buf);
 

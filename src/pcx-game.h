@@ -36,17 +36,31 @@ struct pcx_game_button {
         const char *data;
 };
 
+struct pcx_game_message {
+        /* The target player to send to or -1 to send it as a public
+         * group message.
+         */
+        int target;
+
+        const char *text;
+
+        enum pcx_game_message_format format;
+
+        size_t n_buttons;
+        const struct pcx_game_button *buttons;
+};
+
+/* The default parameters for a message so that callers don’t have to
+ * understand all of them.
+ */
+#define PCX_GAME_DEFAULT_MESSAGE {                                      \
+                .target = -1,                                           \
+                .format = PCX_GAME_MESSAGE_FORMAT_PLAIN,                \
+                .n_buttons = 0,                                         \
+        }
+
 struct pcx_game_callbacks {
-        void (* send_private_message)(int user_num,
-                                      enum pcx_game_message_format format,
-                                      const char *message,
-                                      size_t n_buttons,
-                                      const struct pcx_game_button *buttons,
-                                      void *user_data);
-        void (* send_message)(enum pcx_game_message_format format,
-                              const char *message,
-                              size_t n_buttons,
-                              const struct pcx_game_button *buttons,
+        void (* send_message)(const struct pcx_game_message *message,
                               void *user_data);
         void (* game_over)(void *user_data);
 };

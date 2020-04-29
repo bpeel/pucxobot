@@ -50,25 +50,32 @@ struct pcx_tty_game {
 };
 
 static void
-send_message_to_fd(struct pcx_tty_game *game,
-                   int fd,
-                   enum pcx_game_message_format format,
-                   const char *message,
-                   size_t n_buttons,
-                   const struct pcx_game_button *buttons)
+send_message_cb(const struct pcx_game_message *message,
+                void *user_data)
 {
+        struct pcx_tty_game *game = user_data;
+
+        assert(message->target >= -1 && message->target < game->n_players);
+
+        int fd;
+
+        if (message->target == -1)
+                fd = STDOUT_FILENO;
+        else
+                fd = game->players[message->target].fd;
+
         pcx_buffer_set_length(&game->buffer, 0);
-        pcx_buffer_append_string(&game->buffer, message);
+        pcx_buffer_append_string(&game->buffer, message->text);
         pcx_buffer_append_c(&game->buffer, '\n');
 
-        if (n_buttons > 0) {
+        if (message->n_buttons > 0) {
                 pcx_buffer_append_c(&game->buffer, '\n');
 
-                for (unsigned i = 0; i < n_buttons; i++) {
+                for (unsigned i = 0; i < message->n_buttons; i++) {
                         pcx_buffer_append_printf(&game->buffer,
                                                  "%s) %s\n",
-                                                 buttons[i].data,
-                                                 buttons[i].text);
+                                                 message->buttons[i].data,
+                                                 message->buttons[i].text);
                 }
         }
 
@@ -85,50 +92,12 @@ send_message_to_fd(struct pcx_tty_game *game,
 }
 
 static void
-send_private_message_cb(int user_num,
-                        enum pcx_game_message_format format,
-                        const char *message,
-                        size_t n_buttons,
-                        const struct pcx_game_button *buttons,
-                        void *user_data)
-{
-        struct pcx_tty_game *game = user_data;
-
-        assert(user_num >= 0 && user_num < game->n_players);
-
-        send_message_to_fd(game,
-                           game->players[user_num].fd,
-                           format,
-                           message,
-                           n_buttons,
-                           buttons);
-}
-
-static void
-send_message_cb(enum pcx_game_message_format format,
-                const char *message,
-                size_t n_buttons,
-                const struct pcx_game_button *buttons,
-                void *user_data)
-{
-        struct pcx_tty_game *game = user_data;
-
-        send_message_to_fd(game,
-                           STDOUT_FILENO,
-                           format,
-                           message,
-                           n_buttons,
-                           buttons);
-}
-
-static void
 game_over_cb(void *user_data)
 {
 }
 
 static const struct pcx_game_callbacks
 callbacks = {
-        .send_private_message = send_private_message_cb,
         .send_message = send_message_cb,
         .game_over = game_over_cb,
 };
