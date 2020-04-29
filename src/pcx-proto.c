@@ -120,7 +120,6 @@ pcx_proto_write_command_v(uint8_t *buffer,
 
         pos = frame_header_length + 1;
 
-        /* Calculate the length of the payload */
         while (true) {
                 switch (va_arg(ap, enum pcx_proto_type)) {
 #include "pcx-proto-types.h"
