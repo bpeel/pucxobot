@@ -28,6 +28,8 @@ function Pucxo()
    * messages until we get back to numMessagesDisplayed.
    */
   this.numMessagesReceived = 0;
+
+  this.keepAliveTimeout = null;
 };
 
 Pucxo.prototype.utf8ToString = function(ba)
@@ -44,6 +46,28 @@ Pucxo.prototype.utf8ToString = function(ba)
   }
 
   return decodeURIComponent(s);
+};
+
+Pucxo.prototype.clearKeepAliveTimeout = function()
+{
+  if (this.keepAliveTimeout) {
+    clearTimeout(this.keepAliveTimeout);
+    this.keepAliveTimeout = null;
+  }
+};
+
+Pucxo.prototype.resetKeepAliveTimeout = function()
+{
+  this.clearKeepAliveTimeout();
+
+  function callback()
+  {
+    this.keepAliveTimout = null;
+    if (this.sock)
+      this.sendMessage(0x83, "");
+  }
+
+  this.keepAliveTimeout = setTimeout(callback.bind(this), 60 * 1000);
 };
 
 Pucxo.prototype.addSocketHandler = function(event, func)
@@ -90,6 +114,7 @@ Pucxo.prototype.sockErrorCb = function(e)
 {
   console.log("Error on socket: " + e);
   this.removeSocketHandlers();
+  this.clearKeepAliveTimeout();
   this.sock.close();
   this.sock = null;
 
@@ -129,6 +154,8 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
   }
 
   this.sock.send(ab);
+
+  this.resetKeepAliveTimeout();
 };
 
 Pucxo.prototype.sockOpenCb = function(e)
