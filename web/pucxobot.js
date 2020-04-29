@@ -222,16 +222,21 @@ Pucxo.prototype.handleMessage = function(dv)
   var messageDiv = document.createElement("div");
   messageDiv.className = "message";
 
+  var innerDiv = document.createElement("div");
+  innerDiv.className = "messageInner";
+
   var textDiv = document.createElement("div");
   textDiv.className = "messageText";
 
   for (i = 0; i < lines.length; i++) {
-    var elem = document.createElement("div");
-    elem.appendChild(document.createTextNode(lines[i]));
-    textDiv.appendChild(elem);
+    textDiv.appendChild(document.createTextNode(lines[i]));
+    if (i < lines.length - 1) {
+      var br = document.createElement("br");
+      textDiv.appendChild(br);
+    }
   }
 
-  messageDiv.appendChild(textDiv);
+  innerDiv.appendChild(textDiv);
 
   if (parts.length > 1) {
     var buttonsDiv = document.createElement("div");
@@ -244,8 +249,11 @@ Pucxo.prototype.handleMessage = function(dv)
       buttonsDiv.appendChild(button);
     }
 
-    messageDiv.appendChild(buttonsDiv);
+    innerDiv.appendChild(buttonsDiv);
+
   }
+
+  messageDiv.appendChild(innerDiv);
 
   this.messagesDiv.appendChild(messageDiv);
 };
