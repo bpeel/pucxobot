@@ -84,13 +84,12 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_FINAL_DISJUNCTION] =
         " ou ",
         [PCX_TEXT_STRING_WELCOME] =
-        "Bem-vindo. Outros jogadores podem enviar /entrar para entrar no jogo ou você pode "
-        "enviar /iniciar para iniciá-lo.\n"
-        "\n"
-        "Jogo: %s\n"
-        "\n"
-        "Os jogadores atuais são: \n"
-        "%s",
+        "Bem-vindo. Outros jogadores podem enviar /entrar para entrar no jogo "
+        "ou você pode enviar /iniciar para iniciá-lo.",
+        [PCX_TEXT_STRING_CHOSEN_GAME] =
+        "Jogo: %s",
+        [PCX_TEXT_STRING_CURRENT_PLAYERS] =
+        "Os jogadores atuais são:",
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Por favor, junte-se ao jogo com /entrar antes de tentar iniciá-lo.",
         [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =

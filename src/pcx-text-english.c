@@ -94,12 +94,11 @@ pcx_text_english[] = {
         " or ",
         [PCX_TEXT_STRING_WELCOME] =
         "Welcome. Other players can type /join to join the game or you can "
-        "type /start to start it.\n"
-        "\n"
-        "Game: %s\n"
-        "\n"
-        "The current players are:\n"
-        "%s",
+        "type /start to start it.",
+        [PCX_TEXT_STRING_CHOSEN_GAME] =
+        "Game: %s",
+        [PCX_TEXT_STRING_CURRENT_PLAYERS] =
+        "The current players are:",
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Please join the game with /join before trying to start it.",
         [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =

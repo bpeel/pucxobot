@@ -998,6 +998,24 @@ join_game(struct pcx_bot *bot,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        pcx_buffer_append_string(&buf,
+                                 pcx_text_get(bot->bot_config->language,
+                                              PCX_TEXT_STRING_WELCOME));
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        text_append_printf(bot, &buf,
+                           PCX_TEXT_STRING_CHOSEN_GAME,
+                           pcx_text_get(bot->bot_config->language,
+                                        game->type->name_string));
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        pcx_buffer_append_string(&buf,
+                                 pcx_text_get(bot->bot_config->language,
+                                              PCX_TEXT_STRING_CURRENT_PLAYERS));
+        pcx_buffer_append_string(&buf, "\n");
+
         const char *final_separator =
                 pcx_text_get(bot->bot_config->language,
                              PCX_TEXT_STRING_FINAL_CONJUNCTION);
@@ -1012,13 +1030,10 @@ join_game(struct pcx_bot *bot,
                 pcx_buffer_append_string(&buf, game->players[i].name);
         }
 
-        send_message_printf(bot,
-                            info->chat_id,
-                            info->message_id,
-                            PCX_TEXT_STRING_WELCOME,
-                            pcx_text_get(bot->bot_config->language,
-                                         game->type->name_string),
-                            (char *) buf.data);
+        send_message(bot,
+                     info->chat_id,
+                     info->message_id,
+                     (char *) buf.data);
 
         pcx_buffer_destroy(&buf);
 }
