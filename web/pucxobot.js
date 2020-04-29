@@ -51,7 +51,7 @@ Pucxo.GAMES = [
   { "title": "Puĉo", "keyword": "coup" },
   { "title": "Perfidulo", "keyword": "snitch" },
   { "title": "Amletero", "keyword": "loveletter" },
-  { "title": "Zombiaj Ĵetkuboj", "keyword": "zombie" },
+  { "title": "Zombiaj Kuboj", "keyword": "zombie" },
   { "title": "Superbatalo", "keyword": "superfight" },
 ];
 
