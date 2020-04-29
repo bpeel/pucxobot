@@ -29,12 +29,18 @@
 enum pcx_conversation_event_type {
         PCX_CONVERSATION_EVENT_STARTED,
         PCX_CONVERSATION_EVENT_PLAYER_ADDED,
+        PCX_CONVERSATION_EVENT_PLAYER_REMOVED,
         PCX_CONVERSATION_EVENT_NEW_MESSAGE,
 };
 
 struct pcx_conversation_event {
         enum pcx_conversation_event_type type;
         struct pcx_conversation *conversation;
+};
+
+struct pcx_conversation_player_removed_event {
+        struct pcx_conversation_event base;
+        int player_num;
 };
 
 struct pcx_conversation_message {
@@ -77,6 +83,10 @@ pcx_conversation_new(const struct pcx_config *config);
 
 int
 pcx_conversation_add_player(struct pcx_conversation *conv);
+
+void
+pcx_conversation_remove_player(struct pcx_conversation *conv,
+                               int player_num);
 
 void
 pcx_conversation_start(struct pcx_conversation *conv);

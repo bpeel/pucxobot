@@ -970,6 +970,7 @@ conversation_event_cb(struct pcx_listener *listener,
         switch (event->type) {
         case PCX_CONVERSATION_EVENT_STARTED:
         case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
+        case PCX_CONVERSATION_EVENT_PLAYER_REMOVED:
                 break;
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
                 update_poll_flags(connection);

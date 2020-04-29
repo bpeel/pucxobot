@@ -43,21 +43,29 @@ pcx_conversation_new(const struct pcx_config *config)
 }
 
 static bool
+emit_event_with_data(struct pcx_conversation *conv,
+                     enum pcx_conversation_event_type type,
+                     struct pcx_conversation_event *event)
+{
+        event->type = type;
+        event->conversation = conv;
+
+        pcx_conversation_ref(conv);
+
+        bool ret = pcx_signal_emit(&conv->event_signal, event);
+
+        pcx_conversation_unref(conv);
+
+        return ret;
+}
+
+static bool
 emit_event(struct pcx_conversation *conv,
            enum pcx_conversation_event_type type)
 {
         struct pcx_conversation_event event;
 
-        event.type = type;
-        event.conversation = conv;
-
-        pcx_conversation_ref(conv);
-
-        bool ret = pcx_signal_emit(&conv->event_signal, &event);
-
-        pcx_conversation_unref(conv);
-
-        return ret;
+        return emit_event_with_data(conv, type, &event);
 }
 
 static void
@@ -194,6 +202,19 @@ pcx_conversation_add_player(struct pcx_conversation *conv)
         emit_event(conv, PCX_CONVERSATION_EVENT_PLAYER_ADDED);
 
         return player_num;
+}
+
+void
+pcx_conversation_remove_player(struct pcx_conversation *conv,
+                               int player_num)
+{
+        struct pcx_conversation_player_removed_event event = {
+                .player_num = player_num
+        };
+
+        emit_event_with_data(conv,
+                             PCX_CONVERSATION_EVENT_PLAYER_REMOVED,
+                             &event.base);
 }
 
 void

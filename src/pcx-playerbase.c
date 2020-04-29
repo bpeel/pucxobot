@@ -69,6 +69,9 @@ remove_player(struct pcx_playerbase *playerbase,
 
         *prev = player->hash_next;
 
+        pcx_conversation_remove_player(player->conversation,
+                                       player->player_num);
+
         pcx_player_free(player);
 
         playerbase->n_players--;
