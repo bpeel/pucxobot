@@ -219,22 +219,35 @@ Pucxo.prototype.handleMessage = function(dv)
 
   var i;
 
+  var messageDiv = document.createElement("div");
+  messageDiv.className = "message";
+
+  var textDiv = document.createElement("div");
+  textDiv.className = "messageText";
+
   for (i = 0; i < lines.length; i++) {
     var elem = document.createElement("div");
     elem.appendChild(document.createTextNode(lines[i]));
-    this.messagesDiv.appendChild(elem);
+    textDiv.appendChild(elem);
   }
 
+  messageDiv.appendChild(textDiv);
+
   if (parts.length > 1) {
-    var d = document.createElement("div");
+    var buttonsDiv = document.createElement("div");
+    buttonsDiv.className = "messageButtons";
+
     for (i = 1; i < parts.length; i += 2) {
       var button = document.createElement("button");
       button.appendChild(document.createTextNode(parts[i]));
       button.onclick = this.pushButton.bind(this, parts[i + 1]);
-      d.appendChild(button);
+      buttonsDiv.appendChild(button);
     }
-    this.messagesDiv.appendChild(d);
+
+    messageDiv.appendChild(buttonsDiv);
   }
+
+  this.messagesDiv.appendChild(messageDiv);
 };
 
 Pucxo.prototype.handlePlayerId = function(dv)
