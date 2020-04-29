@@ -213,6 +213,10 @@ Pucxo.prototype.handleMessage = function(dv)
     return;
   this.numMessagesDisplayed++;
 
+  var isScrolledToBottom = (this.messagesDiv.scrollHeight -
+                            this.messagesDiv.scrollTop <=
+                            this.messagesDiv.clientHeight + 5);
+
   var parts = this.splitStrings(new Uint8Array(dv.buffer), 2);
 
   var lines = parts[0].split("\n");
@@ -256,6 +260,12 @@ Pucxo.prototype.handleMessage = function(dv)
   messageDiv.appendChild(innerDiv);
 
   this.messagesDiv.appendChild(messageDiv);
+
+  if (isScrolledToBottom) {
+    this.messagesDiv.scrollTo(0,
+                              this.messagesDiv.scrollHeight -
+                              this.messagesDiv.clientHeight);
+  }
 };
 
 Pucxo.prototype.handlePlayerId = function(dv)
