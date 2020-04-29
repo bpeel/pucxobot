@@ -47,6 +47,11 @@
 
 #define DEFAULT_PORT 3648
 
+/* Number of microseconds of inactivity before a client will be
+ * considered for garbage collection.
+ */
+#define MAX_CLIENT_AGE ((uint64_t) 2 * 60 * 1000000)
+
 struct pcx_error_domain
 pcx_server_error;
 
@@ -54,6 +59,7 @@ struct pcx_server {
         const struct pcx_config *config;
         int listen_sock;
         struct pcx_main_context_source *listen_source;
+        struct pcx_main_context_source *gc_source;
         struct pcx_list clients;
 
         struct pcx_playerbase *playerbase;
@@ -73,6 +79,9 @@ struct pcx_server_client {
 };
 
 static void
+queue_gc_source(struct pcx_server *server);
+
+static void
 remove_client(struct pcx_server *server,
               struct pcx_server_client *client)
 {
@@ -89,6 +98,50 @@ remove_client(struct pcx_server *server,
                                              PCX_MAIN_CONTEXT_POLL_IN |
                                              PCX_MAIN_CONTEXT_POLL_ERROR);
         }
+}
+
+static void
+gc_cb(struct pcx_main_context_source *source,
+      void *user_data)
+{
+        struct pcx_server *server = user_data;
+        uint64_t now = pcx_main_context_get_monotonic_clock(NULL);
+        struct pcx_server_client *client, *tmp;
+        bool client_remaining = false;
+
+        server->gc_source = NULL;
+
+        pcx_list_for_each_safe(client, tmp, &server->clients, link) {
+                struct pcx_connection *conn = client->connection;
+                uint64_t update_time =
+                        pcx_connection_get_last_update_time(conn);
+
+                if (now - update_time >= MAX_CLIENT_AGE) {
+                        pcx_log("Removing connection from %s which has been "
+                                "idle for %i seconds",
+                                pcx_connection_get_remote_address_string(conn),
+                                (int) ((now - update_time) / 1000000));
+                        remove_client(server, client);
+                } else {
+                        client_remaining = true;
+                }
+        }
+
+        if (client_remaining)
+                queue_gc_source(server);
+}
+
+static void
+queue_gc_source(struct pcx_server *server)
+{
+        if (server->gc_source)
+                return;
+
+        server->gc_source =
+                pcx_main_context_add_timeout(NULL,
+                                             MAX_CLIENT_AGE / 1000 + 1,
+                                             gc_cb,
+                                             server);
 }
 
 static void
@@ -476,6 +529,8 @@ add_client(struct pcx_server *server,
 
         pcx_list_insert(&server->clients, &client->link);
 
+        queue_gc_source(server);
+
         return client;
 }
 
@@ -570,6 +625,9 @@ pcx_server_free(struct pcx_server *server)
         remove_pending_conversation(server);
 
         pcx_playerbase_free(server->playerbase);
+
+        if (server->gc_source)
+                pcx_main_context_remove_source(server->gc_source);
 
         if (server->listen_source)
                 pcx_main_context_remove_source(server->listen_source);
