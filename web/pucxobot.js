@@ -36,7 +36,7 @@ function Pucxo()
   this.namebox = document.getElementById("namebox");
   this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
 
-  this.gameType = "coup";
+  this.gameType = Pucxo.GAMES[0];
 
   this.makeGameButtons();
   this.updateGameButtons();
@@ -48,11 +48,11 @@ function Pucxo()
 };
 
 Pucxo.GAMES = [
-  "Puĉo", "coup",
-  "Perfidulo", "snitch",
-  "Amletero", "loveletter",
-  "Zombiaj Ĵetkuboj", "zombie",
-  "Superbatalo", "superfight",
+  { "title": "Puĉo", "keyword": "coup" },
+  { "title": "Perfidulo", "keyword": "snitch" },
+  { "title": "Amletero", "keyword": "loveletter" },
+  { "title": "Zombiaj Ĵetkuboj", "keyword": "zombie" },
+  { "title": "Superbatalo", "keyword": "superfight" },
 ];
 
 Pucxo.prototype.makeGameButtons = function()
@@ -62,12 +62,12 @@ Pucxo.prototype.makeGameButtons = function()
 
   this.gameButtons = [];
 
-  for (i = 0; i < Pucxo.GAMES.length; i += 2) {
+  for (i = 0; i < Pucxo.GAMES.length; i++) {
     var div = document.createElement("div");
     var button = document.createElement("button");
-    button.appendChild(document.createTextNode(Pucxo.GAMES[i]));
+    button.appendChild(document.createTextNode(Pucxo.GAMES[i].title));
     button.onclick =
-      this.gameButtonClickCb.bind(this, Pucxo.GAMES[i + 1]);
+      this.gameButtonClickCb.bind(this, Pucxo.GAMES[i]);
     this.gameButtons.push(button);
     div.appendChild(button);
     buttonDiv.append(div);
@@ -92,6 +92,9 @@ Pucxo.prototype.start = function()
 {
   this.playerName = this.namebox.value;
   document.getElementById("welcomeOverlay").style.display = "none";
+
+  document.title = this.gameType.title;
+  document.getElementById("chatTitleText").innerText = this.gameType.title;
 
   if (!this.connected)
     this.doConnect();
@@ -293,7 +296,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   if (this.playerId != null)
     this.sendMessage(0x81, "U", this.playerId);
   else
-    this.sendMessage(0x80, "ss", this.playerName, this.gameType);
+    this.sendMessage(0x80, "ss", this.playerName, this.gameType.keyword);
 };
 
 Pucxo.prototype.splitStrings = function(ba, pos)
