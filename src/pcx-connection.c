@@ -360,11 +360,15 @@ process_control_frame(struct pcx_connection *conn,
 static bool
 handle_new_player(struct pcx_connection *conn)
 {
-        struct pcx_connection_event event;
+        struct pcx_connection_new_player_event event;
 
         if (!pcx_proto_read_payload(conn->message_data + 1,
-                                   conn->message_data_length - 1,
-                                   PCX_PROTO_TYPE_NONE)) {
+                                    conn->message_data_length - 1,
+
+                                    PCX_PROTO_TYPE_STRING,
+                                    &event.name,
+
+                                    PCX_PROTO_TYPE_NONE)) {
                 pcx_log("Invalid new player command received from %s",
                         conn->remote_address_string);
                 set_error_state(conn);
@@ -373,7 +377,7 @@ handle_new_player(struct pcx_connection *conn)
 
         return emit_event(conn,
                           PCX_CONNECTION_EVENT_NEW_PLAYER,
-                          &event);
+                          &event.base);
 }
 
 static bool

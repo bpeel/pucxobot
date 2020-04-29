@@ -85,7 +85,8 @@ struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config);
 
 int
-pcx_conversation_add_player(struct pcx_conversation *conv);
+pcx_conversation_add_player(struct pcx_conversation *conv,
+                            const char *name);
 
 void
 pcx_conversation_remove_player(struct pcx_conversation *conv,

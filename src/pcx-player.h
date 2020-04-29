@@ -56,7 +56,8 @@ struct pcx_player {
 
 struct pcx_player *
 pcx_player_new(uint64_t id,
-               struct pcx_conversation *conversation);
+               struct pcx_conversation *conversation,
+               const char *name);
 
 void
 pcx_player_free(struct pcx_player *player);

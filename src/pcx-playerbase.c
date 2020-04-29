@@ -174,12 +174,13 @@ grow_hash_table(struct pcx_playerbase *playerbase)
 struct pcx_player *
 pcx_playerbase_add_player(struct pcx_playerbase *playerbase,
                           struct pcx_conversation *conversation,
+                          const char *name,
                           uint64_t id)
 {
         if ((playerbase->n_players + 1) > playerbase->hash_size * 3 / 4)
                 grow_hash_table(playerbase);
 
-        struct pcx_player *player = pcx_player_new(id, conversation);
+        struct pcx_player *player = pcx_player_new(id, conversation, name);
 
         pcx_list_insert(playerbase->players.prev, &player->link);
         add_player_to_hash(playerbase, player);

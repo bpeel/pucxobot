@@ -45,6 +45,11 @@ struct pcx_connection_event {
         struct pcx_connection *connection;
 };
 
+struct pcx_connection_new_player_event {
+        struct pcx_connection_event base;
+        const char *name;
+};
+
 struct pcx_connection_reconnect_event {
         struct pcx_connection_event base;
         uint64_t player_id;

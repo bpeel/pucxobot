@@ -34,6 +34,7 @@ pcx_playerbase_get_player_by_id(struct pcx_playerbase *playerbase,
 struct pcx_player *
 pcx_playerbase_add_player(struct pcx_playerbase *playerbase,
                           struct pcx_conversation *conversation,
+                          const char *name,
                           uint64_t id);
 
 void

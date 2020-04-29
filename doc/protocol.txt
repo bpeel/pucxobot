@@ -29,7 +29,7 @@ messages:
 NEW_PLAYER (0x80)
 -----------------
 
-• No payload
+• string name
 
 This should be sent when the client first starts and hasn't tried
 connecting before. The server will create a player ID and send it in a

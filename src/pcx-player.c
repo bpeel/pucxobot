@@ -23,7 +23,8 @@
 
 struct pcx_player *
 pcx_player_new(uint64_t id,
-               struct pcx_conversation *conversation)
+               struct pcx_conversation *conversation,
+               const char *name)
 {
         struct pcx_player *player = pcx_alloc(sizeof *player);
 
@@ -34,7 +35,7 @@ pcx_player_new(uint64_t id,
         pcx_conversation_ref(conversation);
         player->conversation = conversation;
 
-        player->player_num = pcx_conversation_add_player(conversation);
+        player->player_num = pcx_conversation_add_player(conversation, name);
 
         return player;
 }

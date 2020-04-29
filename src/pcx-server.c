@@ -254,9 +254,36 @@ generate_id(const struct pcx_netaddress *remote_address)
         return id;
 }
 
+static char *
+normalise_name(const char *name)
+{
+        size_t name_len;
+
+        /* Skip spaces at the beginning */
+        while (*name == ' ')
+                name++;
+
+        name_len = strlen(name);
+
+        while (name_len > 0 && name[name_len - 1] == ' ')
+                name_len--;
+
+        if (name_len == 0)
+                return NULL;
+
+        /* Check if the name has any suspicious characters */
+        for (unsigned i = 0; i < name_len; i++) {
+                if (name[i] >= 0 && name[i] < ' ')
+                        return NULL;
+        }
+
+        return pcx_strndup(name, name_len);
+}
+
 static bool
 handle_new_player(struct pcx_server *server,
-                  struct pcx_server_client *client)
+                  struct pcx_server_client *client,
+                  const struct pcx_connection_new_player_event *event)
 {
         const char *remote_address_string =
                 pcx_connection_get_remote_address_string(client->connection);
@@ -265,6 +292,15 @@ handle_new_player(struct pcx_server *server,
 
         if (player != NULL) {
                 pcx_log("Client %s sent multiple hello messages",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        char *normalised_name = normalise_name(event->name);
+
+        if (normalised_name == NULL) {
+                pcx_log("Client %s sent an invalid name",
                        remote_address_string);
                 remove_client(server, client);
                 return false;
@@ -283,6 +319,7 @@ handle_new_player(struct pcx_server *server,
 
         player = pcx_playerbase_add_player(server->playerbase,
                                            conversation,
+                                           normalised_name,
                                            id);
 
         pcx_connection_set_player(client->connection,
@@ -290,6 +327,8 @@ handle_new_player(struct pcx_server *server,
                                   false /* from_reconnect */);
 
         pcx_conversation_unref(conversation);
+
+        pcx_free(normalised_name);
 
         return true;
 }
@@ -406,8 +445,10 @@ connection_event_cb(struct pcx_listener *listener,
                 remove_client(server, client);
                 return false;
 
-        case PCX_CONNECTION_EVENT_NEW_PLAYER:
-                return handle_new_player(server, client);
+        case PCX_CONNECTION_EVENT_NEW_PLAYER: {
+                struct pcx_connection_new_player_event *de = (void *) event;
+                return handle_new_player(server, client, de);
+        }
 
         case PCX_CONNECTION_EVENT_RECONNECT: {
                 struct pcx_connection_reconnect_event *de = (void *) event;

@@ -261,26 +261,15 @@ send_welcome_message(struct pcx_conversation *conv,
 }
 
 int
-pcx_conversation_add_player(struct pcx_conversation *conv)
+pcx_conversation_add_player(struct pcx_conversation *conv,
+                            const char *name)
 {
         assert(conv->n_players < conv->game_type->max_players);
         assert(!conv->started);
 
         int player_num = conv->n_players++;
 
-        /* FIXME */
-        static const char * const names[] = {
-                "Alice",
-                "Bob",
-                "Charlie",
-                "David",
-                "Edith",
-                "Fred",
-        };
-
-        _Static_assert(PCX_N_ELEMENTS(names) == PCX_GAME_MAX_PLAYERS);
-
-        conv->player_names[player_num] = pcx_strdup(names[player_num]);
+        conv->player_names[player_num] = pcx_strdup(name);
 
         pcx_conversation_ref(conv);
 
