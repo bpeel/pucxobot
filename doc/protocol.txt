@@ -42,9 +42,7 @@ RECONNECT (0x81)
 
 This should be sent if the connection is dropped in order to resume.
 The player_id must be a valid ID given from a previous PLAYER_ID
-message from the server. If the server hasn't heard of this ID or the
-player has been lost then it will generate a new ID instead as if
-NEW_PLAYER was sent.
+message from the server.
 
 BUTTON (0x82)
 ----------------------

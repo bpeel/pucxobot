@@ -314,11 +314,12 @@ handle_reconnect(struct pcx_server *server,
         player = pcx_playerbase_get_player_by_id(server->playerbase,
                                                  event->player_id);
 
-        /* If the client requested a player that doesn't exist then
-         * divert it to a new player instead.
-         */
-        if (player == NULL)
-                return handle_new_player(server, client);
+        if (player == NULL) {
+                pcx_log("Client %s tried to reconnect to a non-existent player",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
 
         pcx_connection_set_player(client->connection,
                                   player,
