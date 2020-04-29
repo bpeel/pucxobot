@@ -213,6 +213,9 @@ Pucxo.prototype.handleMessage = function(dv)
     return;
   this.numMessagesDisplayed++;
 
+  var messageFlags = dv.getUint8(1);
+  var isHtml = (messageFlags & 1) != 0;
+
   var isScrolledToBottom = (this.messagesDiv.scrollHeight -
                             this.messagesDiv.scrollTop <=
                             this.messagesDiv.clientHeight + 5);
@@ -233,7 +236,14 @@ Pucxo.prototype.handleMessage = function(dv)
   textDiv.className = "messageText";
 
   for (i = 0; i < lines.length; i++) {
-    textDiv.appendChild(document.createTextNode(lines[i]));
+    var node;
+    if (isHtml) {
+      node = document.createElement("span");
+      node.innerHTML = lines[i];
+    } else {
+      node = document.createTextNode(lines[i]);
+    }
+    textDiv.appendChild(node);
     if (i < lines.length - 1) {
       var br = document.createElement("br");
       textDiv.appendChild(br);
