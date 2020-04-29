@@ -19,8 +19,15 @@
 function Pucxo()
 {
   this.sock = null;
+  this.sockHandlers = [];
   this.playerId = null;
   this.messagesDiv = document.getElementById("messages");
+  this.reconnectTimeout = null;
+  this.numMessagesDisplayed = 0;
+  /* After a reconnect, this will be reset to zero and we’ll ignore
+   * messages until we get back to numMessagesDisplayed.
+   */
+  this.numMessagesReceived = 0;
 };
 
 Pucxo.prototype.utf8ToString = function(ba)
@@ -39,20 +46,57 @@ Pucxo.prototype.utf8ToString = function(ba)
   return decodeURIComponent(s);
 };
 
+Pucxo.prototype.addSocketHandler = function(event, func)
+{
+  this.sockHandlers.push(event, func);
+  this.sock.addEventListener(event, func);
+}
+
+Pucxo.prototype.removeSocketHandlers = function(event, func)
+{
+  var i;
+
+  for (i = 0; i < this.sockHandlers.length; i += 2) {
+    this.sock.removeEventListener(this.sockHandlers[i],
+                                  this.sockHandlers[i + 1]);
+  }
+
+  this.sockHandlers = [];
+}
+
 Pucxo.prototype.doConnect = function()
 {
   var location = window.location;
 
+  console.log("Connecting…");
+
+  this.numMessagesReceived = 0;
+
   this.sock = new WebSocket("ws://" + location.hostname + ":3648/");
   this.sock.binaryType = 'arraybuffer';
-  this.sock.onerror = this.sockErrorCb.bind(this);
-  this.sock.onopen = this.sockOpenCb.bind(this);
-  this.sock.onmessage = this.messageCb.bind(this);
+  this.addSocketHandler("error", this.sockErrorCb.bind(this));
+  this.addSocketHandler("close", this.sockErrorCb.bind(this));
+  this.addSocketHandler("open", this.sockOpenCb.bind(this));
+  this.addSocketHandler("message", this.messageCb.bind(this));
+};
+
+Pucxo.prototype.reconnectTimeoutCb = function()
+{
+  this.reconnectTimeout = null;
+  this.doConnect();
 };
 
 Pucxo.prototype.sockErrorCb = function(e)
 {
-  console.log("Error: " + p);
+  console.log("Error on socket: " + e);
+  this.removeSocketHandlers();
+  this.sock.close();
+  this.sock = null;
+
+  if (this.reconnectTimeout == null) {
+    this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
+                                       30000);
+  }
 };
 
 Pucxo.prototype.argSizes = {
@@ -128,6 +172,52 @@ Pucxo.prototype.pushButton = function(buttonData)
   this.sock.send(buf);
 };
 
+Pucxo.prototype.handleMessage = function(dv)
+{
+  /* Skip messages after a reconnect until we get back to where we were. */
+  if (this.numMessagesReceived++ < this.numMessagesDisplayed)
+    return;
+  this.numMessagesDisplayed++;
+
+  var parts = this.splitStrings(new Uint8Array(dv.buffer), 2);
+
+  var lines = parts[0].split("\n");
+
+  var i;
+
+  for (i = 0; i < lines.length; i++) {
+    var elem = document.createElement("div");
+    elem.appendChild(document.createTextNode(lines[i]));
+    this.messagesDiv.appendChild(elem);
+  }
+
+  if (parts.length > 1) {
+    var d = document.createElement("div");
+    for (i = 1; i < parts.length; i += 2) {
+      var button = document.createElement("button");
+      button.appendChild(document.createTextNode(parts[i]));
+      button.onclick = this.pushButton.bind(this, parts[i + 1]);
+      d.appendChild(button);
+    }
+    this.messagesDiv.appendChild(d);
+  }
+};
+
+Pucxo.prototype.handlePlayerId = function(dv)
+{
+  this.playerId = dv.getBigUint64(1, true);
+
+  console.log("playerId " + this.playerId);
+
+  /* If the server sends a player ID then it means we’ve started a new
+   * player. This can happen even after an attempt to reconnect if the
+   * player has timed out and disappeared.
+   */
+  this.numMessagesDisplayed = 0;
+  this.numMessagesReceived = 0;
+  this.messagesDiv.innerHTML = "";
+};
+
 Pucxo.prototype.messageCb = function(e)
 {
   var dv = new DataView(e.data);
@@ -136,31 +226,9 @@ Pucxo.prototype.messageCb = function(e)
   console.log(msgType);
 
   if (msgType == 0) {
-    this.playerId = dv.getBigUint64(dv, 1, true);
-    console.log("playerId " + this.playerId);
+    this.handlePlayerId(dv);
   } else if (msgType == 1) {
-    var parts = this.splitStrings(new Uint8Array(e.data), 2);
-
-    var lines = parts[0].split("\n");
-
-    var i;
-
-    for (i = 0; i < lines.length; i++) {
-      var elem = document.createElement("div");
-      elem.appendChild(document.createTextNode(lines[i]));
-      this.messagesDiv.appendChild(elem);
-    }
-
-    if (parts.length > 1) {
-      var d = document.createElement("div");
-      for (i = 1; i < parts.length; i += 2) {
-        var button = document.createElement("button");
-        button.appendChild(document.createTextNode(parts[i]));
-        button.onclick = this.pushButton.bind(this, parts[i + 1]);
-        d.appendChild(button);
-      }
-      this.messagesDiv.appendChild(d);
-    }
+    this.handleMessage(dv);
   }
 };
 
