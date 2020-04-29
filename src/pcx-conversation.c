@@ -200,7 +200,25 @@ pcx_conversation_add_player(struct pcx_conversation *conv)
 
         int player_num = conv->n_players++;
 
+        /* FIXME */
+        static const char * const names[] = {
+                "Alice",
+                "Bob",
+                "Charlie",
+                "David",
+                "Edith",
+                "Fred",
+        };
+
+        _Static_assert(PCX_N_ELEMENTS(names) == PCX_GAME_MAX_PLAYERS);
+
+        conv->player_names[player_num] = pcx_strdup(names[player_num]);
+
+        pcx_conversation_ref(conv);
+
         emit_event(conv, PCX_CONVERSATION_EVENT_PLAYER_ADDED);
+
+        pcx_conversation_unref(conv);
 
         return player_num;
 }
@@ -234,25 +252,14 @@ pcx_conversation_start(struct pcx_conversation *conv)
 
         emit_event(conv, PCX_CONVERSATION_EVENT_STARTED);
 
-        /* FIXME */
-        static const char * const names[] = {
-                "Alice",
-                "Bob",
-                "Charlie",
-                "David",
-                "Edith",
-                "Fred",
-        };
-
-        _Static_assert(PCX_N_ELEMENTS(names) == PCX_GAME_MAX_PLAYERS);
-
         conv->game =
                 conv->game_type->create_game_cb(conv->config,
                                                 &game_callbacks,
                                                 conv,
                                                 conv->language,
                                                 conv->n_players,
-                                                names);
+                                                (const char * const *)
+                                                conv->player_names);
 
         pcx_conversation_unref(conv);
 }
@@ -303,6 +310,9 @@ pcx_conversation_unref(struct pcx_conversation *conv)
         pcx_list_for_each_safe(message, tmp, &conv->messages, link) {
                 free_message(message);
         }
+
+        for (int i = 0; i < conv->n_players; i++)
+                pcx_free(conv->player_names[i]);
 
         pcx_free(conv);
 }
