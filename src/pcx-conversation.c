@@ -35,6 +35,7 @@ pcx_conversation_new(const struct pcx_config *config)
         conv->ref_count = 1;
         conv->game_type = pcx_game_list[0];
         conv->config = config;
+        conv->language = PCX_TEXT_LANGUAGE_ESPERANTO;
 
         pcx_list_init(&conv->messages);
         pcx_signal_init(&conv->event_signal);
@@ -249,7 +250,7 @@ pcx_conversation_start(struct pcx_conversation *conv)
                 conv->game_type->create_game_cb(conv->config,
                                                 &game_callbacks,
                                                 conv,
-                                                PCX_TEXT_LANGUAGE_ESPERANTO,
+                                                conv->language,
                                                 conv->n_players,
                                                 names);
 

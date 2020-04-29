@@ -63,6 +63,8 @@ struct pcx_conversation {
          */
         int ref_count;
 
+        enum pcx_text_language language;
+
         const struct pcx_config *config;
 
         bool started;
