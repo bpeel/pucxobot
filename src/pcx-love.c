@@ -669,8 +669,8 @@ take_turn(struct pcx_love *love)
         love->pending_card = take_card(love);
         current_player->is_protected = false;
 
-        send_discard_question(love);
         show_stats(love);
+        send_discard_question(love);
 }
 
 static void
@@ -1118,13 +1118,12 @@ discard_baron(struct pcx_love *love,
 
         start_discard(love, &baron_character);
 
-        compare_note(love, love->current_player, target);
-        compare_note(love, target, love->current_player);
-
         struct pcx_love_player *current_player =
                 love->players + love->current_player;
         struct pcx_love_player *target_player =
                 love->players + target;
+
+        struct pcx_love_player *loser;
 
         if (current_player->card->value == target_player->card->value) {
                 game_note(love,
@@ -1132,9 +1131,9 @@ discard_baron(struct pcx_love *love,
                           current_player,
                           &baron_character,
                           target_player);
+                loser = NULL;
         } else {
-                struct pcx_love_player *loser =
-                        (current_player->card->value >
+                loser = (current_player->card->value >
                          target_player->card->value) ?
                         target_player :
                         current_player;
@@ -1145,9 +1144,13 @@ discard_baron(struct pcx_love *love,
                           &baron_character,
                           target_player,
                           loser);
-
-                kill_player(loser);
         }
+
+        compare_note(love, love->current_player, target);
+        compare_note(love, target, love->current_player);
+
+        if (loser)
+                kill_player(loser);
 
         finish_discard(love);
 }
@@ -1269,22 +1272,22 @@ discard_king(struct pcx_love *love,
 
         start_discard(love, &king_character);
 
-        exchange_note(love, love->current_player, target);
-        exchange_note(love, target, love->current_player);
-
         struct pcx_love_player *current_player =
                 love->players + love->current_player;
         struct pcx_love_player *target_player =
                 love->players + target;
 
-        const struct pcx_love_character *t = current_player->card;
-        current_player->card = target_player->card;
-        target_player->card = t;
-
         game_note(love,
                   PCX_TEXT_STRING_EXCHANGES,
                   current_player,
                   target_player);
+
+        exchange_note(love, love->current_player, target);
+        exchange_note(love, target, love->current_player);
+
+        const struct pcx_love_character *t = current_player->card;
+        current_player->card = target_player->card;
+        target_player->card = t;
 
         show_card(love, target);
 
