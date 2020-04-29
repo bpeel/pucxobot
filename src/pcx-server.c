@@ -67,8 +67,7 @@ struct pcx_server {
         /* If there is a game that hasn’t started yet then it will be
          * stored here so that people can join it.
          */
-        struct pcx_conversation *pending_conversation;
-        struct pcx_listener pending_conversation_listener;
+        struct pcx_list pending_conversations;
 };
 
 struct pcx_server_client {
@@ -76,6 +75,12 @@ struct pcx_server_client {
         struct pcx_connection *connection;
         struct pcx_listener event_listener;
         struct pcx_server *server;
+};
+
+struct pcx_server_pending_conversation {
+        struct pcx_list link;
+        struct pcx_conversation *conversation;
+        struct pcx_listener listener;
 };
 
 static void
@@ -145,29 +150,27 @@ queue_gc_source(struct pcx_server *server)
 }
 
 static void
-remove_pending_conversation(struct pcx_server *server)
+remove_pending_conversation(struct pcx_server_pending_conversation *pc)
 {
-        if (server->pending_conversation == NULL)
-                return;
-
-        pcx_list_remove(&server->pending_conversation_listener.link);
-        pcx_conversation_unref(server->pending_conversation);
-        server->pending_conversation = NULL;
+        pcx_list_remove(&pc->listener.link);
+        pcx_conversation_unref(pc->conversation);
+        pcx_list_remove(&pc->link);
+        pcx_free(pc);
 }
 
 static bool
 pending_conversation_event_cb(struct pcx_listener *listener,
                               void *data)
 {
-        struct pcx_server *server =
+        struct pcx_server_pending_conversation *pc =
                pcx_container_of(listener,
-                                struct pcx_server,
-                                pending_conversation_listener);
+                                struct pcx_server_pending_conversation,
+                                listener);
         const struct pcx_conversation_event *event = data;
 
         switch (event->type) {
         case PCX_CONVERSATION_EVENT_STARTED:
-                remove_pending_conversation(server);
+                remove_pending_conversation(pc);
                 break;
         case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
                 /* If the game is full then it will start
@@ -181,7 +184,7 @@ pending_conversation_event_cb(struct pcx_listener *listener,
                  * probably go wrong so let’s not let any random
                  * people discover it.
                  */
-                remove_pending_conversation(server);
+                remove_pending_conversation(pc);
                 break;
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
                 break;
@@ -191,19 +194,29 @@ pending_conversation_event_cb(struct pcx_listener *listener,
 }
 
 static struct pcx_conversation *
-ref_pending_conversation(struct pcx_server *server)
+ref_pending_conversation(struct pcx_server *server,
+                         const struct pcx_game *game_type)
 {
-        if (server->pending_conversation == NULL) {
-                struct pcx_conversation *conv =
-                        pcx_conversation_new(server->config);
-                server->pending_conversation = conv;
-                pcx_signal_add(&conv->event_signal,
-                               &server->pending_conversation_listener);
+        struct pcx_server_pending_conversation *pc;
+
+        pcx_list_for_each(pc, &server->pending_conversations, link) {
+                if (pc->conversation->game_type == game_type)
+                        goto found_conversation;
         }
 
-        pcx_conversation_ref(server->pending_conversation);
+        struct pcx_conversation *conv =
+                pcx_conversation_new(server->config, game_type);
+        pc = pcx_alloc(sizeof *pc);
+        pc->conversation = conv;
+        pc->listener.notify = pending_conversation_event_cb;
+        pcx_signal_add(&conv->event_signal,
+                       &pc->listener);
+        pcx_list_insert(&server->pending_conversations, &pc->link);
 
-        return server->pending_conversation;
+found_conversation:
+        pcx_conversation_ref(pc->conversation);
+
+        return pc->conversation;
 }
 
 static void
@@ -315,7 +328,7 @@ handle_new_player(struct pcx_server *server,
         } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
 
         struct pcx_conversation *conversation =
-                ref_pending_conversation(server);
+                ref_pending_conversation(server, event->game_type);
 
         player = pcx_playerbase_add_player(server->playerbase,
                                            conversation,
@@ -646,9 +659,7 @@ pcx_server_new(const struct pcx_config *config,
                                           PCX_MAIN_CONTEXT_POLL_IN,
                                           listen_sock_cb,
                                           server);
-
-        server->pending_conversation_listener.notify =
-                pending_conversation_event_cb;
+        pcx_list_init(&server->pending_conversations);
 
         return server;
 }
@@ -662,12 +673,22 @@ free_clients(struct pcx_server *server)
                 remove_client(server, client);
 }
 
+static void
+remove_pending_conversations(struct pcx_server *server)
+{
+        struct pcx_server_pending_conversation *pc, *tmp;
+
+        pcx_list_for_each_safe(pc, tmp, &server->pending_conversations, link) {
+                remove_pending_conversation(pc);
+        }
+}
+
 void
 pcx_server_free(struct pcx_server *server)
 {
         free_clients(server);
 
-        remove_pending_conversation(server);
+        remove_pending_conversations(server);
 
         pcx_playerbase_free(server->playerbase);
 

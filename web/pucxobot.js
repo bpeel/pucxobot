@@ -259,7 +259,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   if (this.playerId != null)
     this.sendMessage(0x81, "U", this.playerId);
   else
-    this.sendMessage(0x80, "s", this.playerName);
+    this.sendMessage(0x80, "ss", this.playerName, "coup");
 };
 
 Pucxo.prototype.splitStrings = function(ba, pos)

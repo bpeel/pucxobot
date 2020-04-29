@@ -361,6 +361,7 @@ static bool
 handle_new_player(struct pcx_connection *conn)
 {
         struct pcx_connection_new_player_event event;
+        const char *game_name;
 
         if (!pcx_proto_read_payload(conn->message_data + 1,
                                     conn->message_data_length - 1,
@@ -368,12 +369,30 @@ handle_new_player(struct pcx_connection *conn)
                                     PCX_PROTO_TYPE_STRING,
                                     &event.name,
 
+                                    PCX_PROTO_TYPE_STRING,
+                                    &game_name,
+
                                     PCX_PROTO_TYPE_NONE)) {
                 pcx_log("Invalid new player command received from %s",
                         conn->remote_address_string);
                 set_error_state(conn);
                 return false;
         }
+
+        for (int i = 0; pcx_game_list[i]; i++) {
+                if (!strcmp(pcx_game_list[i]->name, game_name)) {
+                        event.game_type = pcx_game_list[i];
+                        goto found_game;
+                }
+        }
+
+        pcx_log("Connection %s tried to choose a game type that "
+                "doesn’t exist",
+                conn->remote_address_string);
+        set_error_state(conn);
+        return false;
+
+found_game:
 
         return emit_event(conn,
                           PCX_CONNECTION_EVENT_NEW_PLAYER,

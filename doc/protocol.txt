@@ -30,6 +30,7 @@ NEW_PLAYER (0x80)
 -----------------
 
 • string name
+• string game_type
 
 This should be sent when the client first starts and hasn't tried
 connecting before. The server will create a player ID and send it in a

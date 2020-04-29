@@ -82,7 +82,8 @@ struct pcx_conversation {
 };
 
 struct pcx_conversation *
-pcx_conversation_new(const struct pcx_config *config);
+pcx_conversation_new(const struct pcx_config *config,
+                     const struct pcx_game *game_type);
 
 int
 pcx_conversation_add_player(struct pcx_conversation *conv,

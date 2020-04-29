@@ -47,6 +47,7 @@ struct pcx_connection_event {
 struct pcx_connection_new_player_event {
         struct pcx_connection_event base;
         const char *name;
+        const struct pcx_game *game_type;
 };
 
 struct pcx_connection_reconnect_event {

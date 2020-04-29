@@ -28,12 +28,13 @@
 #include "pcx-proto.h"
 
 struct pcx_conversation *
-pcx_conversation_new(const struct pcx_config *config)
+pcx_conversation_new(const struct pcx_config *config,
+                     const struct pcx_game *game_type)
 {
         struct pcx_conversation *conv = pcx_calloc(sizeof *conv);
 
         conv->ref_count = 1;
-        conv->game_type = pcx_game_list[0];
+        conv->game_type = game_type;
         conv->config = config;
         conv->language = PCX_TEXT_LANGUAGE_ESPERANTO;
 
