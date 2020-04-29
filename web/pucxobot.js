@@ -198,7 +198,7 @@ Pucxo.prototype.sockErrorCb = function(e)
   }
 };
 
-Pucxo.prototype.argSizes = {
+Pucxo.ARG_SIZES = {
   "U": 8,
 };
 
@@ -217,7 +217,7 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
       msgSize += stringArgs[stringArgs.length - 1].length + 1;
     }
     else {
-      msgSize += this.argSizes[ch];
+      msgSize += Pucxo.ARG_SIZES[ch];
     }
   }
 
