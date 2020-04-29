@@ -288,6 +288,9 @@ pcx_conversation_add_player(struct pcx_conversation *conv)
 
         send_welcome_message(conv, player_num);
 
+        if (conv->n_players >= conv->game_type->max_players)
+                pcx_conversation_start(conv);
+
         pcx_conversation_unref(conv);
 
         return player_num;

@@ -170,9 +170,11 @@ pending_conversation_event_cb(struct pcx_listener *listener,
                 remove_pending_conversation(server);
                 break;
         case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
-                if (event->conversation->n_players >=
-                    event->conversation->game_type->max_players)
-                        remove_pending_conversation(server);
+                /* If the game is full then it will start
+                 * automatically and the conversation will be removed
+                 * from the pending conversation so we don’t need to
+                 * handle it here.
+                 */
                 break;
         case PCX_CONVERSATION_EVENT_PLAYER_REMOVED:
                 /* If a player has been removed then the game will
