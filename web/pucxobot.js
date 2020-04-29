@@ -286,10 +286,6 @@ Pucxo.prototype.unloadCb = function()
    {
      pucxo = new Pucxo();
      pucxo.doConnect();
-
-     document.getElementById("startButton").onclick = function() {
-       pucxo.start();
-     }
    }
 
    window.onload = loadCb;
