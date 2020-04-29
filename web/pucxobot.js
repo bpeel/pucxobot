@@ -35,15 +35,43 @@ function Pucxo()
 
   this.namebox = document.getElementById("namebox");
   this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
-  this.namebox.oninput = this.updatePlayButton.bind(this);
-  this.namebox.onpropertychange = this.updatePlayButton.bind(this);
 
-  this.playButton = document.getElementById("playButton");
-  this.playButton.onclick = this.playButtonClickCb.bind(this);
+  this.gameType = "coup";
+
+  this.makeGameButtons();
+  this.updateGameButtons();
+
+  this.namebox.oninput = this.updateGameButtons.bind(this);
+  this.namebox.onpropertychange = this.updateGameButtons.bind(this);
 
   window.onunload = this.unloadCb.bind(this);
+};
 
-  this.updatePlayButton();
+Pucxo.GAMES = [
+  "Puĉo", "coup",
+  "Perfidulo", "snitch",
+  "Amletero", "loveletter",
+  "Zombiaj Ĵetkuboj", "zombie",
+  "Superbatalo", "superfight",
+];
+
+Pucxo.prototype.makeGameButtons = function()
+{
+  var i;
+  var buttonDiv = document.getElementById("gameButtons");
+
+  this.gameButtons = [];
+
+  for (i = 0; i < Pucxo.GAMES.length; i += 2) {
+    var div = document.createElement("div");
+    var button = document.createElement("button");
+    button.appendChild(document.createTextNode(Pucxo.GAMES[i]));
+    button.onclick =
+      this.gameButtonClickCb.bind(this, Pucxo.GAMES[i + 1]);
+    this.gameButtons.push(button);
+    div.appendChild(button);
+    buttonDiv.append(div);
+  }
 };
 
 Pucxo.prototype.isNameEntered = function()
@@ -51,9 +79,13 @@ Pucxo.prototype.isNameEntered = function()
   return this.namebox.value.match(/\S/) != null;
 };
 
-Pucxo.prototype.updatePlayButton = function()
+Pucxo.prototype.updateGameButtons = function()
 {
-  this.playButton.disabled = !this.isNameEntered();
+  var disabled = !this.isNameEntered();
+  var i;
+
+  for (i = 0; i < this.gameButtons.length; i++)
+    this.gameButtons[i].disabled = disabled;
 };
 
 Pucxo.prototype.start = function()
@@ -71,10 +103,12 @@ Pucxo.prototype.nameboxKeyCb = function(event)
     this.start();
 };
 
-Pucxo.prototype.playButtonClickCb = function()
+Pucxo.prototype.gameButtonClickCb = function(gameType)
 {
-  if (this.isNameEntered())
+  if (this.isNameEntered()) {
+    this.gameType = gameType;
     this.start();
+  }
 };
 
 Pucxo.prototype.utf8ToString = function(ba)
@@ -259,7 +293,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   if (this.playerId != null)
     this.sendMessage(0x81, "U", this.playerId);
   else
-    this.sendMessage(0x80, "ss", this.playerName, "coup");
+    this.sendMessage(0x80, "ss", this.playerName, this.gameType);
 };
 
 Pucxo.prototype.splitStrings = function(ba, pos)
