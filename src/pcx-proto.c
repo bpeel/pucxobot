@@ -44,6 +44,10 @@ get_payload_length(va_list ap)
                         va_arg(ap, const uint8_t *);
                         break;
 
+                case PCX_PROTO_TYPE_STRING:
+                        payload_length += strlen(va_arg(ap, const char *)) + 1;
+                        break;
+
                 case PCX_PROTO_TYPE_NONE:
                         return payload_length;
                 }
@@ -103,6 +107,7 @@ pcx_proto_write_command_v(uint8_t *buffer,
         size_t frame_header_length;
         size_t blob_length;
         const uint8_t *blob_data;
+        const char *str;
         va_list ap_copy;
 
         va_copy(ap_copy, ap);
@@ -128,6 +133,13 @@ pcx_proto_write_command_v(uint8_t *buffer,
                         blob_length = va_arg(ap, size_t);
                         blob_data = va_arg(ap, const uint8_t *);
                         memcpy(buffer + pos, blob_data, blob_length);
+                        pos += blob_length;
+                        break;
+
+                case PCX_PROTO_TYPE_STRING:
+                        str = va_arg(ap, const char *);
+                        blob_length = strlen(str) + 1;
+                        memcpy(buffer + pos, str, blob_length);
                         pos += blob_length;
                         break;
 
@@ -190,6 +202,8 @@ pcx_proto_read_payload(const uint8_t *buffer,
         va_list ap;
         const uint8_t **blob_data;
         size_t *blob_size;
+        const char **str;
+        const uint8_t *str_end;
 
         va_start(ap, length);
 
@@ -203,6 +217,17 @@ pcx_proto_read_payload(const uint8_t *buffer,
                         *blob_size = length - pos;
                         *blob_data = buffer + pos;
                         pos = length;
+                        break;
+
+                case PCX_PROTO_TYPE_STRING:
+                        str = va_arg(ap, const char **);
+                        str_end = memchr(buffer + pos, '\0', length - pos);
+                        if (str_end == NULL) {
+                                ret = false;
+                                goto done;
+                        }
+                        *str = (const char *) buffer + pos;
+                        pos = str_end - buffer + 1;
                         break;
 
                 case PCX_PROTO_TYPE_NONE:

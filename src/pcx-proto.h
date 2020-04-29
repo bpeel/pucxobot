@@ -67,6 +67,7 @@ enum pcx_proto_type {
         PCX_PROTO_TYPE_UINT32,
         PCX_PROTO_TYPE_UINT64,
         PCX_PROTO_TYPE_BLOB,
+        PCX_PROTO_TYPE_STRING,
         PCX_PROTO_TYPE_NONE
 };
 
