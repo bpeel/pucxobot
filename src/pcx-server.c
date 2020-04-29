@@ -174,6 +174,13 @@ pending_conversation_event_cb(struct pcx_listener *listener,
                     event->conversation->game_type->max_players)
                         remove_pending_conversation(server);
                 break;
+        case PCX_CONVERSATION_EVENT_PLAYER_REMOVED:
+                /* If a player has been removed then the game will
+                 * probably go wrong so let’s not let any random
+                 * people discover it.
+                 */
+                remove_pending_conversation(server);
+                break;
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
                 break;
         }
