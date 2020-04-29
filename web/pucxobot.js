@@ -215,6 +215,7 @@ Pucxo.prototype.handleMessage = function(dv)
 
   var messageFlags = dv.getUint8(1);
   var isHtml = (messageFlags & 1) != 0;
+  var isPrivate = (messageFlags & 2) != 0;
 
   var isScrolledToBottom = (this.messagesDiv.scrollHeight -
                             this.messagesDiv.scrollTop <=
@@ -228,6 +229,9 @@ Pucxo.prototype.handleMessage = function(dv)
 
   var messageDiv = document.createElement("div");
   messageDiv.className = "message";
+
+  if (isPrivate)
+    messageDiv.className += " private";
 
   var innerDiv = document.createElement("div");
   innerDiv.className = "messageInner";

@@ -49,3 +49,10 @@ body {
     background-color: white;
 }
 
+.message.private .messageInner {
+    background-color: #dcf8c6;
+}
+
+.message.private {
+    text-align: right;
+}
