@@ -146,6 +146,17 @@ set_error_state(struct pcx_connection *conn)
 }
 
 static void
+set_last_update_time(struct pcx_connection *conn)
+{
+        uint64_t now = pcx_main_context_get_monotonic_clock(NULL);
+
+        conn->last_update_time = now;
+
+        if (conn->player)
+                conn->player->last_update_time = now;
+}
+
+static void
 handle_error(struct pcx_connection *conn)
 {
         int value;
@@ -773,7 +784,6 @@ handle_read_error(struct pcx_connection *conn,
 static void
 handle_read(struct pcx_connection *conn)
 {
-        uint64_t now;
         ssize_t got;
 
         got = read(conn->sock,
@@ -783,9 +793,7 @@ handle_read(struct pcx_connection *conn)
         if (got <= 0) {
                 handle_read_error(conn, got);
         } else {
-                now = pcx_main_context_get_monotonic_clock(NULL);
-
-                conn->last_update_time = now;
+                set_last_update_time(conn);
 
                 if (conn->ws_parser) {
                         handle_ws_data(conn, got);
@@ -888,7 +896,7 @@ new_for_socket(int sock,
                                           connection_poll_cb,
                                           conn);
 
-        conn->last_update_time = pcx_main_context_get_monotonic_clock(NULL);
+        set_last_update_time(conn);
 
         return conn;
 }
@@ -989,6 +997,9 @@ pcx_connection_set_player(struct pcx_connection *conn,
         conn->sent_player_id = from_reconnect;
 
         conn->last_message_sent = &player->conversation->messages;
+
+        /* This is to update the time on the player */
+        set_last_update_time(conn);
 
         update_poll_flags(conn);
 }
