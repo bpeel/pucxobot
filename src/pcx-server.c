@@ -348,6 +348,22 @@ handle_start(struct pcx_server *server,
 }
 
 static bool
+handle_leave(struct pcx_server *server,
+             struct pcx_server_client *client)
+{
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player == NULL)
+                return true;
+
+        pcx_conversation_remove_player(player->conversation,
+                                       player->player_num);
+
+        return true;
+}
+
+static bool
 handle_button(struct pcx_server *server,
               struct pcx_server_client *client,
               struct pcx_connection_button_event *event)
@@ -397,6 +413,9 @@ connection_event_cb(struct pcx_listener *listener,
 
         case PCX_CONNECTION_EVENT_START:
                 return handle_start(server, client);
+
+        case PCX_CONNECTION_EVENT_LEAVE:
+                return handle_leave(server, client);
 
         case PCX_CONNECTION_EVENT_BUTTON: {
                 struct pcx_connection_button_event *de = (void *) event;

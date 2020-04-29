@@ -68,6 +68,14 @@ START (0x84)
 
 Start the current game if it hasn’t already started.
 
+LEAVE (0x85)
+------------
+
+Leave the current game. This doesn’t actually affect the player and it
+will still exist in the game. It is meant as a friendly way for the
+client to inform the server that the player has gone such as by
+closing the browser tab.
+
 Messages to the client
 ======================
 

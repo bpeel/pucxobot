@@ -419,6 +419,25 @@ handle_start(struct pcx_connection *conn)
 }
 
 static bool
+handle_leave(struct pcx_connection *conn)
+{
+        struct pcx_connection_event event;
+
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                    conn->message_data_length - 1,
+                                    PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid leave command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return emit_event(conn,
+                          PCX_CONNECTION_EVENT_LEAVE,
+                          &event);
+}
+
+static bool
 handle_button(struct pcx_connection *conn)
 {
         struct pcx_connection_button_event event;
@@ -466,6 +485,8 @@ process_message(struct pcx_connection *conn)
                 return handle_reconnect(conn);
         case PCX_PROTO_START:
                 return handle_start(conn);
+        case PCX_PROTO_LEAVE:
+                return handle_leave(conn);
         case PCX_PROTO_BUTTON:
                 return handle_button(conn);
         case PCX_PROTO_KEEP_ALIVE:
