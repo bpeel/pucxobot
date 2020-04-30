@@ -49,6 +49,7 @@ struct pcx_connection_new_player_event {
         struct pcx_connection_event base;
         const char *name;
         const struct pcx_game *game_type;
+        enum pcx_text_language language;
 };
 
 struct pcx_connection_reconnect_event {

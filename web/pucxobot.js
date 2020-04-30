@@ -319,10 +319,14 @@ Pucxo.prototype.sockOpenCb = function(e)
 
   this.connected = true;
 
-  if (this.playerId != null)
+  if (this.playerId != null) {
     this.sendMessage(0x81, "BW", this.playerId, this.numMessagesReceived);
-  else
-    this.sendMessage(0x80, "ss", this.playerName, this.gameType.keyword);
+  } else {
+    this.sendMessage(0x80, "sss",
+                     this.playerName,
+                     this.gameType.keyword,
+                     "eo");
+  }
 };
 
 Pucxo.prototype.splitStrings = function(ba, pos)

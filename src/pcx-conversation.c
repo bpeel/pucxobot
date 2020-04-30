@@ -30,14 +30,15 @@
 
 struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config,
-                     const struct pcx_game *game_type)
+                     const struct pcx_game *game_type,
+                     enum pcx_text_language language)
 {
         struct pcx_conversation *conv = pcx_calloc(sizeof *conv);
 
         conv->ref_count = 1;
         conv->game_type = game_type;
+        conv->language = language;
         conv->config = config;
-        conv->language = PCX_TEXT_LANGUAGE_ESPERANTO;
 
         pcx_list_init(&conv->messages);
         pcx_signal_init(&conv->event_signal);

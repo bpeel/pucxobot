@@ -393,6 +393,7 @@ handle_new_player(struct pcx_connection *conn)
 {
         struct pcx_connection_new_player_event event;
         const char *game_name;
+        const char *language_code;
 
         if (!pcx_proto_read_payload(conn->message_data + 1,
                                     conn->message_data_length - 1,
@@ -402,6 +403,9 @@ handle_new_player(struct pcx_connection *conn)
 
                                     PCX_PROTO_TYPE_STRING,
                                     &game_name,
+
+                                    PCX_PROTO_TYPE_STRING,
+                                    &language_code,
 
                                     PCX_PROTO_TYPE_NONE)) {
                 pcx_log("Invalid new player command received from %s",
@@ -424,6 +428,15 @@ handle_new_player(struct pcx_connection *conn)
         return false;
 
 found_game:
+
+        if (!pcx_text_lookup_language(language_code,
+                                      &event.language)) {
+                pcx_log("Connection %s tried to use a language code that "
+                        "doesn’t exist",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
 
         return emit_event(conn,
                           PCX_CONNECTION_EVENT_NEW_PLAYER,

@@ -195,17 +195,19 @@ pending_conversation_event_cb(struct pcx_listener *listener,
 
 static struct pcx_conversation *
 ref_pending_conversation(struct pcx_server *server,
-                         const struct pcx_game *game_type)
+                         const struct pcx_game *game_type,
+                         enum pcx_text_language language)
 {
         struct pcx_server_pending_conversation *pc;
 
         pcx_list_for_each(pc, &server->pending_conversations, link) {
-                if (pc->conversation->game_type == game_type)
+                if (pc->conversation->game_type == game_type &&
+                    pc->conversation->language == language)
                         goto found_conversation;
         }
 
         struct pcx_conversation *conv =
-                pcx_conversation_new(server->config, game_type);
+                pcx_conversation_new(server->config, game_type, language);
         pc = pcx_alloc(sizeof *pc);
         pc->conversation = conv;
         pc->listener.notify = pending_conversation_event_cb;
@@ -310,6 +312,17 @@ handle_new_player(struct pcx_server *server,
                 return false;
         }
 
+        if (pcx_text_get(event->language,
+                         PCX_TEXT_STRING_START_BUTTON) == NULL ||
+            pcx_text_get(event->language,
+                         event->game_type->start_command) == NULL) {
+                pcx_log("Client %s tried to start a game in a language "
+                        "that it hasn’t been translated to",
+                        remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
         char *normalised_name = normalise_string(event->name);
 
         if (normalised_name == NULL) {
@@ -328,7 +341,9 @@ handle_new_player(struct pcx_server *server,
         } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
 
         struct pcx_conversation *conversation =
-                ref_pending_conversation(server, event->game_type);
+                ref_pending_conversation(server,
+                                         event->game_type,
+                                         event->language);
 
         player = pcx_playerbase_add_player(server->playerbase,
                                            conversation,
