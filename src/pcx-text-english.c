@@ -102,8 +102,15 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_WELCOME_BUTTONS] =
         "%s joined the game. You can wait for more players or click the "
         "button below to begin.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW] =
+        "%s joined the game. Wait for some more players before starting the "
+        "game.",
         [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
         "%s joined the game. The game is now full and will start immediately.",
+        [PCX_TEXT_STRING_PLAYER_LEFT] =
+        "%s left",
+        [PCX_TEXT_STRING_START_BUTTON] =
+        "Start",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Game: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =
