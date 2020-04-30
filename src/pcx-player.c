@@ -31,6 +31,7 @@ pcx_player_new(uint64_t id,
         player->id = id;
         player->ref_count = 0;
         player->last_update_time = pcx_main_context_get_monotonic_clock(NULL);
+        player->has_left = false;
 
         pcx_conversation_ref(conversation);
         player->conversation = conversation;

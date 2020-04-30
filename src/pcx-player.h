@@ -52,6 +52,8 @@ struct pcx_player {
 
         /* Used to implement the hash table */
         struct pcx_player *hash_next;
+
+        bool has_left;
 };
 
 struct pcx_player *

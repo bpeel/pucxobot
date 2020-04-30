@@ -392,6 +392,11 @@ handle_leave(struct pcx_server *server,
         if (player == NULL)
                 return true;
 
+        if (player->has_left)
+                return true;
+
+        player->has_left = true;
+
         pcx_conversation_remove_player(player->conversation,
                                        player->player_num);
 
