@@ -40,6 +40,12 @@ function Pucxo()
   this.namebox.oninput = this.updateGameButtons.bind(this);
   this.namebox.onpropertychange = this.updateGameButtons.bind(this);
 
+  this.inputbox = document.getElementById("inputbox");
+  this.inputbox.onkeydown = this.inputboxKeyCb.bind(this);
+
+  document.getElementById("sendButton").onclick =
+    this.sendChatMessage.bind(this);
+
   window.onunload = this.unloadCb.bind(this);
 };
 
@@ -100,6 +106,29 @@ Pucxo.prototype.nameboxKeyCb = function(event)
 {
   if ((event.which == 10 || event.which == 13) && this.isNameEntered())
     this.start();
+};
+
+Pucxo.prototype.inputboxKeyCb = function(event)
+{
+  if (event.which == 10 || event.which == 13) {
+    event.preventDefault();
+    this.sendChatMessage();
+  }
+};
+
+Pucxo.prototype.sendChatMessage = function()
+{
+  if (!this.connected)
+    return;
+
+  var text = this.inputbox.innerText.replace(/[\x01- ]/g, ' ');
+
+  if (text.match(/\S/) == null)
+    return;
+
+  this.inputbox.innerHTML = "";
+
+  this.sendMessage(0x85, 's', text);
 };
 
 Pucxo.prototype.gameButtonClickCb = function(gameType)
