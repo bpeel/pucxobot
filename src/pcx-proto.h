@@ -61,6 +61,13 @@ enum pcx_proto_type {
         PCX_PROTO_TYPE_NONE
 };
 
+enum pcx_proto_message_type {
+        PCX_PROTO_MESSAGE_TYPE_PUBLIC,
+        PCX_PROTO_MESSAGE_TYPE_PRIVATE,
+        PCX_PROTO_MESSAGE_TYPE_CHAT_OTHER,
+        PCX_PROTO_MESSAGE_TYPE_CHAT_YOU,
+};
+
 static inline void
 pcx_proto_write_uint8_t(uint8_t *buffer,
                         uint8_t value)

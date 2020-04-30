@@ -96,7 +96,7 @@ queue_message(struct pcx_conversation *conv,
         *p = message->format == PCX_GAME_MESSAGE_FORMAT_HTML ? 1 : 0;
 
         if (message->target != -1)
-                *p |= 2;
+                *p |= PCX_PROTO_MESSAGE_TYPE_PRIVATE << 1;
 
         p++;
 
