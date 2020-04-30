@@ -544,22 +544,40 @@ process_frames(struct pcx_connection *conn)
         bool has_mask;
         bool is_fin;
         uint32_t mask;
-        uint8_t payload_length;
+        uint64_t payload_length;
         uint8_t opcode;
 
         while (true) {
                 if (length < 2)
                         break;
 
+                int header_size = 2;
+
                 is_fin = data[0] & 0x80;
                 opcode = data[0] & 0xf;
                 has_mask = data[1] & 0x80;
-                /* The extended payload lengths are currently just
-                 * treated as lengths of 126 and 127 because any
-                 * length greater than 125 will be caught by one of
-                 * the error conditions below anyway.
-                 */
+
                 payload_length = data[1] & 0x7f;
+
+                if (payload_length == 126) {
+                        uint16_t word;
+                        if (length < header_size + sizeof word)
+                                break;
+                        memcpy(&word, data + header_size, sizeof word);
+                        payload_length = PCX_UINT16_FROM_BE(word);
+                        header_size += sizeof word;
+                } else if (payload_length == 127) {
+                        if (length < header_size + sizeof payload_length)
+                                break;
+                        memcpy(&payload_length,
+                               data + header_size,
+                               sizeof payload_length);
+                        payload_length = PCX_UINT64_FROM_BE(payload_length);
+                        header_size += sizeof payload_length;
+                }
+
+                if (has_mask)
+                        header_size += sizeof mask;
 
                 /* RSV bits must be zero */
                 if (data[0] & 0x70) {
@@ -575,7 +593,7 @@ process_frames(struct pcx_connection *conn)
                         if (payload_length >
                             PCX_PROTO_MAX_CONTROL_FRAME_PAYLOAD) {
                                 pcx_log("Client %s sent a control frame (0x%x) "
-                                        "that is too long (%u)",
+                                        "that is too long (%" PRIu64 ")",
                                         conn->remote_address_string,
                                         opcode,
                                         payload_length);
@@ -593,7 +611,7 @@ process_frames(struct pcx_connection *conn)
                         if (payload_length + conn->message_data_length >
                             PCX_PROTO_MAX_MESSAGE_SIZE) {
                                 pcx_log("Client %s sent a message (0x%x) "
-                                        "that is too long (%u)",
+                                        "that is too long (%" PRIu64 ")",
                                         conn->remote_address_string,
                                         opcode,
                                         payload_length);
@@ -621,16 +639,14 @@ process_frames(struct pcx_connection *conn)
                         set_error_state(conn);
                 }
 
-                if (payload_length + 2 + (has_mask ? sizeof mask : 0) > length)
+                if (payload_length + header_size > length)
                         break;
 
-                data += 2;
-                length -= 2;
+                data += header_size;
+                length -= header_size;
 
                 if (has_mask) {
-                        memcpy(&mask, data, sizeof mask);
-                        data += sizeof mask;
-                        length -= sizeof mask;
+                        memcpy(&mask, data - sizeof mask, sizeof mask);
                         unmask_data(mask, data, payload_length);
                 }
 
