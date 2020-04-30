@@ -128,6 +128,11 @@ body {
     outline: 0px solid transparent;
 }
 
+.messageButtons button {
+    margin: 0.5em 0.1em;
+    font-size: medium;
+}
+
 @media only all and (max-width: 45em) {
     #content {
         position: absolute;
