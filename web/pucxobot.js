@@ -295,8 +295,9 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
     var t = argTypes.charAt(i);
 
     if (t == 'B') {
-      dv.setBigUint64(pos, arg, true);
-      pos += 8;
+      var j;
+      for (j = 0; j < 8; j++)
+        dv.setUint8(pos++, arg[j]);
     } else if (t == 'W') {
       dv.setUint16(pos, arg, true);
       pos += 2;
@@ -438,9 +439,11 @@ Pucxo.prototype.handleMessage = function(dv)
 
 Pucxo.prototype.handlePlayerId = function(dv)
 {
-  this.playerId = dv.getBigUint64(1, true);
+  this.playerId = new Uint8Array(8);
+  var i;
 
-  console.log("playerId " + this.playerId);
+  for (i = 0; i < 8; i++)
+    this.playerId[i] = dv.getUint8(1 + i);
 
   /* If the server sends a player ID then it means we’ve started a new
    * player. This can happen even after an attempt to reconnect if the
