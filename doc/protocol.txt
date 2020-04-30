@@ -67,10 +67,11 @@ client can send this empty message. No response is sent.
 LEAVE (0x84)
 ------------
 
-Leave the current game. This doesn’t actually affect the player and it
-will still exist in the game. It is meant as a friendly way for the
-client to inform the server that the player has gone such as by
-closing the browser tab.
+Leave the current game. It is meant as a friendly way for the client
+to inform the server that the player has gone such as by closing the
+browser tab. A message will be sent to the game to inform everyone
+that the player has left and no further messages will be sent to any
+connections listening to this player, even historical ones.
 
 SEND_MESSAGE (0x85)
 -------------------

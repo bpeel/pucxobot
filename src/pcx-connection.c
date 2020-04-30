@@ -196,7 +196,8 @@ connection_is_ready_to_write(struct pcx_connection *conn)
                 /* If the last message we sent isn’t the last one then
                  * we have messages to send.
                  */
-                if (conn->last_message_sent->next !=
+                if (!conn->player->has_left &&
+                    conn->last_message_sent->next !=
                     &conn->player->conversation->messages)
                         return true;
         }
@@ -350,7 +351,8 @@ fill_write_buf(struct pcx_connection *conn)
             !write_player_id(conn))
                 return;
 
-        if (!write_messages(conn))
+        if (!conn->player->has_left &&
+            !write_messages(conn))
                 return;
 }
 
