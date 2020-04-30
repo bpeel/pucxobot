@@ -622,6 +622,7 @@ process_frames(struct pcx_connection *conn)
                                 pcx_log("Client %s sent a continuation frame "
                                         "without starting a message",
                                         conn->remote_address_string);
+                                set_error_state(conn);
                                 return;
                         }
                         if (payload_length == 0 && !is_fin) {
@@ -637,6 +638,7 @@ process_frames(struct pcx_connection *conn)
                                 conn->remote_address_string,
                                 opcode);
                         set_error_state(conn);
+                        return;
                 }
 
                 if (payload_length + header_size > length)
