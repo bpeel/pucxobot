@@ -69,13 +69,13 @@ struct pcx_connection {
         uint8_t pong_data[PCX_PROTO_MAX_CONTROL_FRAME_PAYLOAD];
 
         /* If message_data_length is non-zero then we are part way
-         * through reading a message whose data is stored in
+         * through reading a message whose payload is stored in
          * message_data.
          */
-        _Static_assert(PCX_PROTO_MAX_MESSAGE_SIZE <= UINT8_MAX,
+        _Static_assert(PCX_PROTO_MAX_PAYLOAD_SIZE <= UINT8_MAX,
                        "The message size is too long for a uint8_t");
         uint8_t message_data_length;
-        uint8_t message_data[PCX_PROTO_MAX_MESSAGE_SIZE];
+        uint8_t message_data[PCX_PROTO_MAX_PAYLOAD_SIZE];
 
         struct pcx_signal event_signal;
 
@@ -609,7 +609,7 @@ process_frames(struct pcx_connection *conn)
                         }
                 } else if (opcode == 0x2 || opcode == 0x0) {
                         if (payload_length + conn->message_data_length >
-                            PCX_PROTO_MAX_MESSAGE_SIZE) {
+                            PCX_PROTO_MAX_PAYLOAD_SIZE) {
                                 pcx_log("Client %s sent a message (0x%x) "
                                         "that is too long (%" PRIu64 ")",
                                         conn->remote_address_string,
