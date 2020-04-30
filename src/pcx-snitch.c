@@ -281,6 +281,7 @@ start_round(struct pcx_snitch *snitch)
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
         message.text = (const char *) buf.data;
+        message.button_players = UINT32_C(1) << get_current_player(snitch);
         message.n_buttons = n_buttons;
         message.buttons = buttons;
 
