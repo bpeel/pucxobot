@@ -368,6 +368,7 @@ start_turn(struct pcx_zombie *zombie)
         message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
         message.text = (const char *) buf.data;
         message.n_buttons = 1;
+        message.button_players = UINT32_C(1) << zombie->current_player;
         message.buttons = &throw_button;
 
         zombie->callbacks.send_message(&message, zombie->user_data);
@@ -667,6 +668,7 @@ drama_cb(struct pcx_main_context_source *source,
 
         message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
         message.text = (const char *) buf.data;
+        message.button_players = UINT32_C(1) << zombie->current_player;
         message.n_buttons = n_buttons;
         message.buttons = buttons;
 
