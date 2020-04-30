@@ -29,12 +29,11 @@
 
 #define PCX_PROTO_DEFAULT_PORT 3468
 
-/* Maximum number of bytes allowed in an Opus packet. Considering that
- * each packet is 10ms, this allows 11.9kb/sec. 122 is chosen so that
- * the maximum frame payload size won't overflow 125 bytes. That way
- * the length can always be stored in a byte.
+/* Maximum number of bytes allowed in a payload. The server keeps a
+ * buffer of this size around for each connection, so we don’t want it
+ * to be too large.
  */
-#define PCX_PROTO_MAX_PAYLOAD_SIZE 122
+#define PCX_PROTO_MAX_PAYLOAD_SIZE 1024
 
 /* The WebSocket protocol says that a control frame payload can not be
  * longer than 125 bytes.

@@ -72,9 +72,9 @@ struct pcx_connection {
          * through reading a message whose payload is stored in
          * message_data.
          */
-        _Static_assert(PCX_PROTO_MAX_PAYLOAD_SIZE <= UINT8_MAX,
-                       "The message size is too long for a uint8_t");
-        uint8_t message_data_length;
+        _Static_assert(PCX_PROTO_MAX_PAYLOAD_SIZE <= UINT16_MAX,
+                       "The message size is too long for a uint16_t");
+        uint16_t message_data_length;
         uint8_t message_data[PCX_PROTO_MAX_PAYLOAD_SIZE];
 
         struct pcx_signal event_signal;
