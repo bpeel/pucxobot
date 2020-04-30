@@ -236,7 +236,7 @@ Pucxo.prototype.sockErrorCb = function(e)
 };
 
 Pucxo.ARG_SIZES = {
-  "U": 8,
+  "B": 8,
 };
 
 Pucxo.prototype.sendMessage = function(msgType, argTypes)
@@ -270,7 +270,7 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
     var arg = arguments[i + 2];
     var t = argTypes.charAt(i);
 
-    if (t == 'U') {
+    if (t == 'B') {
       dv.setBigUint64(pos, arg, true);
       pos += 8;
     } else if (t == 's') {
@@ -294,7 +294,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   this.connected = true;
 
   if (this.playerId != null)
-    this.sendMessage(0x81, "U", this.playerId);
+    this.sendMessage(0x81, "B", this.playerId);
   else
     this.sendMessage(0x80, "ss", this.playerName, this.gameType.keyword);
 };
