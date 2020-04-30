@@ -257,6 +257,23 @@ void
 pcx_conversation_remove_player(struct pcx_conversation *conv,
                                int player_num)
 {
+        pcx_conversation_ref(conv);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_printf(&buf,
+                                 pcx_text_get(conv->language,
+                                              PCX_TEXT_STRING_PLAYER_LEFT),
+                                 conv->player_names[player_num]);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+
+        queue_message(conv, &message, -1 /* sending_player */);
+
+        pcx_buffer_destroy(&buf);
+
         struct pcx_conversation_player_removed_event event = {
                 .player_num = player_num
         };
@@ -264,6 +281,8 @@ pcx_conversation_remove_player(struct pcx_conversation *conv,
         emit_event_with_data(conv,
                              PCX_CONVERSATION_EVENT_PLAYER_REMOVED,
                              &event.base);
+
+        pcx_conversation_unref(conv);
 }
 
 void
