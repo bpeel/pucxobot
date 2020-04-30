@@ -48,6 +48,8 @@ struct pcx_conversation_message {
 
         /* -1 if the message is a public message for all players */
         int target_player;
+        /* Mask of players that should see the buttons */
+        uint32_t button_players;
 
         /* The message is encoded as the frame payload minus the
          * WebSocket header and stored here so that it can be easily
@@ -55,6 +57,9 @@ struct pcx_conversation_message {
          */
         uint8_t *data;
         size_t length;
+
+        /* Length of the message if the buttons aren’t sent */
+        size_t no_buttons_length;
 };
 
 struct pcx_conversation {

@@ -253,12 +253,18 @@ write_messages(struct pcx_connection *conn)
                     message->target_player != conn->player->player_num)
                         continue;
 
+                size_t length = (message->target_player == -1 &&
+                                 ((UINT32_C(1) << conn->player->player_num) &
+                                  message->button_players) == 0 ?
+                                 message->no_buttons_length :
+                                 message->length);
+
                 int wrote = write_command(conn,
 
                                           PCX_PROTO_MESSAGE,
 
                                           PCX_PROTO_TYPE_BLOB,
-                                          message->length,
+                                          length,
                                           message->data,
 
                                           PCX_PROTO_TYPE_NONE);

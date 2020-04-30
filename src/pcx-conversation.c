@@ -102,6 +102,8 @@ queue_message(struct pcx_conversation *conv,
 
         add_string(&p, message->text);
 
+        size_t no_buttons_length = p - buf;
+
         for (unsigned i = 0; i < message->n_buttons; i++) {
                 add_string(&p, message->buttons[i].text);
                 add_string(&p, message->buttons[i].data);
@@ -113,8 +115,10 @@ queue_message(struct pcx_conversation *conv,
                 pcx_calloc(sizeof *cmessage);
 
         cmessage->target_player = message->target;
+        cmessage->button_players = message->button_players;
         cmessage->data = buf;
         cmessage->length = payload_length;
+        cmessage->no_buttons_length = no_buttons_length;
 
         pcx_list_insert(conv->messages.prev, &cmessage->link);
 
