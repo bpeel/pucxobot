@@ -60,19 +60,17 @@ Pucxo.GAMES = [
 Pucxo.prototype.makeGameButtons = function()
 {
   var i;
-  var buttonDiv = document.getElementById("gameButtons");
+  var buttonDiv = document.getElementById("welcomeBox");
 
   this.gameButtons = [];
 
   for (i = 0; i < Pucxo.GAMES.length; i++) {
-    var div = document.createElement("div");
     var button = document.createElement("button");
     button.appendChild(document.createTextNode(Pucxo.GAMES[i].title));
     button.onclick =
       this.gameButtonClickCb.bind(this, Pucxo.GAMES[i]);
     this.gameButtons.push(button);
-    div.appendChild(button);
-    buttonDiv.append(div);
+    buttonDiv.append(button);
   }
 };
 
