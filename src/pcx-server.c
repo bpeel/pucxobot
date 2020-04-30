@@ -420,6 +420,13 @@ handle_button(struct pcx_server *server,
                 return false;
         }
 
+        if (player->has_left) {
+                pcx_log("Client %s tried to push a button after leaving",
+                        remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
         pcx_conversation_push_button(player->conversation,
                                      player->player_num,
                                      event->button_data);
@@ -441,6 +448,13 @@ handle_send_message(struct pcx_server *server,
                 pcx_log("Client %s sent a chat message before sending "
                         "a hello message",
                        remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        if (player->has_left) {
+                pcx_log("Client %s tried to sent a chat message after leaving",
+                        remote_address_string);
                 remove_client(server, client);
                 return false;
         }
