@@ -91,6 +91,7 @@ info_cb(struct pcx_main_context_source *source,
         int total_games = 0;
         struct pcx_config_bot *bot;
         int bot_num = 0;
+        bool is_busy = false;
 
         pcx_list_for_each(bot, &data->config->bots, link) {
                 int n_games = pcx_bot_get_n_running_games(data->bots[bot_num]);
@@ -99,14 +100,29 @@ info_cb(struct pcx_main_context_source *source,
                 bot_num++;
         }
 
+        if (total_games > 0)
+                is_busy = true;
+
         pcx_log("Total games: %i", total_games);
 
+        int total_server_players = 0;
+
+        for (int i = 0; i < data->n_servers; i++) {
+                total_server_players +=
+                        pcx_server_get_n_players(data->servers[i]);
+        }
+
+        pcx_log("Total server players: %i", total_server_players);
+
+        if (total_server_players > 0)
+                is_busy = true;
+
         if (signal_num == SIGUSR2) {
-                if (total_games == 0) {
+                if (is_busy) {
+                        pcx_log("Not quitting due to running games");
+                } else {
                         pcx_log("No games running, quitting");
                         data->quit = true;
-                } else {
-                        pcx_log("Not quitting due to running games");
                 }
         }
 }
