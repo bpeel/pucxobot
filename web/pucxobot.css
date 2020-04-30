@@ -81,15 +81,23 @@ body {
     position: relative;
     display: inline-block;
     text-align: left;
-    background-color: white;
+    background-color: #faf9f9;
+}
+
+.message.chatYou {
+    text-align: right;
+}
+
+.message.public, .message.private {
+    text-align: center;
 }
 
 .message.private .messageInner {
-    background-color: #dcf8c6;
+    background-color: #ffd6ba;
 }
 
-.message.private {
-    text-align: right;
+.message.chatYou .messageInner {
+    background-color: #bee3db;
 }
 
 @media only all and (max-width: 45em) {

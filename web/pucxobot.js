@@ -329,6 +329,13 @@ Pucxo.prototype.pushButton = function(buttonData)
   this.sock.send(buf);
 };
 
+Pucxo.messageTypeClasses = [
+  "public",
+  "private",
+  "chatOther",
+  "chatYou",
+];
+
 Pucxo.prototype.handleMessage = function(dv)
 {
   /* Skip messages after a reconnect until we get back to where we were. */
@@ -336,7 +343,7 @@ Pucxo.prototype.handleMessage = function(dv)
 
   var messageFlags = dv.getUint8(1);
   var isHtml = (messageFlags & 1) != 0;
-  var isPrivate = (messageFlags & 2) != 0;
+  var messageType = (messageFlags >> 1) & 3;
 
   var isScrolledToBottom = (this.messagesDiv.scrollHeight -
                             this.messagesDiv.scrollTop <=
@@ -349,10 +356,7 @@ Pucxo.prototype.handleMessage = function(dv)
   var i;
 
   var messageDiv = document.createElement("div");
-  messageDiv.className = "message";
-
-  if (isPrivate)
-    messageDiv.className += " private";
+  messageDiv.className = "message " + Pucxo.messageTypeClasses[messageType];
 
   var innerDiv = document.createElement("div");
   innerDiv.className = "messageInner";
