@@ -673,6 +673,12 @@ listen_sock_cb(struct pcx_main_context_source *source,
         add_client(server, conn);
 }
 
+int
+pcx_server_get_n_players(struct pcx_server *server)
+{
+        return pcx_playerbase_get_n_players(server->playerbase);
+}
+
 struct pcx_server *
 pcx_server_new(const struct pcx_config *config,
                const struct pcx_config_server *server_config,

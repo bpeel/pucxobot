@@ -35,6 +35,9 @@ pcx_server_new(const struct pcx_config *config,
                const struct pcx_config_server *server_config,
                struct pcx_error **error);
 
+int
+pcx_server_get_n_players(struct pcx_server *server);
+
 void
 pcx_server_free(struct pcx_server *server);
 
