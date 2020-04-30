@@ -376,7 +376,7 @@ Pucxo.prototype.handleMessage = function(dv)
 
   var isScrolledToBottom = (this.messagesDiv.scrollHeight -
                             this.messagesDiv.scrollTop <=
-                            this.messagesDiv.clientHeight + 5);
+                            this.messagesDiv.clientHeight * 1.75);
 
   var parts = this.splitStrings(new Uint8Array(dv.buffer), 2);
 
