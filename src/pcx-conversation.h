@@ -49,9 +49,9 @@ struct pcx_conversation_message {
         /* -1 if the message is a public message for all players */
         int target_player;
 
-        /* The message is encoded into a WebSocket frame just once and
-         * stored here so that it can be easily copied into all of the
-         * clients.
+        /* The message is encoded as the frame payload minus the
+         * WebSocket header and stored here so that it can be easily
+         * copied into all of the clients.
          */
         uint8_t *data;
         size_t length;

@@ -253,14 +253,20 @@ write_messages(struct pcx_connection *conn)
                     message->target_player != conn->player->player_num)
                         continue;
 
-                if (message->length + conn->write_buf_pos >
-                    sizeof conn->write_buf)
+                int wrote = write_command(conn,
+
+                                          PCX_PROTO_MESSAGE,
+
+                                          PCX_PROTO_TYPE_BLOB,
+                                          message->length,
+                                          message->data,
+
+                                          PCX_PROTO_TYPE_NONE);
+
+                if (wrote == -1)
                         return false;
 
-                memcpy(conn->write_buf + conn->write_buf_pos,
-                       message->data,
-                       message->length);
-                conn->write_buf_pos += message->length;
+                conn->write_buf_pos += wrote;
         }
 
         return true;

@@ -82,10 +82,7 @@ static void
 queue_message(struct pcx_conversation *conv,
               const struct pcx_game_message *message)
 {
-        size_t payload_length =
-                1 +
-                1 +
-                strlen(message->text) + 1;
+        size_t payload_length = 1 + strlen(message->text) + 1;
 
         for (unsigned i = 0; i < message->n_buttons; i++) {
                 payload_length +=
@@ -93,16 +90,8 @@ queue_message(struct pcx_conversation *conv,
                         strlen(message->buttons[i].data) + 1;
         }
 
-        size_t frame_header_length =
-                pcx_proto_get_frame_header_length(payload_length);
-
-        uint8_t *buf = pcx_alloc(frame_header_length + payload_length);
-
-        pcx_proto_write_frame_header(buf, payload_length);
-
-        uint8_t *p = buf + frame_header_length;
-
-        *(p++) = PCX_PROTO_MESSAGE;
+        uint8_t *buf = pcx_alloc(payload_length);
+        uint8_t *p = buf;
 
         *p = message->format == PCX_GAME_MESSAGE_FORMAT_HTML ? 1 : 0;
 
@@ -118,14 +107,14 @@ queue_message(struct pcx_conversation *conv,
                 add_string(&p, message->buttons[i].data);
         }
 
-        assert(p - buf == frame_header_length + payload_length);
+        assert(p - buf == payload_length);
 
         struct pcx_conversation_message *cmessage =
                 pcx_calloc(sizeof *cmessage);
 
         cmessage->target_player = message->target;
         cmessage->data = buf;
-        cmessage->length = frame_header_length + payload_length;
+        cmessage->length = payload_length;
 
         pcx_list_insert(conv->messages.prev, &cmessage->link);
 
