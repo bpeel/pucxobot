@@ -448,13 +448,18 @@ send_buffer_message_with_buttons_to(struct pcx_coup *coup,
 
 static void
 send_buffer_message_with_buttons(struct pcx_coup *coup,
+                                 uint32_t button_players,
                                  size_t n_buttons,
                                  const struct pcx_game_button *buttons)
 {
-        send_buffer_message_with_buttons_to(coup,
-                                            -1, /* target_player */
-                                            n_buttons,
-                                            buttons);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) coup->buffer.data;
+        message.button_players = button_players;
+        message.n_buttons = n_buttons;
+        message.buttons = buttons;
+
+        coup->callbacks.send_message(&message, coup->user_data);
 }
 
 static void
@@ -471,6 +476,7 @@ static void
 send_buffer_message(struct pcx_coup *coup)
 {
         send_buffer_message_with_buttons(coup,
+                                         UINT32_MAX, /* button_players */
                                          0, /* n_buttons */
                                          NULL /* buttons */);
 }
@@ -732,6 +738,7 @@ show_stats(struct pcx_coup *coup)
                 get_buttons(coup, &buttons);
 
         send_buffer_message_with_buttons(coup,
+                                         UINT32_C(1) << coup->current_player,
                                          buttons.length /
                                          sizeof (struct pcx_game_button),
                                          (const struct pcx_game_button *)
@@ -1611,6 +1618,47 @@ get_no_target_block_message(struct pcx_coup *coup,
         }
 }
 
+static uint32_t
+get_button_players_for_challenge(struct pcx_coup *coup,
+                                 const struct challenge_data *data)
+{
+        uint32_t button_players = 0;
+
+        /* Add all the alive buttons */
+        for (int i = 0; i < coup->n_players; i++) {
+                if (!is_alive(coup->players + i))
+                        continue;
+
+                button_players |= UINT32_C(1) << i;
+        }
+
+        /* The acting player can’t block or challenge themselves */
+        button_players &= ~(UINT32_C(1) << data->player_num);
+
+        /* If there is blocking without challenging… */
+        if ((data->flags & (CHALLENGE_FLAG_BLOCK |
+                            CHALLENGE_FLAG_CHALLENGE)) ==
+            CHALLENGE_FLAG_BLOCK) {
+                /* If there is a target then only that person can block */
+                if (data->target_player != -1) {
+                        button_players &= UINT32_C(1) << data->target_player;
+                } else if (coup->reformation_extension &&
+                           !is_reunified(coup)) {
+                        /* Otherwise with the reformation extension,
+                         * only players on a different allegiance can
+                         * block
+                         */
+                        for (int i = 0; i < coup->n_players; i++) {
+                                if (coup->players[i].allegiance ==
+                                    coup->players[data->player_num].allegiance)
+                                        button_players &= ~(UINT32_C(1) << i);
+                        }
+                }
+        }
+
+        return button_players;
+}
+
 static void
 check_challenge_idle(struct pcx_coup *coup)
 {
@@ -1702,7 +1750,12 @@ check_challenge_idle(struct pcx_coup *coup)
                                                      coup);
         }
 
-        send_buffer_message_with_buttons(coup, n_buttons, buttons);
+        uint32_t button_players = get_button_players_for_challenge(coup, data);
+
+        send_buffer_message_with_buttons(coup,
+                                         button_players,
+                                         n_buttons,
+                                         buttons);
 }
 
 static void
@@ -1802,6 +1855,7 @@ send_select_target_with_targets(struct pcx_coup *coup,
                              coup->players[coup->current_player].name);
 
         send_buffer_message_with_buttons(coup,
+                                         UINT32_C(1) << coup->current_player,
                                          n_buttons,
                                          buttons);
 
@@ -2772,6 +2826,7 @@ show_choose_game_type_message(struct pcx_coup *coup)
         };
 
         send_buffer_message_with_buttons(coup,
+                                         UINT32_MAX,
                                          PCX_N_ELEMENTS(buttons),
                                          buttons);
 
