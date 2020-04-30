@@ -100,6 +100,28 @@ body {
     background-color: #bee3db;
 }
 
+#inputContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#sendButton {
+    width: 2em;
+    height: 2em;
+    margin-right: 0.5em;
+}
+
+#inputbox {
+    background-color: white;
+    margin: 0.5em;
+    flex-grow: 1;
+    min-height: 2em;
+    border-radius: 2px;
+    padding: 0.5em;
+    outline: 0px solid transparent;
+}
+
 @media only all and (max-width: 45em) {
     #content {
         position: absolute;
