@@ -5,6 +5,7 @@ translatable_files = [
 
 languages = [
         'eo',
+        'en',
 ]
 
 data_files = [
