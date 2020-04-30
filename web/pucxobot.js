@@ -25,10 +25,6 @@ function Pucxo()
   this.playerName = null;
   this.messagesDiv = document.getElementById("messages");
   this.reconnectTimeout = null;
-  this.numMessagesDisplayed = 0;
-  /* After a reconnect, this will be reset to zero and we’ll ignore
-   * messages until we get back to numMessagesDisplayed.
-   */
   this.numMessagesReceived = 0;
 
   this.keepAliveTimeout = null;
@@ -204,8 +200,6 @@ Pucxo.prototype.doConnect = function()
 
   console.log("Connecting…");
 
-  this.numMessagesReceived = 0;
-
   this.sock = new WebSocket("ws://" + location.hostname + ":3648/");
   this.sock.binaryType = 'arraybuffer';
   this.addSocketHandler("error", this.sockErrorCb.bind(this));
@@ -237,6 +231,7 @@ Pucxo.prototype.sockErrorCb = function(e)
 
 Pucxo.ARG_SIZES = {
   "B": 8,
+  "W": 2,
 };
 
 Pucxo.prototype.sendMessage = function(msgType, argTypes)
@@ -273,6 +268,9 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
     if (t == 'B') {
       dv.setBigUint64(pos, arg, true);
       pos += 8;
+    } else if (t == 'W') {
+      dv.setUint16(pos, arg, true);
+      pos += 2;
     } else if (t == 's') {
       arg = stringArgs[stringArg++];
       var j;
@@ -294,7 +292,7 @@ Pucxo.prototype.sockOpenCb = function(e)
   this.connected = true;
 
   if (this.playerId != null)
-    this.sendMessage(0x81, "B", this.playerId);
+    this.sendMessage(0x81, "BW", this.playerId, this.numMessagesReceived);
   else
     this.sendMessage(0x80, "ss", this.playerName, this.gameType.keyword);
 };
@@ -334,9 +332,7 @@ Pucxo.prototype.pushButton = function(buttonData)
 Pucxo.prototype.handleMessage = function(dv)
 {
   /* Skip messages after a reconnect until we get back to where we were. */
-  if (this.numMessagesReceived++ < this.numMessagesDisplayed)
-    return;
-  this.numMessagesDisplayed++;
+  this.numMessagesReceived++;
 
   var messageFlags = dv.getUint8(1);
   var isHtml = (messageFlags & 1) != 0;
@@ -417,7 +413,6 @@ Pucxo.prototype.handlePlayerId = function(dv)
    * player. This can happen even after an attempt to reconnect if the
    * player has timed out and disappeared.
    */
-  this.numMessagesDisplayed = 0;
   this.numMessagesReceived = 0;
   this.messagesDiv.innerHTML = "";
 };
