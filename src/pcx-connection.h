@@ -53,6 +53,7 @@ struct pcx_connection_new_player_event {
 struct pcx_connection_reconnect_event {
         struct pcx_connection_event base;
         uint64_t player_id;
+        uint16_t n_messages_received;
 };
 
 struct pcx_connection_button_event {
@@ -84,7 +85,8 @@ pcx_connection_get_player(struct pcx_connection *conn);
 void
 pcx_connection_set_player(struct pcx_connection *conn,
                           struct pcx_player *player,
-                          bool from_reconnect);
+                          bool from_reconnect,
+                          int n_messages_received);
 
 uint64_t
 pcx_connection_get_last_update_time(struct pcx_connection *conn);

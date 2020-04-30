@@ -422,6 +422,9 @@ handle_reconnect(struct pcx_connection *conn)
                                     PCX_PROTO_TYPE_UINT64,
                                     &event.player_id,
 
+                                    PCX_PROTO_TYPE_UINT16,
+                                    &event.n_messages_received,
+
                                     PCX_PROTO_TYPE_NONE)) {
                 pcx_log("Invalid reconnect command received from %s",
                         conn->remote_address_string);
@@ -1018,7 +1021,8 @@ conversation_event_cb(struct pcx_listener *listener,
 void
 pcx_connection_set_player(struct pcx_connection *conn,
                           struct pcx_player *player,
-                          bool from_reconnect)
+                          bool from_reconnect,
+                          int n_messages_received)
 {
         assert(conn->player == NULL);
         assert(player != NULL);
@@ -1033,6 +1037,21 @@ pcx_connection_set_player(struct pcx_connection *conn,
         conn->sent_player_id = from_reconnect;
 
         conn->last_message_sent = &player->conversation->messages;
+
+        while (n_messages_received > 0 &&
+               conn->last_message_sent->next !=
+               &player->conversation->messages) {
+                conn->last_message_sent = conn->last_message_sent->next;
+
+                struct pcx_conversation_message *message =
+                        pcx_container_of(conn->last_message_sent,
+                                         struct pcx_conversation_message,
+                                         link);
+
+                if (message->target_player == -1 ||
+                    message->target_player == player->player_num)
+                        n_messages_received--;
+        }
 
         /* This is to update the time on the player */
         set_last_update_time(conn);

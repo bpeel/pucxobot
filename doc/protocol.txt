@@ -40,10 +40,14 @@ RECONNECT (0x81)
 ----------------
 
 • uint64_t player_id
+• uint16_t n_messages_received
 
 This should be sent if the connection is dropped in order to resume.
 The player_id must be a valid ID given from a previous PLAYER_ID
-message from the server.
+message from the server. num_messages_received should be the number of
+messages that the client successfully received from a previous
+connection. The server will continue sending messages from that point
+on.
 
 BUTTON (0x82)
 ----------------------
