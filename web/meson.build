@@ -17,6 +17,8 @@ web_dir = get_option('datadir') / 'web'
 
 install_data(sources : data_files, install_dir : web_dir)
              
+install_data('htaccess', install_dir : web_dir, rename : '.htaccess')
+
 perl = find_program('perl')
 
 foreach lang : languages
