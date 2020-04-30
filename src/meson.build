@@ -59,7 +59,8 @@ thread_dep = dependency('threads')
 
 executable('pucxobot', src,
            dependencies: [curl, json, thread_dep],
-           include_directories: configinc)
+           include_directories: configinc,
+           install: true)
 
 test_coup_src = [
         'pcx-util.c',
