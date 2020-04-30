@@ -192,6 +192,12 @@ pcx_playerbase_add_player(struct pcx_playerbase *playerbase,
         return player;
 }
 
+int
+pcx_playerbase_get_n_players(struct pcx_playerbase *playerbase)
+{
+        return playerbase->n_players;
+}
+
 void
 pcx_playerbase_free(struct pcx_playerbase *playerbase)
 {

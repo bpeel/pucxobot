@@ -37,6 +37,9 @@ pcx_playerbase_add_player(struct pcx_playerbase *playerbase,
                           const char *name,
                           uint64_t id);
 
+int
+pcx_playerbase_get_n_players(struct pcx_playerbase *playerbase);
+
 void
 pcx_playerbase_free(struct pcx_playerbase *playerbase);
 
