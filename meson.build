@@ -21,5 +21,6 @@ elif build_machine.endian() == 'big'
 endif
 
 subdir('src')
+subdir('web')
 
 configure_file(output : 'config.h', configuration : cdata)

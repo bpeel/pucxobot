@@ -50,11 +50,11 @@ function Pucxo()
 };
 
 Pucxo.GAMES = [
-  { "title": "Puĉo", "keyword": "coup" },
-  { "title": "Perfidulo", "keyword": "snitch" },
-  { "title": "Amletero", "keyword": "loveletter" },
-  { "title": "Zombiaj Kuboj", "keyword": "zombie" },
-  { "title": "Superbatalo", "keyword": "superfight" },
+  { "title": "@COUP_TITLE@", "keyword": "coup" },
+  { "title": "@SNITCH_TITLE@", "keyword": "snitch" },
+  { "title": "@LOVE_LETTER_TITLE@", "keyword": "loveletter" },
+  { "title": "@ZOMBIE_DICE_TITLE@", "keyword": "zombie" },
+  { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },
 ];
 
 Pucxo.prototype.makeGameButtons = function()
@@ -325,7 +325,7 @@ Pucxo.prototype.sockOpenCb = function(e)
     this.sendMessage(0x80, "sss",
                      this.playerName,
                      this.gameType.keyword,
-                     "eo");
+                     "@LANG_CODE@");
   }
 };
 
