@@ -20,6 +20,7 @@
 #define PCX_GAME_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "pcx-text.h"
 #include "pcx-config.h"
@@ -48,6 +49,13 @@ struct pcx_game_message {
 
         size_t n_buttons;
         const struct pcx_game_button *buttons;
+        /* A mask of players that will see the buttons. All other
+         * players will just see the message with no buttons. This is
+         * useful for global messages that don’t have sensitive
+         * information but are asking a question for just one player.
+         * This doesn’t work in all of the backends.
+         */
+        uint32_t button_players;
 };
 
 /* The default parameters for a message so that callers don’t have to
@@ -57,6 +65,7 @@ struct pcx_game_message {
                 .target = -1,                                           \
                 .format = PCX_GAME_MESSAGE_FORMAT_PLAIN,                \
                 .n_buttons = 0,                                         \
+                .button_players = UINT32_MAX                            \
         }
 
 struct pcx_game_callbacks {
