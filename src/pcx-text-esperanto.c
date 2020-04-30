@@ -511,9 +511,9 @@ pcx_text_esperanto[] = {
         "\n"
         "Ili nun elektas siajn batalantojn.",
         [PCX_TEXT_STRING_POSSIBLE_ROLES] =
-        "Vi rolkartoj estas:",
+        "Viaj rolkartoj estas:",
         [PCX_TEXT_STRING_POSSIBLE_ATTRIBUTES] =
-        "Vi trajtkartoj estas:",
+        "Viaj trajtkartoj estas:",
         [PCX_TEXT_STRING_CHOOSE_ROLE] =
         "Bonvolu elekti rolon.",
         [PCX_TEXT_STRING_CHOOSE_ATTRIBUTE] =
