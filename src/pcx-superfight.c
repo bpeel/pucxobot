@@ -283,6 +283,12 @@ vote_timeout_cb(struct pcx_main_context_source *source,
         message.n_buttons = PCX_N_ELEMENTS(buttons);
         message.buttons = buttons;
 
+        /* Don’t show the voting buttons to participating players */
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(superfight->fighters); i++) {
+                message.button_players &=
+                        ~(UINT32_C(1) << superfight->fighters[i].player_num);
+        }
+
         superfight->callbacks.send_message(&message, superfight->user_data);
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(buttons); i++)
