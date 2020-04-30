@@ -268,7 +268,7 @@ generate_id(const struct pcx_netaddress *remote_address)
 }
 
 static char *
-normalise_name(const char *name)
+normalise_string(const char *name)
 {
         size_t name_len;
 
@@ -310,7 +310,7 @@ handle_new_player(struct pcx_server *server,
                 return false;
         }
 
-        char *normalised_name = normalise_name(event->name);
+        char *normalised_name = normalise_string(event->name);
 
         if (normalised_name == NULL) {
                 pcx_log("Client %s sent an invalid name",
@@ -423,6 +423,42 @@ handle_button(struct pcx_server *server,
 }
 
 static bool
+handle_send_message(struct pcx_server *server,
+                    struct pcx_server_client *client,
+                    const struct pcx_connection_send_message_event *event)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player == NULL) {
+                pcx_log("Client %s sent a chat message before sending "
+                        "a hello message",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        char *normalised_text = normalise_string(event->text);
+
+        if (normalised_text == NULL) {
+                pcx_log("Client %s sent an invalid chat message",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        pcx_conversation_add_chat_message(player->conversation,
+                                          player->player_num,
+                                          normalised_text);
+
+        pcx_free(normalised_text);
+
+        return true;
+}
+
+static bool
 connection_event_cb(struct pcx_listener *listener,
                     void *data)
 {
@@ -454,6 +490,11 @@ connection_event_cb(struct pcx_listener *listener,
         case PCX_CONNECTION_EVENT_BUTTON: {
                 struct pcx_connection_button_event *de = (void *) event;
                 return handle_button(server, client, de);
+        }
+
+        case PCX_CONNECTION_EVENT_SEND_MESSAGE: {
+                struct pcx_connection_send_message_event *de = (void *) event;
+                return handle_send_message(server, client, de);
         }
 
         }

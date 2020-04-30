@@ -72,6 +72,13 @@ will still exist in the game. It is meant as a friendly way for the
 client to inform the server that the player has gone such as by
 closing the browser tab.
 
+SEND_MESSAGE (0x85)
+-------------------
+
+• string text
+
+Send a message to the chat
+
 Messages to the client
 ======================
 

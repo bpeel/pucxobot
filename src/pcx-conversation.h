@@ -50,6 +50,11 @@ struct pcx_conversation_message {
         int target_player;
         /* Mask of players that should see the buttons */
         uint32_t button_players;
+        /* If the message came from a player, this is the player that
+         * sent it. Otherwise it’s -1. The connection uses this to
+         * tweak the message type for each player.
+         */
+        int sending_player;
 
         /* The message is encoded as the frame payload minus the
          * WebSocket header and stored here so that it can be easily
@@ -105,6 +110,11 @@ void
 pcx_conversation_push_button(struct pcx_conversation *conv,
                              int player_num,
                              const char *button_data);
+
+void
+pcx_conversation_add_chat_message(struct pcx_conversation *conv,
+                                  int player_num,
+                                  const char *text);
 
 void
 pcx_conversation_ref(struct pcx_conversation *conv);

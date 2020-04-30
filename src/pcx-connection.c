@@ -259,20 +259,37 @@ write_messages(struct pcx_connection *conn)
                                  message->no_buttons_length :
                                  message->length);
 
-                int wrote = write_command(conn,
+                size_t header_length =
+                        pcx_proto_get_frame_header_length(length + 1);
 
-                                          PCX_PROTO_MESSAGE,
-
-                                          PCX_PROTO_TYPE_BLOB,
-                                          length,
-                                          message->data,
-
-                                          PCX_PROTO_TYPE_NONE);
-
-                if (wrote == -1)
+                if (header_length + length + 1 + conn->write_buf_pos >
+                    sizeof conn->write_buf)
                         return false;
 
-                conn->write_buf_pos += wrote;
+                uint8_t *p = conn->write_buf + conn->write_buf_pos;
+
+                pcx_proto_write_frame_header(p, length + 1);
+                p += header_length;
+
+                *(p++) = PCX_PROTO_MESSAGE;
+
+                memcpy(p, message->data, length);
+
+                /* Tweak the message type depending on who it’s being
+                 * sent to
+                 */
+                if (message->sending_player != -1) {
+                        enum pcx_proto_message_type message_type =
+                                message->sending_player ==
+                                conn->player->player_num ?
+                                PCX_PROTO_MESSAGE_TYPE_CHAT_YOU :
+                                PCX_PROTO_MESSAGE_TYPE_CHAT_OTHER;
+                        *p |= message_type << 1;
+                }
+
+                p += length;
+
+                conn->write_buf_pos = p - conn->write_buf;
         }
 
         return true;
@@ -480,6 +497,29 @@ handle_button(struct pcx_connection *conn)
 }
 
 static bool
+handle_send_message(struct pcx_connection *conn)
+{
+        struct pcx_connection_send_message_event event;
+
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                    conn->message_data_length - 1,
+
+                                    PCX_PROTO_TYPE_STRING,
+                                    &event.text,
+
+                                    PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid send message command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return emit_event(conn,
+                          PCX_CONNECTION_EVENT_SEND_MESSAGE,
+                          &event.base);
+}
+
+static bool
 handle_keep_alive(struct pcx_connection *conn)
 {
         if (!pcx_proto_read_payload(conn->message_data + 1,
@@ -506,6 +546,8 @@ process_message(struct pcx_connection *conn)
                 return handle_leave(conn);
         case PCX_PROTO_BUTTON:
                 return handle_button(conn);
+        case PCX_PROTO_SEND_MESSAGE:
+                return handle_send_message(conn);
         case PCX_PROTO_KEEP_ALIVE:
                 return handle_keep_alive(conn);
         }

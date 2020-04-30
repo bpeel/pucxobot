@@ -37,6 +37,7 @@ enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_RECONNECT,
         PCX_CONNECTION_EVENT_LEAVE,
         PCX_CONNECTION_EVENT_BUTTON,
+        PCX_CONNECTION_EVENT_SEND_MESSAGE,
 };
 
 struct pcx_connection_event {
@@ -59,6 +60,11 @@ struct pcx_connection_reconnect_event {
 struct pcx_connection_button_event {
         struct pcx_connection_event base;
         const char *button_data;
+};
+
+struct pcx_connection_send_message_event {
+        struct pcx_connection_event base;
+        const char *text;
 };
 
 struct pcx_connection;

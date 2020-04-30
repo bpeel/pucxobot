@@ -26,6 +26,7 @@
 #include "pcx-log.h"
 #include "pcx-util.h"
 #include "pcx-proto.h"
+#include "pcx-html.h"
 
 struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config,
@@ -80,7 +81,8 @@ add_string(uint8_t **p, const char *s)
 
 static void
 queue_message(struct pcx_conversation *conv,
-              const struct pcx_game_message *message)
+              const struct pcx_game_message *message,
+              int sending_player)
 {
         size_t payload_length = 1 + strlen(message->text) + 1;
 
@@ -115,6 +117,7 @@ queue_message(struct pcx_conversation *conv,
                 pcx_calloc(sizeof *cmessage);
 
         cmessage->target_player = message->target;
+        cmessage->sending_player = sending_player;
         cmessage->button_players = message->button_players;
         cmessage->data = buf;
         cmessage->length = payload_length;
@@ -133,7 +136,7 @@ send_message_cb(const struct pcx_game_message *message,
 
         assert(message->target >= -1 && message->target < conv->n_players);
 
-        queue_message(conv, message);
+        queue_message(conv, message, -1 /* sending_player */);
 }
 
 static void
@@ -220,7 +223,7 @@ send_welcome_message(struct pcx_conversation *conv,
         message.n_buttons = n_buttons;
         message.buttons = &start_button;
 
-        queue_message(conv, &message);
+        queue_message(conv, &message, -1 /* sending_player */);
 
         pcx_buffer_destroy(&buf);
 }
@@ -309,6 +312,30 @@ pcx_conversation_push_button(struct pcx_conversation *conv,
 
                 pcx_conversation_unref(conv);
         }
+}
+
+void
+pcx_conversation_add_chat_message(struct pcx_conversation *conv,
+                                  int player_num,
+                                  const char *text)
+{
+        assert(player_num >= 0 && player_num < conv->n_players);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_string(&buf, "<b>");
+        pcx_html_escape(&buf, conv->player_names[player_num]);
+        pcx_buffer_append_string(&buf, "</b>\n\n");
+        pcx_html_escape(&buf, text);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) buf.data;
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+
+        queue_message(conv, &message, player_num);
+
+        pcx_buffer_destroy(&buf);
 }
 
 void
