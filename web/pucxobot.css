@@ -92,7 +92,7 @@ body {
     text-align: right;
 }
 
-@media (max-width: 45em) {
+@media only all and (max-width: 45em) {
     #content {
         position: absolute;
         top: 0px;
@@ -105,7 +105,7 @@ body {
     }
 }
 
-@media not (max-width: 45em) {
+@media not all and (max-width: 45em) {
     #content {
         max-width: 40em;
         margin-left: auto;
