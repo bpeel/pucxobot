@@ -2,6 +2,8 @@
 
 import collections
 import re
+import subprocess
+import tempfile
 
 HEADER = """\
 <!DOCTYPE html>
@@ -52,49 +54,56 @@ def get_game_name(game, lang):
                       b)
         return m.group(1)
 
+def get_game_help_lines(game, lang):
+    with tempfile.NamedTemporaryFile(mode='rt', encoding='utf-8') as res:
+        with tempfile.NamedTemporaryFile(mode='wt', encoding='utf-8') as cmds:
+            print(("start\n"
+                   "set $t=pcx_{}_game.get_help_cb(PCX_TEXT_LANGUAGE_{})\n"
+                   "set $f=(FILE*)fopen(\"{}\", \"w\")\n"
+                   "call (void)fputs($t,$f)\n"
+                   "call (void)fclose($f)").
+                  format(game, lang.name.upper(), res.name),
+                  file=cmds)
+            cmds.flush()
+            subprocess.check_call(["gdb",
+                                   "-q",
+                                   "-batch",
+                                   "-x", cmds.name,
+                                   "../build/src/pucxobot"])
+
+        return res.read().split("\n")
+
 def get_game_help(game, lang):
-    with open("../src/pcx-{}-help.c".format(game), 'rt', encoding='utf-8') as f:
-        b = f.read()
-        m = re.search(r'\[PCX_TEXT_LANGUAGE_' +
-                      lang.name.upper() +
-                      r'\] *= *\n(.+?)\n +\[',
-                      b,
-                      re.MULTILINE | re.DOTALL)
-        lines = m.group(1).split("\n")[2:]
+    lines = get_game_help_lines(game, lang)[2:]
 
-        in_p = False
-        parts = []
+    in_p = False
+    parts = []
 
-        for line_num, line in enumerate(lines):
-            filter_m = re.match(r' *"(.*?)(\\n)?",? *$', line)
-            line = filter_m.group(1)
-            nl = filter_m.group(2)
+    for line_num, line in enumerate(lines):
+        if len(line) == 0:
+            if in_p:
+                parts.append("        </p>")
+                in_p = False
+        else:
+            if not in_p:
+                m = re.match(" *<b>(.*)</b> *$", line)
+                if m:
+                    parts.append("        <h3>{}</h3>".format(m.group(1)))
+                    continue
+                else:
+                    parts.append("        <p>")
+                    in_p = True
 
-            if len(line) == 0:
-                if in_p:
-                    parts.append("        </p>")
-                    in_p = False
-            else:
-                if not in_p:
-                    m = re.match(" *<b>(.*)</b> *$", line)
-                    if m:
-                        parts.append("        <h3>{}</h3>".format(m.group(1)))
-                        continue
-                    else:
-                        parts.append("        <p>")
-                        in_p = True
+        parts.append("        " + line)
+        if (len(line) > 0 and
+            line_num + 1 < len(lines) and
+            len(lines[line_num + 1]) > 0):
+            parts[-1] = parts[-1] + "<br>"
 
-            parts.append("        " + line)
-            if (nl and
-                len(line) > 0 and
-                line_num + 1 < len(lines) and
-                not re.match(r' *"\\n"', lines[line_num + 1])):
-                parts[-1] = parts[-1] + "<br>"
+    if in_p:
+        parts.append("        </p>")
 
-        if in_p:
-            parts.append("        </p>")
-
-        return "\n".join(parts)
+    return "\n".join(parts)
 
 for lang in LANGUAGES:
     with open(lang.code + "/help.html", 'wt', encoding='utf-8') as f:
