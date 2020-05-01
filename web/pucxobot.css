@@ -59,6 +59,14 @@ body {
     padding: 0.5em;
     height: 4em;
     border-bottom: 1px solid #d7d0ca;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+#chatTitleStub {
+    width: 3em;
 }
 
 #chatTitleText {
@@ -66,28 +74,22 @@ body {
     font-size: large;
     font-weight: bold;
     text-align: center;
-}
-
-#helpContainer {
-    text-align: right;
-    display: block;
+    flex-grow: 1;
 }
 
 #helpButton {
-    position: absolute;
+    flex-basis: 0;
     display: inline-block;
+    z-index: 4;
 }
 
 #helpButton img {
-    position: relative;
-    top: 1em;
-    left: -3em;
-    z-index: 4;
     border: 0;
     outline: none;
     text-decoration: none;
     width: 2em;
     height: 2em;
+    margin-right: 1em;
 }
 
 #messages {
