@@ -52,7 +52,7 @@ function Pucxo()
 Pucxo.GAMES = [
   { "title": "@COUP_TITLE@", "keyword": "coup" },
   { "title": "@SNITCH_TITLE@", "keyword": "snitch" },
-  { "title": "@LOVE_LETTER_TITLE@", "keyword": "loveletter" },
+  { "title": "@LOVE_LETTER_TITLE@", "keyword": "loveletter", "help": "love" },
   { "title": "@ZOMBIE_DICE_TITLE@", "keyword": "zombie" },
   { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },
 ];
@@ -95,6 +95,10 @@ Pucxo.prototype.start = function()
 
   document.title = this.gameType.title;
   document.getElementById("chatTitleText").innerText = this.gameType.title;
+
+  var helpButton = document.getElementById("helpButton");
+  var help = this.gameType.help || this.gameType.keyword;
+  helpButton.href = "help.html#" + help;
 
   if (!this.connected)
     this.doConnect();
