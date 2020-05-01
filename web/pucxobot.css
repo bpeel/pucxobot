@@ -68,9 +68,39 @@ body {
     text-align: center;
 }
 
+#helpContainer {
+    text-align: right;
+    display: block;
+}
+
+#helpButton {
+    position: absolute;
+    display: inline-block;
+}
+
+#helpButton img {
+    position: relative;
+    top: 1em;
+    left: -3em;
+    z-index: 4;
+    border: 0;
+    outline: none;
+    text-decoration: none;
+    width: 2em;
+    height: 2em;
+}
+
 #messages {
     background-image: url('background.png');
     background-repeat: repeat;
+}
+
+#help {
+    background-color: white;
+    padding: 0 1em;
+}
+
+#messages, #help {
     overflow: auto;
     flex-grow: 1;
 }

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help</title>
+    <link href="../pucxobot.css" rel="stylesheet" type="text/css">
+  </head>
+  <body>
+    <div id="content">
+      <div id="chatTitle">
+        <div id="chatTitleText">
+          Help
+        </div>
+      </div>
+      <div id="help">
+        <h2>Table of contents</h2>
+        <ul>
+          <li><a href="#coup">Coup</a>
+          <li><a href="#love">Love Letter</a>
+          <li><a href="#zombie">Zombie Dice</a>
+          <li><a href="#snitch">Snitch</a>
+          <li><a href="#superfight">Superfight</a>
+        </ul>
+
+        <h2><a id="coup">Coup</a></h2>
+
+        <p>
+        Coup is a bluffing card game. The bot can play the original game or any combination of two extensions.
+        </p>
+        
+        <h3>Original game</h3>
+        
+        <p>
+        Everybody starts with two cards (face down) and 2 coins. If someone loses a life, they have to reveal the card and they can no longer use it.
+        </p>
+        
+        <p>
+        On your turn, you can do one of the following actions:
+        </p>
+        
+        <p>
+        <b>Income</b>: Take one coin from the bank and nobody can stop you.
+        </p>
+        
+        <p>
+        <b>Foreign aid</b>: Take two coins, but if someone claims to have the duke they can stop you.
+        </p>
+        
+        <p>
+        <b>Coup</b>: Pay 7 coins to perform a coup and kill a player’s card. Nobody can prevent it. If you have 10 coins you have to choose this action.
+        </p>
+        
+        <p>
+        If you have one of the following cards, or just claim to have it, you can do one of these actions:
+        </p>
+        
+        <p>
+        <b>Tax (Duke)</b>: Take 3 coins.
+        </p>
+        
+        <p>
+        <b>Assassinate (Assassin)</b>: Pay 3 coins and kill someone’s card. If the target claims to have the contessa they can block it.
+        </p>
+        
+        <p>
+        <b>Exchange (Ambassador)</b>: Exchange your cards for new ones.
+        </p>
+        
+        <p>
+        <b>Steal (Captain)</b>: Take 2 coins from another player. If they claim to have the captain or the ambassador they can block it.
+        </p>
+        
+        <p>
+        There are only three copies of each card.
+        </p>
+        
+        <p>
+        Every claim of a card can be challenged by any other player. If the challenge is correct, the person who was challenged loses a card. Otherwise the challenger loses one.
+        </p>
+        
+        <p>
+        The winner is the last player left alive.
+        </p>
+        
+        <h3>Inquisitor extension</h3>
+        
+        <p>
+        If you play with the inquisitor extension, the inquisitor character replaces the ambassador. The inquisitor can exchange a card and block stealing like the ambassador. He can also:
+        </p>
+        
+        <p>
+        <b>Interrogate (Inquisitor)</b>: Look at a card from another player. They themselves decide which card to show you. Then you can decide whether they can keep it. If not they draw a new card.
+        </p>
+        
+        <h3>Reformation extension</h3>
+        
+        <p>
+        With this extension, each player is assigned an allegiance. Players in the same allegiance are not allowed to target each other or block foreign aid. If all of the remaining players have the same allegiance, reunification occurs and the restriction doesn’t apply. There are also two additional actions:
+        </p>
+        
+        <p>
+        <b>Convert:</b> Swap the allegiance of any player, including yourself. If you convert yourself it costs 1 coin, otherwise 2. The money goes into the treasury.
+        </p>
+        
+        <p>
+        <b>Embezzle:</b> Claim to not have the duke and take all of the money in the treasury. Anybody can challenge. In that case you either have to concede and lose a card, or show both of your cards to prove that you don’t have the duke.
+        </p>
+
+        <h2><a id="love">Love Letter</a></h2>
+
+        <p>
+        You are all suitors for the princess’ love and you want to send her a love letter. In your hand you have a card which represents the person who is currently holding your letter. The higher the number on the card the closer that person is to the princess. At the end of the round, the person who has the best card gets their letter to the princess and wins one point of affection.
+        </p>
+        
+        <p>
+        On your turn you must take a card from the deck and choose between the two cards in your hand to discard one of them. Each card has a different effect when it is discarded:
+        </p>
+        
+        <p>
+        <b>Guard 👮️1️⃣</b> 5 copies<br>
+        Name a card other than the guard and choose a player. If that player has that card, they lose the round.
+        </p>
+        
+        <p>
+        <b>Spy 🔎2️⃣</b> 2 copies<br>
+        Look at another player’s hand.
+        </p>
+        
+        <p>
+        <b>Baron ⚔️3️⃣</b> 2 copies<br>
+        Secretly compare hands with another player. The person who has the lowest valued card loses the round.
+        </p>
+        
+        <p>
+        <b>Handmaid 💅4️⃣</b> 2 copies<br>
+        Until your next turn, ignore any effects from other player’s cards.
+        </p>
+        
+        <p>
+        <b>Prince 🤴5️⃣</b> 2 copies<br>
+        Choose a player (can be yourself) who will discard their hand and take a new card.
+        </p>
+        
+        <p>
+        <b>King 👑6️⃣</b> 1 copy<br>
+        Choose another player and exchange hands with them.
+        </p>
+        
+        <p>
+        <b>Comtesse 👩‍💼7️⃣</b> 1 copy<br>
+        If you have this card along with the king or the prince in your hand you must discard this card.
+        </p>
+        
+        <p>
+        <b>Princess 👸8️⃣</b> 1 copy<br>
+        If you discard this card you lose the round.
+        </p>
+        
+        <p>
+        When someone wins enough affection from the princess they win the game.
+        </p>
+
+        <h2><a id="zombie">Zombie Dice</a></h2>
+
+        <p>
+        You are a zombie and you want to eat as many brains as possible. During your turn you will throw 3 dice with each die representing a person. A dice throw can result in one of these three things happening:
+        </p>
+        
+        <p>
+        🧠: You ate the person’s brain<br>
+        💥: The person shot at you<br>
+        👣: The person escaped
+        </p>
+        
+        <p>
+        After throwing the dice you put aside all the brains🧠 and shotguns💥. If you end up with 3 shotguns you die and lose all the brains that you gained in this turn. Otherwise you can choose whether to continue rolling. If you stop, you add all of the brains that you threw to your total score.
+        </p>
+        
+        <p>
+        If you roll again, you take all of the feet👣 dice, add more dice from the box to get back up to three and then roll them again as before.
+        </p>
+        
+        <p>
+        There are three colors of die: green🍏, yellow💛 and red🧨. The green dice are more likely to throw a brain and the red dice are more likely to throw a shotgun. The yellow dice are balanced.
+        </p>
+        
+        <p>
+        After one player scores 13 points the other players are allowed to finish one last turn. After that the person with the highest score wins.
+        </p>
+        
+
+        <h2><a id="snitch">Snitch</a></h2>
+
+        <p>
+        Snitch is a card game of semi-collaboration and bluff.
+        </p>
+        
+        <p>
+        You are all criminals who are working together to perform a heist. There are 8 rounds and in each round there is one gang leader.
+        </p>
+        
+        <h3>The contract</h3>
+        
+        <p>
+        The gang leader chooses how many specialists the heist will have and by doing so also chooses the difficulty level. They then take that many cards from the deck and show them to everybody. These cards form the contract for the heist. For it to be a success each one of these specialists must take part.
+        </p>
+        
+        <h3>The discussion and the heist</h3>
+        
+        <p>
+        Now it’s time for the discussion phase. Everybody has 10 cards in their hand. 7 of them represent specialists. You need to work together to try to get the cards needed for the heist. Finally when everyone has chosen their card they are all revealed at the same time. If you manage to show all the cards needed for the contract, everybody wins the same number of coins as the size of the contract.
+        </p>
+        
+        <h3>The snitches</h3>
+        
+        <p>
+        However, in everybody’s hand there are also 3 snitches. If the heist fails and at least one person chose the snitch card, instead of taking money from the bank the snitches steal money from the other players! Everybody who didn’t snitch loses one coin and the loot is divided between all of the snitches. If the amount can’t be divided evenly it is rounded up by taking extra coins from the bank.
+        </p>
+        
+        <p>
+        After the 8 rounds, the player with the most coins wins the game.
+        </p>
+
+        <h2><a id="superfight">Superfight</a></h2>
+
+        <p>
+        Superfight is a simple game of ridiculous arguments.
+        </p>
+        
+        <p>
+        The game takes place over a series of fights. For the first fight, the bot chooses two random players. Those two players receive 6 cards each. 3 of them have characters and the other 3 have attributes. The two players have to choose 1 of each type of card. The bot then adds a second random attribute which will either help or hinder the player. The chosen character and attributes are your fighter.
+        </p>
+        
+        <p>
+        When both fighters are ready the two players have to argue in the group why their fighter would win in a fight to the death. When everybody is sufficiently convinced they can vote for the winner. The winning player gets one point and stays on for the next round without changing their fighter. The loser gets replaced by the next player who makes his fighter as above.
+        </p>
+        
+        <p>
+        In case of a draw, the two players take one new character card each and use that in a new fight without any additional attributes. This repeats until someone gets more votes.
+        </p>
+        
+        <p>
+        The first player to get 3 points wins the game.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
