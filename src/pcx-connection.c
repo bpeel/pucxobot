@@ -1096,7 +1096,6 @@ conversation_event_cb(struct pcx_listener *listener,
 void
 pcx_connection_set_player(struct pcx_connection *conn,
                           struct pcx_player *player,
-                          bool from_reconnect,
                           int n_messages_received)
 {
         assert(conn->player == NULL);
@@ -1109,7 +1108,7 @@ pcx_connection_set_player(struct pcx_connection *conn,
                        &conn->conversation_listener);
         conn->conversation_listener.notify = conversation_event_cb;
 
-        conn->sent_player_id = from_reconnect;
+        conn->sent_player_id = false;
 
         conn->last_message_sent = &player->conversation->messages;
 

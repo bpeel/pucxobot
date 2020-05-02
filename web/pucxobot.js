@@ -450,13 +450,6 @@ Pucxo.prototype.handlePlayerId = function(dv)
 
   for (i = 0; i < 8; i++)
     this.playerId[i] = dv.getUint8(1 + i);
-
-  /* If the server sends a player ID then it means we’ve started a new
-   * player. This can happen even after an attempt to reconnect if the
-   * player has timed out and disappeared.
-   */
-  this.numMessagesReceived = 0;
-  this.messagesDiv.innerHTML = "";
 };
 
 Pucxo.prototype.messageCb = function(e)

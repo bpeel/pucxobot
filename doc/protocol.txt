@@ -89,12 +89,8 @@ PLAYER_ID (0x00)
 
 • uint64_t player_id
 
-This is sent as the first message in response to a NEW_PLAYER command
-in order to report the player's ID. If the player instead sends a
-RECONNECT message this won't be sent unless the player was lost in
-which case a new player ID will be generated. Therefore the client
-should be prepared to update its player ID whenever this message is
-received.
+This is sent as the first message whenever NEW_PLAYER or RECONNECT is
+sent.
 
 MESSAGE (0x01)
 --------------

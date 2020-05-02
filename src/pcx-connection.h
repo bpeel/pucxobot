@@ -92,7 +92,6 @@ pcx_connection_get_player(struct pcx_connection *conn);
 void
 pcx_connection_set_player(struct pcx_connection *conn,
                           struct pcx_player *player,
-                          bool from_reconnect,
                           int n_messages_received);
 
 uint64_t

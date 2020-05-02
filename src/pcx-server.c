@@ -352,7 +352,6 @@ handle_new_player(struct pcx_server *server,
 
         pcx_connection_set_player(client->connection,
                                   player,
-                                  false, /* from_reconnect */
                                   0 /* n_messages_received */);
 
         pcx_conversation_unref(conversation);
@@ -391,7 +390,6 @@ handle_reconnect(struct pcx_server *server,
 
         pcx_connection_set_player(client->connection,
                                   player,
-                                  true /* from_reconnect */,
                                   event->n_messages_received);
 
         return true;
