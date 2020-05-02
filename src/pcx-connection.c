@@ -57,7 +57,7 @@ struct pcx_connection {
         struct pcx_player *player;
         struct pcx_listener conversation_listener;
 
-        bool sent_player_id;
+        bool sent_conversation_details;
 
         /* If pong_queued is non-zero then pong_data then we need to
          * send a pong control frame with the payload given payload.
@@ -190,7 +190,7 @@ connection_is_ready_to_write(struct pcx_connection *conn)
                 return true;
 
         if (conn->player) {
-                if (!conn->sent_player_id)
+                if (!conn->sent_conversation_details)
                         return true;
 
                 /* If the last message we sent isn’t the last one then
@@ -297,8 +297,9 @@ write_messages(struct pcx_connection *conn)
 }
 
 static bool
-write_player_id(struct pcx_connection *conn)
+write_conversation_details(struct pcx_connection *conn)
 {
+        size_t old_write_buf_pos = conn->write_buf_pos;
         int wrote;
 
         wrote = write_command(conn,
@@ -311,12 +312,31 @@ write_player_id(struct pcx_connection *conn)
                               PCX_PROTO_TYPE_NONE);
 
         if (wrote == -1)
-                return false;
+                goto failed;
 
         conn->write_buf_pos += wrote;
-        conn->sent_player_id = true;
+
+        wrote = write_command(conn,
+
+                              PCX_PROTO_GAME_TYPE,
+
+                              PCX_PROTO_TYPE_STRING,
+                              conn->player->conversation->game_type->name,
+
+                              PCX_PROTO_TYPE_NONE);
+
+        if (wrote == -1)
+                goto failed;
+
+        conn->write_buf_pos += wrote;
+
+        conn->sent_conversation_details = true;
 
         return true;
+
+failed:
+        conn->write_buf_pos = old_write_buf_pos;
+        return false;
 }
 
 static bool
@@ -347,8 +367,8 @@ fill_write_buf(struct pcx_connection *conn)
         if (conn->player == NULL)
                 return;
 
-        if (!conn->sent_player_id &&
-            !write_player_id(conn))
+        if (!conn->sent_conversation_details &&
+            !write_conversation_details(conn))
                 return;
 
         if (!conn->player->has_left &&
@@ -1108,7 +1128,7 @@ pcx_connection_set_player(struct pcx_connection *conn,
                        &conn->conversation_listener);
         conn->conversation_listener.notify = conversation_event_cb;
 
-        conn->sent_player_id = false;
+        conn->sent_conversation_details = false;
 
         conn->last_message_sent = &player->conversation->messages;
 

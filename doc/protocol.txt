@@ -92,6 +92,15 @@ PLAYER_ID (0x00)
 This is sent as the first message whenever NEW_PLAYER or RECONNECT is
 sent.
 
+GAME_TYPE (0x02)
+----------------
+
+• string game_type
+
+Reports the type of game. This is mainly useful for private games
+where the client doesn’t necessarily know the game type before
+joining.
+
 MESSAGE (0x01)
 --------------
 
