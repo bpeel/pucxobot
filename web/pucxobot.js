@@ -374,7 +374,6 @@ Pucxo.messageTypeClasses = [
 
 Pucxo.prototype.handleMessage = function(dv)
 {
-  /* Skip messages after a reconnect until we get back to where we were. */
   this.numMessagesReceived++;
 
   var messageFlags = dv.getUint8(1);
