@@ -302,6 +302,8 @@ write_conversation_details(struct pcx_connection *conn)
         size_t old_write_buf_pos = conn->write_buf_pos;
         int wrote;
 
+        struct pcx_conversation *conv = conn->player->conversation;
+
         wrote = write_command(conn,
 
                               PCX_PROTO_PLAYER_ID,
@@ -321,7 +323,7 @@ write_conversation_details(struct pcx_connection *conn)
                               PCX_PROTO_GAME_TYPE,
 
                               PCX_PROTO_TYPE_STRING,
-                              conn->player->conversation->game_type->name,
+                              conv->game_type->name,
 
                               PCX_PROTO_TYPE_NONE);
 
@@ -329,6 +331,21 @@ write_conversation_details(struct pcx_connection *conn)
                 goto failed;
 
         conn->write_buf_pos += wrote;
+
+        if (conv->is_private) {
+                wrote = write_command(conn,
+
+                                      PCX_PROTO_PRIVATE_GAME_ID,
+
+                                      PCX_PROTO_TYPE_UINT64,
+                                      conv->private_game_id,
+
+                                      PCX_PROTO_TYPE_NONE);
+                if (wrote == -1)
+                        goto failed;
+
+                conn->write_buf_pos += wrote;
+        }
 
         conn->sent_conversation_details = true;
 

@@ -109,6 +109,15 @@ Reports the type of game. This is mainly useful for private games
 where the client doesn’t necessarily know the game type before
 joining.
 
+PRIVATE_GAME_ID (0x03)
+----------------------
+
+• uint64_t game_id
+
+When a private game is created, the server will send this after
+sending the player ID so that other clients can join the game with
+JOIN_PRIVATE_GAME.
+
 MESSAGE (0x01)
 --------------
 

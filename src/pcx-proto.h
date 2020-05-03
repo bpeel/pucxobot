@@ -53,6 +53,7 @@
 #define PCX_PROTO_PLAYER_ID 0x00
 #define PCX_PROTO_MESSAGE 0x01
 #define PCX_PROTO_GAME_TYPE 0x02
+#define PCX_PROTO_PRIVATE_GAME_ID 0x03
 
 enum pcx_proto_type {
         PCX_PROTO_TYPE_UINT8,
