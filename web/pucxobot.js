@@ -16,6 +16,52 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+function MessageReader(dv, pos)
+{
+  this.dv = dv;
+  this.pos = 0;
+}
+
+MessageReader.prototype.getString = function()
+{
+  var s = "";
+
+  while (!this.isFinished()) {
+    var c = this.getUint8();
+
+    if (c == 0)
+      break;
+
+    s = s + '%';
+    if (c < 16)
+      s = s + '0';
+    s = s + c.toString(16);
+  }
+
+  return decodeURIComponent(s);
+};
+
+MessageReader.prototype.getUint64 = function()
+{
+  var a = new Uint8Array(8);
+  var i;
+
+  for (i = 0; i < 8; i++)
+    a[i] = this.getUint8();
+
+  return a;
+};
+
+MessageReader.prototype.getUint8 = function()
+{
+  return this.dv.getUint8(this.pos++);
+};
+
+MessageReader.prototype.isFinished = function()
+{
+  return this.pos >= this.dv.byteLength;
+};
+
 function Pucxo()
 {
   this.sock = null;
@@ -139,22 +185,6 @@ Pucxo.prototype.gameButtonClickCb = function(gameType)
     this.gameType = gameType;
     this.start();
   }
-};
-
-Pucxo.prototype.utf8ToString = function(ba)
-{
-  var s = "";
-  var i;
-
-  for (i = 0; i < ba.length; i++) {
-    var c = ba[i];
-    s = s + '%';
-    if (c < 16)
-      s = s + '0';
-    s = s + c.toString(16);
-  }
-
-  return decodeURIComponent(s);
 };
 
 Pucxo.prototype.stringToUtf8 = function(s)
@@ -333,25 +363,6 @@ Pucxo.prototype.sockOpenCb = function(e)
   }
 };
 
-Pucxo.prototype.splitStrings = function(ba, pos)
-{
-  var res = [];
-
-  while (pos < ba.length) {
-    var end = pos;
-
-    while (ba[end] != 0)
-      end++;
-
-    var s = new Uint8Array(ba.buffer, ba.byteOffset + pos, end - pos);
-    res.push(this.utf8ToString(s));
-
-    pos = end + 1;
-  }
-
-  return res;
-};
-
 Pucxo.prototype.pushButton = function(buttonData)
 {
   var buf = new Uint8Array(buttonData.length + 1);
@@ -372,11 +383,11 @@ Pucxo.messageTypeClasses = [
   "chatYou",
 ];
 
-Pucxo.prototype.handleMessage = function(dv)
+Pucxo.prototype.handleMessage = function(mr)
 {
   this.numMessagesReceived++;
 
-  var messageFlags = dv.getUint8(1);
+  var messageFlags = mr.getUint8();
   var isHtml = (messageFlags & 1) != 0;
   var messageType = (messageFlags >> 1) & 3;
 
@@ -384,9 +395,9 @@ Pucxo.prototype.handleMessage = function(dv)
                             this.messagesDiv.scrollTop <=
                             this.messagesDiv.clientHeight * 1.75);
 
-  var parts = this.splitStrings(new Uint8Array(dv.buffer), 2);
+  var text = mr.getString();
 
-  var lines = parts[0].split("\n");
+  var lines = text.split("\n");
 
   var i;
 
@@ -416,14 +427,14 @@ Pucxo.prototype.handleMessage = function(dv)
 
   innerDiv.appendChild(textDiv);
 
-  if (parts.length > 1) {
+  if (!mr.isFinished()) {
     var buttonsDiv = document.createElement("div");
     buttonsDiv.className = "messageButtons";
 
-    for (i = 1; i < parts.length; i += 2) {
+    while (!mr.isFinished()) {
       var button = document.createElement("button");
-      button.appendChild(document.createTextNode(parts[i]));
-      button.onclick = this.pushButton.bind(this, parts[i + 1]);
+      button.appendChild(document.createTextNode(mr.getString()));
+      button.onclick = this.pushButton.bind(this, mr.getString());
       buttonsDiv.appendChild(button);
     }
 
@@ -442,26 +453,22 @@ Pucxo.prototype.handleMessage = function(dv)
   }
 };
 
-Pucxo.prototype.handlePlayerId = function(dv)
+Pucxo.prototype.handlePlayerId = function(mr)
 {
-  this.playerId = new Uint8Array(8);
-  var i;
-
-  for (i = 0; i < 8; i++)
-    this.playerId[i] = dv.getUint8(1 + i);
+  this.playerId = mr.getUint64();
 };
 
 Pucxo.prototype.messageCb = function(e)
 {
-  var dv = new DataView(e.data);
-  var msgType = dv.getUint8(0);
+  var mr = new MessageReader(new DataView(e.data));
+  var msgType = mr.getUint8();
 
   console.log(msgType);
 
   if (msgType == 0) {
-    this.handlePlayerId(dv);
+    this.handlePlayerId(mr);
   } else if (msgType == 1) {
-    this.handleMessage(dv);
+    this.handleMessage(mr);
   }
 };
 
