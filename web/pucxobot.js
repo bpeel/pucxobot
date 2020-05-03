@@ -139,13 +139,6 @@ Pucxo.prototype.start = function()
   this.playerName = this.namebox.value;
   document.getElementById("welcomeOverlay").style.display = "none";
 
-  document.title = this.gameType.title;
-  document.getElementById("chatTitleText").innerText = this.gameType.title;
-
-  var helpButton = document.getElementById("helpButton");
-  var help = this.gameType.help || this.gameType.keyword;
-  helpButton.href = "help.html#" + help;
-
   if (!this.connected)
     this.doConnect();
 };
@@ -458,6 +451,29 @@ Pucxo.prototype.handlePlayerId = function(mr)
   this.playerId = mr.getUint64();
 };
 
+Pucxo.prototype.handleGameType = function(mr)
+{
+  var typeName = mr.getString();
+  var i;
+
+  for (i = 0; i < Pucxo.GAMES.length; i++) {
+    var game = Pucxo.GAMES[i];
+
+    if (game.keyword == typeName) {
+      this.gameType = game;
+
+      document.title = this.gameType.title;
+      document.getElementById("chatTitleText").innerText = this.gameType.title;
+
+      var helpButton = document.getElementById("helpButton");
+      var help = this.gameType.help || this.gameType.keyword;
+      helpButton.href = "help.html#" + help;
+
+      break;
+    }
+  }
+};
+
 Pucxo.prototype.messageCb = function(e)
 {
   var mr = new MessageReader(new DataView(e.data));
@@ -469,6 +485,8 @@ Pucxo.prototype.messageCb = function(e)
     this.handlePlayerId(mr);
   } else if (msgType == 1) {
     this.handleMessage(mr);
+  } else if (msgType == 2) {
+    this.handleGameType(mr);
   }
 };
 
