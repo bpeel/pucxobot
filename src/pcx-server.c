@@ -194,7 +194,7 @@ pending_conversation_event_cb(struct pcx_listener *listener,
 }
 
 static struct pcx_conversation *
-ref_pending_conversation(struct pcx_server *server,
+get_pending_conversation(struct pcx_server *server,
                          const struct pcx_game *game_type,
                          enum pcx_text_language language)
 {
@@ -216,8 +216,6 @@ ref_pending_conversation(struct pcx_server *server,
         pcx_list_insert(&server->pending_conversations, &pc->link);
 
 found_conversation:
-        pcx_conversation_ref(pc->conversation);
-
         return pc->conversation;
 }
 
@@ -341,7 +339,7 @@ handle_new_player(struct pcx_server *server,
         } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
 
         struct pcx_conversation *conversation =
-                ref_pending_conversation(server,
+                get_pending_conversation(server,
                                          event->game_type,
                                          event->language);
 
@@ -353,8 +351,6 @@ handle_new_player(struct pcx_server *server,
         pcx_connection_set_player(client->connection,
                                   player,
                                   0 /* n_messages_received */);
-
-        pcx_conversation_unref(conversation);
 
         pcx_free(normalised_name);
 
