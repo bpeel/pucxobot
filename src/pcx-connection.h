@@ -98,4 +98,8 @@ pcx_connection_set_player(struct pcx_connection *conn,
 uint64_t
 pcx_connection_get_last_update_time(struct pcx_connection *conn);
 
+bool
+pcx_connection_send_message(struct pcx_connection *conn,
+                            int message);
+
 #endif /* PCX_CONNECTION_H */

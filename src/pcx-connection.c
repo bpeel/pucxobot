@@ -1180,3 +1180,19 @@ pcx_connection_get_player(struct pcx_connection *conn)
 {
         return conn->player;
 }
+
+bool
+pcx_connection_send_message(struct pcx_connection *conn,
+                            int message)
+{
+        int wrote = write_command(conn, message, PCX_PROTO_TYPE_NONE);
+
+        if (wrote == -1)
+                return false;
+
+        conn->write_buf_pos += wrote;
+
+        update_poll_flags(conn);
+
+        return true;
+}
