@@ -44,6 +44,7 @@
 #include "pcx-log.h"
 #include "pcx-conversation.h"
 #include "pcx-playerbase.h"
+#include "pcx-proto.h"
 
 #define DEFAULT_PORT 3648
 
@@ -342,6 +343,32 @@ normalise_string(const char *name)
         return pcx_strndup(name, name_len);
 }
 
+static void
+watch_conversation(struct pcx_server *server,
+                   struct pcx_server_client *client,
+                   const char *name,
+                   struct pcx_conversation *conversation)
+{
+        const struct pcx_netaddress *remote_address =
+                pcx_connection_get_remote_address(client->connection);
+
+        uint64_t id;
+
+        do {
+                id = generate_id(remote_address);
+        } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
+
+        struct pcx_player *player =
+                pcx_playerbase_add_player(server->playerbase,
+                                          conversation,
+                                          name,
+                                          id);
+
+        pcx_connection_set_player(client->connection,
+                                  player,
+                                  0 /* n_messages_received */);
+}
+
 static bool
 handle_new_player(struct pcx_server *server,
                   struct pcx_server_client *client,
@@ -379,14 +406,6 @@ handle_new_player(struct pcx_server *server,
                 return false;
         }
 
-        const struct pcx_netaddress *remote_address =
-                pcx_connection_get_remote_address(client->connection);
-        uint64_t id;
-
-        do {
-                id = generate_id(remote_address);
-        } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
-
         struct pcx_conversation *conversation;
 
         if (event->is_private) {
@@ -402,14 +421,55 @@ handle_new_player(struct pcx_server *server,
                                                         event->language);
         }
 
-        player = pcx_playerbase_add_player(server->playerbase,
-                                           conversation,
-                                           normalised_name,
-                                           id);
+        watch_conversation(server, client, normalised_name, conversation);
 
-        pcx_connection_set_player(client->connection,
-                                  player,
-                                  0 /* n_messages_received */);
+        pcx_free(normalised_name);
+
+        return true;
+}
+
+static bool
+handle_join_private_game(struct pcx_server *server,
+                         struct pcx_server_client *client,
+                         const struct pcx_connection_join_private_game_event *e)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player != NULL) {
+                pcx_log("Client %s sent multiple hello messages",
+                        remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        struct pcx_server_pending_conversation *pc =
+                find_private_conversation(server, e->game_id);
+
+        if (pc == NULL) {
+                int msg = PCX_PROTO_PRIVATE_GAME_NOT_FOUND;
+                if (!pcx_connection_send_message(client->connection, msg)) {
+                        pcx_log("Couldn’t send game not found message to %s",
+                                remote_address_string);
+                        remove_client(server, client);
+                        return false;
+                }
+                return true;
+        }
+
+        char *normalised_name = normalise_string(e->name);
+
+        if (normalised_name == NULL) {
+                pcx_log("Client %s sent an invalid name",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        watch_conversation(server, client, normalised_name, pc->conversation);
 
         pcx_free(normalised_name);
 
@@ -564,6 +624,12 @@ connection_event_cb(struct pcx_listener *listener,
         case PCX_CONNECTION_EVENT_NEW_PLAYER: {
                 struct pcx_connection_new_player_event *de = (void *) event;
                 return handle_new_player(server, client, de);
+        }
+
+        case PCX_CONNECTION_EVENT_JOIN_PRIVATE_GAME: {
+                struct pcx_connection_join_private_game_event *de =
+                        (void *) event;
+                return handle_join_private_game(server, client, de);
         }
 
         case PCX_CONNECTION_EVENT_RECONNECT: {

@@ -484,6 +484,32 @@ found_game:
 }
 
 static bool
+handle_join_private_game(struct pcx_connection *conn)
+{
+        struct pcx_connection_join_private_game_event event;
+
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                    conn->message_data_length - 1,
+
+                                    PCX_PROTO_TYPE_STRING,
+                                    &event.name,
+
+                                    PCX_PROTO_TYPE_UINT64,
+                                    &event.game_id,
+
+                                    PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid join private game command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return emit_event(conn,
+                          PCX_CONNECTION_EVENT_JOIN_PRIVATE_GAME,
+                          &event.base);
+}
+
+static bool
 handle_reconnect(struct pcx_connection *conn)
 {
         struct pcx_connection_reconnect_event event;
@@ -597,6 +623,8 @@ process_message(struct pcx_connection *conn)
                 return handle_new_player(conn, false /* is_private */);
         case PCX_PROTO_NEW_PRIVATE_PLAYER:
                 return handle_new_player(conn, true /* is_private */);
+        case PCX_PROTO_JOIN_PRIVATE_GAME:
+                return handle_join_private_game(conn);
         case PCX_PROTO_RECONNECT:
                 return handle_reconnect(conn);
         case PCX_PROTO_LEAVE:

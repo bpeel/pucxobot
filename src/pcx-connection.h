@@ -34,6 +34,7 @@ enum pcx_connection_event_type {
         PCX_CONNECTION_EVENT_ERROR,
 
         PCX_CONNECTION_EVENT_NEW_PLAYER,
+        PCX_CONNECTION_EVENT_JOIN_PRIVATE_GAME,
         PCX_CONNECTION_EVENT_RECONNECT,
         PCX_CONNECTION_EVENT_LEAVE,
         PCX_CONNECTION_EVENT_BUTTON,
@@ -51,6 +52,12 @@ struct pcx_connection_new_player_event {
         const struct pcx_game *game_type;
         enum pcx_text_language language;
         bool is_private;
+};
+
+struct pcx_connection_join_private_game_event {
+        struct pcx_connection_event base;
+        const char *name;
+        uint64_t game_id;
 };
 
 struct pcx_connection_reconnect_event {

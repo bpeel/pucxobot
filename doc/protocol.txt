@@ -45,6 +45,17 @@ created for the player will have a unique ID and won’t be discoverable
 by other players. The generated ID will be sent in a PRIVATE_GAME_ID
 message.
 
+JOIN_PRIVATE_GAME (0x87)
+------------------------
+
+• string name
+• uint64_t game_id
+
+Join a game that was previously created with NEW_PRIVATE_PLAYER. If
+the game was successfully found then the server will send a player ID
+the same as for the NEW_PLAYER_COMMAND. Otherwise it will sent a
+PRIVATE_GAME_NOT_FOUND message.
+
 RECONNECT (0x81)
 ----------------
 
@@ -117,6 +128,14 @@ PRIVATE_GAME_ID (0x03)
 When a private game is created, the server will send this after
 sending the player ID so that other clients can join the game with
 JOIN_PRIVATE_GAME.
+
+PRIVATE_GAME_NOT_FOUND (0x04)
+-----------------------------
+
+No data
+
+Sent after a JOIN_PRIVATE_GAME message if the requested game doesn’t
+exist, it has already started or it is full.
 
 MESSAGE (0x01)
 --------------
