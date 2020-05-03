@@ -79,6 +79,9 @@ struct pcx_conversation {
 
         bool started;
 
+        bool is_private;
+        uint64_t private_game_id;
+
         const struct pcx_game *game_type;
 
         struct pcx_signal event_signal;

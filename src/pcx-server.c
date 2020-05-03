@@ -193,6 +193,24 @@ pending_conversation_event_cb(struct pcx_listener *listener,
         return true;
 }
 
+static struct pcx_server_pending_conversation *
+add_pending_conversation(struct pcx_server *server,
+                         const struct pcx_game *game_type,
+                         enum pcx_text_language language)
+{
+        struct pcx_conversation *conv =
+                pcx_conversation_new(server->config, game_type, language);
+        struct pcx_server_pending_conversation *pc = pcx_alloc(sizeof *pc);
+
+        pc->conversation = conv;
+        pc->listener.notify = pending_conversation_event_cb;
+        pcx_signal_add(&conv->event_signal,
+                       &pc->listener);
+        pcx_list_insert(&server->pending_conversations, &pc->link);
+
+        return pc;
+}
+
 static struct pcx_conversation *
 get_pending_conversation(struct pcx_server *server,
                          const struct pcx_game *game_type,
@@ -201,22 +219,31 @@ get_pending_conversation(struct pcx_server *server,
         struct pcx_server_pending_conversation *pc;
 
         pcx_list_for_each(pc, &server->pending_conversations, link) {
-                if (pc->conversation->game_type == game_type &&
+                if (!pc->conversation->is_private &&
+                    pc->conversation->game_type == game_type &&
                     pc->conversation->language == language)
                         goto found_conversation;
         }
 
-        struct pcx_conversation *conv =
-                pcx_conversation_new(server->config, game_type, language);
-        pc = pcx_alloc(sizeof *pc);
-        pc->conversation = conv;
-        pc->listener.notify = pending_conversation_event_cb;
-        pcx_signal_add(&conv->event_signal,
-                       &pc->listener);
-        pcx_list_insert(&server->pending_conversations, &pc->link);
+        pc = add_pending_conversation(server, game_type, language);
 
 found_conversation:
         return pc->conversation;
+}
+
+static struct pcx_server_pending_conversation *
+find_private_conversation(struct pcx_server *server,
+                          uint64_t id)
+{
+        struct pcx_server_pending_conversation *pc;
+
+        pcx_list_for_each(pc, &server->pending_conversations, link) {
+                if (pc->conversation->is_private &&
+                    pc->conversation->private_game_id == id)
+                        return pc;
+        }
+
+        return NULL;
 }
 
 static void
@@ -265,6 +292,28 @@ generate_id(const struct pcx_netaddress *remote_address)
                           sizeof remote_address->ipv4);
 
         return id;
+}
+
+static struct pcx_conversation *
+add_private_conversation(struct pcx_server *server,
+                         const struct pcx_game *game_type,
+                         enum pcx_text_language language,
+                         const struct pcx_netaddress *remote_address)
+{
+        struct pcx_server_pending_conversation *pc =
+                add_pending_conversation(server, game_type, language);
+
+        pc->conversation->is_private = true;
+
+        uint64_t id;
+
+        do {
+                id = generate_id(remote_address);
+        } while (find_private_conversation(server, id));
+
+        pc->conversation->private_game_id = id;
+
+        return pc->conversation;
 }
 
 static char *
@@ -338,10 +387,20 @@ handle_new_player(struct pcx_server *server,
                 id = generate_id(remote_address);
         } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
 
-        struct pcx_conversation *conversation =
-                get_pending_conversation(server,
-                                         event->game_type,
-                                         event->language);
+        struct pcx_conversation *conversation;
+
+        if (event->is_private) {
+                const struct pcx_netaddress *remote_address =
+                        pcx_connection_get_remote_address(client->connection);
+                conversation = add_private_conversation(server,
+                                                        event->game_type,
+                                                        event->language,
+                                                        remote_address);
+        } else {
+                conversation = get_pending_conversation(server,
+                                                        event->game_type,
+                                                        event->language);
+        }
 
         player = pcx_playerbase_add_player(server->playerbase,
                                            conversation,

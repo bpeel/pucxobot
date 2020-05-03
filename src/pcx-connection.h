@@ -50,6 +50,7 @@ struct pcx_connection_new_player_event {
         const char *name;
         const struct pcx_game *game_type;
         enum pcx_text_language language;
+        bool is_private;
 };
 
 struct pcx_connection_reconnect_event {

@@ -37,6 +37,14 @@ This should be sent when the client first starts and hasn't tried
 connecting before. The server will create a player ID and send it in a
 PLAYER_ID message.
 
+NEW_PRIVATE_PLAYER (0x86)
+-------------------------
+
+Same as NEW_PLAYER and with the same parameters. The game that is
+created for the player will have a unique ID and won’t be discoverable
+by other players. The generated ID will be sent in a PRIVATE_GAME_ID
+message.
+
 RECONNECT (0x81)
 ----------------
 

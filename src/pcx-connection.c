@@ -409,7 +409,8 @@ process_control_frame(struct pcx_connection *conn,
 }
 
 static bool
-handle_new_player(struct pcx_connection *conn)
+handle_new_player(struct pcx_connection *conn,
+                  bool is_private)
 {
         struct pcx_connection_new_player_event event;
         const char *game_name;
@@ -457,6 +458,8 @@ found_game:
                 set_error_state(conn);
                 return false;
         }
+
+        event.is_private = is_private;
 
         return emit_event(conn,
                           PCX_CONNECTION_EVENT_NEW_PLAYER,
@@ -574,7 +577,9 @@ process_message(struct pcx_connection *conn)
 {
         switch (conn->message_data[0]) {
         case PCX_PROTO_NEW_PLAYER:
-                return handle_new_player(conn);
+                return handle_new_player(conn, false /* is_private */);
+        case PCX_PROTO_NEW_PRIVATE_PLAYER:
+                return handle_new_player(conn, true /* is_private */);
         case PCX_PROTO_RECONNECT:
                 return handle_reconnect(conn);
         case PCX_PROTO_LEAVE:
