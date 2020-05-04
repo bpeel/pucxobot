@@ -76,6 +76,8 @@ function Pucxo()
 
   this.keepAliveTimeout = null;
 
+  this.statusMessage = document.getElementById("statusMessage");
+
   this.namebox = document.getElementById("namebox");
   this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
 
@@ -181,6 +183,7 @@ Pucxo.prototype.setWelcomeStep = function(step)
   this.clearMessages();
   this.setTitle("@TITLE@");
   this.setHelpAnchor("");
+  this.clearStatusMessage();
 
   var overlay = document.getElementById("welcomeOverlay");
 
@@ -362,6 +365,8 @@ Pucxo.prototype.doConnect = function()
 
   console.log("Connecting…");
 
+  this.setStatusConnecting();
+
   this.sock = new WebSocket("ws://" + location.hostname + ":3648/");
   this.sock.binaryType = 'arraybuffer';
   this.addSocketHandler("error", this.sockErrorCb.bind(this));
@@ -388,11 +393,24 @@ Pucxo.prototype.disconnect = function()
   this.connected = false;
 };
 
+Pucxo.prototype.clearStatusMessage = function()
+{
+  this.statusMessage.style.display = "none";
+};
+
+Pucxo.prototype.setStatusConnecting = function()
+{
+  this.statusMessage.innerText = "@CONNECTING@";
+  this.statusMessage.style.display = "block";
+  this.statusMessage.className = "trying";
+};
+
 Pucxo.prototype.sockErrorCb = function(e)
 {
   console.log("Error on socket: " + e);
   this.disconnect();
 
+  this.setStatusConnecting();
   if (this.reconnectTimeout == null) {
     this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
                                        30000);
@@ -574,6 +592,9 @@ Pucxo.prototype.clearMessages = function()
 Pucxo.prototype.handlePlayerId = function(mr)
 {
   this.playerId = mr.getUint64();
+
+  /* If we get a player ID then we can assume the connection was worked */
+  this.clearStatusMessage();
 };
 
 Pucxo.prototype.addServiceNote = function(note)

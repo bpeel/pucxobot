@@ -161,6 +161,11 @@ body {
     font-size: medium;
 }
 
+#statusMessage {
+    padding: 0.5em;
+    text-align: center;
+}
+
 @media only all and (max-width: 45em) {
     #content {
         position: absolute;
