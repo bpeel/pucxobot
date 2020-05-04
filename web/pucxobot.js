@@ -148,18 +148,26 @@ Pucxo.GAMES = [
 
 Pucxo.prototype.makeGameButtons = function()
 {
-  var i;
   var buttonDiv = document.getElementById("chooseGame");
 
   this.gameButtons = [];
 
-  for (i = 0; i < Pucxo.GAMES.length; i++) {
-    var button = document.createElement("button");
-    button.appendChild(document.createTextNode(Pucxo.GAMES[i].title));
-    button.onclick =
-      this.gameButtonClickCb.bind(this, Pucxo.GAMES[i]);
-    this.gameButtons.push(button);
-    buttonDiv.append(button);
+  var enabledGames = "@ENABLED_GAMES@".split(" ");
+
+  var i, j;
+  for (j = 0; j < enabledGames.length; j++) {
+    for (i = 0; i < Pucxo.GAMES.length; i++) {
+      if (Pucxo.GAMES[i].keyword != enabledGames[j])
+        continue;
+
+      var button = document.createElement("button");
+      button.appendChild(document.createTextNode(Pucxo.GAMES[i].title));
+      button.onclick =
+        this.gameButtonClickCb.bind(this, Pucxo.GAMES[i]);
+      this.gameButtons.push(button);
+      buttonDiv.append(button);
+      break;
+    }
   }
 };
 
