@@ -393,6 +393,11 @@ Pucxo.prototype.reconnectTimeoutCb = function()
 
 Pucxo.prototype.disconnect = function()
 {
+  if (this.reconnectTimeout != null) {
+    clearTimeout(this.reconnectTimeout);
+    this.reconnectTimeout != null;
+  }
+
   if (this.sock == null)
     return;
 
