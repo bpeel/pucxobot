@@ -548,6 +548,62 @@ Pucxo.prototype.handlePlayerId = function(mr)
   this.playerId = mr.getUint64();
 };
 
+Pucxo.prototype.addServiceNote = function(note)
+{
+  var messageDiv = document.createElement("div");
+  messageDiv.className = "message " + Pucxo.messageTypeClasses[1];
+
+  var innerDiv = document.createElement("div");
+  innerDiv.className = "messageInner";
+
+  var textDiv = document.createElement("div");
+  textDiv.className = "messageText";
+
+  textDiv.innerHTML = note;
+
+  innerDiv.appendChild(textDiv);
+  messageDiv.appendChild(innerDiv);
+  this.messagesDiv.appendChild(messageDiv);
+};
+
+Pucxo.prototype.handlePrivateGameId = function(mr)
+{
+  /* Don’t add the link message if there are already other messages
+   * such as after a reconnect.
+   */
+  if (this.messagesDiv.firstElementChild)
+    return;
+
+  var messageDiv = document.createElement("div");
+  messageDiv.className = "message " + Pucxo.messageTypeClasses[0];
+
+  var innerDiv = document.createElement("div");
+  innerDiv.className = "messageInner";
+
+  var textDiv = document.createElement("div");
+  textDiv.className = "messageText";
+
+  var link = (window.location.protocol + "//" +
+              window.location.host +
+              window.location.pathname + "?");
+
+  var id = mr.getUint64();
+  var i;
+
+  for (i = 0; i < 8; i++) {
+    var b = id[i];
+    if (b < 0x10)
+      link += "0";
+    link += b.toString(16);
+  }
+
+  var note = ("@PRIVATE_LINK@" +
+              "<br><br><a target=\"_blank\" href=\"" + link + "\">" +
+              link + "</a>");
+
+  this.addServiceNote(note);
+};
+
 Pucxo.prototype.setTitle = function(title)
 {
   document.title = title;
@@ -586,6 +642,8 @@ Pucxo.prototype.messageCb = function(e)
 
   if (msgType == 0) {
     this.handlePlayerId(mr);
+  } else if (msgType == 3) {
+    this.handlePrivateGameId(mr);
   } else if (msgType == 1) {
     this.handleMessage(mr);
   } else if (msgType == 2) {
