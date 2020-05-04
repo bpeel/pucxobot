@@ -83,6 +83,8 @@ function Pucxo()
 
   this.makeGameButtons();
 
+  this.checkQueryString();
+
   document.getElementById("chosenName").onclick =
     this.nameChosen.bind(this);
   this.updateChosenNameButton();
@@ -106,6 +108,26 @@ function Pucxo()
   window.onhashchange = this.checkHash.bind(this);
 
   this.checkHash();
+};
+
+Pucxo.prototype.checkQueryString = function()
+{
+  var search = window.location.search;
+
+  if (!search || search.length != 17) {
+    this.privateGameId = null;
+    return;
+  }
+
+  var i;
+  this.privateGameId = new Uint8Array(8);
+
+  for (i = 0; i < 8; i++) {
+    this.privateGameId[i] =
+      parseInt("0x" + search.substring(i * 2 + 1, i * 2 + 3));
+  }
+
+  document.getElementById("chosenName").innerText = "@JOIN@";
 };
 
 Pucxo.GAMES = [
@@ -182,19 +204,23 @@ Pucxo.prototype.checkHash = function()
     this.setWelcomeStep("chooseName");
     return;
   } else if (hash == "#choosePrivacy") {
-    if (this.playerName != null) {
+    if (this.playerName != null &&
+        this.privateGameId == null) {
       this.setWelcomeStep("choosePrivacy");
       return;
     }
   } else if (hash == "#chooseGame") {
-    if (this.playerName != null && this.isPrivate != null) {
+    if (this.playerName != null &&
+        this.isPrivate != null &&
+        this.privateGameId == null) {
       this.setWelcomeStep("chooseGame");
       return;
     }
   } else if (hash == "#play") {
     if (this.playerName != null &&
-        this.isPrivate != null &&
-        this.gameType != null) {
+        (this.privateGameId != null ||
+         (this.isPrivate != null &&
+          (this.gameType != null)))) {
       this.start();
       return
     }
@@ -211,7 +237,7 @@ Pucxo.prototype.nameChosen = function(event)
   this.playerName = this.namebox.value;
   this.gameType = null;
   this.isPrivate = null;
-  window.location.hash = "#choosePrivacy";
+  window.location.hash = this.privateGameId ? "#play" : "#choosePrivacy";
 }
 
 Pucxo.prototype.setPrivacy = function(privacy)
@@ -438,6 +464,8 @@ Pucxo.prototype.sockOpenCb = function(e)
 
   if (this.playerId != null) {
     this.sendMessage(0x81, "BW", this.playerId, this.numMessagesReceived);
+  } else if (this.privateGameId != null) {
+    this.sendMessage(0x87, "sB", this.playerName, this.privateGameId);
   } else {
     var command = this.isPrivate ? 0x86 : 0x80;
     this.sendMessage(command, "sss",
@@ -635,6 +663,12 @@ Pucxo.prototype.handleGameType = function(mr)
   }
 };
 
+Pucxo.prototype.handlePrivateGameNotFound = function(e)
+{
+  this.addServiceNote("@PRIVATE_LINK_INVALID@");
+  this.disconnect();
+};
+
 Pucxo.prototype.messageCb = function(e)
 {
   var mr = new MessageReader(new DataView(e.data));
@@ -648,6 +682,8 @@ Pucxo.prototype.messageCb = function(e)
     this.handleMessage(mr);
   } else if (msgType == 2) {
     this.handleGameType(mr);
+  } else if (msgType == 4) {
+    this.handlePrivateGameNotFound(mr);
   }
 };
 

@@ -22,6 +22,10 @@ Nomo
 
 Sekve
 
+@JOIN@
+
+Aliĝi
+
 @SELECT_PRIVACY@
 
 Ĉu vi volas komenci privatan ludon kun amikoj aŭ permesi iun ajn trovi
@@ -62,3 +66,8 @@ Superbatalo
 @PRIVATE_LINK@
 
 Donu la jenan ligilon al viaj amikoj por ke ili povu aliĝi al la ludo.
+
+@PRIVATE_LINK_INVALID@
+
+La invitligilo ne plu validas. Bonvolu anstataŭe komenci novan ludon
+klakante <a href='index.html'>ĉi tie</a>.

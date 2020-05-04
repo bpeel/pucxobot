@@ -22,6 +22,10 @@ Name
 
 Next
 
+@JOIN@
+
+Join
+
 @SELECT_PRIVACY@
 
 Do you want to start a private game with friends or let anyone join your game?
@@ -61,3 +65,8 @@ Superfight
 @PRIVATE_LINK@
 
 Give the link below to your friends so they can join this game.
+
+@PRIVATE_LINK_INVALID@
+
+The invite link is no longer valid. Please start a new game instead by
+clicking <a href='index.html'>here</a>.
