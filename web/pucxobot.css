@@ -4,9 +4,11 @@ body {
 }
 
 #welcomeOverlay {
-    width: 98%;
-    height: 98%;
+    width: 100vw;
+    height: 100vh;
     position: absolute;
+    top: 0;
+    left: 0;
     z-index: 3;
 }
 
