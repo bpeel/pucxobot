@@ -29,6 +29,7 @@ src = [
         'pcx-ws-parser.c',
         'pcx-connection.c',
         'pcx-netaddress.c',
+        'pcx-generate-id.c',
         'pcx-socket.c',
         'pcx-file-error.c',
         'pcx-message-queue.c',

@@ -45,6 +45,7 @@
 #include "pcx-conversation.h"
 #include "pcx-playerbase.h"
 #include "pcx-proto.h"
+#include "pcx-generate-id.h"
 
 #define DEFAULT_PORT 3648
 
@@ -247,54 +248,6 @@ find_private_conversation(struct pcx_server *server,
         return NULL;
 }
 
-static void
-xor_bytes(uint64_t *id,
-          const uint8_t *data,
-          size_t data_length)
-{
-        uint8_t *id_bytes = (uint8_t *) id;
-        int data_pos = 0;
-        int i;
-
-        for (i = 0; i < sizeof (*id); i++) {
-                id_bytes[i] ^= data[data_pos];
-                data_pos = (data_pos + 1) % data_length;
-        }
-}
-
-static uint64_t
-generate_id(const struct pcx_netaddress *remote_address)
-{
-        uint16_t random_data;
-        uint64_t id = 0;
-        int i;
-
-        for (i = 0; i < sizeof id / sizeof random_data; i++) {
-                random_data = rand();
-                memcpy((uint8_t *) &id + i * sizeof random_data,
-                       &random_data,
-                       sizeof random_data);
-        }
-
-        /* XOR in the bytes of the client's address so that even if
-         * the client can predict the random number sequence it'll
-         * still be hard to guess a number of another client
-         */
-        xor_bytes(&id,
-                  (uint8_t *) &remote_address->port,
-                  sizeof remote_address->port);
-        if (remote_address->family == AF_INET6)
-                xor_bytes(&id,
-                          (uint8_t *) &remote_address->ipv6,
-                          sizeof remote_address->ipv6);
-        else
-                xor_bytes(&id,
-                          (uint8_t *) &remote_address->ipv4,
-                          sizeof remote_address->ipv4);
-
-        return id;
-}
-
 static struct pcx_conversation *
 add_private_conversation(struct pcx_server *server,
                          const struct pcx_game *game_type,
@@ -309,7 +262,7 @@ add_private_conversation(struct pcx_server *server,
         uint64_t id;
 
         do {
-                id = generate_id(remote_address);
+                id = pcx_generate_id(remote_address);
         } while (find_private_conversation(server, id));
 
         pc->conversation->private_game_id = id;
@@ -355,7 +308,7 @@ watch_conversation(struct pcx_server *server,
         uint64_t id;
 
         do {
-                id = generate_id(remote_address);
+                id = pcx_generate_id(remote_address);
         } while (pcx_playerbase_get_player_by_id(server->playerbase, id));
 
         struct pcx_player *player =
