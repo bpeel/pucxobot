@@ -12,8 +12,19 @@ Help
 
 @TYPE_YOUR_NAME@
 
-Type your name in the box below then click on one of the buttons to
-start a game!
+What is your name or nickname?
+
+@NAME@
+
+Name
+
+@NEXT@
+
+Next
+
+@WHICH_GAME@
+
+Pick one of the games below to start a match.
 
 @COUP_TITLE@
 

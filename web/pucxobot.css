@@ -10,7 +10,7 @@ body {
     z-index: 3;
 }
 
-#welcomeBox {
+#welcomeOverlay > div {
     display: flex;
     align-items: stretch;
     flex-direction: column;
@@ -32,7 +32,7 @@ body {
     font-size: large;
 }
 
-#welcomeBox button {
+#welcomeOverlay button {
     font-size: x-large;
     font-weight: bold;
     border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
@@ -41,12 +41,6 @@ body {
     vertical-align: middle;
     cursor: pointer;
     margin: 0 0 0.2em;
-}
-
-#gameButtons {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
 }
 
 #content {

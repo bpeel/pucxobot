@@ -10,11 +10,17 @@
   </head>
   <body>
     <div id="welcomeOverlay">
-      <div id="welcomeBox">
+      <div id="chooseName">
         <p>
           @TYPE_YOUR_NAME@
         </p>
-        <input type="text" id="namebox" maxlength="30" />
+        <input type="text" id="namebox" maxlength="30" placeholder="@NAME@" />
+        <button id="chosenName">@NEXT@</button>
+      </div>
+      <div id="chooseGame" style="display: none">
+        <p>
+          @WHICH_GAME@
+        </p>
       </div>
     </div>
     <div id="content">

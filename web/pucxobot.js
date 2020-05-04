@@ -78,13 +78,16 @@ function Pucxo()
   this.namebox = document.getElementById("namebox");
   this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
 
-  this.gameType = Pucxo.GAMES[0];
+  this.gameType = null;
 
   this.makeGameButtons();
-  this.updateGameButtons();
 
-  this.namebox.oninput = this.updateGameButtons.bind(this);
-  this.namebox.onpropertychange = this.updateGameButtons.bind(this);
+  document.getElementById("chosenName").onclick =
+    this.nameChosen.bind(this);
+  this.updateChosenNameButton();
+
+  this.namebox.oninput = this.updateChosenNameButton.bind(this);
+  this.namebox.onpropertychange = this.updateChosenNameButton.bind(this);
 
   this.inputbox = document.getElementById("inputbox");
   this.inputbox.onkeydown = this.inputboxKeyCb.bind(this);
@@ -93,6 +96,10 @@ function Pucxo()
     this.sendChatMessage.bind(this);
 
   window.onunload = this.unloadCb.bind(this);
+
+  window.onhashchange = this.checkHash.bind(this);
+
+  this.checkHash();
 };
 
 Pucxo.GAMES = [
@@ -106,7 +113,7 @@ Pucxo.GAMES = [
 Pucxo.prototype.makeGameButtons = function()
 {
   var i;
-  var buttonDiv = document.getElementById("welcomeBox");
+  var buttonDiv = document.getElementById("chooseGame");
 
   this.gameButtons = [];
 
@@ -125,28 +132,78 @@ Pucxo.prototype.isNameEntered = function()
   return this.namebox.value.match(/\S/) != null;
 };
 
-Pucxo.prototype.updateGameButtons = function()
+Pucxo.prototype.updateChosenNameButton = function()
 {
-  var disabled = !this.isNameEntered();
-  var i;
-
-  for (i = 0; i < this.gameButtons.length; i++)
-    this.gameButtons[i].disabled = disabled;
+  document.getElementById("chosenName").disabled = !this.isNameEntered();
 };
 
 Pucxo.prototype.start = function()
 {
-  this.playerName = this.namebox.value;
   document.getElementById("welcomeOverlay").style.display = "none";
 
   if (!this.connected)
     this.doConnect();
 };
 
+Pucxo.prototype.setWelcomeStep = function(step)
+{
+  var elem;
+
+  this.disconnect();
+  this.clearMessages();
+  this.setTitle("@TITLE@");
+  this.setHelpAnchor("");
+
+  var overlay = document.getElementById("welcomeOverlay");
+
+  for (elem = overlay.firstElementChild;
+       elem != null;
+       elem = elem.nextElementSibling) {
+    if (elem.id == step)
+      elem.style.display = "flex";
+    else
+      elem.style.display = "none";
+  }
+
+  overlay.style.removeProperty("display");
+};
+
+Pucxo.prototype.checkHash = function()
+{
+  var hash = window.location.hash;
+
+  if (!hash || hash == "") {
+    this.setWelcomeStep("chooseName");
+    return;
+  } else if (hash == "#chooseGame") {
+    if (this.playerName != null) {
+      this.setWelcomeStep("chooseGame");
+      return;
+    }
+  } else if (hash == "#play") {
+    if (this.playerName != null && this.gameType != null) {
+      this.start();
+      return
+    }
+  }
+
+  window.location.hash = '';
+};
+
+Pucxo.prototype.nameChosen = function(event)
+{
+  if (!this.isNameEntered())
+    return;
+
+  this.playerName = this.namebox.value;
+  this.gameType = null;
+  window.location.hash = "#chooseGame";
+}
+
 Pucxo.prototype.nameboxKeyCb = function(event)
 {
-  if ((event.which == 10 || event.which == 13) && this.isNameEntered())
-    this.start();
+  if (event.which == 10 || event.which == 13)
+    this.nameChosen();
 };
 
 Pucxo.prototype.inputboxKeyCb = function(event)
@@ -176,7 +233,11 @@ Pucxo.prototype.gameButtonClickCb = function(gameType)
 {
   if (this.isNameEntered()) {
     this.gameType = gameType;
-    this.start();
+    /* Clear the player ID to make sure it starts a new game when
+     * connecting
+     */
+    this.playerId = null;
+    document.location.hash = "#play";
   }
 };
 
@@ -268,14 +329,22 @@ Pucxo.prototype.reconnectTimeoutCb = function()
   this.doConnect();
 };
 
-Pucxo.prototype.sockErrorCb = function(e)
+Pucxo.prototype.disconnect = function()
 {
-  console.log("Error on socket: " + e);
+  if (this.sock == null)
+    return;
+
   this.removeSocketHandlers();
   this.clearKeepAliveTimeout();
   this.sock.close();
   this.sock = null;
   this.connected = false;
+};
+
+Pucxo.prototype.sockErrorCb = function(e)
+{
+  console.log("Error on socket: " + e);
+  this.disconnect();
 
   if (this.reconnectTimeout == null) {
     this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
@@ -446,9 +515,27 @@ Pucxo.prototype.handleMessage = function(mr)
   }
 };
 
+Pucxo.prototype.clearMessages = function()
+{
+  this.numMessagesReceived = 0;
+  this.messagesDiv.innerHTML = "";
+};
+
 Pucxo.prototype.handlePlayerId = function(mr)
 {
   this.playerId = mr.getUint64();
+};
+
+Pucxo.prototype.setTitle = function(title)
+{
+  document.title = title;
+  document.getElementById("chatTitleText").innerText = title;
+};
+
+Pucxo.prototype.setHelpAnchor = function(help)
+{
+  var helpButton = document.getElementById("helpButton");
+  helpButton.href = "help.html#" + help;
 };
 
 Pucxo.prototype.handleGameType = function(mr)
@@ -462,12 +549,8 @@ Pucxo.prototype.handleGameType = function(mr)
     if (game.keyword == typeName) {
       this.gameType = game;
 
-      document.title = this.gameType.title;
-      document.getElementById("chatTitleText").innerText = this.gameType.title;
-
-      var helpButton = document.getElementById("helpButton");
-      var help = this.gameType.help || this.gameType.keyword;
-      helpButton.href = "help.html#" + help;
+      this.setTitle(this.gameType.title);
+      this.setHelpAnchor(this.gameType.help || this.gameType.keyword);
 
       break;
     }
