@@ -74,6 +74,8 @@ function Pucxo()
   this.reconnectTimeout = null;
   this.numMessagesReceived = 0;
   this.reconnectCount = 0;
+  this.unreadMessages = 0;
+  this.focused = true;
 
   this.keepAliveTimeout = null;
 
@@ -109,6 +111,9 @@ function Pucxo()
   window.onunload = this.unloadCb.bind(this);
 
   window.onhashchange = this.checkHash.bind(this);
+
+  window.onfocus = this.onFocusCb.bind(this);
+  window.onblur = this.onBlurCb.bind(this);
 
   this.checkHash();
 };
@@ -171,6 +176,8 @@ Pucxo.prototype.updateChosenNameButton = function()
 Pucxo.prototype.start = function()
 {
   document.getElementById("welcomeOverlay").style.display = "none";
+
+  this.unreadMessages = 0;
 
   if (!this.connected) {
     this.reconnectCount = 0;
@@ -598,6 +605,13 @@ Pucxo.prototype.handleMessage = function(mr)
                               this.messagesDiv.scrollHeight -
                               this.messagesDiv.clientHeight);
   }
+
+  if (!this.focused) {
+    this.unreadMessages++;
+
+    if (this.gameType)
+      document.title = "(" + this.unreadMessages + ") " + this.gameType.title;
+  }
 };
 
 Pucxo.prototype.clearMessages = function()
@@ -731,6 +745,22 @@ Pucxo.prototype.unloadCb = function()
   /* Try to let the server know the player is going. */
   if (this.connected)
     this.sendMessage(0x84, "");
+};
+
+Pucxo.prototype.onFocusCb = function()
+{
+  this.focused = true;
+
+  if (this.unreadMessages > 0) {
+    this.unreadMessages = 0;
+    if (this.gameType && this.connected)
+      document.title = this.gameType.title;
+  }
+};
+
+Pucxo.prototype.onBlurCb = function()
+{
+  this.focused = false;
 };
 
 (function ()
