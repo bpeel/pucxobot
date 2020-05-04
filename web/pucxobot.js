@@ -562,8 +562,6 @@ Pucxo.prototype.messageCb = function(e)
   var mr = new MessageReader(new DataView(e.data));
   var msgType = mr.getUint8();
 
-  console.log(msgType);
-
   if (msgType == 0) {
     this.handlePlayerId(mr);
   } else if (msgType == 1) {
