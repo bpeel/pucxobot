@@ -73,6 +73,7 @@ function Pucxo()
   this.messagesDiv = document.getElementById("messages");
   this.reconnectTimeout = null;
   this.numMessagesReceived = 0;
+  this.reconnectCount = 0;
 
   this.keepAliveTimeout = null;
 
@@ -171,8 +172,10 @@ Pucxo.prototype.start = function()
 {
   document.getElementById("welcomeOverlay").style.display = "none";
 
-  if (!this.connected)
+  if (!this.connected) {
+    this.reconnectCount = 0;
     this.doConnect();
+  }
 };
 
 Pucxo.prototype.setWelcomeStep = function(step)
@@ -405,15 +408,26 @@ Pucxo.prototype.setStatusConnecting = function()
   this.statusMessage.className = "trying";
 };
 
+Pucxo.prototype.setStatusError = function()
+{
+  this.statusMessage.innerText = "@ERROR@";
+  this.statusMessage.style.display = "block";
+  this.statusMessage.className = "error";
+};
+
 Pucxo.prototype.sockErrorCb = function(e)
 {
   console.log("Error on socket: " + e);
   this.disconnect();
 
-  this.setStatusConnecting();
-  if (this.reconnectTimeout == null) {
-    this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
-                                       30000);
+  if (++this.reconnectCount >= 10) {
+    this.setStatusError();
+  } else {
+    this.setStatusConnecting();
+    if (this.reconnectTimeout == null) {
+      this.reconnectTimeout = setTimeout(this.reconnectTimeoutCb.bind(this),
+                                         30000);
+    }
   }
 };
 
@@ -595,6 +609,7 @@ Pucxo.prototype.handlePlayerId = function(mr)
 
   /* If we get a player ID then we can assume the connection was worked */
   this.clearStatusMessage();
+  this.reconnectCount = 0;
 };
 
 Pucxo.prototype.addServiceNote = function(note)

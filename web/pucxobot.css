@@ -166,6 +166,10 @@ body {
     text-align: center;
 }
 
+#statusMessage.error {
+    background-color: #cc7079;
+}
+
 @media only all and (max-width: 45em) {
     #content {
         position: absolute;
