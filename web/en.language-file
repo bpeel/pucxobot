@@ -22,6 +22,18 @@ Name
 
 Next
 
+@SELECT_PRIVACY@
+
+Do you want to start a private game with friends or let anyone join your game?
+
+@PUBLIC_GAME_BUTTON@
+
+Let anyone join
+
+@PRIVATE_GAME_BUTTON@
+
+Private game
+
 @WHICH_GAME@
 
 Pick one of the games below to start a match.

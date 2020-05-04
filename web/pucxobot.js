@@ -69,6 +69,7 @@ function Pucxo()
   this.connected = false;
   this.playerId = null;
   this.playerName = null;
+  this.isPrivate = null;
   this.messagesDiv = document.getElementById("messages");
   this.reconnectTimeout = null;
   this.numMessagesReceived = 0;
@@ -85,6 +86,11 @@ function Pucxo()
   document.getElementById("chosenName").onclick =
     this.nameChosen.bind(this);
   this.updateChosenNameButton();
+
+  document.getElementById("publicGame").onclick =
+    this.setPrivacy.bind(this, false);
+  document.getElementById("privateGame").onclick =
+    this.setPrivacy.bind(this, true);
 
   this.namebox.oninput = this.updateChosenNameButton.bind(this);
   this.namebox.onpropertychange = this.updateChosenNameButton.bind(this);
@@ -175,13 +181,20 @@ Pucxo.prototype.checkHash = function()
   if (!hash || hash == "") {
     this.setWelcomeStep("chooseName");
     return;
-  } else if (hash == "#chooseGame") {
+  } else if (hash == "#choosePrivacy") {
     if (this.playerName != null) {
+      this.setWelcomeStep("choosePrivacy");
+      return;
+    }
+  } else if (hash == "#chooseGame") {
+    if (this.playerName != null && this.isPrivate != null) {
       this.setWelcomeStep("chooseGame");
       return;
     }
   } else if (hash == "#play") {
-    if (this.playerName != null && this.gameType != null) {
+    if (this.playerName != null &&
+        this.isPrivate != null &&
+        this.gameType != null) {
       this.start();
       return
     }
@@ -197,8 +210,16 @@ Pucxo.prototype.nameChosen = function(event)
 
   this.playerName = this.namebox.value;
   this.gameType = null;
-  window.location.hash = "#chooseGame";
+  this.isPrivate = null;
+  window.location.hash = "#choosePrivacy";
 }
+
+Pucxo.prototype.setPrivacy = function(privacy)
+{
+  this.isPrivate = privacy;
+  this.gameType = null;
+  window.location.hash = "#chooseGame";
+};
 
 Pucxo.prototype.nameboxKeyCb = function(event)
 {
@@ -418,7 +439,8 @@ Pucxo.prototype.sockOpenCb = function(e)
   if (this.playerId != null) {
     this.sendMessage(0x81, "BW", this.playerId, this.numMessagesReceived);
   } else {
-    this.sendMessage(0x80, "sss",
+    var command = this.isPrivate ? 0x86 : 0x80;
+    this.sendMessage(command, "sss",
                      this.playerName,
                      this.gameType.keyword,
                      "@LANG_CODE@");
