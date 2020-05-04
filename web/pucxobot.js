@@ -509,6 +509,9 @@ Pucxo.prototype.sockOpenCb = function(e)
 
 Pucxo.prototype.pushButton = function(buttonData)
 {
+  if (!this.connected)
+    return;
+
   var buf = new Uint8Array(buttonData.length + 1);
   buf[0] = 0x82;
 
