@@ -159,6 +159,8 @@ body {
 .messageButtons button {
     margin: 0.5em 0.1em;
     font-size: medium;
+    min-width: 5em;
+    min-height: 2.5em;
 }
 
 #statusMessage {
