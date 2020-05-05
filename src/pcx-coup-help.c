@@ -69,7 +69,7 @@ pcx_coup_help[] = {
         "\n"
         "Tiu kiu restas vivanta venkas.\n"
         "\n"
-        "<b>Inpsektista aldonaĵo</b>\n"
+        "<b>Inspektista aldonaĵo</b>\n"
         "\n"
         "Se vi ludas kun ĉi tiu aldonaĵo la inspektisto anstataŭas "
         "la ambasadoron. La inspektisto povas interŝanĝi karton kaj bloki "
