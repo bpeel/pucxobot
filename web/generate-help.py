@@ -33,7 +33,9 @@ FOOTER = """\
 </html>
 """
 
-Lang = collections.namedtuple('Lang', ['code', 'name', 'help', 'toc'])
+Lang = collections.namedtuple('Lang',
+                              ['code', 'name', 'help', 'toc', 'skip_games'],
+                              defaults=[set()])
 
 LANGUAGES = [
     Lang("en", "english", "Help", "Table of contents"),
@@ -107,11 +109,13 @@ def get_game_help(game, lang):
 
 for lang in LANGUAGES:
     with open(lang.code + "/help.html", 'wt', encoding='utf-8') as f:
+        games = [game for game in GAMES if game not in lang.skip_games]
+
         print(HEADER.format(lang.help, lang.toc), file=f, end='')
 
         print("        <ul>", file=f)
 
-        for game in GAMES:
+        for game in games:
             print("          <li><a href=\"#{}\">{}</a>".
                   format(game,
                          get_game_name(game, lang)),
@@ -119,7 +123,7 @@ for lang in LANGUAGES:
 
         print("        </ul>", file=f)
 
-        for game in GAMES:
+        for game in games:
             print("\n        <h2><a id=\"{}\">{}</a></h2>\n\n{}".
                   format(game,
                          get_game_name(game, lang),
