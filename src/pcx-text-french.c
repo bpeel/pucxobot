@@ -94,6 +94,19 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WELCOME_FULL] =
         "Bienvenue. La partie et maintenant complète et commencera "
         "tout de suite.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS] =
+        "%s a rejoint la partie. Vous pouvez attendre plus de joueurs ou "
+        "cliquez le bouton ci-dessous pour commencer la partie.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW] =
+        "%s a rejoint la partie. Attendez plus de joueurs avant de commencer "
+        "la partie.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
+        "%s a rejoint la partie. Elle est désormais complète et commencera "
+        "tout de suite.",
+        [PCX_TEXT_STRING_PLAYER_LEFT] =
+        "%s est parti·e",
+        [PCX_TEXT_STRING_START_BUTTON] =
+        "Commencer",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Le jeu est : %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =

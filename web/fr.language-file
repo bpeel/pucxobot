@@ -1,0 +1,85 @@
+@LANG_CODE@
+
+fr
+
+@TITLE@
+
+Jeux
+
+@ENABLED_GAMES@
+
+coup loveletter snitch zombie
+
+@HELP@
+
+Aide
+
+@TYPE_YOUR_NAME@
+
+Quel est votre prénom ou surnom ?
+
+@NAME@
+
+Nom
+
+@NEXT@
+
+Suivant
+
+@JOIN@
+
+Rejoindre
+
+@SELECT_PRIVACY@
+
+Voulez-vous commencer une partie privée avec vos ami·es ou permettre
+n’importe qui de la rejoindre ?
+
+@PUBLIC_GAME_BUTTON@
+
+Jouer avec n’importe qui
+
+@PRIVATE_GAME_BUTTON@
+
+Partie privée
+
+@WHICH_GAME@
+
+Choisissez un des jeux dessous pour commencer une partie.
+
+@COUP_TITLE@
+
+Complots
+
+@SNITCH_TITLE@
+
+Balance
+
+@LOVE_LETTER_TITLE@
+
+Love Letter
+
+@ZOMBIE_DICE_TITLE@
+
+Zombie Dice
+
+@SUPERFIGHT_TITLE@
+
+Superfight
+
+@PRIVATE_LINK@
+
+Donnez le lien ci-dessous à vos ami·es pour qu’ils/elles puissent
+rejoindre la partie.
+
+@PRIVATE_LINK_INVALID@
+
+Le lien d’invitation n’est plus valide. Veuillez commencer une nouvelle partie à la place avec ce <a href='index.html'>lien</a>.
+
+@CONNECTING@
+
+Connexion…
+
+@ERROR@
+
+Une erreur est survenue. Veuillez recharger la page pour ressayer.
