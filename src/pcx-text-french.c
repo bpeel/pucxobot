@@ -32,6 +32,8 @@ pcx_text_french[] = {
         "Balance",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_SIX] =
+        "6 qui prend !",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
         "Zombie Dice",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
@@ -46,6 +48,10 @@ pcx_text_french[] = {
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Créer un jeu de Love Letter",
+        [PCX_TEXT_STRING_SIX_START_COMMAND] =
+        "/six",
+        [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de 6 qui prend !",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zombie",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
@@ -531,4 +537,28 @@ pcx_text_french[] = {
         "🏆 <b>%p</b> remporte la partie !",
         [PCX_TEXT_STRING_FINAL_SCORES] =
         "Les scores finals sont :",
+        [PCX_TEXT_STRING_EVERYBODY_CHOOSE_CARD] =
+        "Tout le monde doit maintenant choisir une carte à jouer.",
+        [PCX_TEXT_STRING_WHICH_CARD_TO_PLAY] =
+        "Quelle carte voulez-vous jouer ?",
+        [PCX_TEXT_STRING_CARD_CHOSEN] =
+        "Vous avez choisi :",
+        [PCX_TEXT_STRING_CHOSEN_CARDS_ARE] =
+        "Tout le monde a choisi ! Les cartes sont :",
+        [PCX_TEXT_STRING_ADDED_TO_ROW] =
+        "%s ajoute sa carte à la ligne %c.",
+        [PCX_TEXT_STRING_ROW_FULL] =
+        "La ligne est complète donc il/elle doit la prendre et ajouter %i 🐮 à "
+        "son score.",
+        [PCX_TEXT_STRING_CHOOSE_ROW] =
+        "%s, votre carte est plus basse que toutes les lignes. Vous devez "
+        "choisir une ligne et la prendre.",
+        [PCX_TEXT_STRING_CHOSEN_ROW] =
+        "%s prend la ligne %c et ajoute %i 🐮 à son score.",
+        [PCX_TEXT_STRING_ROUND_OVER] =
+        "La manche est terminée et les scores sont maintenant :",
+        [PCX_TEXT_STRING_END_POINTS] =
+        "%s a au moins %i points et termine la partie.",
+        [PCX_TEXT_STRING_WINS_PLAIN] =
+        "🏆 %s remporte la partie !",
 };

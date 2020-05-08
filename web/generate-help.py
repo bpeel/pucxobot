@@ -40,7 +40,7 @@ Lang = collections.namedtuple('Lang',
 LANGUAGES = [
     Lang("en", "english", "Help", "Table of contents"),
     Lang("eo", "esperanto", "Helpo", "Enhavo"),
-    Lang("fr", "french", "Aide", "Sommaire", set(["superfight", "six"])),
+    Lang("fr", "french", "Aide", "Sommaire", set(["superfight"])),
 ]
 
 GAMES = [ "coup", "love", "six", "zombie", "snitch", "superfight" ]
