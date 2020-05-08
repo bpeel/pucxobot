@@ -29,6 +29,7 @@
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
+#include "pcx-six-help.h"
 
 #define PCX_SIX_MIN_PLAYERS 2
 #define PCX_SIX_MAX_PLAYERS 10
@@ -423,7 +424,7 @@ create_game_cb(const struct pcx_config *config,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("stub");
+        return pcx_strdup(pcx_six_help[language]);
 }
 
 static bool

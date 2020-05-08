@@ -38,12 +38,12 @@ Lang = collections.namedtuple('Lang',
                               defaults=[set()])
 
 LANGUAGES = [
-    Lang("en", "english", "Help", "Table of contents"),
+    Lang("en", "english", "Help", "Table of contents", set(["six"])),
     Lang("eo", "esperanto", "Helpo", "Enhavo"),
-    Lang("fr", "french", "Aide", "Sommaire", set(["superfight"])),
+    Lang("fr", "french", "Aide", "Sommaire", set(["superfight", "six"])),
 ]
 
-GAMES = [ "coup", "love", "zombie", "snitch", "superfight" ]
+GAMES = [ "coup", "love", "six", "zombie", "snitch", "superfight" ]
 
 def get_game_name(game, lang):
     with open("../src/pcx-text-" + lang.name + ".c",
