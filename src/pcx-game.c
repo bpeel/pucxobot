@@ -30,10 +30,10 @@
 const struct pcx_game * const
 pcx_game_list[] = {
         &pcx_coup_game,
-        &pcx_snitch_game,
         &pcx_love_game,
         &pcx_six_game,
         &pcx_zombie_game,
+        &pcx_snitch_game,
         &pcx_superfight_game,
         NULL
 };
