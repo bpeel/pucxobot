@@ -49,6 +49,7 @@ typedef uint8_t pcx_six_card_t;
 struct pcx_six_player {
         char *name;
         int score;
+        int score_this_round;
         int chosen_card;
         pcx_six_card_t hand[PCX_SIX_HAND_SIZE];
 };
@@ -306,10 +307,15 @@ show_round_end(struct pcx_six *six,
         for (int i = 0; i < six->n_players; i++) {
                 struct pcx_six_player *player = six->players + i;
 
+                player->score += player->score_this_round;
+
                 pcx_buffer_append_printf(&buf,
-                                         "%s: %i\n",
+                                         "%s: %i (+ %i)\n",
                                          player->name,
-                                         player->score);
+                                         player->score,
+                                         player->score_this_round);
+
+                player->score_this_round = 0;
 
                 if (player->score < winner->score)
                         winner = player;
@@ -571,7 +577,7 @@ placement_timer_cb(struct pcx_main_context_source *source,
                                             PCX_TEXT_STRING_ROW_FULL);
                         int row_score = get_row_score(six->rows + row);
                         pcx_buffer_append_printf(&buf, note, row_score);
-                        player->score += row_score;
+                        player->score_this_round += row_score;
                         six->rows[row].n_cards = 0;
                 }
 
@@ -708,7 +714,7 @@ choose_row(struct pcx_six *six,
                                  row_num + 'A',
                                  row_score);
 
-        player->score += row_score;
+        player->score_this_round += row_score;
         six->rows[row_num].n_cards = 0;
 
         place_card(six, player, row_num);
