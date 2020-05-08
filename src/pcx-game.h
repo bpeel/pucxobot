@@ -25,7 +25,7 @@
 #include "pcx-text.h"
 #include "pcx-config.h"
 
-#define PCX_GAME_MAX_PLAYERS 6
+#define PCX_GAME_MAX_PLAYERS 10
 
 enum pcx_game_message_format {
         PCX_GAME_MESSAGE_FORMAT_PLAIN,

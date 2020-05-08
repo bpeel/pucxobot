@@ -32,6 +32,8 @@ pcx_text_esperanto[] = {
         "Perfidulo",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Amletero",
+        [PCX_TEXT_STRING_NAME_SIX] =
+        "6 Prenas",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superbatalo",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -48,6 +50,10 @@ pcx_text_esperanto[] = {
         "/amletero",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Krei ludon de Amletero",
+        [PCX_TEXT_STRING_SIX_START_COMMAND] =
+        "/ses",
+        [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de 6 Prenas",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -585,4 +591,17 @@ pcx_text_esperanto[] = {
         "🏆 <b>%p</b> gajnis la partion!",
         [PCX_TEXT_STRING_FINAL_SCORES] =
         "La finaj poentoj estas:",
+        [PCX_TEXT_STRING_EVERYBODY_CHOOSE_CARD] =
+        "Ĉiu nun devas elekti kiun karton ludi.",
+        [PCX_TEXT_STRING_WHICH_CARD_TO_PLAY] =
+        "Kiun karton vi volas ludi?",
+        [PCX_TEXT_STRING_CARD_CHOSEN] =
+        "Vi elektis:",
+        [PCX_TEXT_STRING_CHOSEN_CARDS_ARE] =
+        "Ĉiu elektis! La kartoj estas:",
+        [PCX_TEXT_STRING_ADDED_TO_ROW] =
+        "%s aldonas sian karton al linio %c.",
+        [PCX_TEXT_STRING_ROW_FULL] =
+        "La linio estas plena do ri devas preni ĝin kaj aldoni %i 🐮 "
+        "al siaj poentoj.",
 };
