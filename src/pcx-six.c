@@ -250,7 +250,7 @@ add_row(struct pcx_six *six,
         }
 
         pcx_buffer_append_printf(buf,
-                                 "(%i × " PCX_SIX_BULL_HEAD ")\n",
+                                 "(%i × " PCX_SIX_BULL_HEAD ")",
                                  get_row_score(row));
 }
 
@@ -259,8 +259,10 @@ show_rows(struct pcx_six *six)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        for (int i = 0; i < PCX_SIX_N_ROWS; i++)
+        for (int i = 0; i < PCX_SIX_N_ROWS; i++) {
                 add_row(six, &buf, i);
+                pcx_buffer_append_c(&buf, '\n');
+        }
 
         pcx_buffer_append_c(&buf, '\n');
 
