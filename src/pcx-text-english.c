@@ -32,6 +32,8 @@ pcx_text_english[] = {
         "Snitch",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_SIX] =
+        "6 Takes!",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superfight",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -48,6 +50,10 @@ pcx_text_english[] = {
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Create a game of Love Letter",
+        [PCX_TEXT_STRING_SIX_START_COMMAND] =
+        "/six",
+        [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
+        "Create a game of 6 Takes!",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superfight",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -571,4 +577,27 @@ pcx_text_english[] = {
         "🏆 <b>%p</b> wins!",
         [PCX_TEXT_STRING_FINAL_SCORES] =
         "The final scores are:",
+        [PCX_TEXT_STRING_EVERYBODY_CHOOSE_CARD] =
+        "Everybody now has to choose a card to play.",
+        [PCX_TEXT_STRING_WHICH_CARD_TO_PLAY] =
+        "Which card do you want to play?",
+        [PCX_TEXT_STRING_CARD_CHOSEN] =
+        "You chose:",
+        [PCX_TEXT_STRING_CHOSEN_CARDS_ARE] =
+        "Everybody has chosen! The cards are:",
+        [PCX_TEXT_STRING_ADDED_TO_ROW] =
+        "%s adds their card to row %c.",
+        [PCX_TEXT_STRING_ROW_FULL] =
+        "The row is full so they have to take it and add %i 🐮 to their score.",
+        [PCX_TEXT_STRING_CHOOSE_ROW] =
+        "%s, your card is lower than all of the rows. You have to choose a row "
+        "and take it.",
+        [PCX_TEXT_STRING_CHOSEN_ROW] =
+        "%s takes row %c and adds %i 🐮 to their score.",
+        [PCX_TEXT_STRING_ROUND_OVER] =
+        "The round is over and the scores are now:",
+        [PCX_TEXT_STRING_END_POINTS] =
+        "%s has at least %i points and ends the game.",
+        [PCX_TEXT_STRING_WINS_PLAIN] =
+        "🏆 %s wins!",
 };
