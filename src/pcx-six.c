@@ -241,6 +241,14 @@ add_row(struct pcx_six *six,
                 }
         }
 
+        /* Pad so that the bullhead count aligns */
+        for (int i = row->n_cards; i < PCX_SIX_ROW_SIZE; i++) {
+                pcx_buffer_append_string(buf,
+                                         "\xe2\x80\x87"
+                                         "\xe2\x80\x87"
+                                         "\xe2\x80\x87 ");
+        }
+
         pcx_buffer_append_printf(buf,
                                  "(%i × " PCX_SIX_BULL_HEAD ")\n",
                                  get_row_score(row));
