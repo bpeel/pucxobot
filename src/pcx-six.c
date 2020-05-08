@@ -72,6 +72,8 @@ struct pcx_six {
         int next_placement;
         /* Timer to add a bit of delay between placing cards */
         struct pcx_main_context_source *placement_timer_source;
+        /* If not -1, the player that is currently choosing a row to take */
+        int player_choosing_row;
 
         struct pcx_six_player players[PCX_SIX_MAX_PLAYERS];
         struct pcx_six_row rows[PCX_SIX_N_ROWS];
@@ -315,6 +317,7 @@ create_game_cb(const struct pcx_config *config,
         six->user_data = user_data;
 
         six->n_players = n_players;
+        six->player_choosing_row = -1;
 
         deal(six);
 
@@ -387,6 +390,52 @@ place_card(struct pcx_six *six,
         row->cards[row->n_cards++] = card;
 }
 
+static void
+show_choose_row(struct pcx_six *six,
+                struct pcx_six_player *player)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_printf(&buf,
+                                 pcx_text_get(six->language,
+                                              PCX_TEXT_STRING_CHOOSE_ROW),
+                                 player->name);
+
+        struct pcx_game_button buttons[PCX_SIX_N_ROWS];
+
+        for (int i = 0; i < PCX_SIX_N_ROWS; i++) {
+                struct pcx_buffer button_buf = PCX_BUFFER_STATIC_INIT;
+
+                add_row(six, &button_buf, i);
+
+                buttons[i].text = (char *) button_buf.data;
+
+                pcx_buffer_init(&button_buf);
+
+                pcx_buffer_append_printf(&button_buf, "choose_row:%i", i);
+
+                buttons[i].data = (char *) button_buf.data;
+        }
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (char *) buf.data;
+        message.n_buttons = PCX_SIX_N_ROWS;
+        message.buttons = buttons;
+        message.button_players = UINT32_C(1) << (player - six->players);
+
+        six->callbacks.send_message(&message, six->user_data);
+
+        for (int i = 0; i < PCX_SIX_N_ROWS; i++) {
+                pcx_free((char *) buttons[i].text);
+                pcx_free((char *) buttons[i].data);
+        }
+
+        pcx_buffer_destroy(&buf);
+
+        six->player_choosing_row = player - six->players;
+}
+
 static int
 get_row_top(const struct pcx_six_row *row)
 {
@@ -436,6 +485,7 @@ placement_timer_cb(struct pcx_main_context_source *source,
         int row = get_row_for_card(six, card);
 
         if (row == -1) {
+                show_choose_row(six, player);
         } else {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
                 const char *note = pcx_text_get(six->language,
@@ -552,6 +602,8 @@ play_card(struct pcx_six *six,
                 return;
         if (six->placement_timer_source)
                 return;
+        if (six->player_choosing_row != -1)
+                return;
 
         six->players[player_num].chosen_card = card_num;
         six->card_chosen_mask |= UINT32_C(1) << player_num;
@@ -560,6 +612,53 @@ play_card(struct pcx_six *six,
 
         if (six->card_chosen_mask == (UINT32_C(1) << six->n_players) - 1)
                 reveal_cards(six);
+}
+
+static void
+choose_row(struct pcx_six *six,
+           int player_num,
+           int row_num)
+{
+        if (row_num < 0 || row_num >= PCX_SIX_N_ROWS)
+                return;
+        if (six->player_choosing_row != player_num)
+                return;
+
+        assert(six->placement_timer_source == NULL);
+
+        struct pcx_six_player *player = six->players + player_num;
+
+        int row_score = get_row_score(six->rows + row_num);
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        pcx_buffer_append_printf(&buf,
+                                 pcx_text_get(six->language,
+                                              PCX_TEXT_STRING_CHOSEN_ROW),
+                                 player->name,
+                                 row_num + 'A',
+                                 row_score);
+
+        player->score += row_score;
+        six->rows[row_num].n_cards = 0;
+
+        place_card(six, player, row_num);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+        add_row(six, &buf, row_num);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (char *) buf.data;
+
+        six->callbacks.send_message(&message, six->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        six->next_placement++;
+
+        six->player_choosing_row = -1;
+
+        start_placement_timer(six);
 }
 
 static void
@@ -592,6 +691,8 @@ handle_callback_data_cb(void *user_data,
 
         if (is_button(callback_data, colon, "play"))
                 play_card(six, player_num, extra_data);
+        else if (is_button(callback_data, colon, "choose_row"))
+                choose_row(six, player_num, extra_data);
 }
 
 static void

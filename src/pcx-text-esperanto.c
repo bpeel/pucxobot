@@ -604,4 +604,9 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_ROW_FULL] =
         "La linio estas plena do ri devas preni ĝin kaj aldoni %i 🐮 "
         "al siaj poentoj.",
+        [PCX_TEXT_STRING_CHOOSE_ROW] =
+        "%s, via karto estas malpli alta ol ĉiu linio. Vi devas elekti linion "
+        "kaj preni ĝin.",
+        [PCX_TEXT_STRING_CHOSEN_ROW] =
+        "%s prenas linion %c kaj aldonas %i 🐮 al siaj poentoj.",
 };

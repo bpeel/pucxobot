@@ -295,6 +295,8 @@ enum pcx_text_string {
         PCX_TEXT_STRING_CHOSEN_CARDS_ARE,
         PCX_TEXT_STRING_ADDED_TO_ROW,
         PCX_TEXT_STRING_ROW_FULL,
+        PCX_TEXT_STRING_CHOOSE_ROW,
+        PCX_TEXT_STRING_CHOSEN_ROW,
 };
 
 const char *
