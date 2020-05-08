@@ -290,13 +290,21 @@ end_game(struct pcx_six *six)
         }
 }
 
+static int
+compare_score_cb(const void *a,
+                 const void *b)
+{
+        struct pcx_six_player * const *pa = a;
+        struct pcx_six_player * const *pb = b;
+
+        return (*pa)->score - (*pb)->score;
+}
+
 static void
 show_round_end(struct pcx_six *six,
                bool *game_is_over)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
-        const struct pcx_six_player *winner = &six->players[0];
-        const struct pcx_six_player *end_player = NULL;
 
         pcx_buffer_append_string(&buf,
                                  pcx_text_get(six->language,
@@ -304,10 +312,23 @@ show_round_end(struct pcx_six *six,
 
         pcx_buffer_append_string(&buf, "\n\n");
 
+        struct pcx_six_player *score_order[PCX_SIX_MAX_PLAYERS];
+
         for (int i = 0; i < six->n_players; i++) {
                 struct pcx_six_player *player = six->players + i;
-
+                score_order[i] = player;
                 player->score += player->score_this_round;
+        }
+
+        qsort(score_order,
+              six->n_players,
+              sizeof score_order[0],
+              compare_score_cb);
+
+        const struct pcx_six_player *end_player = NULL;
+
+        for (int i = 0; i < six->n_players; i++) {
+                struct pcx_six_player *player = score_order[i];
 
                 pcx_buffer_append_printf(&buf,
                                          "%s: %i (+ %i)\n",
@@ -316,9 +337,6 @@ show_round_end(struct pcx_six *six,
                                          player->score_this_round);
 
                 player->score_this_round = 0;
-
-                if (player->score < winner->score)
-                        winner = player;
 
                 if (player->score >= PCX_SIX_END_POINTS)
                         end_player = player;
@@ -337,7 +355,7 @@ show_round_end(struct pcx_six *six,
                                     PCX_TEXT_STRING_WINS_PLAIN);
                 pcx_buffer_append_printf(&buf,
                                          note,
-                                         winner->name);
+                                         score_order[0]->name);
         }
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
