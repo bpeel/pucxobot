@@ -57,7 +57,37 @@ pcx_six_help[] = {
         [PCX_TEXT_LANGUAGE_FRENCH] =
         "stub",
         [PCX_TEXT_LANGUAGE_ENGLISH] =
-        "stub",
+        "<b>SUMMARY OF THE RULES:</b>\n"
+        "\n"
+        "In 6 Takes there are 104 cards, each with a number between 1 and "
+        "104. Every card also has some number of bullheads 🐮 depending on "
+        "the card. The aim of the game is to end up with fewer 🐮s than every "
+        "other player.\n"
+        "\n"
+        "Everybody receives 10 cards in their hand. Next, 4 rows are created "
+        "which start with one card each. During a round, each player chooses "
+        "a card from their hand at the same time. When everyone is ready, the "
+        "cards are all shown. Starting with the lowest card, the players add "
+        "their cards to one of the rows. The rows always make a series of "
+        "increasing values, so you always have to put your card in a row "
+        "whose highest card is lower than yours. If there are several such "
+        "rows, the card goes to the one with the highest card.\n"
+        "\n"
+        "Every row has at most 5 cards. If a player has to put the 6th card "
+        "in a row, they first have to take all the cards in the row and put "
+        "them aside. Then they place their own card as the only card in the "
+        "row. The 🐮s on the cards that were just taken are added to the "
+        "player’s score.\n"
+        "\n"
+        "If the chosen card is lower than the card in every row, the player "
+        "has to choose any of the rows, take it and replace it with their "
+        "card.\n"
+        "\n"
+        "When everyone has played all 10 of their cards, the 🐮s that were "
+        "put aside are counted up and added to the score. If a player has at "
+        "least 66 points the game is over and the player with the fewest "
+        "points wins. Otherwise the cards are re-dealt as in the beginning "
+        "and a new round is started.",
         [PCX_TEXT_LANGUAGE_PT_BR] =
         "stub",
 };
