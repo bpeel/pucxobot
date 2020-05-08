@@ -37,6 +37,7 @@
 #define PCX_SIX_HAND_SIZE 10
 #define PCX_SIX_N_ROWS 4
 #define PCX_SIX_ROW_SIZE 5
+#define PCX_SIX_END_POINTS 66
 
 #define PCX_SIX_BULL_HEAD "🐮"
 
@@ -277,8 +278,7 @@ game_over_cb(struct pcx_main_context_source *source,
 }
 
 static void
-end_game(struct pcx_six *six,
-         int winner)
+end_game(struct pcx_six *six)
 {
         if (six->game_over_source == NULL) {
                 six->game_over_source =
@@ -290,9 +290,79 @@ end_game(struct pcx_six *six,
 }
 
 static void
+show_round_end(struct pcx_six *six,
+               bool *game_is_over)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        const struct pcx_six_player *winner = &six->players[0];
+        const struct pcx_six_player *end_player = NULL;
+
+        pcx_buffer_append_string(&buf,
+                                 pcx_text_get(six->language,
+                                              PCX_TEXT_STRING_ROUND_OVER));
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        for (int i = 0; i < six->n_players; i++) {
+                struct pcx_six_player *player = six->players + i;
+
+                pcx_buffer_append_printf(&buf,
+                                         "%s: %i\n",
+                                         player->name,
+                                         player->score);
+
+                if (player->score < winner->score)
+                        winner = player;
+
+                if (player->score >= PCX_SIX_END_POINTS)
+                        end_player = player;
+        }
+
+        if (end_player) {
+                pcx_buffer_append_string(&buf, "\n");
+                const char *note = pcx_text_get(six->language,
+                                                PCX_TEXT_STRING_END_POINTS);
+                pcx_buffer_append_printf(&buf,
+                                         note,
+                                         end_player->name,
+                                         PCX_SIX_END_POINTS);
+                pcx_buffer_append_string(&buf, "\n\n");
+                note = pcx_text_get(six->language,
+                                    PCX_TEXT_STRING_WINS_PLAIN);
+                pcx_buffer_append_printf(&buf,
+                                         note,
+                                         winner->name);
+        }
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (char *) buf.data;
+
+        six->callbacks.send_message(&message, six->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        *game_is_over = end_player != NULL;
+}
+
+static void
 start_round(struct pcx_six *six)
 {
         six->card_chosen_mask = 0;
+
+        if (six->n_cards <= 0) {
+                bool game_is_over;
+
+                show_round_end(six, &game_is_over);
+
+                if (game_is_over) {
+                        end_game(six);
+                        return;
+                }
+
+                deal(six);
+        }
+
         show_rows(six);
         show_card_questions(six);
 }

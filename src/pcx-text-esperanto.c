@@ -609,4 +609,10 @@ pcx_text_esperanto[] = {
         "kaj preni ĝin.",
         [PCX_TEXT_STRING_CHOSEN_ROW] =
         "%s prenas linion %c kaj aldonas %i 🐮 al siaj poentoj.",
+        [PCX_TEXT_STRING_ROUND_OVER] =
+        "La raŭndo finiĝis kaj la poentoj nun estas:",
+        [PCX_TEXT_STRING_END_POINTS] =
+        "%s havas almenaŭ %i poentojn kaj finas la partion.",
+        [PCX_TEXT_STRING_WINS_PLAIN] =
+        "🏆 %s gajnis la partion!",
 };

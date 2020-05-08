@@ -297,6 +297,9 @@ enum pcx_text_string {
         PCX_TEXT_STRING_ROW_FULL,
         PCX_TEXT_STRING_CHOOSE_ROW,
         PCX_TEXT_STRING_CHOSEN_ROW,
+        PCX_TEXT_STRING_ROUND_OVER,
+        PCX_TEXT_STRING_END_POINTS,
+        PCX_TEXT_STRING_WINS_PLAIN,
 };
 
 const char *
