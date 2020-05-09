@@ -61,7 +61,7 @@ pcx_snitch_help[] = {
         "Post 8 raŭndoj, tiu kiu havas la plej multon da mono gajnas la "
         "partion.\n",
         [PCX_TEXT_LANGUAGE_FRENCH] =
-        "<b>RESUMÉ DES RÈGLES :</b>\n"
+        "<b>RÉSUMÉ DES RÈGLES :</b>\n"
         "\n"
         "Balance est un jeu de cartes de mi-collaboration et de bluff.\n"
         "\n"

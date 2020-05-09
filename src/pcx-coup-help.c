@@ -95,7 +95,7 @@ pcx_coup_help[] = {
         "devas aŭ cedi kaj perdi karton, aŭ montri ambaŭ kartojn por pruvi "
         "ke vi ne havas la dukon.",
         [PCX_TEXT_LANGUAGE_FRENCH] =
-        "<b>RESUMÉ DES RÈGLES :</b>\n"
+        "<b>RÉSUMÉ DES RÈGLES :</b>\n"
         "\n"
         "Complot est un jeu de cartes au tour du bluff. Il est possible de "
         "jouer au jeu de base ou de jouer à une combinaison de deux "
