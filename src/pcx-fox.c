@@ -317,6 +317,32 @@ get_buttons_for_mask(const uint16_t *card_mask,
 }
 
 static void
+add_hand(struct pcx_buffer *buf,
+         const struct pcx_fox_player *player)
+{
+        for (int suit = 0; suit < PCX_FOX_N_SUITS; suit++) {
+                uint16_t values = player->hand[suit];
+                int n_cards = 0;
+
+                while (values) {
+                        int value = ffs(values) - 1;
+
+                        values &= ~(1 << value);
+
+                        if (n_cards++ > 0)
+                                pcx_buffer_append_c(buf, ' ');
+
+                        int card = PCX_FOX_MAKE_CARD(suit, value);
+
+                        add_card(buf, card);
+                }
+
+                if (n_cards > 0)
+                        pcx_buffer_append_string(buf, "\n");
+        }
+}
+
+static void
 show_card_question(struct pcx_fox *fox,
                    int player_num)
 {
@@ -327,10 +353,24 @@ show_card_question(struct pcx_fox *fox,
 
         int n_buttons = get_buttons_for_mask(playable_cards, "play", buttons);
 
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        if (player_num != fox->leader) {
+                const char *note = pcx_text_get(fox->language,
+                                                PCX_TEXT_STRING_YOUR_CARDS_ARE);
+                pcx_buffer_append_string(&buf, note);
+                pcx_buffer_append_c(&buf, '\n');
+                add_hand(&buf, fox->players + player_num);
+                pcx_buffer_append_string(&buf, "\n");
+        }
+
+        const char *note = pcx_text_get(fox->language,
+                                        PCX_TEXT_STRING_WHICH_CARD_TO_PLAY);
+        pcx_buffer_append_string(&buf, note);
+
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        message.text = pcx_text_get(fox->language,
-                                    PCX_TEXT_STRING_WHICH_CARD_TO_PLAY);
+        message.text = (char *) buf.data;
         message.n_buttons = n_buttons;
         message.buttons = buttons;
         message.target = player_num;
@@ -341,6 +381,8 @@ show_card_question(struct pcx_fox *fox,
                 pcx_free((char *) buttons[i].data);
                 pcx_free((char *) buttons[i].text);
         }
+
+        pcx_buffer_destroy(&buf);
 }
 
 static void
