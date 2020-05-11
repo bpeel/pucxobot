@@ -503,7 +503,14 @@ start_round(struct pcx_fox *fox)
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         const char *note = pcx_text_get(fox->language,
-                                        PCX_TEXT_STRING_YOU_ARE_LEADER);
+                                        PCX_TEXT_STRING_TRUMP_CARD_IS);
+        pcx_buffer_append_string(&buf, note);
+        pcx_buffer_append_c(&buf, ' ');
+        add_card(&buf, fox->trump_card);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        note = pcx_text_get(fox->language,
+                            PCX_TEXT_STRING_YOU_ARE_LEADER);
         pcx_buffer_append_printf(&buf, note, fox->players[fox->leader].name);
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
