@@ -47,6 +47,7 @@ src = [
         'pcx-love-help.c',
         'pcx-six.c',
         'pcx-six-help.c',
+        'pcx-fox.c',
         'pcx-superfight.c',
         'pcx-superfight-deck.c',
         'pcx-superfight-help.c',

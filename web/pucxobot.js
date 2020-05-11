@@ -142,6 +142,7 @@ Pucxo.GAMES = [
   { "title": "@COUP_TITLE@", "keyword": "coup" },
   { "title": "@LOVE_LETTER_TITLE@", "keyword": "loveletter", "help": "love" },
   { "title": "@SIX_TITLE@", "keyword": "six" },
+  { "title": "@FOX_TITLE@", "keyword": "fox" },
   { "title": "@SNITCH_TITLE@", "keyword": "snitch" },
   { "title": "@ZOMBIE_DICE_TITLE@", "keyword": "zombie" },
   { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },

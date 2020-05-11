@@ -34,6 +34,8 @@ pcx_text_esperanto[] = {
         "Amletero",
         [PCX_TEXT_STRING_NAME_SIX] =
         "6 Prenas",
+        [PCX_TEXT_STRING_NAME_FOX] =
+        "Vulpo en la Arbaro",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superbatalo",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -54,6 +56,10 @@ pcx_text_esperanto[] = {
         "/ses",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
         "Krei ludon de 6 Prenas",
+        [PCX_TEXT_STRING_FOX_START_COMMAND] =
+        "/vulpo",
+        [PCX_TEXT_STRING_FOX_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Vulpo en la Arbaro",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -615,4 +621,32 @@ pcx_text_esperanto[] = {
         "%s havas almenaŭ %i poentojn kaj finas la partion.",
         [PCX_TEXT_STRING_WINS_PLAIN] =
         "🏆 %s gajnis la partion!",
+        [PCX_TEXT_STRING_YOU_ARE_LEADER] =
+        "%s komencas la prenvicon.",
+        [PCX_TEXT_STRING_PLAYER_PLAYED] =
+        "%s ludis:",
+        [PCX_TEXT_STRING_FOLLOW_PLAYER] =
+        "Nun %s elektas kiun karton ludi.",
+        [PCX_TEXT_STRING_PLAYED_THREE] =
+        "Nun ri elektas ĉu interŝanĝi la dekretan karton.",
+        [PCX_TEXT_STRING_PLAYED_FIVE] =
+        "Nun ri prenas karton de la kartaro kaj forĵetas unu.",
+        [PCX_TEXT_STRING_TRICK_WINNER] =
+        "%s gajnis la prenvicon.",
+        [PCX_TEXT_STRING_TRICKS_IN_ROUND_ARE] =
+        "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun estas:",
+        [PCX_TEXT_STRING_WIN_TRICK_SEVEN] =
+        "Ri tuj gajnas poenton pro la karto 7.",
+        [PCX_TEXT_STRING_YOU_DREW] =
+        "Vi prenas:",
+        [PCX_TEXT_STRING_WHICH_CARD_DISCARD] =
+        "Kiun karton vi volas forĵeti?",
+        [PCX_TEXT_STRING_TRUMP_CARD_IS] =
+        "La dekreta karto estas:",
+        [PCX_TEXT_STRING_WHICH_CARD_EXCHANGE] =
+        "Kiun karton vi volas meti kiel la dekretan karton?",
+        [PCX_TEXT_STRING_DONT_EXCHANGE] =
+        "Lasi la antaŭan dekretan karton",
+        [PCX_TEXT_STRING_DOESNT_EXCHANGE] =
+        "%s decidis ne interŝanĝi la dekretan karton.",
 };
