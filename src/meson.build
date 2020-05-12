@@ -79,6 +79,7 @@ test_coup_src = [
         'pcx-coup-help.c',
         'pcx-text.c',
         'pcx-coup.c',
+        'test-message.c',
         'test-coup.c',
 ]
 

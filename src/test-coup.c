@@ -28,29 +28,14 @@
 #include "pcx-coup.h"
 #include "pcx-list.h"
 #include "pcx-main-context.h"
+#include "test-message.h"
 
-enum message_type {
-        MESSAGE_TYPE_PRIVATE,
-        MESSAGE_TYPE_GLOBAL,
-        MESSAGE_TYPE_GAME_OVER,
-        MESSAGE_TYPE_STATUS,
-        MESSAGE_TYPE_SHOW_CARDS,
-        MESSAGE_TYPE_BUTTONS,
-};
+#define FIRST_ARG_TYPE 1000
 
-struct button {
-        struct pcx_list link;
-        char *data;
-        char *text;
-};
-
-struct message {
-        struct pcx_list link;
-        enum message_type type;
-        int destination;
-        char *message;
-        bool check_buttons;
-        struct pcx_list buttons;
+enum arg_type {
+        ARG_TYPE_STATUS = FIRST_ARG_TYPE,
+        ARG_TYPE_SHOW_CARDS,
+        ARG_TYPE_BUTTONS,
 };
 
 struct card_status {
@@ -72,43 +57,12 @@ struct status {
 
 struct test_data {
         struct pcx_coup *coup;
-        struct pcx_list message_queue;
-        struct pcx_main_context_source *check_timeout_source;
+        struct test_message_data message_data;
         struct status status;
-        bool had_error;
         bool use_inspector;
         bool reformation;
         int n_players;
 };
-
-static const char *const
-player_names[] = {
-        "Alice",
-        "Bob",
-        "Charles",
-        "David",
-        "Eva",
-        "Fred",
-        "George",
-        "Harry",
-};
-
-static void
-free_message(struct message *message)
-{
-        if (message->check_buttons) {
-                struct button *button, *tmp;
-
-                pcx_list_for_each_safe(button, tmp, &message->buttons, link) {
-                        pcx_free(button->data);
-                        pcx_free(button->text);
-                        pcx_free(button);
-                }
-        }
-
-        pcx_free(message->message);
-        pcx_free(message);
-}
 
 static const char *
 get_card_name(enum pcx_coup_character character)
@@ -169,35 +123,10 @@ fake_random_number_generator(void)
 }
 
 static void
-enable_check_buttons(struct message *message)
-{
-        assert(message->check_buttons == false);
-
-        pcx_list_init(&message->buttons);
-
-        message->check_buttons = true;
-}
-
-static void
-add_button_to_message(struct message *message,
-                      const char *data,
-                      const char *text)
-{
-        assert(message->type == MESSAGE_TYPE_GLOBAL ||
-               message->type == MESSAGE_TYPE_PRIVATE);
-        assert(message->check_buttons);
-
-        struct button *button = pcx_alloc(sizeof *button);
-        button->data = pcx_strdup(data);
-        button->text = pcx_strdup(text);
-        pcx_list_insert(message->buttons.prev, &button->link);
-}
-
-static void
-add_buttons_to_message(struct message *message,
+add_buttons_to_message(struct test_message *message,
                        va_list ap)
 {
-        enable_check_buttons(message);
+        test_message_enable_check_buttons(message);
 
         while (true) {
                 const char *data = va_arg(ap, const char *);
@@ -207,7 +136,7 @@ add_buttons_to_message(struct message *message,
 
                 const char *text = va_arg(ap, const char *);
 
-                add_button_to_message(message, data, text);
+                test_message_add_button(message, data, text);
         }
 }
 
@@ -236,7 +165,9 @@ make_status_message(struct test_data *data)
                         pcx_buffer_append_string(&buf, "👉 ");
                 }
 
-                pcx_buffer_append_printf(&buf, "%s:\n", player_names[i]);
+                pcx_buffer_append_printf(&buf,
+                                         "%s:\n",
+                                         test_message_player_names[i]);
 
                 for (unsigned card = 0;
                      card < PCX_N_ELEMENTS(player->cards);
@@ -277,12 +208,14 @@ make_status_message(struct test_data *data)
         if (n_alive_players == 1) {
                 pcx_buffer_append_printf(&buf,
                                          "%s venkis!",
-                                         player_names[winner]);
+                                         test_message_player_names[winner]);
         } else {
+                const char *name =
+                        test_message_player_names[status->current_player];
                 pcx_buffer_append_printf(&buf,
                                          "%s, estas via vico, "
                                          "kion vi volas fari?",
-                                         player_names[status->current_player]);
+                                         name);
         }
 
 
@@ -291,11 +224,11 @@ make_status_message(struct test_data *data)
 
 static void
 add_status_buttons(struct test_data *data,
-                   struct message *message)
+                   struct test_message *message)
 {
         const struct status *status = &data->status;
 
-        enable_check_buttons(message);
+        test_message_enable_check_buttons(message);
 
         int n_players = 0;
 
@@ -311,283 +244,97 @@ add_status_buttons(struct test_data *data,
                 status->players + status->current_player;
 
         if (player->coins >= 10) {
-                add_button_to_message(message, "coup", "Puĉo");
+                test_message_add_button(message, "coup", "Puĉo");
                 return;
         }
 
-        add_button_to_message(message, "income", "Enspezi");
-        add_button_to_message(message, "foreign_aid", "Eksterlanda helpo");
+        test_message_add_button(message, "income", "Enspezi");
+        test_message_add_button(message, "foreign_aid", "Eksterlanda helpo");
 
         if (player->coins >= 7)
-                add_button_to_message(message, "coup", "Puĉo");
+                test_message_add_button(message, "coup", "Puĉo");
 
         if (data->reformation) {
                 if (player->coins > 0) {
-                        add_button_to_message(message,
+                        test_message_add_button(message,
                                               "convert",
                                               "Konverti");
                 }
-                add_button_to_message(message,
+                test_message_add_button(message,
                                       "embezzle",
                                       "Ŝteli la trezoron");
         }
 
-        add_button_to_message(message, "tax", "Imposto (Duko)");
+        test_message_add_button(message, "tax", "Imposto (Duko)");
 
         if (player->coins >= 3) {
-                add_button_to_message(message,
+                test_message_add_button(message,
                                       "assassinate",
                                       "Murdi (Murdisto)");
         }
 
         if (data->use_inspector) {
-                add_button_to_message(message,
+                test_message_add_button(message,
                                       "exchange",
                                       "Interŝanĝi (Inspektisto)");
-                add_button_to_message(message,
+                test_message_add_button(message,
                                       "inspect",
                                       "Inspekti (Inspektisto)");
         } else {
-                add_button_to_message(message,
+                test_message_add_button(message,
                                       "exchange",
                                       "Interŝanĝi (Ambasadoro)");
         }
 
-        add_button_to_message(message, "steal", "Ŝteli (Kapitano)");
-}
-
-static bool
-check_buttons(const struct message *message,
-              size_t n_buttons,
-              const struct pcx_game_button *buttons)
-{
-        if (!message->check_buttons)
-                return true;
-
-        unsigned i = 0;
-        const struct button *button;
-
-        pcx_list_for_each(button, &message->buttons, link) {
-                if (i >= n_buttons) {
-                        fprintf(stderr,
-                                "message received containing %u "
-                                "buttons when %u were expected\n",
-                                (unsigned) n_buttons,
-                                (unsigned) pcx_list_length(&message->buttons));
-                        return false;
-                }
-
-                if (strcmp(button->data, buttons[i].data) ||
-                    strcmp(button->text, buttons[i].text)) {
-                        fprintf(stderr,
-                                "button does not match.\n"
-                                "Got: %s) %s\n"
-                                "Expected: %s) %s\n",
-                                buttons[i].data,
-                                buttons[i].text,
-                                button->data,
-                                button->text);
-                        return false;
-                }
-
-                i++;
-        }
-
-        if (i != n_buttons) {
-                fprintf(stderr,
-                        "message received containing %u "
-                        "buttons when %u were expected\n",
-                        (unsigned) n_buttons,
-                        (unsigned) pcx_list_length(&message->buttons));
-                return false;
-        }
-
-        return true;
+        test_message_add_button(message, "steal", "Ŝteli (Kapitano)");
 }
 
 static void
-handle_private_message(struct test_data *data,
-                       const struct pcx_game_message *msg)
+handle_message_type(struct test_data *data,
+                    struct test_message *message,
+                    enum test_message_type type,
+                    va_list ap)
 {
-        if (msg->target < 0 || msg->target >= PCX_N_ELEMENTS(player_names)) {
-                fprintf(stderr,
-                        "Private message sent to invalid player %i\n",
-                        msg->target);
-                data->had_error = true;
+        switch (type) {
+        case TEST_MESSAGE_TYPE_PRIVATE:
+                message->destination = va_arg(ap, int);
+                message->message = pcx_strdup(va_arg(ap, const char *));
+                return;
+        case TEST_MESSAGE_TYPE_GLOBAL:
+                message->message = pcx_strdup(va_arg(ap, const char *));
+                return;
+        case TEST_MESSAGE_TYPE_GAME_OVER:
                 return;
         }
 
-        if (pcx_list_empty(&data->message_queue)) {
-                fprintf(stderr,
-                        "Unexpected message sent to “%s”: %s\n",
-                        player_names[msg->target],
-                        msg->text);
-                data->had_error = true;
-                return;
-        }
-
-        struct message *message =
-                pcx_container_of(data->message_queue.next,
-                                 struct message,
-                                 link);
-
-        if (message->type != MESSAGE_TYPE_PRIVATE) {
-                fprintf(stderr,
-                        "Private message to “%s” received when a different "
-                        "type was expected: %s\n",
-                        player_names[msg->target],
-                        msg->text);
-                data->had_error = true;
-                return;
-        }
-
-        if (message->destination != msg->target) {
-                fprintf(stderr,
-                        "Message sent to “%s” but expected to “%s”\n",
-                        player_names[msg->target],
-                        player_names[message->destination]);
-                data->had_error = true;
-                return;
-        }
-
-        if (strcmp(msg->text, message->message)) {
-                fprintf(stderr,
-                        "Message to “%s” does not match expected message.\n"
-                        "Got: %s\n"
-                        "Expected: %s\n",
-                        player_names[msg->target],
-                        msg->text,
-                        message->message);
-                data->had_error = true;
-                return;
-        }
-
-        if (!check_buttons(message, msg->n_buttons, msg->buttons)) {
-                data->had_error = true;
-                return;
-        }
-
-        pcx_list_remove(&message->link);
-        free_message(message);
+        assert(!"unexpected message type");
 }
 
 static void
-handle_public_message(struct test_data *data,
-                      const struct pcx_game_message *msg)
+handle_arg_type(struct test_data *data,
+                struct test_message *message,
+                enum arg_type type,
+                va_list ap)
 {
-        if (pcx_list_empty(&data->message_queue)) {
-                fprintf(stderr,
-                        "Unexpected global message sent: %s\n",
-                        msg->text);
-                data->had_error = true;
+        switch (type) {
+        case ARG_TYPE_STATUS:
+                message->type = TEST_MESSAGE_TYPE_GLOBAL;
+                message->message = make_status_message(data);
+                add_status_buttons(data, message);
                 return;
+        case ARG_TYPE_SHOW_CARDS:
+                message->type = TEST_MESSAGE_TYPE_PRIVATE;
+                message->destination = va_arg(ap, int);
+                message->message =
+                        make_show_cards_message(data->status.players +
+                                                message->destination);
+                test_message_enable_check_buttons(message);
+                return;
+        case ARG_TYPE_BUTTONS:
+                break;
         }
 
-        struct message *message =
-                pcx_container_of(data->message_queue.next,
-                                 struct message,
-                                 link);
-
-        if (message->type != MESSAGE_TYPE_GLOBAL) {
-                fprintf(stderr,
-                        "Global message received when a different "
-                        "type was expected: %s\n",
-                        msg->text);
-                data->had_error = true;
-                return;
-        }
-
-        if (strcmp(msg->text, message->message)) {
-                fprintf(stderr,
-                        "Global Message does not match expected message.\n"
-                        "Got: %s\n"
-                        "Expected: %s\n",
-                        msg->text,
-                        message->message);
-                data->had_error = true;
-                return;
-        }
-
-        if (!check_buttons(message, msg->n_buttons, msg->buttons)) {
-                data->had_error = true;
-                return;
-        }
-
-        pcx_list_remove(&message->link);
-        free_message(message);
-}
-
-static void
-send_message_cb(const struct pcx_game_message *message,
-                void *user_data)
-{
-        struct test_data *data = user_data;
-
-        if (message->target == -1)
-                handle_public_message(data, message);
-        else
-                handle_private_message(data, message);
-}
-
-static void
-game_over_cb(void *user_data)
-{
-        struct test_data *data = user_data;
-
-        if (pcx_list_empty(&data->message_queue)) {
-                fprintf(stderr, "Unexpected game over\n");
-                data->had_error = true;
-                return;
-        }
-
-        struct message *message =
-                pcx_container_of(data->message_queue.next,
-                                 struct message,
-                                 link);
-
-        if (message->type != MESSAGE_TYPE_GAME_OVER) {
-                fprintf(stderr,
-                        "Game over received when a different "
-                        "type was expected\n");
-                data->had_error = true;
-                return;
-        }
-
-        pcx_list_remove(&message->link);
-        free_message(message);
-}
-
-static const struct pcx_game_callbacks
-callbacks = {
-        .send_message = send_message_cb,
-        .game_over = game_over_cb,
-};
-
-static void
-timeout_cb(struct pcx_main_context_source *source,
-           void *user_data)
-{
-        struct test_data *data = user_data;
-
-        assert(data->check_timeout_source == source);
-
-        data->check_timeout_source = NULL;
-
-        fprintf(stderr, "Timeout while waiting for a message\n");
-
-        data->had_error = true;
-}
-
-static struct message *
-queue_message(struct test_data *data,
-              enum message_type type)
-{
-        struct message *message = pcx_calloc(sizeof *message);
-
-        message->type = type;
-        pcx_list_insert(data->message_queue.prev, &message->link);
-
-        return message;
+        assert(!"unexpected arg type");
 }
 
 static bool
@@ -606,96 +353,57 @@ send_callback_data(struct test_data *data,
                 if (type == -1)
                         break;
 
-                if (type == MESSAGE_TYPE_BUTTONS) {
-                        assert(!pcx_list_empty(&data->message_queue));
-                        struct message *message =
-                                pcx_container_of(data->message_queue.prev,
-                                                 struct message,
+                if (type == ARG_TYPE_BUTTONS) {
+                        assert(!pcx_list_empty(&data->message_data.queue));
+                        struct test_message *message =
+                                pcx_container_of(data->message_data.queue.prev,
+                                                 struct test_message,
                                                  link);
                         add_buttons_to_message(message, ap);
                         continue;
                 }
 
-                struct message *message = queue_message(data, type);
+                struct test_message *message =
+                        test_message_queue(&data->message_data, type);
 
-                switch ((enum message_type) type) {
-                case MESSAGE_TYPE_PRIVATE:
-                        message->destination = va_arg(ap, int);
-                        message->message = pcx_strdup(va_arg(ap, const char *));
-                        continue;
-                case MESSAGE_TYPE_GLOBAL:
-                        message->message = pcx_strdup(va_arg(ap, const char *));
-                        continue;
-                case MESSAGE_TYPE_GAME_OVER:
-                        continue;
-                case MESSAGE_TYPE_STATUS:
-                        message->type = MESSAGE_TYPE_GLOBAL;
-                        message->message = make_status_message(data);
-                        add_status_buttons(data, message);
-                        continue;
-                case MESSAGE_TYPE_SHOW_CARDS:
-                        message->type = MESSAGE_TYPE_PRIVATE;
-                        message->destination = va_arg(ap, int);
-                        message->message =
-                                make_show_cards_message(data->status.players +
-                                                        message->destination);
-                        enable_check_buttons(message);
-                        continue;
-                case MESSAGE_TYPE_BUTTONS:
-                        break;
-                }
-
-                assert(!"unexpected message type");
+                if (type < FIRST_ARG_TYPE)
+                        handle_message_type(data, message, type, ap);
+                else
+                        handle_arg_type(data, message, type, ap);
         }
 
         va_end(ap);
-
-        assert(data->check_timeout_source == NULL);
 
         pcx_coup_game.handle_callback_data_cb(data->coup,
                                               player_num,
                                               callback_data);
 
-        data->check_timeout_source =
-                pcx_main_context_add_timeout(NULL,
-                                             10000,
-                                             timeout_cb,
-                                             data);
-
-        while (!data->had_error &&
-               !pcx_list_empty(&data->message_queue)) {
-                pcx_main_context_poll(NULL);
-        }
-
-        if (data->check_timeout_source) {
-                pcx_main_context_remove_source(data->check_timeout_source);
-                data->check_timeout_source = NULL;
-        }
-
-        return !data->had_error;
+        return test_message_run_queue(&data->message_data);
 }
 
 static void
 queue_configure_cards_message(struct test_data *data)
 {
-        struct message *message = queue_message(data, MESSAGE_TYPE_GLOBAL);
+        struct test_message *message =
+                test_message_queue(&data->message_data,
+                                   TEST_MESSAGE_TYPE_GLOBAL);
 
         message->message =
                 pcx_strdup("Bonvolu elekti kiun version de la ludo vi volas "
                            "ludi.");
 
-        enable_check_buttons(message);
+        test_message_enable_check_buttons(message);
 
-        add_button_to_message(message,
+        test_message_add_button(message,
                               "game_type:0",
                               "Originala");
-        add_button_to_message(message,
+        test_message_add_button(message,
                               "game_type:1",
                               "Inspektisto");
-        add_button_to_message(message,
+        test_message_add_button(message,
                               "game_type:2",
                               "Reformacio");
-        add_button_to_message(message,
+        test_message_add_button(message,
                               "game_type:3",
                               "Reformacio + Inspektisto");
 }
@@ -709,8 +417,7 @@ create_test_data(int n_card_overrides,
 {
         struct test_data *data = pcx_calloc(sizeof *data);
 
-        data->had_error = false;
-        pcx_list_init(&data->message_queue);
+        test_message_data_init(&data->message_data);
 
         data->status.current_player = 1;
         data->use_inspector = use_inspector;
@@ -739,11 +446,11 @@ create_test_data(int n_card_overrides,
 
         queue_configure_cards_message(data);
 
-        data->coup = pcx_coup_new(&callbacks,
-                                  data,
+        data->coup = pcx_coup_new(&test_message_callbacks,
+                                  &data->message_data,
                                   PCX_TEXT_LANGUAGE_ESPERANTO,
                                   n_players,
-                                  player_names,
+                                  test_message_player_names,
                                   &overrides);
 
         const char *configure_data, *configure_note;
@@ -767,23 +474,27 @@ create_test_data(int n_card_overrides,
                 configure_note = "La elektita versio estas: Originala";
         }
 
-        struct message *note_message = queue_message(data, MESSAGE_TYPE_GLOBAL);
+        struct test_message *note_message =
+                test_message_queue(&data->message_data,
+                                   TEST_MESSAGE_TYPE_GLOBAL);
         note_message->message = pcx_strdup(configure_note);
 
         for (int i = 0; i < n_players; i++) {
-                struct message *message =
-                        queue_message(data, MESSAGE_TYPE_PRIVATE);
+                struct test_message *message =
+                        test_message_queue(&data->message_data,
+                                           TEST_MESSAGE_TYPE_PRIVATE);
 
                         message->destination = i;
                         message->message =
                                 make_show_cards_message(data->status.players +
                                                         message->destination);
-                        enable_check_buttons(message);
+                        test_message_enable_check_buttons(message);
         }
 
-        struct message *status_message =
-                queue_message(data, MESSAGE_TYPE_PRIVATE);
-        status_message->type = MESSAGE_TYPE_GLOBAL;
+        struct test_message *status_message =
+                test_message_queue(&data->message_data,
+                                   TEST_MESSAGE_TYPE_PRIVATE);
+        status_message->type = TEST_MESSAGE_TYPE_GLOBAL;
         status_message->message = make_status_message(data);
         add_status_buttons(data, status_message);
 
@@ -798,11 +509,7 @@ create_test_data(int n_card_overrides,
 static void
 free_test_data(struct test_data *data)
 {
-        struct message *message, *tmp;
-
-        pcx_list_for_each_safe(message, tmp, &data->message_queue, link) {
-                free_message(message);
-        }
+        test_message_data_destroy(&data->message_data);
 
         pcx_coup_game.free_game_cb(data->coup);
         pcx_free(data);
@@ -832,14 +539,14 @@ take_income(struct test_data *data)
         struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_append_printf(&message,
                                  "💲 %s enspezas 1 moneron",
-                                 player_names[active_player]);
+                                 test_message_player_names[active_player]);
 
         bool ret = send_callback_data(data,
                                       active_player,
                                       "income",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       (char *) message.data,
-                                      MESSAGE_TYPE_STATUS,
+                                      ARG_TYPE_STATUS,
                                       -1);
 
         pcx_buffer_destroy(&message);
@@ -886,8 +593,8 @@ do_coup(struct test_data *data)
         struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_append_printf(&message,
                                  "💣 %s faras puĉon kontraŭ %s",
-                                 player_names[active_player],
-                                 player_names[active_player ^ 1]);
+                                 test_message_player_names[active_player],
+                                 test_message_player_names[active_player ^ 1]);
 
         struct pcx_buffer callback_data = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_append_printf(&callback_data, "coup:%i", active_player ^ 1);
@@ -895,9 +602,9 @@ do_coup(struct test_data *data)
         bool ret = send_callback_data(data,
                                       active_player,
                                       (char *) callback_data.data,
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       (char *) message.data,
-                                      MESSAGE_TYPE_PRIVATE,
+                                      TEST_MESSAGE_TYPE_PRIVATE,
                                       active_player ^ 1,
                                       "Kiun karton vi volas perdi?",
                                       -1);
@@ -927,9 +634,9 @@ found_card:
         ret = send_callback_data(data,
                                  active_player ^ 1,
                                  (char *) callback_data.data,
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  active_player ^ 1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1034,10 +741,10 @@ test_coup(void)
         ret = send_callback_data(data,
                                  1,
                                  "coup:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💣 Bob faras puĉon kontraŭ Alice",
-                                 MESSAGE_TYPE_STATUS,
-                                 MESSAGE_TYPE_GAME_OVER,
+                                 ARG_TYPE_STATUS,
+                                 TEST_MESSAGE_TYPE_GAME_OVER,
                                  -1);
         if (!ret)
                 goto done;
@@ -1068,12 +775,12 @@ set_up_foreign_aid(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "foreign_aid",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "💴 Bob prenas 2 monerojn per "
                                       "eksterlanda helpo.\n"
                                       "Ĉu iu volas pretendi havi la dukon "
                                       "kaj bloki rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "block", "Bloki",
                                       "accept", "Akcepti",
                                       NULL,
@@ -1101,9 +808,9 @@ test_accept_foreign_aid(void)
         bool ret = send_callback_data(data,
                                       0,
                                       "accept",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "Neniu blokis, Bob prenas la 2 monerojn",
-                                      MESSAGE_TYPE_STATUS,
+                                      ARG_TYPE_STATUS,
                                       -1);
 
         free_test_data(data);
@@ -1117,11 +824,11 @@ block_foreign_aid(struct test_data *data)
         return send_callback_data(data,
                                   0,
                                   "block",
-                                  MESSAGE_TYPE_GLOBAL,
+                                  TEST_MESSAGE_TYPE_GLOBAL,
                                   "Alice pretendas havi la dukon kaj "
                                   "blokas.\n"
                                   "Ĉu iu volas defii rin?",
-                                  MESSAGE_TYPE_BUTTONS,
+                                  ARG_TYPE_BUTTONS,
                                   "challenge", "Defii",
                                   "accept", "Akcepti",
                                   NULL,
@@ -1142,14 +849,14 @@ block_and_challenge_foreign_aid(struct test_data *data)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj nun Alice elektas kiun karton "
                                  "montri.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Bob ne kredas ke vi havas la dukon.\n"
                                  "Kiun karton vi volas montri?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Duko",
                                  "reveal:1", "Kapitano",
                                  NULL,
@@ -1180,9 +887,9 @@ test_accept_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  1,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis. La ago estis blokita.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1214,16 +921,16 @@ test_failed_challenge_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  0,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis sed Alice ja havis la dukon. "
                                  "Bob perdas karton kaj Alice ricevas "
                                  "novan anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Grafino",
                                  "lose:1", "Murdisto",
                                  NULL,
@@ -1237,11 +944,11 @@ test_failed_challenge_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  1,
                                  "lose:0",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis. La ago estis blokita.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1272,17 +979,17 @@ test_failed_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  0,
                                  "reveal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj Alice ne havis la dukon kaj "
                                  "Alice perdas karton",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💴 Bob prenas 2 monerojn per "
                                  "eksterlanda helpo.\n"
                                  "Ĉu iu volas pretendi havi la dukon "
                                  "kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "block", "Bloki",
                                  "accept", "Akcepti",
                                  NULL,
@@ -1298,9 +1005,9 @@ test_failed_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis, Bob prenas la 2 monerojn",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1333,12 +1040,12 @@ test_multiple_people_block_foreign_aid(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "foreign_aid",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "💴 Bob prenas 2 monerojn per "
                                       "eksterlanda helpo.\n"
                                       "Ĉu iu volas pretendi havi la dukon "
                                       "kaj bloki rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "block", "Bloki",
                                       "accept", "Akcepti",
                                       NULL,
@@ -1350,10 +1057,10 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  2,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Charles pretendas havi la dukon kaj blokas.\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -1365,14 +1072,14 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj nun Charles elektas kiun "
                                  "karton montri.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  2,
                                  "Bob ne kredas ke vi havas la dukon.\n"
                                  "Kiun karton vi volas montri?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Kapitano",
                                  "reveal:1", "Kapitano",
                                  NULL,
@@ -1386,17 +1093,17 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  2,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj Charles ne havis la dukon "
                                  "kaj Charles perdas karton",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  2,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💴 Bob prenas 2 monerojn per "
                                  "eksterlanda helpo.\n"
                                  "Ĉu iu volas pretendi havi la dukon "
                                  "kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "block", "Bloki",
                                  "accept", "Akcepti",
                                  NULL,
@@ -1408,10 +1115,10 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  0,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice pretendas havi la dukon kaj blokas.\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -1423,14 +1130,14 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj nun Alice elektas kiun "
                                  "karton montri.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Bob ne kredas ke vi havas la dukon.\n"
                                  "Kiun karton vi volas montri?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Duko",
                                  "reveal:1", "Kapitano",
                                  NULL,
@@ -1445,16 +1152,16 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  0,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis sed Alice ja havis la dukon. "
                                  "Bob perdas karton kaj Alice ricevas "
                                  "novan anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Grafino",
                                  "lose:1", "Murdisto",
                                  NULL,
@@ -1468,11 +1175,11 @@ test_multiple_people_block_foreign_aid(void)
         ret = send_callback_data(data,
                                  1,
                                  "lose:1",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis. La ago estis blokita.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1512,11 +1219,11 @@ set_up_tax(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "tax",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "💸 Bob pretendas havi la dukon kaj "
                                       "prenas 3 monerojn per imposto.\n"
                                       "Ĉu iu volas defii rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "accept", "Akcepti",
                                       NULL,
@@ -1554,11 +1261,11 @@ test_accept_tax(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob prenas la 3 monerojn",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  NULL,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1575,14 +1282,14 @@ challenge_tax(struct test_data *data)
         return send_callback_data(data,
                                   0,
                                   "challenge",
-                                  MESSAGE_TYPE_GLOBAL,
+                                  TEST_MESSAGE_TYPE_GLOBAL,
                                   "Alice defiis kaj nun Bob elektas kiun "
                                   "karton montri.",
-                                  MESSAGE_TYPE_PRIVATE,
+                                  TEST_MESSAGE_TYPE_PRIVATE,
                                   1,
                                   "Alice ne kredas ke vi havas la dukon.\n"
                                   "Kiun karton vi volas montri?",
-                                  MESSAGE_TYPE_BUTTONS,
+                                  ARG_TYPE_BUTTONS,
                                   "reveal:0", "Duko",
                                   "reveal:1", "Murdisto",
                                   NULL,
@@ -1610,16 +1317,16 @@ test_failed_challenge_tax(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis sed Bob ja havis la dukon. "
                                  "Alice perdas karton kaj Bob ricevas novan "
                                  "anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Grafino",
                                  "lose:1", "Kapitano",
                                  NULL,
@@ -1635,11 +1342,11 @@ test_failed_challenge_tax(void)
         ret = send_callback_data(data,
                                  0,
                                  "lose:1",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob prenas la 3 monerojn",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1671,12 +1378,12 @@ test_successful_challenge_tax(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj Bob ne havis la dukon kaj "
                                  "Bob perdas karton",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1726,12 +1433,12 @@ set_up_assassinate(void)
         bool ret = send_callback_data(data,
                                       0,
                                       "assassinate:1",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "🗡 Alice volas murdi Bob\n"
                                       "Ĉu iu volas defii rin?\n"
                                       "Aŭ Bob, ĉu vi volas pretendi havi la "
                                       "grafinon kaj bloki rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "block", "Bloki",
                                       "accept", "Akcepti",
@@ -1760,9 +1467,9 @@ test_accept_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis aŭ defiis, Alice murdas Bob",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiun karton vi volas perdi?",
                                  -1);
@@ -1776,9 +1483,9 @@ test_accept_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "lose:1",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1809,12 +1516,12 @@ test_accept_assassinate(void)
         ret = send_callback_data(data,
                                  0,
                                  "assassinate:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "🗡 Alice volas murdi Bob\n"
                                  "Ĉu iu volas defii rin?\n"
                                  "Aŭ Bob, ĉu vi volas pretendi havi la "
                                  "grafinon kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "block", "Bloki",
                                  "accept", "Akcepti",
@@ -1829,10 +1536,10 @@ test_accept_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis aŭ defiis, Alice murdas Bob",
-                                 MESSAGE_TYPE_STATUS,
-                                 MESSAGE_TYPE_GAME_OVER,
+                                 ARG_TYPE_STATUS,
+                                 TEST_MESSAGE_TYPE_GAME_OVER,
                                  -1);
         if (!ret)
                 goto done;
@@ -1855,7 +1562,7 @@ set_up_block_and_challenge_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob pretendas havi la grafinon kaj "
                                  "blokas.\n"
                                  "Ĉu iu volas defii rin?",
@@ -1866,14 +1573,14 @@ set_up_block_and_challenge_assassinate(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj nun Bob elektas kiun karton "
                                  "montri.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice ne kredas ke vi havas la grafinon.\n"
                                  "Kiun karton vi volas montri?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Duko",
                                  "reveal:1", "Grafino",
                                  NULL,
@@ -1901,16 +1608,16 @@ test_block_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis sed Bob ja havis la grafinon. "
                                  "Alice perdas karton kaj Bob ricevas novan "
                                  "anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Murdisto",
                                  "lose:1", "Kapitano",
                                  NULL,
@@ -1925,11 +1632,11 @@ test_block_assassinate(void)
         ret = send_callback_data(data,
                                  0,
                                  "lose:1",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis. La ago estis blokita.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -1954,15 +1661,15 @@ test_fail_block_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj Bob ne havis la grafinon "
                                  "kaj Bob perdas karton",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "🗡 Alice volas murdi Bob\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -1980,10 +1687,10 @@ test_fail_block_assassinate(void)
         ret = send_callback_data(data,
                                  1,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis aŭ defiis, Alice murdas Bob",
-                                 MESSAGE_TYPE_STATUS,
-                                 MESSAGE_TYPE_GAME_OVER,
+                                 ARG_TYPE_STATUS,
+                                 TEST_MESSAGE_TYPE_GAME_OVER,
                                  -1);
         if (!ret)
                 goto done;
@@ -2055,12 +1762,12 @@ test_dead_player_cant_block(void)
         ret = send_callback_data(data,
                                  0,
                                  "assassinate:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "🗡 Alice volas murdi Bob\n"
                                  "Ĉu iu volas defii rin?\n"
                                  "Aŭ Bob, ĉu vi volas pretendi havi la "
                                  "grafinon kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "block", "Bloki",
                                  "accept", "Akcepti",
@@ -2081,15 +1788,15 @@ test_dead_player_cant_block(void)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis sed Alice ja havis la murdiston. "
                                  "Bob perdas karton kaj Alice ricevas novan "
                                  "anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis aŭ defiis, Alice murdas Bob",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2130,11 +1837,11 @@ test_normal_exchange(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "exchange",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "🔄 Bob pretendas havi la ambasadoron "
                                       "kaj volas interŝanĝi kartojn\n"
                                       "Ĉu iu volas defii rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "accept", "Akcepti",
                                       NULL,
@@ -2145,12 +1852,12 @@ test_normal_exchange(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob interŝanĝas kartojn",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiujn kartojn vi volas konservi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "keep:0", "Duko",
                                  "keep:1", "Ambasadoro",
                                  "keep:2", "Grafino",
@@ -2163,10 +1870,10 @@ test_normal_exchange(void)
         ret = send_callback_data(data,
                                  0,
                                  "keep:2",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiujn kartojn vi volas konservi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "keep:0", "Duko",
                                  "keep:1", "Ambasadoro",
                                  "keep:2", "Kapitano",
@@ -2184,9 +1891,9 @@ test_normal_exchange(void)
         ret = send_callback_data(data,
                                  0,
                                  "keep:2",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2239,11 +1946,11 @@ test_one_dead_exchange(void)
         ret = send_callback_data(data,
                                  1,
                                  "exchange",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "🔄 Bob pretendas havi la ambasadoron "
                                  "kaj volas interŝanĝi kartojn\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -2254,12 +1961,12 @@ test_one_dead_exchange(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob interŝanĝas kartojn",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiujn kartojn vi volas konservi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "keep:0", "Ambasadoro",
                                  "keep:1", "Grafino",
                                  "keep:2", "Kapitano",
@@ -2275,9 +1982,9 @@ test_one_dead_exchange(void)
         ret = send_callback_data(data,
                                  0,
                                  "keep:1",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2314,13 +2021,13 @@ test_steal(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "steal:0",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "💰 Bob volas ŝteli de Alice\n"
                                       "Ĉu iu volas defii rin?\n"
                                       "Aŭ Alice, ĉu vi volas pretendi havi la "
                                       "kapitanon aŭ la ambasadoron kaj bloki "
                                       "rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "block", "Bloki",
                                       "accept", "Akcepti",
@@ -2336,10 +2043,10 @@ test_steal(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu blokis aŭ defiis, Bob ŝtelas de "
                                  "Alice",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2347,13 +2054,13 @@ test_steal(void)
         ret = send_callback_data(data,
                                  0,
                                  "steal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💰 Alice volas ŝteli de Bob\n"
                                  "Ĉu iu volas defii rin?\n"
                                  "Aŭ Bob, ĉu vi volas pretendi havi la "
                                  "kapitanon aŭ la ambasadoron kaj bloki "
                                  "rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "block", "Bloki",
                                  "accept", "Akcepti",
@@ -2365,7 +2072,7 @@ test_steal(void)
         ret = send_callback_data(data,
                                  1,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob pretendas havi la kapitanon aŭ la "
                                  "ambasadoron kaj blokas.\n"
                                  "Ĉu iu volas defii rin?",
@@ -2376,15 +2083,15 @@ test_steal(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj nun Bob elektas kiun karton "
                                  "montri.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice ne kredas ke vi havas la kapitanon "
                                  "aŭ la ambasadoron.\n"
                                  "Kiun karton vi volas montri?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Duko",
                                  "reveal:1", "Ambasadoro",
                                  NULL,
@@ -2398,16 +2105,16 @@ test_steal(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis sed Bob ja havis "
                                  "la ambasadoron. Alice perdas karton kaj Bob "
                                  "ricevas novan anstataŭan karton.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Duko",
                                  "lose:1", "Duko",
                                  NULL,
@@ -2442,11 +2149,11 @@ test_exchange_inspector(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "exchange",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "🔄 Bob pretendas havi la inspektiston "
                                       "kaj volas interŝanĝi kartojn\n"
                                       "Ĉu iu volas defii rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "accept", "Akcepti",
                                       NULL,
@@ -2457,12 +2164,12 @@ test_exchange_inspector(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob interŝanĝas kartojn",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiujn kartojn vi volas konservi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "keep:0", "Duko",
                                  "keep:1", "Inspektisto",
                                  "keep:2", "Grafino",
@@ -2474,10 +2181,10 @@ test_exchange_inspector(void)
         ret = send_callback_data(data,
                                  0,
                                  "keep:2",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Kiujn kartojn vi volas konservi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "keep:0", "Duko",
                                  "keep:1", "Inspektisto",
                                  NULL,
@@ -2495,9 +2202,9 @@ test_exchange_inspector(void)
         ret = send_callback_data(data,
                                  0,
                                  "keep:0",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2527,11 +2234,11 @@ set_up_inspect_can_keep(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "inspect:0",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "🔍 Bob pretendas havi la inspektiston "
                                       "kaj volas inspekti karton de Alice\n"
                                       "Ĉu iu volas defii rin?",
-                                      MESSAGE_TYPE_BUTTONS,
+                                      ARG_TYPE_BUTTONS,
                                       "challenge", "Defii",
                                       "accept", "Akcepti",
                                       NULL,
@@ -2542,13 +2249,13 @@ set_up_inspect_can_keep(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Alice elektas karton por "
                                  "montri al Bob",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Kiun karton vi montros al Bob?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "show:0", "Duko",
                                  "show:1", "Inspektisto",
                                  NULL,
@@ -2559,15 +2266,15 @@ set_up_inspect_can_keep(void)
         ret = send_callback_data(data,
                                  0,
                                  "show:1",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Nun Bob decidas ĉu vi rajtas konservi "
                                  "la inspektiston",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice montras al vi la inspektiston. Ĉu "
                                  "ri rajtas konservi ĝin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "can_keep:1", "Jes",
                                  "can_keep:0", "Ne",
                                  NULL,
@@ -2596,10 +2303,10 @@ test_inspect_keep(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "can_keep:1",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "Bob permesis Alice konservi la karton "
                                       "kiun ri montris.",
-                                      MESSAGE_TYPE_STATUS,
+                                      ARG_TYPE_STATUS,
                                       -1);
         if (!ret)
                 goto done;
@@ -2625,12 +2332,12 @@ test_inspect_cant_keep(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "can_keep:0",
-                                      MESSAGE_TYPE_SHOW_CARDS,
+                                      ARG_TYPE_SHOW_CARDS,
                                       0,
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "Bob devigis Alice ŝanĝi la karton "
                                       "kiun ri montris.",
-                                      MESSAGE_TYPE_STATUS,
+                                      ARG_TYPE_STATUS,
                                       -1);
         if (!ret)
                 goto done;
@@ -2687,11 +2394,11 @@ test_inspect_one_card(void)
         ret = send_callback_data(data,
                                  1,
                                  "inspect:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "🔍 Bob pretendas havi la inspektiston "
                                  "kaj volas inspekti karton de Alice\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -2702,14 +2409,14 @@ test_inspect_one_card(void)
         ret = send_callback_data(data,
                                  0,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Alice elektas karton por "
                                  "montri al Bob",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice montras al vi la inspektiston. Ĉu "
                                  "ri rajtas konservi ĝin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "can_keep:1", "Jes",
                                  "can_keep:0", "Ne",
                                  NULL,
@@ -2722,10 +2429,10 @@ test_inspect_one_card(void)
         ret = send_callback_data(data,
                                  1,
                                  "can_keep:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob permesis Alice konservi la karton "
                                  "kiun ri montris.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2781,10 +2488,10 @@ test_convert(void)
         bool ret = send_callback_data(data,
                                       1,
                                       "convert:1",
-                                      MESSAGE_TYPE_GLOBAL,
+                                      TEST_MESSAGE_TYPE_GLOBAL,
                                       "Bob pagas 1 moneron al la trezorejo kaj "
                                       "konvertas sin mem.",
-                                      MESSAGE_TYPE_STATUS,
+                                      ARG_TYPE_STATUS,
                                       -1);
 
         if (!ret)
@@ -2799,10 +2506,10 @@ test_convert(void)
         ret = send_callback_data(data,
                                  2,
                                  "convert:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Charles pagas 2 monerojn al la "
                                  "trezorejo kaj konvertas Bob.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
 
         if (!ret)
@@ -2835,10 +2542,10 @@ test_convert(void)
         ret = send_callback_data(data,
                                  1,
                                  "convert:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
 
         if (!ret)
@@ -2867,10 +2574,10 @@ test_convert(void)
         ret = send_callback_data(data,
                                  3,
                                  "convert:3",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "David pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
 
         if (!ret)
@@ -2887,10 +2594,10 @@ test_convert(void)
         ret = send_callback_data(data,
                                  0,
                                  "convert:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2940,9 +2647,9 @@ test_death_makes_reunification(void)
         ret = send_callback_data(data,
                                  1,
                                  "coup:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💣 Bob faras puĉon kontraŭ Alice",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2960,9 +2667,9 @@ test_death_makes_reunification(void)
         ret = send_callback_data(data,
                                  3,
                                  "coup:2",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💣 David faras puĉon kontraŭ Charles",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -2981,10 +2688,10 @@ test_death_makes_reunification(void)
         ret = send_callback_data(data,
                                  1,
                                  "coup:3",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💣 Bob faras puĉon kontraŭ David",
-                                 MESSAGE_TYPE_STATUS,
-                                 MESSAGE_TYPE_GAME_OVER,
+                                 ARG_TYPE_STATUS,
+                                 TEST_MESSAGE_TYPE_GAME_OVER,
                                  -1);
         if (!ret)
                 goto done;
@@ -3007,9 +2714,9 @@ test_targets(void)
         ret = send_callback_data(data,
                                  1,
                                  "steal",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob, de kiu vi volas ŝteli?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "steal:0", "Alice",
                                  "steal:2", "Charles",
                                  NULL,
@@ -3029,13 +2736,13 @@ test_targets(void)
         ret = send_callback_data(data,
                                  1,
                                  "steal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💰 Bob volas ŝteli de Alice\n"
                                  "Ĉu iu volas defii rin?\n"
                                  "Aŭ Alice, ĉu vi volas pretendi havi la "
                                  "kapitanon aŭ la ambasadoron kaj bloki "
                                  "rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "block", "Bloki",
                                  "accept", "Akcepti",
@@ -3060,12 +2767,12 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  1,
                                  "foreign_aid",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💴 Bob prenas 2 monerojn per eksterlanda "
                                  "helpo.\n"
                                  "Ĉu iu de alia partio volas pretendi havi "
                                  "la dukon kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "block", "Bloki",
                                  "accept", "Akcepti",
                                  NULL,
@@ -3083,7 +2790,7 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  0,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice pretendas havi la dukon kaj blokas.\n"
                                  "Ĉu iu volas defii rin?",
                                  -1);
@@ -3105,9 +2812,9 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  3,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis. La ago estis blokita.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3121,10 +2828,10 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  2,
                                  "convert:2",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Charles pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3137,10 +2844,10 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  3,
                                  "convert:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "David pagas 2 monerojn al la trezorejo kaj "
                                  "konvertas Alice.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3149,12 +2856,12 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  0,
                                  "foreign_aid",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💴 Alice prenas 2 monerojn per eksterlanda "
                                  "helpo.\n"
                                  "Ĉu iu volas pretendi havi "
                                  "la dukon kaj bloki rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "block", "Bloki",
                                  "accept", "Akcepti",
                                  NULL,
@@ -3166,7 +2873,7 @@ test_block_other_allegiance(void)
         ret = send_callback_data(data,
                                  3,
                                  "block",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "David pretendas havi la dukon kaj blokas.\n"
                                  "Ĉu iu volas defii rin?",
                                  -1);
@@ -3194,10 +2901,10 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "convert:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob pagas 1 moneron al la trezorejo kaj "
                                  "konvertas sin mem.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3206,11 +2913,11 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  2,
                                  "embezzle",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💼 Charles pretendas ne havi la dukon kaj "
                                  "ŝtelas la monon de la trezorejo.\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -3235,10 +2942,10 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "accept",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Charles prenas la monon de la "
                                  "trezorejo.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3252,10 +2959,10 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  3,
                                  "convert:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "David pagas 2 monerojn al la trezorejo kaj "
                                  "konvertas Bob.",
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3264,11 +2971,11 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  0,
                                  "embezzle",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💼 Alice pretendas ne havi la dukon kaj "
                                  "ŝtelas la monon de la trezorejo.\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -3279,13 +2986,13 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj nun Alice elektas ĉu cedi.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Bob kredas ke vi ja havas la dukon.\n"
                                  "Ĉu vi volas cedi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Cedi",
                                  NULL,
                                  -1);
@@ -3306,13 +3013,13 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  0,
                                  "reveal:0",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Bob defiis kaj Alice cedis do Alice perdas "
                                  "karton.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  0,
                                  "Kiun karton vi volas perdi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "lose:0", "Duko",
                                  "lose:1", "Kapitano",
                                  NULL,
@@ -3326,9 +3033,9 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  0,
                                  "lose:0",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  0,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3337,11 +3044,11 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "embezzle",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "💼 Bob pretendas ne havi la dukon kaj "
                                  "ŝtelas la monon de la trezorejo.\n"
                                  "Ĉu iu volas defii rin?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "challenge", "Defii",
                                  "accept", "Akcepti",
                                  NULL,
@@ -3352,13 +3059,13 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  0,
                                  "challenge",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj nun Bob elektas ĉu cedi.",
-                                 MESSAGE_TYPE_PRIVATE,
+                                 TEST_MESSAGE_TYPE_PRIVATE,
                                  1,
                                  "Alice kredas ke vi ja havas la dukon.\n"
                                  "Ĉu vi volas cedi?",
-                                 MESSAGE_TYPE_BUTTONS,
+                                 ARG_TYPE_BUTTONS,
                                  "reveal:0", "Cedi",
                                  "reveal:1", "Montri kartojn",
                                  NULL,
@@ -3378,16 +3085,16 @@ test_embezzlement(void)
         ret = send_callback_data(data,
                                  1,
                                  "reveal:1",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Alice defiis kaj Bob montris la grafinon kaj "
                                  "la ambasadoron do Bob ŝanĝas siajn kartojn "
                                  "kaj Alice perdas karton.",
-                                 MESSAGE_TYPE_GLOBAL,
+                                 TEST_MESSAGE_TYPE_GLOBAL,
                                  "Neniu defiis, Bob prenas la monon de "
                                  "la trezorejo.",
-                                 MESSAGE_TYPE_SHOW_CARDS,
+                                 ARG_TYPE_SHOW_CARDS,
                                  1,
-                                 MESSAGE_TYPE_STATUS,
+                                 ARG_TYPE_STATUS,
                                  -1);
         if (!ret)
                 goto done;
@@ -3453,8 +3160,8 @@ test_max_players(void)
                 struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&message,
                                          "💣 %s faras puĉon kontraŭ %s",
-                                         player_names[killer],
-                                         player_names[killee]);
+                                         test_message_player_names[killer],
+                                         test_message_player_names[killee]);
 
                 struct pcx_buffer callback_data = PCX_BUFFER_STATIC_INIT;
                 pcx_buffer_append_printf(&callback_data, "coup:%i", killee);
@@ -3469,18 +3176,18 @@ test_max_players(void)
                         ret = send_callback_data(data,
                                                  killer,
                                                  (char *) callback_data.data,
-                                                 MESSAGE_TYPE_GLOBAL,
+                                                 TEST_MESSAGE_TYPE_GLOBAL,
                                                  (char *) message.data,
-                                                 MESSAGE_TYPE_STATUS,
-                                                 MESSAGE_TYPE_GAME_OVER,
+                                                 ARG_TYPE_STATUS,
+                                                 TEST_MESSAGE_TYPE_GAME_OVER,
                                                  -1);
                 } else {
                         ret = send_callback_data(data,
                                                  killer,
                                                  (char *) callback_data.data,
-                                                 MESSAGE_TYPE_GLOBAL,
+                                                 TEST_MESSAGE_TYPE_GLOBAL,
                                                  (char *) message.data,
-                                                 MESSAGE_TYPE_STATUS,
+                                                 ARG_TYPE_STATUS,
                                                  -1);
                 }
 
