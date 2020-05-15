@@ -88,3 +88,23 @@ test_coup_src += translations
 test_coup = executable('test-coup', test_coup_src,
                        include_directories: configinc)
 test('coup', test_coup)
+
+test_fox_src = [
+        'pcx-util.c',
+        'pcx-main-context.c',
+        'pcx-error.c',
+        'pcx-slice.c',
+        'pcx-slab.c',
+        'pcx-buffer.c',
+        'pcx-list.c',
+        'pcx-text.c',
+        'pcx-fox.c',
+        'test-message.c',
+        'test-fox.c',
+]
+
+test_fox_src += translations
+
+test_fox = executable('test-fox', test_fox_src,
+                       include_directories: configinc)
+test('fox', test_fox)
