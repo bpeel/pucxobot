@@ -102,6 +102,9 @@ struct pcx_fox {
         void *user_data;
         enum pcx_text_language language;
         struct pcx_main_context_source *game_over_source;
+
+        /* Options for unit testing */
+        int (* rand_func)(void);
 };
 
 static const char *
@@ -228,7 +231,7 @@ deal(struct pcx_fox *fox)
         assert(p == fox->deck + PCX_FOX_N_CARDS);
 
         for (unsigned i = PCX_FOX_N_CARDS - 1; i > 0; i--) {
-                unsigned j = rand() % (i + 1);
+                unsigned j = fox->rand_func() % (i + 1);
                 pcx_fox_card_t t = fox->deck[j];
                 fox->deck[j] = fox->deck[i];
                 fox->deck[i] = t;
@@ -524,13 +527,13 @@ start_round(struct pcx_fox *fox)
         show_card_question(fox, fox->leader);
 }
 
-static void *
-create_game_cb(const struct pcx_config *config,
-               const struct pcx_game_callbacks *callbacks,
-               void *user_data,
-               enum pcx_text_language language,
-               int n_players,
-               const char * const *names)
+struct pcx_fox *
+pcx_fox_new(const struct pcx_game_callbacks *callbacks,
+            void *user_data,
+            enum pcx_text_language language,
+            int n_players,
+            const char *const *names,
+            const struct pcx_fox_debug_overrides *overrides)
 {
         assert(n_players == PCX_FOX_N_PLAYERS);
 
@@ -542,13 +545,36 @@ create_game_cb(const struct pcx_config *config,
         fox->language = language;
         fox->callbacks = *callbacks;
         fox->user_data = user_data;
-        fox->dealer = rand() & 1;
+        fox->rand_func = rand;
+
+        if (overrides) {
+                if (overrides->rand_func)
+                        fox->rand_func = overrides->rand_func;
+        }
+
+        fox->dealer = fox->rand_func() & 1;
 
         deal(fox);
 
         start_round(fox);
 
         return fox;
+}
+
+static void *
+create_game_cb(const struct pcx_config *config,
+               const struct pcx_game_callbacks *callbacks,
+               void *user_data,
+               enum pcx_text_language language,
+               int n_players,
+               const char * const *names)
+{
+        return pcx_fox_new(callbacks,
+                           user_data,
+                           language,
+                           n_players,
+                           names,
+                           NULL /* debug_overrides */);
 }
 
 static char *

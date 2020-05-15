@@ -23,4 +23,18 @@
 
 extern const struct pcx_game pcx_fox_game;
 
+struct pcx_fox;
+
+struct pcx_fox_debug_overrides {
+        int (*rand_func)(void);
+};
+
+struct pcx_fox *
+pcx_fox_new(const struct pcx_game_callbacks *callbacks,
+            void *user_data,
+            enum pcx_text_language language,
+            int n_players,
+            const char *const *names,
+            const struct pcx_fox_debug_overrides *overrides);
+
 #endif /* PCX_FOX_H */
