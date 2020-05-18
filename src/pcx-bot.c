@@ -595,7 +595,7 @@ get_updates_finished_cb(CURLcode code,
         long timeout = 0;
 
         if (code != CURLE_OK) {
-                pcx_log("%s: getUpdates failed: %s\n",
+                pcx_log("%s: getUpdates failed: %s",
                         bot->bot_config->botname,
                         curl_easy_strerror(code));
                 timeout = 60 * 1000;
