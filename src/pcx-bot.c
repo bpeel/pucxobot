@@ -1678,8 +1678,11 @@ process_updates(struct pcx_bot *bot,
                               "ok", json_type_boolean, &ok,
                               "result", json_type_array, &result,
                               NULL);
-        if (!ret || !ok)
+        if (!ret || !ok) {
+                pcx_log("getUpdates request failed: %s",
+                        json_object_to_json_string(obj));
                 return false;
+        }
 
         bot->last_update_id = 0;
 
@@ -1731,16 +1734,23 @@ updates_write_cb(char *ptr,
         if (obj) {
                 bool ret = process_updates(bot, obj);
                 json_object_put(obj);
-                return ret ? size * nmemb : 0;
+                if (ret) {
+                        return size * nmemb;
+                } else {
+                        pcx_log("Error processing updates");
+                        return 0;
+                }
         }
 
         enum json_tokener_error error =
                 json_tokener_get_error(bot->tokener);
 
-        if (error == json_tokener_continue)
+        if (error == json_tokener_continue) {
                 return size * nmemb;
-        else
+        } else {
+                pcx_log("Invalid JSON received in updates");
                 return 0;
+        }
 }
 
 static void
