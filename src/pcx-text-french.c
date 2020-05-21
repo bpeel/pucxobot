@@ -89,7 +89,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_CANT_CANCEL] =
         "Seulement les joueurs dans la partie peuvent l’annuler.",
         [PCX_TEXT_STRING_NAME_FROM_ID] =
-        "M.%s",
+        "M.%i",
         [PCX_TEXT_STRING_FINAL_CONJUNCTION] =
         " et ",
         [PCX_TEXT_STRING_FINAL_DISJUNCTION] =
@@ -197,8 +197,8 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
         "Quelle carte voulez-vous perdre ?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
-        "%s a mis %s en doute et il/elle n’avait pas %s et perd "
-        "une carte",
+        "%s a mis en doute et %s n’avait pas %s donc %s perd "
+        "une carte.",
         [PCX_TEXT_STRING_INVERTED_CHALLENGE_SUCCEEDED] =
         "%s a mis en doute et %s concède donc %s perd une carte.",
         [PCX_TEXT_STRING_CHALLENGE_FAILED] =
@@ -493,7 +493,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_TELL_EXCHANGE] =
         "Vous donnez %C à %p et recevez %C",
         [PCX_TEXT_STRING_EXCHANGES] =
-        "%p défausse %C et échange sa main avec %p",
+        "%p défausse le roi et échange sa main avec %p",
         [PCX_TEXT_STRING_DISCARDS_COMTESSE] =
         "%p défausse %C",
         [PCX_TEXT_STRING_DISCARDS_PRINCESS] =
