@@ -3,6 +3,7 @@
 import re
 import glob
 import os
+import sys
 
 
 STRINGS_START_RE = re.compile(r'^\s*pcx_text_[a-z0-9_A-Z]+\s*\[\]\s*=\s*{')
@@ -142,7 +143,23 @@ def dump_translations(translations, values, out_f):
             print(translations.get_commented_stub(name), end='', file=out_f)
 
 
+def check_string_format(translations):
+    formats = {}
+
+    for fn, strings in translations.files.items():
+        for key, s in strings.items():
+            percents = re.findall(r'%.', s)
+            if key in formats:
+                if percents != formats[key]:
+                    print("format mismatch for {} in {}".format(key, fn),
+                          file=sys.stderr)
+            else:
+                formats[key] = percents
+
+
 translations = Translations()
+
+check_string_format(translations)
 
 for in_fn in translations.files:
     out_fn = in_fn + ".tmp"
