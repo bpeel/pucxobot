@@ -2,6 +2,7 @@ Pucxobot is a Telegram robot and website to play the following games:
 
 * Coup
 * Love Letter
+* 6 Takes!
 * Zombie Dice
 * Snitch
 * Superfight
@@ -14,14 +15,20 @@ To try the website, go [here](http://gemelo.org/ludoj/en).
 
 ## Building
 
-To build the server, type the following:
+To build the server, you first need to install libcurl, json-c and
+meson. On Fedora you can install them with the following command:
+
+    sudo dnf install json-c-devel libcurl-devel meson ninja-build
+
+Next, to build the project type the following:
 
     mkdir build && cd build
     meson ..
     ninja
 
 Before running it, you need to create a configuration file in
-`~/.pucxobot/conf.txt`.
+`~/.pucxobot/conf.txt`. You can either run the server as the Telegram
+bot, the website or both at the same time.
 
 ## Telegram Bot
 
