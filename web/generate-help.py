@@ -34,13 +34,33 @@ FOOTER = """\
 """
 
 Lang = collections.namedtuple('Lang',
-                              ['code', 'name', 'help', 'toc', 'skip_games'],
-                              defaults=[set()])
+                              ['code',
+                               'name',
+                               'help',
+                               'toc',
+                               'about',
+                               'telegram_bot',
+                               'source_code',
+                               'skip_games'],
+                              defaults=[None, None, None, set()])
 
 LANGUAGES = [
-    Lang("en", "english", "Help", "Table of contents"),
-    Lang("eo", "esperanto", "Helpo", "Enhavo"),
-    Lang("fr", "french", "Aide", "Sommaire", set(["superfight"])),
+    Lang("en", "english", "Help", "Table of contents", "About",
+         "The games on this site are also available via the Telegram bot "
+         "<a href=\"https://t.me/bluffingbot\">@bluffingbot</a>.",
+         "The source code is available on "
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>."),
+    Lang("eo", "esperanto", "Helpo", "Enhavo", "Pri",
+         "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
+         "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",
+         "La programkodo estas disponebla ĉe "
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>."),
+    Lang("fr", "french", "Aide", "Sommaire", "À propos",
+         "Les jeux de ce site sont aussi disponibles sur Telegram avec le bot "
+         "<a href=\"https://t.me/complotbot\">@complotbot</a>.",
+         "Le code source est disponible sur "
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
+         skip_games=set(["superfight"])),
 ]
 
 GAMES = [ "coup", "love", "six", "zombie", "snitch", "superfight" ]
@@ -122,6 +142,9 @@ for lang in LANGUAGES:
                          get_game_name(game, lang)),
                   file=f)
 
+        print("          <li><a href=\"#about\">{}</a>".format(lang.about),
+              file=f)
+
         print("        </ul>", file=f)
 
         for game in games:
@@ -130,5 +153,18 @@ for lang in LANGUAGES:
                          get_game_name(game, lang),
                          get_game_help(game, lang)),
                   file=f)
+
+        if lang.about:
+            print("\n        <h2><a id=\"about\">{}</a></h2>\n".
+                  format(lang.about),
+                  file=f)
+
+            if lang.telegram_bot:
+                print("          <p>{}</p>\n".format(lang.telegram_bot),
+                      file=f)
+
+            if lang.source_code:
+                print("          <p>{}</p>\n".format(lang.source_code),
+                      file=f)
 
         print(FOOTER, file=f, end='')
