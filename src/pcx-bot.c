@@ -279,7 +279,7 @@ request_finished_cb(CURLcode code,
         struct pcx_bot *bot = user_data;
 
         if (code != CURLE_OK) {
-                pcx_log("%s: request failed: %s\n",
+                pcx_log("%s: request failed: %s",
                         bot->bot_config->botname,
                         curl_easy_strerror(code));
         }
