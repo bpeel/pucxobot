@@ -597,7 +597,7 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_ROUND_OVER] =
         "No final deste turno temos a seguinte pontuação:",
         [PCX_TEXT_STRING_END_POINTS] =
-        "%s conseguiu %i pontos e terminou a partida.",
+        "%s conseguiu %i pontos e a partida terminou.",
         [PCX_TEXT_STRING_WINS_PLAIN] =
         "🏆 %s venceu!",
 };
