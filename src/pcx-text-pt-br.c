@@ -32,6 +32,10 @@ pcx_text_pt_br[] = {
         "Informante",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Carta de amor",
+        [PCX_TEXT_STRING_NAME_SIX] =
+        "Pega em 6!",
+        [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
+        "Superluta",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
         "Dado Zumbi",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
@@ -46,10 +50,18 @@ pcx_text_pt_br[] = {
         "/carta",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Criar um jogo de Carta de amor",
+         [PCX_TEXT_STRING_SIX_START_COMMAND] =
+        "/seis",
+        [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
+        "Cria um jogo de Pega em 6!",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
+        "/superluta",
+        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
+        "Cria um jogo de Superluta",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zumbi",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
-        "Criar um jogo de Dado Zumbi",
+        "Cria um jogo de Dado Zumbi",
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Para qual jogo você quer ajuda?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
@@ -61,8 +73,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_NEED_PUBLIC_GROUP] =
         "Por favor, junte-se a um jogo em um grupo público.",
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
-        "Por favor, envie uma mensagem privada para @%s para que eu possa enviar suas "
-        "cartas em privado.",
+        "Por favor, envie uma mensagem privada para @%s para que eu possa enviar "
+        "suas cartas em privado.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Você já está em um jogo.",
         [PCX_TEXT_STRING_ALREADY_GAME] =
@@ -89,7 +101,19 @@ pcx_text_pt_br[] = {
         "Bem-vindo. Outros jogadores podem enviar /entrar para entrar no jogo "
         "ou você pode enviar /iniciar para iniciá-lo.",
         [PCX_TEXT_STRING_WELCOME_FULL] =
-        "Bem-vindo. O jogo está agora cheio e começará imediatamente.",
+        "Bem-vindo. O jogo está cheio e começará imediatamente.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS] =
+        "%s se juntou à partida. Você pode esperar por mais jogadores ou "
+        "apertar o botão abaixo para começar.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW] =
+        "%s se juntou à partida. Espere por mais jogadores antes de "
+        "começar a partida.",
+        [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
+        "%s se juntou à partida. O jogo está cheio e começará imediatamente.",
+         [PCX_TEXT_STRING_PLAYER_LEFT] =
+        "%s restantes",
+        [PCX_TEXT_STRING_START_BUTTON] =
+        "Iniciar",
         [PCX_TEXT_STRING_CHOSEN_GAME] =
         "Jogo: %s",
         [PCX_TEXT_STRING_CURRENT_PLAYERS] =
@@ -115,7 +139,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_HELP_COMMAND_DESCRIPTION] =
         "Mostrar um resumo das regras",
         [PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE] =
-        "Obrigado pela mensagem. Agora você pode participar de um jogo em um grupo público.",
+        "Obrigado pela mensagem. Agora você pode participar de um jogo "
+        "em um grupo público.",
         [PCX_TEXT_STRING_CHOOSE_GAME_TYPE] =
         "Por favor, escolha qual versão do jogo você quer.",
         [PCX_TEXT_STRING_GAME_TYPE_CHOSEN] =
@@ -381,7 +406,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_HANDMAID_OBJECT] =
         "a aia",
         [PCX_TEXT_STRING_HANDMAID_DESCRIPTION] =
-        "Até o seu próximo turno, ignore quaisquer efeitos das cartas de outros jogadores.",
+        "Até o seu próximo turno, ignore quaisquer efeitos das cartas de "
+        "outros jogadores.",
         [PCX_TEXT_STRING_PRINCE] =
         "Príncipe",
         [PCX_TEXT_STRING_PRINCE_OBJECT] =
@@ -423,8 +449,8 @@ pcx_text_pt_br[] = {
         [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
         "Qual carta você quer descartar?",
         [PCX_TEXT_STRING_EVERYONE_PROTECTED] =
-        "%p descarta %C, mas todos os outros jogadores estão protegidos e isso não tem "
-        "efeito.",
+        "%p descarta %C, mas todos os outros jogadores estão protegidos e isso "
+        "não tem efeito.",
         [PCX_TEXT_STRING_WHO_GUESS] =
         "A carta de quem você quer adivinhar?",
         [PCX_TEXT_STRING_GUESS_WHICH_CARD] =
@@ -550,4 +576,28 @@ pcx_text_pt_br[] = {
         "🏆 <b>%p</b> ganhou!",
         [PCX_TEXT_STRING_FINAL_SCORES] =
         "Pontuação final:",
+        [PCX_TEXT_STRING_EVERYBODY_CHOOSE_CARD] =
+        "Todos agora devem escolher uma carta.",
+        [PCX_TEXT_STRING_WHICH_CARD_TO_PLAY] =
+        "Qual carta quer jogar?",
+        [PCX_TEXT_STRING_CARD_CHOSEN] =
+        "Você escolheu:",
+        [PCX_TEXT_STRING_CHOSEN_CARDS_ARE] =
+        "Todo mundo escolheu! As cartas são:",
+        [PCX_TEXT_STRING_ADDED_TO_ROW] =
+        "%s adiciona sua carta à fileira %c.",
+        [PCX_TEXT_STRING_ROW_FULL] =
+        "A fileira está cheia, então deve pegá-la e adicionar %i 🐮 à sua "
+        "pontuação.",
+        [PCX_TEXT_STRING_CHOOSE_ROW] =
+        "%s, sua carta é inferior às últimas cartas de cada fileira. "
+        "Você deve escolher uma fileira para pegar.",
+        [PCX_TEXT_STRING_CHOSEN_ROW] =
+        "%s pega a fileira %c e adiciona %i 🐮 à sua pontuação.",
+        [PCX_TEXT_STRING_ROUND_OVER] =
+        "No final deste turno temos a seguinte pontuação:",
+        [PCX_TEXT_STRING_END_POINTS] =
+        "%s conseguiu %i pontos e terminou a partida.",
+        [PCX_TEXT_STRING_WINS_PLAIN] =
+        "🏆 %s venceu!",
 };
