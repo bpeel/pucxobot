@@ -1037,8 +1037,8 @@ join_game(struct pcx_bot *bot,
 
 static bool
 check_id_valid_for_game(struct pcx_bot *bot,
-                     const struct pcx_game *game,
-                     const struct message_info *info)
+                        const struct pcx_game *game,
+                        const struct message_info *info)
 {
         if (!game->needs_private_messages)
                 return true;
@@ -1089,7 +1089,7 @@ send_game_question_reply(struct pcx_bot *bot,
 
         for (int i = 0; i < n_games; i++) {
                 if (!can_run_game(bot, pcx_game_list[i]))
-                    continue;
+                        continue;
 
                 const struct pcx_game *game = pcx_game_list[i];
 
@@ -1436,7 +1436,7 @@ process_entity(struct pcx_bot *bot,
                 if (!is_command(bot,
                                 info->text + offset, length,
                                 commands[i].name))
-                    continue;
+                        continue;
 
                 commands[i].func(bot, info);
 
@@ -1519,7 +1519,7 @@ get_game_callback_data(struct pcx_bot *bot,
 found_game: (void) 0;
 
         if (!can_run_game(bot, *game))
-            return false;
+                return false;
 
         struct json_object *message;
 
