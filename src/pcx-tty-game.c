@@ -45,7 +45,7 @@ struct pcx_tty_game {
         const struct pcx_game *game;
         void *game_data;
         int n_players;
-        struct pcx_tty_game_player players[PCX_GAME_MAX_PLAYERS];
+        struct pcx_tty_game_player *players;
         struct pcx_buffer buffer;
 };
 
@@ -186,17 +186,19 @@ pcx_tty_game_new(const struct pcx_config *config,
                  const char * const *files,
                  struct pcx_error **error)
 {
-        assert(n_players > 0 && n_players <= PCX_GAME_MAX_PLAYERS);
-
         struct pcx_tty_game *game = pcx_calloc(sizeof *game);
 
         game->game = pcx_game_list[0];
 
+        assert(n_players > 0 && n_players <= game->game->max_players);
+
         pcx_buffer_init(&game->buffer);
 
         game->n_players = n_players;
+        game->players = pcx_calloc(n_players *
+                                   sizeof (struct pcx_tty_game_player));
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(game->players); i++) {
+        for (unsigned i = 0; i < n_players; i++) {
                 game->players[i].fd = -1;
                 pcx_buffer_init(&game->players[i].buffer);
         }
@@ -222,7 +224,7 @@ pcx_tty_game_new(const struct pcx_config *config,
                                                   game);
         }
 
-        const char *names[PCX_GAME_MAX_PLAYERS];
+        const char **names = pcx_alloc(n_players * sizeof *names);
 
         for (unsigned i = 0; i < n_players; i++)
                 names[i] = get_basename(files[i]);
@@ -234,6 +236,8 @@ pcx_tty_game_new(const struct pcx_config *config,
                                            PCX_TEXT_LANGUAGE_ESPERANTO,
                                            n_players,
                                            names);
+
+        pcx_free(names);
 
         return game;
 
@@ -248,13 +252,15 @@ pcx_tty_game_free(struct pcx_tty_game *game)
         if (game->game_data)
                 game->game->free_game_cb(game->game_data);
 
-        for (unsigned i = 0; i < PCX_N_ELEMENTS(game->players); i++) {
+        for (unsigned i = 0; i < game->n_players; i++) {
                 if (game->players[i].fd != -1)
                         pcx_close(game->players[i].fd);
                 if (game->players[i].source)
                         pcx_main_context_remove_source(game->players[i].source);
                 pcx_buffer_destroy(&game->players[i].buffer);
         }
+
+        pcx_free(game->players);
 
         pcx_buffer_destroy(&game->buffer);
 

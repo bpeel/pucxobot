@@ -89,7 +89,7 @@ struct pcx_conversation {
         void *game;
 
         int n_players;
-        char *player_names[PCX_GAME_MAX_PLAYERS];
+        struct pcx_buffer player_names;
 
         struct pcx_list messages;
 };

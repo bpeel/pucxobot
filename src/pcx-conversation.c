@@ -35,6 +35,8 @@ pcx_conversation_new(const struct pcx_config *config,
 {
         struct pcx_conversation *conv = pcx_calloc(sizeof *conv);
 
+        pcx_buffer_init(&conv->player_names);
+
         conv->ref_count = 1;
         conv->game_type = game_type;
         conv->language = language;
@@ -44,6 +46,14 @@ pcx_conversation_new(const struct pcx_config *config,
         pcx_signal_init(&conv->event_signal);
 
         return conv;
+}
+
+static const char *
+get_player_name(struct pcx_conversation *conv,
+                int player_num)
+{
+        assert(player_num >= 0 && player_num < conv->n_players);
+        return ((const char **) conv->player_names.data)[player_num];
 }
 
 static bool
@@ -180,7 +190,7 @@ append_current_players_message(struct pcx_conversation *conv,
                         else
                                 pcx_buffer_append_string(buf, ", ");
                 }
-                pcx_buffer_append_string(buf, conv->player_names[i]);
+                pcx_buffer_append_string(buf, get_player_name(conv, i));
         }
 }
 
@@ -200,7 +210,7 @@ send_welcome_message(struct pcx_conversation *conv,
         pcx_buffer_append_printf(&buf,
                                  pcx_text_get(conv->language,
                                               welcome_note),
-                                 conv->player_names[new_player_num]);
+                                 get_player_name(conv, new_player_num));
 
         if (conv->n_players < conv->game_type->max_players) {
                 pcx_buffer_append_string(&buf, "\n\n");
@@ -238,7 +248,9 @@ pcx_conversation_add_player(struct pcx_conversation *conv,
 
         int player_num = conv->n_players++;
 
-        conv->player_names[player_num] = pcx_strdup(name);
+        char *name_copy = pcx_strdup(name);
+
+        pcx_buffer_append(&conv->player_names, &name_copy, sizeof name_copy);
 
         pcx_conversation_ref(conv);
 
@@ -265,7 +277,7 @@ pcx_conversation_remove_player(struct pcx_conversation *conv,
         pcx_buffer_append_printf(&buf,
                                  pcx_text_get(conv->language,
                                               PCX_TEXT_STRING_PLAYER_LEFT),
-                                 conv->player_names[player_num]);
+                                 get_player_name(conv, player_num));
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
@@ -309,7 +321,7 @@ pcx_conversation_start(struct pcx_conversation *conv)
                                                 conv->language,
                                                 conv->n_players,
                                                 (const char * const *)
-                                                conv->player_names);
+                                                conv->player_names.data);
 
         pcx_conversation_unref(conv);
 }
@@ -344,7 +356,7 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
         pcx_buffer_append_string(&buf, "<b>");
-        pcx_html_escape(&buf, conv->player_names[player_num]);
+        pcx_html_escape(&buf, get_player_name(conv, player_num));
         pcx_buffer_append_string(&buf, "</b>\n\n");
         pcx_html_escape(&buf, text);
 
@@ -386,8 +398,12 @@ pcx_conversation_unref(struct pcx_conversation *conv)
                 free_message(message);
         }
 
+        char **player_names = (char **) conv->player_names.data;
+
         for (int i = 0; i < conv->n_players; i++)
-                pcx_free(conv->player_names[i]);
+                pcx_free(player_names[i]);
+
+        pcx_buffer_destroy(&conv->player_names);
 
         pcx_free(conv);
 }
