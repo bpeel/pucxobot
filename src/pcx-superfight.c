@@ -64,7 +64,7 @@ struct pcx_superfight_fighter {
 };
 
 struct pcx_superfight {
-        struct pcx_superfight_player players[PCX_SUPERFIGHT_MAX_PLAYERS];
+        struct pcx_superfight_player *players;
         int n_players;
         int current_player;
         struct pcx_game_callbacks callbacks;
@@ -156,6 +156,8 @@ free_game(struct pcx_superfight *superfight)
 {
         for (int i = 0; i < superfight->n_players; i++)
                 pcx_free(superfight->players[i].name);
+
+        pcx_free(superfight->players);
 
         pcx_superfight_deck_free(superfight->roles);
         pcx_superfight_deck_free(superfight->attributes);
@@ -493,6 +495,8 @@ create_game_cb(const struct pcx_config *config,
         superfight->user_data = user_data;
 
         superfight->n_players = n_players;
+        superfight->players = pcx_calloc(n_players *
+                                         sizeof (struct pcx_superfight_player));
         superfight->current_player = rand() % n_players;
         superfight->fighters[0].player_num = superfight->current_player;
         superfight->fighters[1].player_num =
