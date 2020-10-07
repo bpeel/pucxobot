@@ -34,7 +34,7 @@
 #include "pcx-superfight-deck.h"
 
 #define PCX_SUPERFIGHT_MIN_PLAYERS 3
-#define PCX_SUPERFIGHT_MAX_PLAYERS 6
+#define PCX_SUPERFIGHT_MAX_PLAYERS 32
 
 #define N_CARD_CHOICE 3
 
