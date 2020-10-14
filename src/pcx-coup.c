@@ -34,12 +34,13 @@
 #include "pcx-coup-help.h"
 
 #define PCX_COUP_MIN_PLAYERS 2
-#define PCX_COUP_MAX_PLAYERS 6
+#define PCX_COUP_MAX_PLAYERS 8
 
-#define PCX_COUP_CARDS_PER_CLAN 3
 #define PCX_COUP_CARDS_PER_PLAYER 2
-#define PCX_COUP_TOTAL_CARDS (PCX_COUP_CLAN_COUNT * \
-                              PCX_COUP_CARDS_PER_CLAN)
+
+#define PCX_COUP_MAX_CARDS_PER_CLAN 4
+#define PCX_COUP_MAX_DECK_SIZE (PCX_COUP_CLAN_COUNT *           \
+                                PCX_COUP_MAX_CARDS_PER_CLAN)
 #define PCX_COUP_START_COINS 2
 
 #define PCX_COUP_STACK_SIZE 8
@@ -99,7 +100,7 @@ struct pcx_coup_player {
 
 struct pcx_coup {
         enum pcx_coup_character clan_characters[PCX_COUP_CLAN_COUNT];
-        enum pcx_coup_character deck[PCX_COUP_TOTAL_CARDS];
+        enum pcx_coup_character deck[PCX_COUP_MAX_DECK_SIZE];
         struct pcx_coup_player players[PCX_COUP_MAX_PLAYERS];
         int n_players;
         int n_cards;
@@ -2699,13 +2700,17 @@ choose_action_idle(struct pcx_coup *coup)
 static void
 create_deck(struct pcx_coup *coup)
 {
-        coup->n_cards = PCX_COUP_TOTAL_CARDS;
+        int cards_per_clan = coup->n_players > 6 ? 4 : 3;
+        int card_num = 0;
 
-        for (unsigned ch = 0; ch < PCX_COUP_CLAN_COUNT; ch++) {
-                for (unsigned c = 0; c < PCX_COUP_CARDS_PER_CLAN; c++)
-                        coup->deck[ch * PCX_COUP_CARDS_PER_CLAN + c] =
-                                coup->clan_characters[ch];
+        for (unsigned clan = 0; clan < PCX_COUP_CLAN_COUNT; clan++) {
+                for (unsigned i = 0; i < cards_per_clan; i++)
+                        coup->deck[card_num++] = coup->clan_characters[clan];
         }
+
+        assert(card_num <= PCX_N_ELEMENTS(coup->deck));
+
+        coup->n_cards = card_num;
 
         shuffle_deck(coup);
 
