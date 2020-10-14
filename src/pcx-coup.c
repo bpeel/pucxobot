@@ -608,7 +608,7 @@ add_money_status(struct pcx_coup *coup,
                 append_buffer_printf(coup,
                                      buffer,
                                      PCX_TEXT_STRING_PLURAL_COINS,
-                        player->coins);
+                                     player->coins);
         }
 }
 
@@ -2184,7 +2184,7 @@ struct exchange_data {
         int n_cards_chosen;
         int n_cards_available;
         enum pcx_coup_character available_cards[CARDS_TAKEN_IN_EXCHANGE +
-                                           PCX_COUP_CARDS_PER_PLAYER];
+                                                PCX_COUP_CARDS_PER_PLAYER];
 };
 
 static void
