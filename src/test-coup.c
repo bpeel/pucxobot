@@ -65,7 +65,7 @@ struct player_status {
 };
 
 struct status {
-        struct player_status players[4];
+        struct player_status players[8];
         int current_player;
         int treasury;
 };
@@ -87,6 +87,10 @@ player_names[] = {
         "Bob",
         "Charles",
         "David",
+        "Eva",
+        "Fred",
+        "George",
+        "Harry",
 };
 
 static void
@@ -3403,6 +3407,96 @@ test_reformation(void)
                 test_embezzlement());
 }
 
+static bool
+test_max_players(void)
+{
+        enum pcx_coup_character card_overrides[8 * 2];
+
+        for (int i = 0; i < PCX_N_ELEMENTS(card_overrides); i++)
+                card_overrides[i] = i % 5;
+
+        struct test_data *data =
+                create_test_data(PCX_N_ELEMENTS(card_overrides),
+                                 card_overrides,
+                                 false, /* use_inspector */
+                                 false, /* reformation */
+                                 8 /* n_players */);
+
+        bool ret = true;
+
+        /* Give everybody 5 coins */
+        for (int i = 0; i < 5 * 8; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Everybody do a coup on their partner */
+        for (int i = 0; i < 8; i++) {
+                ret = do_coup(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Give everybody 7 coins */
+        for (int i = 0; i < 7 * 8; i++) {
+                ret = take_income(data);
+                if (!ret)
+                        goto done;
+        }
+
+        /* Everybody kill the player before them */
+        for (int i = 0; i < 7; i++) {
+                int killer = data->status.current_player;
+                int killee = (killer + 7) % 8;
+
+                struct pcx_buffer message = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&message,
+                                         "💣 %s faras puĉon kontraŭ %s",
+                                         player_names[killer],
+                                         player_names[killee]);
+
+                struct pcx_buffer callback_data = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&callback_data, "coup:%i", killee);
+
+                data->status.current_player = (killer + 1) % 8;
+                data->status.players[killee].cards[1].dead = true;
+                data->status.players[killer].coins = 0;
+
+                bool ret;
+
+                if (i == 6) {
+                        ret = send_callback_data(data,
+                                                 killer,
+                                                 (char *) callback_data.data,
+                                                 MESSAGE_TYPE_GLOBAL,
+                                                 (char *) message.data,
+                                                 MESSAGE_TYPE_STATUS,
+                                                 MESSAGE_TYPE_GAME_OVER,
+                                                 -1);
+                } else {
+                        ret = send_callback_data(data,
+                                                 killer,
+                                                 (char *) callback_data.data,
+                                                 MESSAGE_TYPE_GLOBAL,
+                                                 (char *) message.data,
+                                                 MESSAGE_TYPE_STATUS,
+                                                 -1);
+                }
+
+                pcx_buffer_destroy(&message);
+                pcx_buffer_destroy(&callback_data);
+
+                if (!ret)
+                        goto done;
+        }
+
+        free_test_data(data);
+
+done:
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -3417,7 +3511,8 @@ main(int argc, char **argv)
             !test_exchange() ||
             !test_exchange_inspector() ||
             !test_inspect() ||
-            !test_reformation())
+            !test_reformation() ||
+            !test_max_players())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
