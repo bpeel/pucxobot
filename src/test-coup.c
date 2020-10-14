@@ -3491,9 +3491,9 @@ test_max_players(void)
                         goto done;
         }
 
+done:
         free_test_data(data);
 
-done:
         return ret;
 }
 
