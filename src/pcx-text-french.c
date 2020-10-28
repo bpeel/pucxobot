@@ -33,7 +33,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
         [PCX_TEXT_STRING_NAME_SIX] =
-        "6 qui prend !",
+        "6 qui prend !",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
         "Zombie Dice",
         [PCX_TEXT_STRING_COUP_START_COMMAND] =
@@ -51,13 +51,13 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_SIX_START_COMMAND] =
         "/six",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
-        "Créer un jeu de 6 qui prend !",
+        "Créer un jeu de 6 qui prend !",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
         "/zombie",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
         "Créer un jeu de Zombie Dice",
         [PCX_TEXT_STRING_WHICH_HELP] =
-        "Pour quel jeu voulez-vous de l’aide ?",
+        "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
         "Personne n’a rejoint pendant plus que %i minutes. "
         "La partie commencera tout de suite.",
@@ -77,7 +77,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_ALREADY_GAME] =
         "Il y a déjà une partie dans ce groupe",
         [PCX_TEXT_STRING_WHICH_GAME] =
-        "À quel jeu voulez-vous jouer ?",
+        "À quel jeu voulez-vous jouer ?",
         [PCX_TEXT_STRING_GAME_FULL] =
         "La partie est complete",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
@@ -193,9 +193,9 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WON_PLURAL] =
         "%s ont gagné!",
         [PCX_TEXT_STRING_YOUR_GO] =
-        "%s, c’est à vous, que voulez-vous faire ?",
+        "%s, c’est à vous, que voulez-vous faire ?",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
-        "Quelle carte voulez-vous perdre ?",
+        "Quelle carte voulez-vous perdre ?",
         [PCX_TEXT_STRING_CHALLENGE_SUCCEEDED] =
         "%s a mis en doute et %s n’avait pas %s donc %s perd "
         "une carte.",
@@ -213,10 +213,10 @@ pcx_text_french[] = {
         "%s a mis en doute et maintenant %s choisit s’il/elle veut concéder.",
         [PCX_TEXT_STRING_ANNOUNCE_CHALLENGE] =
         "%s ne croit pas que vous aviez %s.\n"
-        "Quelle carte voulez-vous montrer ?",
+        "Quelle carte voulez-vous montrer ?",
         [PCX_TEXT_STRING_ANNOUNCE_INVERTED_CHALLENGE] =
         "%s croit que vous avez en effet %s.\n"
-        "Voulez-vous concéder ?",
+        "Voulez-vous concéder ?",
         [PCX_TEXT_STRING_CONCEDE] =
         "Concéder",
         [PCX_TEXT_STRING_SHOW_CARDS] =
@@ -226,23 +226,23 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
         "%s prétend avoir %s et bloque l’action.",
         [PCX_TEXT_STRING_DOES_SOMEBODY_CHALLENGE] =
-        "Est-ce que quelqu’un veut le mettre en doute ?",
+        "Est-ce que quelqu’un veut le mettre en doute ?",
         [PCX_TEXT_STRING_OR_BLOCK_NO_TARGET] =
-        "Ou est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
+        "Ou est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
-        "Est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
+        "Est-ce que quelqu’un veut prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
         "Ou est-ce que quelqu’un d’une autre allégeance veut prétendre avoir "
-        "%s et le bloquer ?",
+        "%s et le bloquer ?",
         [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
         "Est-ce que quelqu’un d’une autre allégeance veut prétendre avoir "
-        "%s et le bloquer ?",
+        "%s et le bloquer ?",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
-        "Ou %s, voulez-vous prétendre avoir %s et le bloquer ?",
+        "Ou %s, voulez-vous prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
-        "%s, voulez-vous prétendre avoir %s et le bloquer ?",
+        "%s, voulez-vous prétendre avoir %s et le bloquer ?",
         [PCX_TEXT_STRING_WHO_TO_COUP] =
-        "%s, qui voulez-vous tuer pendant l’assassinat ?",
+        "%s, qui voulez-vous tuer pendant l’assassinat ?",
         [PCX_TEXT_STRING_DOING_COUP] =
         "💣 %s lance un assassinat contre %s",
         [PCX_TEXT_STRING_DOING_INCOME] =
@@ -261,7 +261,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_DOING_TAX] =
         "💸 %s prétend avoir la duchesse et prend 3 or au trésor.",
         [PCX_TEXT_STRING_WHO_TO_CONVERT] =
-        "%s, qui voulez-vous convertir ?",
+        "%s, qui voulez-vous convertir ?",
         [PCX_TEXT_STRING_CONVERTS_SELF] =
         "%s paie une pièce à l’hospice and se convertit à soi-même.",
         [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
@@ -269,11 +269,11 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
         "Personne n’a bloqué ou mis en doute, %s assassine %s",
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
-        "%s, qui voulez-vous assassiner ?",
+        "%s, qui voulez-vous assassiner ?",
         [PCX_TEXT_STRING_DOING_ASSASSINATION] =
         "🗡 %s veut assassiner %s",
         [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
-        "Quelles cartes voulez-vous garder ?",
+        "Quelles cartes voulez-vous garder ?",
         [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
         "Personne n’a mis en doute, %s échange des cartes.",
         [PCX_TEXT_STRING_DOING_EXCHANGE] =
@@ -283,7 +283,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_REALLY_DOING_INSPECT] =
         "Personne n’a mis en doute, %s choisit une carte à montrer à %s",
         [PCX_TEXT_STRING_SELECT_TARGET_INSPECT] =
-        "%s, de qui voulez-vous consulter une carte ?",
+        "%s, de qui voulez-vous consulter une carte ?",
         [PCX_TEXT_STRING_DOING_INSPECT] =
         "🔍 %s prétend avoir l’inquisiteur et veut consulter une carte de %s",
         [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
@@ -291,7 +291,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
         "%s est en train de décider si vous pouvez garder %s",
         [PCX_TEXT_STRING_SHOWING_CARD] =
-        "%s vous montre %s. Est-ce qu’il peut le garder ?",
+        "%s vous montre %s. Est-ce qu’il peut le garder ?",
         [PCX_TEXT_STRING_YES] =
         "Oui",
         [PCX_TEXT_STRING_NO] =
@@ -303,7 +303,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Personne n’a bloqué ou mis en doute, %s vole à %s",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
-        "%s, à qui voulez-vous voler ?",
+        "%s, à qui voulez-vous voler ?",
         [PCX_TEXT_STRING_DOING_STEAL] =
         "💰 %s veut voler à %s.",
         [PCX_TEXT_STRING_CHARACTER_NAME_DUKE] =
@@ -348,7 +348,7 @@ pcx_text_french[] = {
         "Tour %i / %i",
         [PCX_TEXT_STRING_CHOOSE_HEIST_DIFFICULTY] =
         "%s, vous êtes le chef. Combien de personnages voulez-vous pour "
-        "le braquage ?",
+        "le braquage ?",
         [PCX_TEXT_STRING_HEIST_SIZE_CHOSEN] =
         "Le braquage aura besoin de ces %i personnages :",
         [PCX_TEXT_STRING_DISCUSS_HEIST] =
@@ -356,25 +356,25 @@ pcx_text_french[] = {
         "aller fournir au braquage. Quand vous serez prêts, choisissez votre "
         "carte en secret.",
         [PCX_TEXT_STRING_CARDS_CHOSEN] =
-        "Tout le monde a fait son choix ! Les personnages sont :",
+        "Tout le monde a fait son choix ! Les personnages sont :",
         [PCX_TEXT_STRING_NEEDED_CARDS_WERE] =
         "La cartes requises ont été :",
         [PCX_TEXT_STRING_YOU_CHOSE] =
         "Vous avez choisi :",
         [PCX_TEXT_STRING_WHICH_ROLE] =
-        "Quelle carte voulez-vous choisir ?",
+        "Quelle carte voulez-vous choisir ?",
         [PCX_TEXT_STRING_HEIST_SUCCESS] =
-        "Le braquage a réussi ! Tous les joueurs qui n’ont pas choisi "
+        "Le braquage a réussi ! Tous les joueurs qui n’ont pas choisi "
         "la balance reçoivent %i or.",
         [PCX_TEXT_STRING_HEIST_FAILED] =
-        "Le braquage a échoué ! Tous ce qui n’ont pas choisi la balance "
+        "Le braquage a échoué ! Tous ce qui n’ont pas choisi la balance "
         "perdent 1 or.",
         [PCX_TEXT_STRING_SNITCH_GAIN_1] =
         "Tous les autres gagnent 1 or.",
         [PCX_TEXT_STRING_SNITCH_GAIN_PLURAL] =
         "Tous les autres gagnent %i or.",
         [PCX_TEXT_STRING_EVERYONE_SNITCHED] =
-        "Le braquage a échoué et tout le monde l’a balancé ! "
+        "Le braquage a échoué et tout le monde l’a balancé ! "
         "Personne ne gagne d’or.",
         [PCX_TEXT_STRING_NOONE_SNITCHED] =
         "Personne ne l’a balancé.",
@@ -448,26 +448,26 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_YOUR_GO_NO_QUESTION] =
         "<b>%p</b>, c’est a vous",
         [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
-        "Quelle carte voulez-vous défausser ?",
+        "Quelle carte voulez-vous défausser ?",
         [PCX_TEXT_STRING_EVERYONE_PROTECTED] =
         "%p défausse %C mais tous les autres joueurs sont protegés et il n’a "
         "pas d’effet.",
         [PCX_TEXT_STRING_WHO_GUESS] =
-        "À qui voulez-vous diviner la carte ?",
+        "À qui voulez-vous diviner la carte ?",
         [PCX_TEXT_STRING_GUESS_WHICH_CARD] =
-        "Quelle carte voulez-vous diviner ?",
+        "Quelle carte voulez-vous diviner ?",
         [PCX_TEXT_STRING_GUARD_SUCCESS] =
         "%p défausse %C et divine bien que %p avait %C. %p perd la manche.",
         [PCX_TEXT_STRING_GUARD_FAIL] =
         "%p défausse %C et divine à tort que %p a %C.",
         [PCX_TEXT_STRING_WHO_SEE_CARD] =
-        "À qui voulez-vous voir sa carte ?",
+        "À qui voulez-vous voir sa carte ?",
         [PCX_TEXT_STRING_SHOWS_CARD] =
         "%p défaussé %C et force %p à montrer sa carte en secret.",
         [PCX_TEXT_STRING_TELL_SPIED_CARD] =
         "%p a %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
-        "Avec qui voulez-vous comparer vos cartes ?",
+        "Avec qui voulez-vous comparer vos cartes ?",
         [PCX_TEXT_STRING_COMPARE_LOSER] =
         "%p a défaussé %C et a comparé sa carte avec celle de %p. "
         "La carte de %p a moins de valeur et il perd la manche.",
@@ -479,7 +479,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p défausse %C et sera protegé jusqu’à sa prochaine tour.",
         [PCX_TEXT_STRING_WHO_PRINCE] =
-        "À qui voulez-vous faire défausser sa main ?",
+        "À qui voulez-vous faire défausser sa main ?",
         [PCX_TEXT_STRING_PRINCE_SELF] =
         "%p a défaussé %C et a forcé lui-même à défausser %C",
         [PCX_TEXT_STRING_PRINCE_OTHER] =
@@ -489,7 +489,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_FORCE_DISCARD_OTHER] =
         " et prendre une nouvelle carte.",
         [PCX_TEXT_STRING_WHO_EXCHANGE] =
-        "Avec qui voulez-vous échanger vos mains ?",
+        "Avec qui voulez-vous échanger vos mains ?",
         [PCX_TEXT_STRING_TELL_EXCHANGE] =
         "Vous donnez %C à %p et recevez %C",
         [PCX_TEXT_STRING_EXCHANGES] =
@@ -505,7 +505,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WINS_ROUND] =
         "💘 %p remporte la manche et gagne de l’affection de la princesse",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
-        "🏆 %p a %i points d’affection et remporte la partie !",
+        "🏆 %p a %i points d’affection et remporte la partie !",
         [PCX_TEXT_STRING_THROW] =
         "Lancer les dés",
         [PCX_TEXT_STRING_STOP] =
@@ -528,23 +528,23 @@ pcx_text_french[] = {
         "Dés dans la boîte:",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
         "Vous vous êtes fait tirer dessus trop de fois et vous perdez tous "
-        "vos points de ce tour !",
+        "vos points de ce tour !",
         [PCX_TEXT_STRING_THROW_OR_STOP] =
-        "Voulez-vous encore lancer les dés ou arretez maintenent ?",
+        "Voulez-vous encore lancer les dés ou arretez maintenent ?",
         [PCX_TEXT_STRING_START_LAST_ROUND] =
         "%p a atteint %i points donc ce sera la dernière manche.",
         [PCX_TEXT_STRING_WINS] =
-        "🏆 <b>%p</b> remporte la partie !",
+        "🏆 <b>%p</b> remporte la partie !",
         [PCX_TEXT_STRING_FINAL_SCORES] =
         "Les scores finals sont :",
         [PCX_TEXT_STRING_EVERYBODY_CHOOSE_CARD] =
         "Tout le monde doit maintenant choisir une carte à jouer.",
         [PCX_TEXT_STRING_WHICH_CARD_TO_PLAY] =
-        "Quelle carte voulez-vous jouer ?",
+        "Quelle carte voulez-vous jouer ?",
         [PCX_TEXT_STRING_CARD_CHOSEN] =
         "Vous avez choisi :",
         [PCX_TEXT_STRING_CHOSEN_CARDS_ARE] =
-        "Tout le monde a choisi ! Les cartes sont :",
+        "Tout le monde a choisi ! Les cartes sont :",
         [PCX_TEXT_STRING_ADDED_TO_ROW] =
         "%s ajoute sa carte à la ligne %c.",
         [PCX_TEXT_STRING_ROW_FULL] =
@@ -560,5 +560,5 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_END_POINTS] =
         "%s a au moins %i points et termine la partie.",
         [PCX_TEXT_STRING_WINS_PLAIN] =
-        "🏆 %s remporte la partie !",
+        "🏆 %s remporte la partie !",
 };
