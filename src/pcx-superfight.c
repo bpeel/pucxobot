@@ -198,7 +198,7 @@ append_votes_for_fighter(struct pcx_superfight *superfight,
                                         PCX_TEXT_STRING_FINAL_CONJUNCTION;
                                 append_buffer_string(superfight, buf, s);
                         } else {
-                                pcx_buffer_append_string(buf, ",");
+                                pcx_buffer_append_string(buf, ", ");
                         }
                 }
 
