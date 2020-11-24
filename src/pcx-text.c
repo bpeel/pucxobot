@@ -26,6 +26,7 @@
 #include "pcx-text-french.h"
 #include "pcx-text-english.h"
 #include "pcx-text-pt-br.h"
+#include "pcx-text-chinese-traditional.h"
 
 static const char **
 languages[] = {
