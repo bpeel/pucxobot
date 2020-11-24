@@ -157,14 +157,14 @@ pcx_text_chinese_traditional[] = {
         "收稅（公爵）",
         [PCX_TEXT_STRING_CONVERT] =
         "翻面",
-        [PCX_TEXT_STRING_EMBEZZLE] =
+        [PCX_TEXT_STRIzNG_EMBEZZLE] =
         "貪汙",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "暗殺（刺客）",
         [PCX_TEXT_STRING_EXCHANGE] =
-        "交換（大使）",
+        "換牌（大使）",
         [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
-        "交換（審訊官）",
+        "換牌（審訊官）",
         [PCX_TEXT_STRING_INSPECT] =
         "審問（審訊官）",
         [PCX_TEXT_STRING_STEAL] =
@@ -260,7 +260,7 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_SELECT_TARGET_ASSASSINATION] =
         "%s，你想暗殺誰？",
         [PCX_TEXT_STRING_DOING_ASSASSINATION] =
-        "🗡 %s 想暗殺 %s.",
+        "🗡 %s 想暗殺 %s。",
         [PCX_TEXT_STRING_WHICH_CARDS_TO_KEEP] =
         "你想保留哪些牌？",
         [PCX_TEXT_STRING_REALLY_DOING_EXCHANGE] =
