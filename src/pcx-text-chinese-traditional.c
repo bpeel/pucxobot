@@ -142,11 +142,11 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_GAME_TYPE_ORIGINAL] =
         "原版",
         [PCX_TEXT_STRING_GAME_TYPE_INSPECTOR] =
-        "Inquisitor",
+        "審判官",
         [PCX_TEXT_STRING_GAME_TYPE_REFORMATION] =
-        "Reformation",
+        "改革",
         [PCX_TEXT_STRING_GAME_TYPE_REFORMATION_INSPECTOR] =
-        "Reformation + Inquisitor",
+        "改革 + 審判官",
         [PCX_TEXT_STRING_COUP] =
         "政變",
         [PCX_TEXT_STRING_INCOME] =
@@ -164,11 +164,11 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_EXCHANGE] =
         "交換（大使）",
         [PCX_TEXT_STRING_EXCHANGE_INSPECTOR] =
-        "交換 (審訊官)",
+        "交換（審訊官）",
         [PCX_TEXT_STRING_INSPECT] =
-        "審問 (審訊官)",
+        "審問（審訊官）",
         [PCX_TEXT_STRING_STEAL] =
-        "偷竊 (上尉)",
+        "偷竊（上尉）",
         [PCX_TEXT_STRING_ACCEPT] =
         "同意",
         [PCX_TEXT_STRING_CHALLENGE] =
