@@ -474,7 +474,7 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_TELL_EXCHANGE] =
         "你放棄 %C 給 %p 並獲得了 %C",
         [PCX_TEXT_STRING_EXCHANGES] =
-        "%p discarded the king and exchanges hands with %p.",
+        "%p 棄掉了 國王 並與 %p 交換手牌。",
         [PCX_TEXT_STRING_DISCARDS_COMTESSE] =
         "%p 棄掉了 %C",
         [PCX_TEXT_STRING_DISCARDS_PRINCESS] =
