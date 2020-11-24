@@ -446,7 +446,7 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_WHO_SEE_CARD] =
         "您想看誰的牌？",
         [PCX_TEXT_STRING_SHOWS_CARD] =
-        "%p 棄掉了 %C 並讓 %p 偷偷展示他的牌。",
+        "%p 棄掉了 %C 並讓 %p 偷偷給他看牌。",
         [PCX_TEXT_STRING_TELL_SPIED_CARD] =
         "%p 有 %C",
         [PCX_TEXT_STRING_WHO_COMPARE] =
