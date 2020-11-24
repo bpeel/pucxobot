@@ -218,27 +218,27 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_CLAIM_CARDS_TO_BLOCK] =
         "%s 自稱有 %s 想阻止行動。",
         [PCX_TEXT_STRING_DOES_SOMEBODY_CHALLENGE] =
-        "有人要質疑他們嗎？",
+        "有人要質疑他嗎？",
         [PCX_TEXT_STRING_OR_BLOCK_NO_TARGET] =
-        "還是有人想聲稱自己擁有 %s 並阻止他們？",
+        "還是有人想聲稱自己擁有 %s 並阻止他？",
         [PCX_TEXT_STRING_BLOCK_NO_TARGET] =
         "有人要聲稱擁有 %s 並阻止他們嗎？",
         [PCX_TEXT_STRING_OR_BLOCK_OTHER_ALLEGIANCE] =
-        "還是另一個效忠的人想聲稱擁有 %s 並阻止他們？",
+        "還是另一個效忠的人想聲稱擁有 %s 並阻止他？",
         [PCX_TEXT_STRING_BLOCK_OTHER_ALLEGIANCE] =
-        "另一個效忠的人是否想聲稱擁有 %s 並阻止他們？",
+        "另一個效忠的人是否想聲稱擁有 %s 並阻止他？",
         [PCX_TEXT_STRING_OR_BLOCK_WITH_TARGET] =
-        "Or %s, do you want to claim to have %s and block them?",
+        "還是 %s，您是否要聲稱擁有 %s 並阻止他？",
         [PCX_TEXT_STRING_BLOCK_WITH_TARGET] =
-        "%s, do you want to claim to have %s and block them?",
+        "%s，您是否要聲稱擁有 %s 並阻止他？",
         [PCX_TEXT_STRING_WHO_TO_COUP] =
-        "%s, who do you want to kill during the coup?",
+        "%s，你想用政變殺死誰？",
         [PCX_TEXT_STRING_DOING_COUP] =
         "💣 %s 政變了 %s",
         [PCX_TEXT_STRING_DOING_INCOME] =
         "💲 %s 拿了 1 塊收入。",
         [PCX_TEXT_STRING_REALLY_DOING_FOREIGN_AID] =
-        "Nobody blocked, %s takes the two coins",
+        "沒有人阻止，%s 拿走了 2 枚硬幣。",
         [PCX_TEXT_STRING_DOING_FOREIGN_AID] =
         "💴 %s 拿了 2 塊贊助。",
         [PCX_TEXT_STRING_EMBEZZLING] =
@@ -400,7 +400,7 @@ pcx_text_chinese_traditional[] = {
         [PCX_TEXT_STRING_PRINCE_OBJECT] =
         "王子",
         [PCX_TEXT_STRING_PRINCE_DESCRIPTION] =
-        "選擇一個玩家（可以是你自己）棄掉他們的手牌並抽一張新的。",
+        "選擇一個玩家（可以是你自己）棄掉他的手牌並抽一張新的。",
         [PCX_TEXT_STRING_KING] =
         "國王",
         [PCX_TEXT_STRING_KING_OBJECT] =
