@@ -29,6 +29,7 @@ enum pcx_text_language {
         PCX_TEXT_LANGUAGE_FRENCH,
         PCX_TEXT_LANGUAGE_ENGLISH,
         PCX_TEXT_LANGUAGE_PT_BR,
+        PCX_TEXT_LANGUAGE_CHINESE_TRADITIONAL,
 };
 
 enum pcx_text_string {
