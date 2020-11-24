@@ -20,6 +20,10 @@ meson. On Fedora you can install them with the following command:
 
     sudo dnf install json-c-devel libcurl-devel meson ninja-build
 
+On Debian you can install them with the following command:
+
+    sudo apt install libjson-c-dev libcurl4-openssl-dev pkg-config meson ninja-build
+
 Next, to build the project type the following:
 
     mkdir build && cd build
