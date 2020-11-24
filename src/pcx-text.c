@@ -33,6 +33,7 @@ languages[] = {
         [PCX_TEXT_LANGUAGE_FRENCH] = pcx_text_french,
         [PCX_TEXT_LANGUAGE_ENGLISH] = pcx_text_english,
         [PCX_TEXT_LANGUAGE_PT_BR] = pcx_text_pt_br,
+        [PCX_TEXT_LANGUAGE_CHINESE_TRADITIONAL] = pcx_text_chinese_traditional,
 };
 
 const char *
