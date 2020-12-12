@@ -157,7 +157,7 @@ pcx_text_chinese_traditional[] = {
         "收稅（公爵）",
         [PCX_TEXT_STRING_CONVERT] =
         "翻面",
-        [PCX_TEXT_STRIzNG_EMBEZZLE] =
+        [PCX_TEXT_STRING_EMBEZZLE] =
         "貪汙",
         [PCX_TEXT_STRING_ASSASSINATE] =
         "暗殺（刺客）",
