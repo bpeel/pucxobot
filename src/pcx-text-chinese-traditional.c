@@ -42,24 +42,16 @@ pcx_text_chinese_traditional[] = {
         "/coup",
         [PCX_TEXT_STRING_COUP_START_COMMAND_DESCRIPTION] =
         "開政變的遊戲",
-        [PCX_TEXT_STRING_SNITCH_START_COMMAND] =
-        "/snitch",
         [PCX_TEXT_STRING_SNITCH_START_COMMAND_DESCRIPTION] =
         "開 Snitch 的遊戲",
         [PCX_TEXT_STRING_LOVE_START_COMMAND] =
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "開情書的遊戲",
-        [PCX_TEXT_STRING_SIX_START_COMMAND] =
-        "/six",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
         "開誰是牛頭王的遊戲",
-        [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
-        "/superfight",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
         "開 Superfight 的遊戲",
-        [PCX_TEXT_STRING_ZOMBIE_START_COMMAND] =
-        "/zombie",
         [PCX_TEXT_STRING_ZOMBIE_START_COMMAND_DESCRIPTION] =
         "開殭屍骰的遊戲",
         [PCX_TEXT_STRING_WHICH_HELP] =
