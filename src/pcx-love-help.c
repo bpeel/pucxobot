@@ -96,5 +96,9 @@ pcx_love_help[] = {
         "@CARDS@\n"
         "\n"
         "Quando alguém ganha bastante afeto da princesa, ela vence o "
-        "jogo."
+        "jogo.",
+        [PCX_TEXT_LANGUAGE_CHINESE_TRADITIONAL] =
+        "網上短文\n"
+        "\n"
+        "@CARDS@\n",
 };

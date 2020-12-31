@@ -283,4 +283,6 @@ pcx_coup_help[] = {
         "Caso contrário, o desafiante perde uma.\n"
         "\n"
         "O vencedor é o último jogador restante. ",
+        [PCX_TEXT_LANGUAGE_CHINESE_TRADITIONAL] =
+        "網上短文",
 };
