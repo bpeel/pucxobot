@@ -45,10 +45,10 @@ enter it into the `conf.txt` with something like this:
     botname = cardgamebot
     language = en
 
-The language can be `en`, `fr`, `pt-br` or `eo`. You can create
-several bots with one configuration file by repeating the `[bot]`
-section. This is useful if you want to have multiple bots in different
-languages.
+The language can be `en`, `fr`, `pt-br`, `zh-tw` or `eo`. You can
+create several bots with one configuration file by repeating the
+`[bot]` section. This is useful if you want to have multiple bots in
+different languages.
 
 To play a game, you can add the bot to a group and type `/join`. It
 will present you with a choice of the available games to play.
