@@ -48,6 +48,7 @@ src = [
         'pcx-six.c',
         'pcx-six-help.c',
         'pcx-fox.c',
+        'pcx-fox-help.c',
         'pcx-superfight.c',
         'pcx-superfight-deck.c',
         'pcx-superfight-help.c',
@@ -99,6 +100,7 @@ test_fox_src = [
         'pcx-list.c',
         'pcx-text.c',
         'pcx-fox.c',
+        'pcx-fox-help.c',
         'test-message.c',
         'test-fox.c',
 ]

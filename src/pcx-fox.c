@@ -30,6 +30,7 @@
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
+#include "pcx-fox-help.h"
 
 #define PCX_FOX_N_PLAYERS 2
 
@@ -580,7 +581,7 @@ create_game_cb(const struct pcx_config *config,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("stub");
+        return pcx_strdup(pcx_fox_help[language]);
 }
 
 static void
