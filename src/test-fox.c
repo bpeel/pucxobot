@@ -562,13 +562,163 @@ out:
         return ret;
 }
 
+static bool
+test_exchange(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        remove_card_from_hand(data->players + 1, 1, 3);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:19", /* 3 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝3🔄\n"
+                                 "\n"
+                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Kiun karton vi volas meti kiel la dekretan "
+                                 "karton?",
+                                 ARG_TYPE_BUTTONS,
+                                 "exchange:8",
+                                 "Lasi la antaŭan dekretan karton",
+                                 "exchange:9", "🔔9🎩",
+                                 "exchange:10", "🔔10",
+                                 "exchange:11", "🔔11↕️",
+                                 "exchange:17", "🗝1🔼",
+                                 "exchange:18", "🗝2",
+                                 "exchange:20", "🗝4",
+                                 "exchange:21", "🗝5📤",
+                                 "exchange:22", "🗝6",
+                                 "exchange:23", "🗝7💎",
+                                 "exchange:24", "🗝8",
+                                 "exchange:25", "🗝9🎩",
+                                 "exchange:26", "🗝10",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Try picking a card that Bob doesn’t have. This should just
+         * be ignored.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "exchange:19",
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Leave the trump card alone */
+        ret = send_callback_data(data,
+                                 1,
+                                 "exchange:8",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob decidis ne interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_FOLLOW_CHOICE,
+                                 0,
+                                 1, /* keys */
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Play a winning keys card so that Alice can lead next */
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 2, 3);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:35", /* 3 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜3🔄\n"
+                                 "\n"
+                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Kiun karton vi volas meti kiel la dekretan "
+                                 "karton?",
+                                 ARG_TYPE_BUTTONS,
+                                 "exchange:8",
+                                 "Lasi la antaŭan dekretan karton",
+                                 "exchange:1", "🔔1🔼",
+                                 "exchange:33", "🌜1🔼",
+                                 "exchange:34", "🌜2",
+                                 "exchange:36", "🌜4",
+                                 "exchange:37", "🌜5📤",
+                                 "exchange:38", "🌜6",
+                                 "exchange:39", "🌜7💎",
+                                 "exchange:40", "🌜8",
+                                 "exchange:41", "🌜9🎩",
+                                 "exchange:42", "🌜10",
+                                 "exchange:43", "🌜11↕️",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Change the trump card to 7 moons */
+        ret = send_callback_data(data,
+                                 0,
+                                 "exchange:39", /* 7 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🌜7💎",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
         int ret = EXIT_SUCCESS;
 
         if (!test_trump_suit() ||
-            !test_lose_but_lead())
+            !test_lose_but_lead() ||
+            !test_exchange())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
