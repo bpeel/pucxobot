@@ -506,12 +506,69 @@ out:
         return ret;
 }
 
+static bool
+test_lose_but_lead(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        remove_card_from_hand(data->players + 1, 1, 1);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:17", /* 1 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝1🔼",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_FOLLOW_CHOICE,
+                                 0,
+                                 1, /* keys */
+                                 -1);
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        /* Alice players a higher keys card and wins the trick, but
+         * Bob leads the next trick anyway because he played the 1.
+         */
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
         int ret = EXIT_SUCCESS;
 
-        if (!test_trump_suit())
+        if (!test_trump_suit() ||
+            !test_lose_but_lead())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
