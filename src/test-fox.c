@@ -122,6 +122,18 @@ add_card(struct pcx_buffer *buf,
 }
 
 static void
+add_card_command(struct pcx_buffer *buf,
+                 const char *keyword,
+                 int suit,
+                 int value)
+{
+        pcx_buffer_append_printf(buf,
+                                 "%s:%i",
+                                 keyword,
+                                 (suit << 4) | value);
+}
+
+static void
 add_card_button(struct test_message *message,
                 const char *keyword,
                 int suit,
@@ -129,10 +141,7 @@ add_card_button(struct test_message *message,
 {
         struct pcx_buffer data = PCX_BUFFER_STATIC_INIT;
 
-        pcx_buffer_append_printf(&data,
-                                 "%s:%i",
-                                 keyword,
-                                 (suit << 4) | value);
+        add_card_command(&data, keyword, suit, value);
 
         struct pcx_buffer label = PCX_BUFFER_STATIC_INIT;
 
@@ -356,16 +365,11 @@ send_callback_data(struct test_data *data,
         return test_message_run_queue(&data->message_data);
 }
 
-static struct test_data *
-create_test_data(void)
+static void
+deal_cards(struct test_data *data)
 {
-        struct test_data *data = pcx_calloc(sizeof *data);
-
-        test_message_data_init(&data->message_data);
-
-        struct pcx_fox_debug_overrides overrides = {
-                .rand_func = fake_random_number_generator,
-        };
+        for (int i = 0; i < 2; i++)
+                memset(data->players[i].hand, 0, sizeof data->players[i].hand);
 
         add_card_to_hand(data->players + 0, 0, 1);
         add_card_to_hand(data->players + 0, 1, 11);
@@ -376,6 +380,20 @@ create_test_data(void)
         add_card_to_hand(data->players + 1, 0, i);
         for (int i = 1; i <= 10; i++)
                 add_card_to_hand(data->players + 1, 1, i);
+}
+
+static struct test_data *
+create_test_data(void)
+{
+        struct test_data *data = pcx_calloc(sizeof *data);
+
+        deal_cards(data);
+
+        test_message_data_init(&data->message_data);
+
+        struct pcx_fox_debug_overrides overrides = {
+                .rand_func = fake_random_number_generator,
+        };
 
         struct test_message *message =
                 test_message_queue(&data->message_data,
@@ -1152,6 +1170,622 @@ out:
         return ret;
 }
 
+static bool
+play_even_cards(struct test_data *data)
+{
+        bool ret;
+
+        /* Play all the even cards of each suit where the player has
+         * all of them.
+         */
+        for (int i = 0; i < 5; i++) {
+                int card_value = (i + 1) * 2;
+                struct pcx_buffer command_buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_printf(&command_buf,
+                                         /* play a keys card */
+                                         "play:%i",
+                                         card_value + 16);
+
+                struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_printf(&card_buf,
+                                         "Bob ludis: 🗝%i",
+                                         card_value);
+
+                remove_card_from_hand(data->players + 1, 1, card_value);
+
+                ret = send_callback_data(data,
+                                         1,
+                                         (char *) command_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         card_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "Nun Alice elektas kiun karton ludi.",
+                                         ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                         0,
+                                         -1);
+
+                pcx_buffer_destroy(&card_buf);
+                pcx_buffer_destroy(&command_buf);
+
+                if (!ret)
+                        return false;
+
+                pcx_buffer_init(&command_buf);
+
+                pcx_buffer_append_printf(&command_buf,
+                                         /* play a moon card */
+                                         "play:%i",
+                                         card_value + 32);
+
+                pcx_buffer_init(&card_buf);
+
+                pcx_buffer_append_printf(&card_buf,
+                                         "Alice ludis: 🌜%i",
+                                         card_value);
+
+                remove_card_from_hand(data->players + 0, 2, card_value);
+
+                struct pcx_buffer result_buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_printf(&result_buf,
+                                         "Bob gajnis la prenvicon.\n"
+                                         "\n"
+                                         "La prenoj gajnitaj en ĉi tiu raŭndo "
+                                         "ĝis nun estas:\n"
+                                         "Alice: 1\n"
+                                         "Bob: %i",
+                                         i + 1);
+
+                ret = send_callback_data(data,
+                                         0,
+                                         (char *) command_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         card_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         result_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "La dekreta karto estas: 🔔8\n"
+                                         "\n"
+                                         "Bob komencas la prenvicon.",
+                                         ARG_TYPE_LEADER_CHOICE,
+                                         1,
+                                         -1);
+
+                pcx_buffer_destroy(&result_buf);
+                pcx_buffer_destroy(&card_buf);
+                pcx_buffer_destroy(&command_buf);
+
+                if (!ret)
+                        return false;
+        }
+
+        return true;
+}
+
+static bool
+play_cards_with_no_text(struct test_data *data)
+{
+        static const struct {
+                int lead_card_suit, lead_card_value;
+                int follow_card_suit, follow_card_value;
+                int winner;
+                int next_leader;
+        } cards[] = {
+                { 0, 11, 0, 1, 1, 0 },
+                { 2, 11, 1, 7, 0, 0 },
+                { 2, 9, 1, 9, 0, 0 },
+                { 2, 1, 0, 10, 1, 0 },
+                { 2, 7, 0, 9, 1, 1 },
+        };
+        int leader = 1;
+        int ret;
+        int takes[2] = { 1, 5 };
+
+        for (int i = 0; i < PCX_N_ELEMENTS(cards); i++) {
+                struct pcx_buffer command_buf = PCX_BUFFER_STATIC_INIT;
+
+                add_card_command(&command_buf,
+                                 "play",
+                                 cards[i].lead_card_suit,
+                                 cards[i].lead_card_value);
+
+                struct pcx_buffer card_buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_printf(&card_buf,
+                                         "%s ludis: ",
+                                         test_message_player_names[leader]);
+                add_card(&card_buf,
+                         cards[i].lead_card_suit,
+                         cards[i].lead_card_value);
+
+                remove_card_from_hand(data->players + leader,
+                                      cards[i].lead_card_suit,
+                                      cards[i].lead_card_value);
+
+                struct pcx_buffer next_buf = PCX_BUFFER_STATIC_INIT;
+                int follower = leader ^ 1;
+
+                pcx_buffer_append_printf(&next_buf,
+                                         "Nun %s elektas kiun karton ludi.",
+                                         test_message_player_names[follower]);
+
+                int follow_command, follow_suit;
+
+                if (data->players[follower].hand[cards[i].lead_card_suit]) {
+                        follow_command = ARG_TYPE_FOLLOW_CHOICE;
+                        follow_suit = cards[i].lead_card_suit;
+                } else {
+                        follow_command = ARG_TYPE_UNLIMITED_FOLLOW_CHOICE;
+                        follow_suit = -1;
+                }
+
+                ret = send_callback_data(data,
+                                         leader,
+                                         (char *) command_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         card_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         next_buf.data,
+                                         follow_command,
+                                         follower,
+                                         follow_suit,
+                                         -1);
+
+                pcx_buffer_destroy(&next_buf);
+                pcx_buffer_destroy(&card_buf);
+                pcx_buffer_destroy(&command_buf);
+
+                if (!ret)
+                        return false;
+
+                pcx_buffer_init(&command_buf);
+
+                add_card_command(&command_buf,
+                                 "play",
+                                 cards[i].follow_card_suit,
+                                 cards[i].follow_card_value);
+
+                pcx_buffer_init(&card_buf);
+
+                pcx_buffer_append_printf(&card_buf,
+                                         "%s ludis: ",
+                                         test_message_player_names[follower]);
+                add_card(&card_buf,
+                         cards[i].follow_card_suit,
+                         cards[i].follow_card_value);
+
+                remove_card_from_hand(data->players + follower,
+                                      cards[i].follow_card_suit,
+                                      cards[i].follow_card_value);
+
+                struct pcx_buffer result_buf = PCX_BUFFER_STATIC_INIT;
+
+                int winner = cards[i].winner;
+
+                takes[winner]++;
+
+                pcx_buffer_append_printf(&result_buf,
+                                         "%s gajnis la prenvicon.\n"
+                                         "\n"
+                                         "La prenoj gajnitaj en ĉi tiu raŭndo "
+                                         "ĝis nun estas:\n"
+                                         "Alice: %i\n"
+                                         "Bob: %i",
+                                         test_message_player_names[winner],
+                                         takes[0],
+                                         takes[1]);
+
+                leader = cards[i].next_leader;
+
+                pcx_buffer_init(&next_buf);
+                pcx_buffer_append_printf(&next_buf,
+                                         "La dekreta karto estas: 🔔8\n"
+                                         "\n"
+                                         "%s komencas la prenvicon.",
+                                         test_message_player_names[leader]);
+
+                ret = send_callback_data(data,
+                                         follower,
+                                         (char *) command_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         card_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         result_buf.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         next_buf.data,
+                                         ARG_TYPE_LEADER_CHOICE,
+                                         leader,
+                                         -1);
+
+                pcx_buffer_destroy(&next_buf);
+                pcx_buffer_destroy(&result_buf);
+                pcx_buffer_destroy(&card_buf);
+                pcx_buffer_destroy(&command_buf);
+
+                if (!ret)
+                        return false;
+        }
+
+        return true;
+}
+
+static bool
+play_threes(struct test_data *data)
+{
+        bool ret = true;
+
+        remove_card_from_hand(data->players + 1, 1, 3);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:19", /* 3 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝3🔄\n"
+                                 "\n"
+                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Kiun karton vi volas meti kiel la dekretan "
+                                 "karton?",
+                                 ARG_TYPE_BUTTONS,
+                                 "exchange:8",
+                                 "Lasi la antaŭan dekretan karton",
+                                 "exchange:21", "🗝5📤",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                return false;
+
+        /* Leave the trump card alone */
+        ret = send_callback_data(data,
+                                 1,
+                                 "exchange:8",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob decidis ne interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                return false;
+
+        remove_card_from_hand(data->players + 0, 2, 3);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:35", /* 3 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜3🔄\n"
+                                 "\n"
+                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Kiun karton vi volas meti kiel la dekretan "
+                                 "karton?",
+                                 ARG_TYPE_BUTTONS,
+                                 "exchange:8",
+                                 "Lasi la antaŭan dekretan karton",
+                                 "exchange:37", "🌜5📤",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                return false;
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "exchange:8",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice decidis ne interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 3\n"
+                                 "Bob: 9",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+play_fives(struct test_data *data,
+           int round_num)
+{
+        bool ret;
+
+        remove_card_from_hand(data->players + 1, 1, 5);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:21", /* 5 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝5📤",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                return false;
+
+        remove_card_from_hand(data->players + 0, 2, 5);
+
+        struct pcx_buffer round_end = PCX_BUFFER_STATIC_INIT;
+        int alice_score = round_num * 6;
+
+        pcx_buffer_append_printf(&round_end,
+                                 "La raŭndo finiĝis kaj la poentoj nun estas:\n"
+                                 "\n"
+                                 "Alice: %i (+ 6)\n"
+                                 "Bob: 0 (+ 0)",
+                                 alice_score);
+
+
+        if (alice_score >= 21) {
+                pcx_buffer_append_string(&round_end,
+                                         "\n"
+                                         "\n"
+                                         "Alice havas almenaŭ 21 poentojn kaj "
+                                         "finas la partion.\n"
+                                         "\n"
+                                         "🏆 Alice gajnis la partion!");
+
+                ret = send_callback_data(data,
+                                         0,
+                                         "play:37", /* 5 moons */
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "Alice ludis: 🌜5📤",
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "Bob gajnis la prenvicon.\n"
+                                         "\n"
+                                         "La prenoj gajnitaj en ĉi tiu raŭndo "
+                                         "ĝis nun estas:\n"
+                                         "Alice: 3\n"
+                                         "Bob: 10",
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         round_end.data,
+                                         TEST_MESSAGE_TYPE_GAME_OVER,
+                                         -1);
+        } else {
+                struct pcx_buffer round_start = PCX_BUFFER_STATIC_INIT;
+                int next_leader = (round_num ^ 1) & 1;
+                const char *next_name = test_message_player_names[next_leader];
+
+                pcx_buffer_append_printf(&round_start,
+                                         "La dekreta karto estas: 🔔8\n"
+                                         "\n"
+                                         "%s komencas la prenvicon.",
+                                         next_name);
+
+                deal_cards(data);
+
+                ret = send_callback_data(data,
+                                         0,
+                                         "play:37", /* 5 moons */
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "Alice ludis: 🌜5📤",
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         "Bob gajnis la prenvicon.\n"
+                                         "\n"
+                                         "La prenoj gajnitaj en ĉi tiu raŭndo "
+                                         "ĝis nun estas:\n"
+                                         "Alice: 3\n"
+                                         "Bob: 10",
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         round_end.data,
+                                         TEST_MESSAGE_TYPE_GLOBAL,
+                                         round_start.data,
+                                         ARG_TYPE_LEADER_CHOICE,
+                                         next_leader,
+                                         -1);
+
+                pcx_buffer_destroy(&round_start);
+        }
+
+        pcx_buffer_destroy(&round_end);
+
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+start_odd_round(struct test_data *data)
+{
+        bool ret;
+
+        /* Play the 1 keys and then the 11 keys so that Alice won’t
+         * have any keys and Bob will lead.
+         */
+
+        remove_card_from_hand(data->players + 1, 1, 1);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:17", /* 1 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝1🔼",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_FOLLOW_CHOICE,
+                                 0,
+                                 1, /* keys */
+                                 -1);
+        if (!ret)
+                return false;
+
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+start_even_round(struct test_data *data)
+{
+        bool ret;
+
+        /* Play the 11 keys and then the 1 keys so that Alice won’t
+         * have any keys and Bob will lead.
+         */
+
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        char *card_question =
+                make_card_choice_question(data->players + 1, false);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 card_question,
+                                 ARG_TYPE_BUTTONS,
+                                 "play:17", "🗝1🔼",
+                                 "play:26", "🗝10",
+                                 NULL,
+                                 -1);
+
+        pcx_free(card_question);
+
+        if (!ret)
+                return false;
+
+        remove_card_from_hand(data->players + 1, 1, 1);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:17", /* 1 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝1🔼",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+play_round(struct test_data *data,
+           int round_num)
+{
+        bool ret;
+
+        if (round_num & 1)
+                ret = start_odd_round(data);
+        else
+                ret = start_even_round(data);
+
+        if (!ret)
+                return false;
+
+        ret = play_even_cards(data);
+        if (!ret)
+                return false;
+
+        /* Now the cards are:
+         * Alice: 1 bells, 1, 3, 5, 7, 9, 11 moons.
+         * Bob: 3, 5, 7, 9 keys. 9-11 bells.
+         */
+
+        ret = play_cards_with_no_text(data);
+        if (!ret)
+                return false;
+
+        /* Now Alice has the 3 and 5 of moons and Bob has the 3 and 5 of keys.
+         * The takes won so far are Alice: 3, Bob 8.
+         * Bob leads.
+         */
+        ret = play_threes(data);
+        if (!ret)
+                return false;
+
+        ret = play_fives(data, round_num);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+test_full_game(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        for (int i = 1; i <= 4; i++) {
+                ret = play_round(data, i);
+
+                if (!ret)
+                        goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1163,7 +1797,8 @@ main(int argc, char **argv)
             !test_draw_card() ||
             !test_override_trump() ||
             !test_two_trump_overrides() ||
-            !test_force_best_card())
+            !test_force_best_card() ||
+            !test_full_game())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
