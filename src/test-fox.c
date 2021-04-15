@@ -407,15 +407,13 @@ free_test_data(struct test_data *data)
 }
 
 static bool
-test_trump_suit(void)
+make_alice_lead(struct test_data *data)
 {
-        struct test_data *data = create_test_data();
-
         bool ret = true;
 
         remove_card_from_hand(data->players + 1, 1, 10);
 
-        /* Play a regular hand to make player 1 lead the next one */
+        /* Play a regular hand to make Alice lead the next one */
         ret = send_callback_data(data,
                                  1,
                                  "play:26", /* 10 keys */
@@ -428,7 +426,7 @@ test_trump_suit(void)
                                  1, /* keys */
                                  -1);
         if (!ret)
-                goto out;
+                return false;
 
         remove_card_from_hand(data->players + 0, 1, 11);
 
@@ -451,6 +449,21 @@ test_trump_suit(void)
                                  ARG_TYPE_LEADER_CHOICE,
                                  0,
                                  -1);
+        if (!ret)
+                return false;
+
+        return true;
+}
+
+static bool
+test_trump_suit(void)
+{
+        bool ret = true;
+
+        struct test_data *data = create_test_data();
+
+        ret = make_alice_lead(data);
+
         if (!ret)
                 goto out;
 
@@ -886,6 +899,132 @@ out:
         return ret;
 }
 
+static bool
+test_override_trump(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        ret = make_alice_lead(data);
+
+        if (!ret)
+                goto out;
+
+        /* Alice plays a moon. Bob doesn’t have any of these so he is
+         * free to play any card.
+         */
+        remove_card_from_hand(data->players + 0, 2, 2);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:34", /* 2 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜2",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Bob plays 9 keys which makes keys be the trump suit and he
+         * wins the trick.
+         */
+        remove_card_from_hand(data->players + 1, 1, 9);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:25", /* 9 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝9🎩",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 1",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_two_trump_overrides(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        ret = make_alice_lead(data);
+
+        if (!ret)
+                goto out;
+
+        /* Alice plays a moon trump override. Bob doesn’t have any
+         * moons so he is free to play any card.
+         */
+        remove_card_from_hand(data->players + 0, 2, 9);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:41", /* 9 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜9🎩",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Bob plays 9 keys. This doesn’t override the trump so Alice
+         * wins the trick with the lead suit.
+         */
+        remove_card_from_hand(data->players + 1, 1, 9);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:25", /* 9 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝9🎩",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 2\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -894,7 +1033,9 @@ main(int argc, char **argv)
         if (!test_trump_suit() ||
             !test_lose_but_lead() ||
             !test_exchange() ||
-            !test_draw_card())
+            !test_draw_card() ||
+            !test_override_trump() ||
+            !test_two_trump_overrides())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
