@@ -433,7 +433,7 @@ show_round_end(struct pcx_fox *fox,
                                  pcx_text_get(fox->language,
                                               PCX_TEXT_STRING_ROUND_OVER));
 
-        pcx_buffer_append_string(&buf, "\n\n");
+        pcx_buffer_append_string(&buf, "\n");
 
         const struct pcx_fox_player *end_player = NULL;
         const struct pcx_fox_player *winner = fox->players + 0;
@@ -446,7 +446,7 @@ show_round_end(struct pcx_fox *fox,
                 player->score += points;
 
                 pcx_buffer_append_printf(&buf,
-                                         "%s: %i (+ %i)\n",
+                                         "\n%s: %i (+ %i)",
                                          player->name,
                                          player->score,
                                          points);
@@ -460,7 +460,7 @@ show_round_end(struct pcx_fox *fox,
         }
 
         if (end_player) {
-                pcx_buffer_append_string(&buf, "\n");
+                pcx_buffer_append_string(&buf, "\n\n");
                 const char *note = pcx_text_get(fox->language,
                                                 PCX_TEXT_STRING_END_POINTS);
                 pcx_buffer_append_printf(&buf,
