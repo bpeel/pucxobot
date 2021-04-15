@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2020  Neil Roberts
+ * Copyright (C) 2020, 2021  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -711,6 +711,181 @@ out:
         return ret;
 }
 
+static bool
+test_draw_card(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        remove_card_from_hand(data->players + 1, 1, 5);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:21", /* 5 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝5📤\n"
+                                 "\n"
+                                 "Nun ri prenas karton de la kartaro kaj "
+                                 "forĵetas unu.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "Vi prenas: 🔔7💎\n"
+                                 "\n"
+                                 "Kiun karton vi volas forĵeti?",
+                                 ARG_TYPE_BUTTONS,
+                                 "discard:7", "🔔7💎", /* card just drawn */
+                                 "discard:9", "🔔9🎩",
+                                 "discard:10", "🔔10",
+                                 "discard:11", "🔔11↕️",
+                                 "discard:17", "🗝1🔼",
+                                 "discard:18", "🗝2",
+                                 "discard:19", "🗝3🔄",
+                                 "discard:20", "🗝4",
+                                 "discard:22", "🗝6",
+                                 "discard:23", "🗝7💎",
+                                 "discard:24", "🗝8",
+                                 "discard:25", "🗝9🎩",
+                                 "discard:26", "🗝10",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Try picking a card that Bob doesn’t have. This should just
+         * be ignored.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "discard:21",
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Try playing a card. This should just be ignored. */
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:21",
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Return the card that was just picked up */
+        ret = send_callback_data(data,
+                                 1,
+                                 "discard:7",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_FOLLOW_CHOICE,
+                                 0,
+                                 1, /* keys */
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Play a winning keys card so that Alice can lead next */
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 2, 5);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:37", /* 5 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜5📤\n"
+                                 "\n"
+                                 "Nun ri prenas karton de la kartaro kaj "
+                                 "forĵetas unu.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 "Vi prenas: 🔔6\n"
+                                 "\n"
+                                 "Kiun karton vi volas forĵeti?",
+                                 ARG_TYPE_BUTTONS,
+                                 "discard:1", "🔔1🔼",
+                                 "discard:6", "🔔6", /* card just drawn */
+                                 "discard:33", "🌜1🔼",
+                                 "discard:34", "🌜2",
+                                 "discard:35", "🌜3🔄",
+                                 "discard:36", "🌜4",
+                                 "discard:38", "🌜6",
+                                 "discard:39", "🌜7💎",
+                                 "discard:40", "🌜8",
+                                 "discard:41", "🌜9🎩",
+                                 "discard:42", "🌜10",
+                                 "discard:43", "🌜11↕️",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Discard 7 moons */
+        remove_card_from_hand(data->players + 0, 2, 7);
+        add_card_to_hand(data->players + 0, 0, 6);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "discard:39", /* 7 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Let Bob play a card so we can verify that Alice’s hand is correct */
+        /* Return the card that was just picked up */
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:18", /* 2 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝2",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 2\n"
+                                 "Bob: 0",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -718,7 +893,8 @@ main(int argc, char **argv)
 
         if (!test_trump_suit() ||
             !test_lose_but_lead() ||
-            !test_exchange())
+            !test_exchange() ||
+            !test_draw_card())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
