@@ -1025,6 +1025,133 @@ out:
         return ret;
 }
 
+static bool
+test_force_best_card(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        remove_card_from_hand(data->players + 1, 0, 11);
+
+        char *card_question =
+                make_card_choice_question(data->players + 0, false);
+
+        /* Bob plays the 11 of bells. Alice only has the 1 of keys so
+         * this doesn’t change anything.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:11", /* 11 bells */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🔔11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 0,
+                                 card_question,
+                                 ARG_TYPE_BUTTONS,
+                                 "play:1", "🔔1🔼",
+                                 NULL,
+                                 -1);
+
+        pcx_free(card_question);
+
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 0, 1);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:1", /* 1 bells */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🔔1🔼",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 0\n"
+                                 "Bob: 1",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 1, 11);
+
+        card_question = make_card_choice_question(data->players + 1, false);
+
+        /* Alice plays the 11 of keys. Bob has 10 of these but can
+         * only choose between two of them.
+         */
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 card_question,
+                                 ARG_TYPE_BUTTONS,
+                                 "play:17", "🗝1🔼",
+                                 "play:26", "🗝10",
+                                 NULL,
+                                 -1);
+
+        pcx_free(card_question);
+
+        if (!ret)
+                goto out;
+
+        /* Try to play a card that isn’t one of the two. This should
+         * be ignored.
+         */
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:20", /* 4 keys */
+                                 -1);
+        if (!ret)
+                goto out;
+
+        remove_card_from_hand(data->players + 0, 0, 1);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:26", /* 10 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝10",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 1\n"
+                                 "Bob: 1",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 0,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1035,7 +1162,8 @@ main(int argc, char **argv)
             !test_exchange() ||
             !test_draw_card() ||
             !test_override_trump() ||
-            !test_two_trump_overrides())
+            !test_two_trump_overrides() ||
+            !test_force_best_card())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
