@@ -1274,10 +1274,9 @@ play_cards_with_no_text(struct test_data *data)
                 int next_leader;
         } cards[] = {
                 { 0, 11, 0, 1, 1, 0 },
-                { 2, 11, 1, 7, 0, 0 },
-                { 2, 9, 1, 9, 0, 0 },
-                { 2, 1, 0, 10, 1, 0 },
-                { 2, 7, 0, 9, 1, 1 },
+                { 2, 11, 0, 9, 1, 1 },
+                { 1, 9, 2, 9, 1, 1 },
+                { 0, 10, 2, 1, 1, 0 },
         };
         int leader = 1;
         int ret;
@@ -1412,49 +1411,57 @@ play_cards_with_no_text(struct test_data *data)
 }
 
 static bool
-play_threes(struct test_data *data)
+play_sevens(struct test_data *data)
 {
         bool ret = true;
 
-        remove_card_from_hand(data->players + 1, 1, 3);
+        remove_card_from_hand(data->players + 0, 2, 7);
 
         ret = send_callback_data(data,
-                                 1,
-                                 "play:19", /* 3 keys */
+                                 0,
+                                 "play:39", /* 7 moons */
                                  TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Bob ludis: 🗝3🔄\n"
-                                 "\n"
-                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
-                                 "karton.",
-                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 "Alice ludis: 🌜7💎",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
                                  1,
-                                 "La dekreta karto estas: 🔔8\n"
-                                 "\n"
-                                 "Kiun karton vi volas meti kiel la dekretan "
-                                 "karton?",
-                                 ARG_TYPE_BUTTONS,
-                                 "exchange:8",
-                                 "Lasi la antaŭan dekretan karton",
-                                 "exchange:21", "🗝5📤",
-                                 NULL,
                                  -1);
         if (!ret)
                 return false;
 
-        /* Leave the trump card alone */
+        remove_card_from_hand(data->players + 1, 1, 7);
+
         ret = send_callback_data(data,
                                  1,
-                                 "exchange:8",
+                                 "play:23", /* 7 keys */
                                  TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Bob decidis ne interŝanĝi la dekretan "
-                                 "karton.",
+                                 "Bob ludis: 🗝7💎",
                                  TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Nun Alice elektas kiun karton ludi.",
-                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 "Alice gajnis la prenvicon. Ri tuj gajnas "
+                                 "du poentojn pro la du 7oj.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 2\n"
+                                 "Bob: 9",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Alice komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
                                  0,
                                  -1);
         if (!ret)
                 return false;
+
+        return true;
+}
+
+static bool
+play_threes(struct test_data *data)
+{
+        bool ret = true;
 
         remove_card_from_hand(data->players + 0, 2, 3);
 
@@ -1481,6 +1488,7 @@ play_threes(struct test_data *data)
         if (!ret)
                 return false;
 
+        /* Leave the trump card alone */
         ret = send_callback_data(data,
                                  0,
                                  "exchange:8",
@@ -1488,7 +1496,46 @@ play_threes(struct test_data *data)
                                  "Alice decidis ne interŝanĝi la dekretan "
                                  "karton.",
                                  TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Bob gajnis la prenvicon.\n"
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                return false;
+
+        remove_card_from_hand(data->players + 1, 1, 3);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:19", /* 3 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝3🔄\n"
+                                 "\n"
+                                 "Nun ri elektas ĉu interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_PRIVATE,
+                                 1,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Kiun karton vi volas meti kiel la dekretan "
+                                 "karton?",
+                                 ARG_TYPE_BUTTONS,
+                                 "exchange:8",
+                                 "Lasi la antaŭan dekretan karton",
+                                 "exchange:21", "🗝5📤",
+                                 NULL,
+                                 -1);
+        if (!ret)
+                return false;
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "exchange:8",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob decidis ne interŝanĝi la dekretan "
+                                 "karton.",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice gajnis la prenvicon.\n"
                                  "\n"
                                  "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
                                  "estas:\n"
@@ -1497,9 +1544,9 @@ play_threes(struct test_data *data)
                                  TEST_MESSAGE_TYPE_GLOBAL,
                                  "La dekreta karto estas: 🔔8\n"
                                  "\n"
-                                 "Bob komencas la prenvicon.",
+                                 "Alice komencas la prenvicon.",
                                  ARG_TYPE_LEADER_CHOICE,
-                                 1,
+                                 0,
                                  -1);
         if (!ret)
                 return false;
@@ -1513,55 +1560,57 @@ play_fives(struct test_data *data,
 {
         bool ret;
 
-        remove_card_from_hand(data->players + 1, 1, 5);
+        remove_card_from_hand(data->players + 0, 2, 5);
 
         ret = send_callback_data(data,
-                                 1,
-                                 "play:21", /* 5 keys */
-                                 TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Bob ludis: 🗝5📤",
-                                 TEST_MESSAGE_TYPE_GLOBAL,
-                                 "Nun Alice elektas kiun karton ludi.",
-                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
                                  0,
+                                 "play:37", /* 5 moons */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🌜5📤",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Bob elektas kiun karton ludi.",
+                                 ARG_TYPE_UNLIMITED_FOLLOW_CHOICE,
+                                 1,
                                  -1);
         if (!ret)
                 return false;
 
-        remove_card_from_hand(data->players + 0, 2, 5);
+        remove_card_from_hand(data->players + 0, 1, 5);
 
         struct pcx_buffer round_end = PCX_BUFFER_STATIC_INIT;
-        int alice_score = round_num * 6;
+        int alice_score = round_num * 3;
+        int bob_score = round_num * 6;
 
         pcx_buffer_append_printf(&round_end,
                                  "La raŭndo finiĝis kaj la poentoj nun estas:\n"
                                  "\n"
-                                 "Alice: %i (+ 6)\n"
-                                 "Bob: 0 (+ 0)",
-                                 alice_score);
+                                 "Alice: %i (+ 1)\n"
+                                 "Bob: %i (+ 6)",
+                                 alice_score,
+                                 bob_score);
 
 
-        if (alice_score >= 21) {
+        if (bob_score >= 21) {
                 pcx_buffer_append_string(&round_end,
                                          "\n"
                                          "\n"
-                                         "Alice havas almenaŭ 21 poentojn kaj "
+                                         "Bob havas almenaŭ 21 poentojn kaj "
                                          "finas la partion.\n"
                                          "\n"
-                                         "🏆 Alice gajnis la partion!");
+                                         "🏆 Bob gajnis la partion!");
 
                 ret = send_callback_data(data,
-                                         0,
-                                         "play:37", /* 5 moons */
+                                         1,
+                                         "play:21", /* 5 keys */
                                          TEST_MESSAGE_TYPE_GLOBAL,
-                                         "Alice ludis: 🌜5📤",
+                                         "Bob ludis: 🗝5📤",
                                          TEST_MESSAGE_TYPE_GLOBAL,
-                                         "Bob gajnis la prenvicon.\n"
+                                         "Alice gajnis la prenvicon.\n"
                                          "\n"
                                          "La prenoj gajnitaj en ĉi tiu raŭndo "
                                          "ĝis nun estas:\n"
-                                         "Alice: 3\n"
-                                         "Bob: 10",
+                                         "Alice: 4\n"
+                                         "Bob: 9",
                                          TEST_MESSAGE_TYPE_GLOBAL,
                                          round_end.data,
                                          TEST_MESSAGE_TYPE_GAME_OVER,
@@ -1580,17 +1629,17 @@ play_fives(struct test_data *data,
                 deal_cards(data);
 
                 ret = send_callback_data(data,
-                                         0,
-                                         "play:37", /* 5 moons */
+                                         1,
+                                         "play:21", /* 5 keys */
                                          TEST_MESSAGE_TYPE_GLOBAL,
-                                         "Alice ludis: 🌜5📤",
+                                         "Bob ludis: 🗝5📤",
                                          TEST_MESSAGE_TYPE_GLOBAL,
-                                         "Bob gajnis la prenvicon.\n"
+                                         "Alice gajnis la prenvicon.\n"
                                          "\n"
                                          "La prenoj gajnitaj en ĉi tiu raŭndo "
                                          "ĝis nun estas:\n"
-                                         "Alice: 3\n"
-                                         "Bob: 10",
+                                         "Alice: 4\n"
+                                         "Bob: 9",
                                          TEST_MESSAGE_TYPE_GLOBAL,
                                          round_end.data,
                                          TEST_MESSAGE_TYPE_GLOBAL,
@@ -1751,9 +1800,13 @@ play_round(struct test_data *data,
         if (!ret)
                 return false;
 
+        ret = play_sevens(data);
+        if (!ret)
+                return false;
+
         /* Now Alice has the 3 and 5 of moons and Bob has the 3 and 5 of keys.
-         * The takes won so far are Alice: 3, Bob 8.
-         * Bob leads.
+         * The takes won so far are Alice: 2, Bob 9.
+         * Alice leads.
          */
         ret = play_threes(data);
         if (!ret)

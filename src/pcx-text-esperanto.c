@@ -637,6 +637,8 @@ pcx_text_esperanto[] = {
         "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun estas:",
         [PCX_TEXT_STRING_WIN_TRICK_SEVEN] =
         "Ri tuj gajnas poenton pro la karto 7.",
+        [PCX_TEXT_STRING_WIN_TRICK_TWO_SEVENS] =
+        "Ri tuj gajnas du poentojn pro la du 7oj.",
         [PCX_TEXT_STRING_YOU_DREW] =
         "Vi prenas:",
         [PCX_TEXT_STRING_WHICH_CARD_DISCARD] =

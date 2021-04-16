@@ -662,6 +662,20 @@ no_override: (void) 0;
         *winning_card_out = fox->played_cards[winning_card];
 }
 
+static int
+count_point_cards(struct pcx_fox *fox)
+{
+        int point_cards = 0;
+
+        for (int i = 0; i < PCX_FOX_N_PLAYERS; i++) {
+                if (PCX_FOX_CARD_VALUE(fox->played_cards[i]) ==
+                    PCX_FOX_CARD_POINT)
+                        point_cards++;
+        }
+
+        return point_cards;
+}
+
 static void
 end_card_play(struct pcx_fox *fox)
 {
@@ -684,12 +698,16 @@ end_card_play(struct pcx_fox *fox)
                                  note,
                                  fox->players[winner].name);
 
-        if (PCX_FOX_CARD_VALUE(winning_card) == PCX_FOX_CARD_POINT) {
+        int point_cards = count_point_cards(fox);
+
+        if (point_cards > 0) {
                 pcx_buffer_append_c(&buf, ' ');
                 note = pcx_text_get(fox->language,
-                                    PCX_TEXT_STRING_WIN_TRICK_SEVEN);
+                                    point_cards == 1 ?
+                                    PCX_TEXT_STRING_WIN_TRICK_SEVEN :
+                                    PCX_TEXT_STRING_WIN_TRICK_TWO_SEVENS);
                 pcx_buffer_append_string(&buf, note);
-                fox->players[winner].score++;
+                fox->players[winner].score += point_cards;
         }
 
         pcx_buffer_append_string(&buf, "\n\n");
