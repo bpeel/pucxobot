@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <strings.h>
+#include <limits.h>
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
@@ -436,7 +437,8 @@ show_round_end(struct pcx_fox *fox,
         pcx_buffer_append_string(&buf, "\n");
 
         const struct pcx_fox_player *end_player = NULL;
-        const struct pcx_fox_player *winner = fox->players + 0;
+        const struct pcx_fox_player *winner = NULL;
+        int winner_value = INT_MIN;
 
         for (int i = 0; i < PCX_FOX_N_PLAYERS; i++) {
                 struct pcx_fox_player *player = fox->players + i;
@@ -444,6 +446,14 @@ show_round_end(struct pcx_fox *fox,
                 int points = points_for_tricks(player->tricks_this_round);
 
                 player->score += points;
+
+                /* In the case of a draw, the player with the most
+                 * points from the last round wins. In order to make
+                 * this work we calculate a value for this player
+                 * where the score is in more significant bits than
+                 * the last set of points.
+                 */
+                int value = (player->score << 4) | points;
 
                 pcx_buffer_append_printf(&buf,
                                          "\n%s: %i (+ %i)",
@@ -455,8 +465,10 @@ show_round_end(struct pcx_fox *fox,
 
                 if (player->score >= PCX_FOX_END_POINTS)
                         end_player = player;
-                if (player->score > winner->score)
+                if (value >= winner_value) {
                         winner = player;
+                        winner_value = value;
+                }
         }
 
         if (end_player) {
