@@ -49,8 +49,7 @@ LANGUAGES = [
          "The games on this site are also available via the Telegram bot "
          "<a href=\"https://t.me/bluffingbot\">@bluffingbot</a>.",
          "The source code is available on "
-         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["fox"])),
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>."),
     Lang("eo", "esperanto", "Helpo", "Enhavo", "Pri",
          "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
          "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",

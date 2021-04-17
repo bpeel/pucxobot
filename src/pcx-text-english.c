@@ -34,6 +34,8 @@ pcx_text_english[] = {
         "Love Letter",
         [PCX_TEXT_STRING_NAME_SIX] =
         "6 Takes!",
+        [PCX_TEXT_STRING_NAME_FOX] =
+        "Fox in the Forest",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superfight",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -54,6 +56,10 @@ pcx_text_english[] = {
         "/six",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
         "Create a game of 6 Takes!",
+        [PCX_TEXT_STRING_FOX_START_COMMAND] =
+        "/fox",
+        [PCX_TEXT_STRING_FOX_START_COMMAND_DESCRIPTION] =
+        "Create a game of Fox in the Forest",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superfight",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -600,4 +606,34 @@ pcx_text_english[] = {
         "%s has at least %i points and ends the game.",
         [PCX_TEXT_STRING_WINS_PLAIN] =
         "🏆 %s wins!",
+        [PCX_TEXT_STRING_YOU_ARE_LEADER] =
+        "%s leads the trick.",
+        [PCX_TEXT_STRING_PLAYER_PLAYED] =
+        "%s played:",
+        [PCX_TEXT_STRING_FOLLOW_PLAYER] =
+        "Now %s is choosing which card to play.",
+        [PCX_TEXT_STRING_PLAYED_THREE] =
+        "Now they are choosing whether to change the decree card.",
+        [PCX_TEXT_STRING_PLAYED_FIVE] =
+        "Now they will take a card from the deck and discard one.",
+        [PCX_TEXT_STRING_TRICK_WINNER] =
+        "%s won the trick.",
+        [PCX_TEXT_STRING_TRICKS_IN_ROUND_ARE] =
+        "The tricks won in this round so far are:",
+        [PCX_TEXT_STRING_WIN_TRICK_SEVEN] =
+        "They immediately win a point because of the 7 card.",
+        [PCX_TEXT_STRING_WIN_TRICK_TWO_SEVENS] =
+        "They immediately win two points because of the two 7’s.",
+        [PCX_TEXT_STRING_YOU_DREW] =
+        "You draw:",
+        [PCX_TEXT_STRING_WHICH_CARD_DISCARD] =
+        "Which card do you want to discard?",
+        [PCX_TEXT_STRING_TRUMP_CARD_IS] =
+        "The decree card is:",
+        [PCX_TEXT_STRING_WHICH_CARD_EXCHANGE] =
+        "Which card do you want to be the decree card?",
+        [PCX_TEXT_STRING_DONT_EXCHANGE] =
+        "Don’t change the card",
+        [PCX_TEXT_STRING_DOESNT_EXCHANGE] =
+        "%s decided not to change the decree card.",
 };
