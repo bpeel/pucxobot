@@ -387,14 +387,19 @@ Pucxo.prototype.doConnect = function()
 
   this.setStatusConnecting();
 
-  var protocol;
+  var protocol, port;
 
-  if (location.protocol.toLowerCase().startsWith("https"))
+  if (location.protocol.toLowerCase().startsWith("https")) {
     protocol = "wss";
-  else
+    port = 3649;
+  } else {
     protocol = "ws";
+    port = 3648;
+  }
 
-  this.sock = new WebSocket(protocol + "://" + location.hostname + ":3648/");
+  this.sock = new WebSocket(protocol + "://" +
+                            location.hostname + ":" +
+                            port + "/");
   this.sock.binaryType = 'arraybuffer';
   this.addSocketHandler("error", this.sockErrorCb.bind(this));
   this.addSocketHandler("close", this.sockErrorCb.bind(this));

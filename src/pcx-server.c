@@ -50,6 +50,7 @@
 #include "pcx-ssl-error.h"
 
 #define DEFAULT_PORT 3648
+#define DEFAULT_SSL_PORT (DEFAULT_PORT + 1)
 
 /* Number of microseconds of inactivity before a client will be
  * considered for garbage collection.
@@ -61,9 +62,8 @@ pcx_server_error;
 
 struct pcx_server {
         const struct pcx_config *config;
-        int listen_sock;
-        struct pcx_main_context_source *listen_source;
         struct pcx_main_context_source *gc_source;
+        struct pcx_list sockets;
         struct pcx_list clients;
 
         struct pcx_playerbase *playerbase;
@@ -72,8 +72,6 @@ struct pcx_server {
          * stored here so that people can join it.
          */
         struct pcx_list pending_conversations;
-
-        SSL_CTX *ssl_ctx;
 };
 
 struct pcx_server_client {
@@ -87,6 +85,14 @@ struct pcx_server_pending_conversation {
         struct pcx_list link;
         struct pcx_conversation *conversation;
         struct pcx_listener listener;
+};
+
+struct pcx_server_socket {
+        struct pcx_list link;
+        int listen_sock;
+        struct pcx_main_context_source *listen_source;
+        SSL_CTX *ssl_ctx;
+        struct pcx_server *server;
 };
 
 static void
@@ -104,8 +110,13 @@ remove_client(struct pcx_server *server,
         /* If we remove a connection then any previous disabled accept
          * might start working again.
          */
-        if (server->listen_source) {
-                pcx_main_context_modify_poll(server->listen_source,
+        struct pcx_server_socket *ssocket;
+
+        pcx_list_for_each(ssocket, &server->sockets, link) {
+                if (ssocket->listen_source == NULL)
+                        continue;
+
+                pcx_main_context_modify_poll(ssocket->listen_source,
                                              PCX_MAIN_CONTEXT_POLL_IN |
                                              PCX_MAIN_CONTEXT_POLL_ERROR);
         }
@@ -698,6 +709,7 @@ create_socket_for_port(int port,
 
 static int
 create_socket_for_address(const char *address,
+                          int default_port,
                           struct pcx_error **error)
 {
         unsigned long port;
@@ -712,7 +724,7 @@ create_socket_for_address(const char *address,
 
         if (!pcx_netaddress_from_string(&netaddress,
                                         address,
-                                        DEFAULT_PORT)) {
+                                        default_port)) {
                 pcx_set_error(error,
                               &pcx_server_error,
                               PCX_SERVER_ERROR_INVALID_ADDRESS,
@@ -746,16 +758,32 @@ add_client(struct pcx_server *server,
 }
 
 static void
+free_server_socket(struct pcx_server_socket *ssocket)
+{
+        if (ssocket->ssl_ctx)
+                SSL_CTX_free(ssocket->ssl_ctx);
+        if (ssocket->listen_source)
+                pcx_main_context_remove_source(ssocket->listen_source);
+        if (ssocket->listen_sock != -1)
+                pcx_close(ssocket->listen_sock);
+
+        pcx_list_remove(&ssocket->link);
+
+        pcx_free(ssocket);
+}
+
+static void
 listen_sock_cb(struct pcx_main_context_source *source,
                int fd,
                enum pcx_main_context_poll_flags flags,
                void *user_data)
 {
-        struct pcx_server *server = user_data;
+        struct pcx_server_socket *ssocket = user_data;
+        struct pcx_server *server = ssocket->server;
         struct pcx_connection *conn;
         struct pcx_error *error = NULL;
 
-        conn = pcx_connection_accept(server->ssl_ctx, fd, &error);
+        conn = pcx_connection_accept(ssocket->ssl_ctx, fd, &error);
 
         if (conn == NULL) {
                 if (error->domain == &pcx_file_error &&
@@ -770,8 +798,7 @@ listen_sock_cb(struct pcx_main_context_source *source,
                            (error->code != PCX_FILE_ERROR_AGAIN &&
                             error->code != PCX_FILE_ERROR_INTR)) {
                         pcx_log("%s", error->message);
-                        pcx_main_context_remove_source(source);
-                        server->listen_source = NULL;
+                        free_server_socket(ssocket);
                 }
                 pcx_error_free(error);
                 return;
@@ -808,29 +835,29 @@ ssl_password_cb(char *buf, int size, int rwflag, void *user_data)
 }
 
 static bool
-init_ssl(struct pcx_server *server,
+init_ssl(struct pcx_server_socket *ssocket,
          const struct pcx_config_server *server_config,
          struct pcx_error **error)
 {
-        server->ssl_ctx = SSL_CTX_new(TLS_server_method());
-        if (server->ssl_ctx == NULL)
+        ssocket->ssl_ctx = SSL_CTX_new(TLS_server_method());
+        if (ssocket->ssl_ctx == NULL)
                 goto error;
 
-        SSL_CTX_set_default_passwd_cb(server->ssl_ctx, ssl_password_cb);
-        SSL_CTX_set_default_passwd_cb_userdata(server->ssl_ctx,
+        SSL_CTX_set_default_passwd_cb(ssocket->ssl_ctx, ssl_password_cb);
+        SSL_CTX_set_default_passwd_cb_userdata(ssocket->ssl_ctx,
                                                (void *) server_config);
 
-        if (SSL_CTX_use_certificate_file(server->ssl_ctx,
+        if (SSL_CTX_use_certificate_file(ssocket->ssl_ctx,
                                          server_config->certificate,
                                          SSL_FILETYPE_PEM) <= 0)
                 goto error;
 
-        if (SSL_CTX_use_PrivateKey_file(server->ssl_ctx,
+        if (SSL_CTX_use_PrivateKey_file(ssocket->ssl_ctx,
                                         server_config->private_key,
                                         SSL_FILETYPE_PEM) <= 0)
                 goto error;
 
-        SSL_CTX_set_mode(server->ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+        SSL_CTX_set_mode(ssocket->ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
 
         return true;
 
@@ -839,42 +866,62 @@ error:
         return false;
 }
 
-struct pcx_server *
-pcx_server_new(const struct pcx_config *config,
-               const struct pcx_config_server *server_config,
-               struct pcx_error **error)
+bool
+pcx_server_add_config(struct pcx_server *server,
+                      const struct pcx_config_server *server_config,
+                      struct pcx_error **error)
 {
+        int default_port = (server_config->certificate ?
+                            DEFAULT_SSL_PORT :
+                            DEFAULT_PORT);
+
         int sock;
 
-        if (server_config->address)
-                sock = create_socket_for_address(server_config->address, error);
-        else
-                sock = create_socket_for_port(DEFAULT_PORT, error);
+        if (server_config->address) {
+                sock = create_socket_for_address(server_config->address,
+                                                 default_port,
+                                                 error);
+        } else {
+                sock = create_socket_for_port(default_port, error);
+        }
 
         if (sock == -1)
-                return NULL;
+                return false;
 
-        struct pcx_server *server = pcx_calloc(sizeof *server);
+        struct pcx_server_socket *ssocket = pcx_calloc(sizeof *ssocket);
 
-        pcx_list_init(&server->clients);
-
-        server->playerbase = pcx_playerbase_new();
-
-        server->config = config;
-        server->listen_sock = sock;
-        server->listen_source =
+        pcx_list_insert(&server->sockets, &ssocket->link);
+        ssocket->server = server;
+        ssocket->listen_sock = sock;
+        ssocket->listen_source =
                 pcx_main_context_add_poll(NULL,
                                           sock,
                                           PCX_MAIN_CONTEXT_POLL_IN,
                                           listen_sock_cb,
-                                          server);
-        pcx_list_init(&server->pending_conversations);
+                                          ssocket);
 
         if (server_config->certificate &&
-            !init_ssl(server, server_config, error)) {
-                pcx_server_free(server);
-                return NULL;
+            !init_ssl(ssocket, server_config, error)) {
+                free_server_socket(ssocket);
+                return false;
         }
+
+        return server;
+}
+
+struct pcx_server *
+pcx_server_new(const struct pcx_config *config)
+{
+        struct pcx_server *server = pcx_calloc(sizeof *server);
+
+        pcx_list_init(&server->clients);
+        pcx_list_init(&server->sockets);
+
+        server->playerbase = pcx_playerbase_new();
+
+        server->config = config;
+
+        pcx_list_init(&server->pending_conversations);
 
         return server;
 }
@@ -886,6 +933,15 @@ free_clients(struct pcx_server *server)
 
         pcx_list_for_each_safe(client, tmp, &server->clients, link)
                 remove_client(server, client);
+}
+
+static void
+free_sockets(struct pcx_server *server)
+{
+        struct pcx_server_socket *ssocket, *tmp;
+
+        pcx_list_for_each_safe(ssocket, tmp, &server->sockets, link)
+                free_server_socket(ssocket);
 }
 
 static void
@@ -902,21 +958,15 @@ void
 pcx_server_free(struct pcx_server *server)
 {
         free_clients(server);
+        free_sockets(server);
 
         remove_pending_conversations(server);
 
         pcx_playerbase_free(server->playerbase);
 
-        if (server->ssl_ctx)
-                SSL_CTX_free(server->ssl_ctx);
-
         if (server->gc_source)
                 pcx_main_context_remove_source(server->gc_source);
 
-        if (server->listen_source)
-                pcx_main_context_remove_source(server->listen_source);
-        if (server->listen_sock != -1)
-                pcx_close(server->listen_sock);
 
         pcx_free(server);
 }

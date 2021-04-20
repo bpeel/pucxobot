@@ -53,8 +53,7 @@ struct pcx_main {
         size_t n_bots;
         struct pcx_bot **bots;
 
-        size_t n_servers;
-        struct pcx_server **servers;
+        struct pcx_server *server;
 
         struct pcx_config *config;
 
@@ -105,17 +104,16 @@ info_cb(struct pcx_main_context_source *source,
 
         pcx_log("Total games: %i", total_games);
 
-        int total_server_players = 0;
+        if (data->server) {
+                int total_server_players = 0;
 
-        for (int i = 0; i < data->n_servers; i++) {
                 total_server_players +=
-                        pcx_server_get_n_players(data->servers[i]);
+                        pcx_server_get_n_players(data->server);
+                if (total_server_players > 0)
+                        is_busy = true;
+
+                pcx_log("Total server players: %i", total_server_players);
         }
-
-        pcx_log("Total server players: %i", total_server_players);
-
-        if (total_server_players > 0)
-                is_busy = true;
 
         if (signal_num == SIGUSR2) {
                 if (is_busy) {
@@ -176,30 +174,25 @@ init_main_bots(struct pcx_main *data)
 }
 
 static bool
-init_main_servers(struct pcx_main *data)
+init_main_server(struct pcx_main *data)
 {
+        if (pcx_list_empty(&data->config->servers))
+                return true;
+
+        data->server = pcx_server_new(data->config);
+
         struct pcx_config_server *server_conf;
-        size_t n_servers = 0;
-
-        pcx_list_for_each(server_conf, &data->config->servers, link) {
-                n_servers++;
-        }
-
-        data->servers = pcx_alloc((sizeof *data->servers) *
-                                  MAX(n_servers, 1));
 
         pcx_list_for_each(server_conf, &data->config->servers, link) {
                 struct pcx_error *error = NULL;
-                struct pcx_server *server =
-                        pcx_server_new(data->config, server_conf, &error);
 
-                if (server == NULL) {
+                if (!pcx_server_add_config(data->server,
+                                           server_conf,
+                                           &error)) {
                         fprintf(stderr, "%s\n", error->message);
                         pcx_error_free(error);
                         return false;
                 }
-
-                data->servers[data->n_servers++] = server;
         }
 
         return true;
@@ -215,9 +208,8 @@ destroy_main(struct pcx_main *data)
                 pcx_bot_free(data->bots[i]);
         pcx_free(data->bots);
 
-        for (unsigned i = 0; i < data->n_servers; i++)
-                pcx_server_free(data->servers[i]);
-        pcx_free(data->servers);
+        if (data->server)
+                pcx_server_free(data->server);
 
         pcx_buffer_destroy(&data->tty_files);
 
@@ -447,8 +439,7 @@ main(int argc, char **argv)
                 .pcurl = NULL,
                 .n_bots = 0,
                 .bots = NULL,
-                .n_servers = 0,
-                .servers = NULL,
+                .server = NULL,
                 .config = NULL,
                 .curl_inited = false,
                 .quit = false,
@@ -476,7 +467,7 @@ main(int argc, char **argv)
                 goto done;
         }
 
-        if (!init_main_servers(&data)) {
+        if (!init_main_server(&data)) {
                 ret = EXIT_FAILURE;
                 goto done;
         }
