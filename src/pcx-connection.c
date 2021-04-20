@@ -40,6 +40,7 @@
 #include "pcx-ws-parser.h"
 #include "pcx-base64.h"
 #include "pcx-proto.h"
+#include "pcx-ssl-error.h"
 #include "sha1.h"
 
 struct pcx_connection {
@@ -47,6 +48,15 @@ struct pcx_connection {
         char *remote_address_string;
         struct pcx_main_context_source *socket_source;
         int sock;
+
+        /* If we’ve already started an SSL_read that needed to block
+         * in order to continue, these are the flags needed to
+         * complete it.
+         */
+        enum pcx_main_context_poll_flags ssl_read_block;
+        /* Same for an SSL_write */
+        enum pcx_main_context_poll_flags ssl_write_block;
+        size_t ssl_write_block_size;
 
         uint8_t read_buf[1024];
         size_t read_buf_pos;
@@ -98,6 +108,8 @@ struct pcx_connection {
          * if no messages have been sent yet.
          */
         struct pcx_list *last_message_sent;
+
+        SSL *ssl;
 };
 
 static const char
@@ -208,9 +220,16 @@ connection_is_ready_to_write(struct pcx_connection *conn)
 static void
 update_poll_flags(struct pcx_connection *conn)
 {
-        enum pcx_main_context_poll_flags flags = PCX_MAIN_CONTEXT_POLL_IN;
+        enum pcx_main_context_poll_flags flags = 0;
 
-        if (connection_is_ready_to_write(conn))
+        if (conn->ssl_read_block)
+                flags |= conn->ssl_read_block;
+        else
+                flags = PCX_MAIN_CONTEXT_POLL_IN;
+
+        if (conn->ssl_write_block)
+                flags |= conn->ssl_write_block;
+        else if (connection_is_ready_to_write(conn))
                 flags |= PCX_MAIN_CONTEXT_POLL_OUT;
 
         pcx_main_context_modify_poll(conn->socket_source, flags);
@@ -965,8 +984,64 @@ handle_read_error(struct pcx_connection *conn,
 }
 
 static void
+process_incoming_data(struct pcx_connection *conn,
+                      size_t got)
+{
+        set_last_update_time(conn);
+
+        if (conn->ws_parser) {
+                handle_ws_data(conn, got);
+        } else {
+                conn->read_buf_pos += got;
+
+                process_frames(conn);
+        }
+}
+
+static void
+do_ssl_read(struct pcx_connection *conn)
+{
+        size_t got;
+        int ret = SSL_read_ex(conn->ssl,
+                              conn->read_buf + conn->read_buf_pos,
+                              sizeof conn->read_buf - conn->read_buf_pos,
+                              &got);
+        struct pcx_error *error = NULL;
+
+        if (ret > 0) {
+                conn->ssl_read_block = 0;
+                update_poll_flags(conn);
+                process_incoming_data(conn, got);
+        } else {
+                switch (SSL_get_error(conn->ssl, ret)) {
+                case SSL_ERROR_WANT_READ:
+                        conn->ssl_read_block = PCX_MAIN_CONTEXT_POLL_IN;
+                        break;
+                case SSL_ERROR_WANT_WRITE:
+                        conn->ssl_read_block = PCX_MAIN_CONTEXT_POLL_OUT;
+                        break;
+                default:
+                        pcx_ssl_error_set(&error);
+                        pcx_log("For %s: %s",
+                                conn->remote_address_string,
+                                error->message);
+                        pcx_error_free(error);
+                        set_error_state(conn);
+                        return;
+                }
+
+                update_poll_flags(conn);
+        }
+}
+
+static void
 handle_read(struct pcx_connection *conn)
 {
+        if (conn->ssl) {
+                do_ssl_read(conn);
+                return;
+        }
+
         ssize_t got;
 
         got = read(conn->sock,
@@ -976,15 +1051,56 @@ handle_read(struct pcx_connection *conn)
         if (got <= 0) {
                 handle_read_error(conn, got);
         } else {
-                set_last_update_time(conn);
+                process_incoming_data(conn, got);
+        }
+}
 
-                if (conn->ws_parser) {
-                        handle_ws_data(conn, got);
-                } else {
-                        conn->read_buf_pos += got;
+static void
+consume_write_data(struct pcx_connection *conn,
+                   size_t wrote)
+{
+        memmove(conn->write_buf,
+                conn->write_buf + wrote,
+                conn->write_buf_pos - wrote);
+        conn->write_buf_pos -= wrote;
+}
 
-                        process_frames(conn);
+static void
+do_ssl_write(struct pcx_connection *conn,
+             size_t size)
+{
+        int wrote = SSL_write(conn->ssl, conn->write_buf, size);
+        struct pcx_error *error = NULL;
+
+        if (wrote > 0) {
+                consume_write_data(conn, wrote);
+                conn->ssl_write_block = 0;
+                update_poll_flags(conn);
+        } else {
+                switch (SSL_get_error(conn->ssl, wrote)) {
+                case SSL_ERROR_WANT_READ:
+                        conn->ssl_write_block = PCX_MAIN_CONTEXT_POLL_IN;
+                        break;
+                case SSL_ERROR_WANT_WRITE:
+                        conn->ssl_write_block = PCX_MAIN_CONTEXT_POLL_OUT;
+                        break;
+                default:
+                        pcx_ssl_error_set(&error);
+                        pcx_log("For %s: %s",
+                                conn->remote_address_string,
+                                error->message);
+                        pcx_error_free(error);
+                        set_error_state(conn);
+                        return;
                 }
+
+                /* The SSL docs say the next write has to have exactly
+                 * the same arguments so we store the size that we
+                 * used in case something gets added to the write buf
+                 * in the meantime.
+                 */
+                conn->ssl_write_block_size = size;
+                update_poll_flags(conn);
         }
 }
 
@@ -994,6 +1110,11 @@ handle_write(struct pcx_connection *conn)
         int wrote;
 
         fill_write_buf(conn);
+
+        if (conn->ssl) {
+                do_ssl_write(conn, conn->write_buf_pos);
+                return;
+        }
 
         wrote = write(conn->sock,
                       conn->write_buf,
@@ -1010,10 +1131,7 @@ handle_write(struct pcx_connection *conn)
                         set_error_state(conn);
                 }
         } else {
-                memmove(conn->write_buf,
-                        conn->write_buf + wrote,
-                        conn->write_buf_pos - wrote);
-                conn->write_buf_pos -= wrote;
+                consume_write_data(conn, wrote);
 
                 update_poll_flags(conn);
         }
@@ -1027,18 +1145,41 @@ connection_poll_cb(struct pcx_main_context_source *source,
 {
         struct pcx_connection *conn = user_data;
 
-        if (flags & PCX_MAIN_CONTEXT_POLL_ERROR)
+        if (flags & PCX_MAIN_CONTEXT_POLL_ERROR) {
                 handle_error(conn);
-        else if (flags & PCX_MAIN_CONTEXT_POLL_IN)
+                return;
+        }
+
+        if (conn->ssl_read_block &&
+            (flags & conn->ssl_read_block) == conn->ssl_read_block) {
+                do_ssl_read(conn);
+                return;
+        }
+
+        if (conn->ssl_write_block &&
+            (flags & conn->ssl_write_block) == conn->ssl_write_block) {
+                do_ssl_write(conn, conn->ssl_write_block_size);
+                return;
+        }
+
+        if ((flags & PCX_MAIN_CONTEXT_POLL_IN)) {
                 handle_read(conn);
-        else if (flags & PCX_MAIN_CONTEXT_POLL_OUT)
+                return;
+        }
+
+        if ((flags & PCX_MAIN_CONTEXT_POLL_OUT)) {
                 handle_write(conn);
+                return;
+        }
 }
 
 void
 pcx_connection_free(struct pcx_connection *conn)
 {
         remove_sources(conn);
+
+        if (conn->ssl)
+                SSL_free(conn->ssl);
 
         pcx_free(conn->remote_address_string);
         pcx_close(conn->sock);
@@ -1055,6 +1196,28 @@ pcx_connection_free(struct pcx_connection *conn)
                 pcx_free(conn->sha1_ctx);
 
         pcx_free(conn);
+}
+
+static bool
+init_ssl(struct pcx_connection *conn,
+         SSL_CTX *ssl_ctx,
+         struct pcx_error **error)
+{
+        conn->ssl = SSL_new(ssl_ctx);
+
+        if (conn->ssl == NULL)
+                goto error;
+
+        SSL_set_accept_state(conn->ssl);
+
+        if (!SSL_set_fd(conn->ssl, conn->sock))
+                goto error;
+
+        return true;
+
+error:
+        pcx_ssl_error_set(error);
+        return false;
 }
 
 static struct pcx_connection *
@@ -1103,7 +1266,8 @@ pcx_connection_get_remote_address(struct pcx_connection *conn)
 }
 
 struct pcx_connection *
-pcx_connection_accept(int server_sock,
+pcx_connection_accept(SSL_CTX *ssl_ctx,
+                      int server_sock,
                       struct pcx_error **error)
 {
         struct pcx_netaddress address;
@@ -1131,7 +1295,16 @@ pcx_connection_accept(int server_sock,
 
         pcx_netaddress_from_native(&address, &native_address);
 
-        return new_for_socket(sock, &address);
+        struct pcx_connection *conn = new_for_socket(sock, &address);
+
+        if (ssl_ctx) {
+                if (!init_ssl(conn, ssl_ctx, error)) {
+                        pcx_connection_free(conn);
+                        return NULL;
+                }
+        }
+
+        return conn;
 }
 
 uint64_t

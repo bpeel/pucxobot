@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <openssl/ssl.h>
 
 #include "pcx-error.h"
 #include "pcx-netaddress.h"
@@ -79,7 +80,8 @@ struct pcx_connection_send_message_event {
 struct pcx_connection;
 
 struct pcx_connection *
-pcx_connection_accept(int server_sock,
+pcx_connection_accept(SSL_CTX *ssl_ctx,
+                      int server_sock,
                       struct pcx_error **error);
 
 void

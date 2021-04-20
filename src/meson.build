@@ -39,6 +39,7 @@ src = [
         'pcx-curl-multi.c',
         'pcx-config.c',
         'pcx-text.c',
+        'pcx-ssl-error.c',
         'pcx-coup.c',
         'pcx-snitch.c',
         'pcx-snitch-help.c',
@@ -61,10 +62,11 @@ src += translations
 
 curl = dependency('libcurl', version: '>=7.16')
 json = dependency('json-c')
+openssl = dependency('openssl')
 thread_dep = dependency('threads')
 
 executable('pucxobot', src,
-           dependencies: [curl, json, thread_dep],
+           dependencies: [curl, json, thread_dep, openssl],
            include_directories: configinc,
            install: true)
 

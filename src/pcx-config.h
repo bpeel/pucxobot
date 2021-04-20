@@ -41,6 +41,9 @@ struct pcx_config_bot {
 struct pcx_config_server {
         struct pcx_list link;
         char *address;
+        char *certificate;
+        char *private_key;
+        char *private_key_password;
 };
 
 struct pcx_config {

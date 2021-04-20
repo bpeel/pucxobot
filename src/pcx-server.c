@@ -29,6 +29,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <fcntl.h>
+#include <openssl/ssl.h>
 
 #include "pcx-util.h"
 #include "pcx-main-context.h"
@@ -46,6 +47,7 @@
 #include "pcx-playerbase.h"
 #include "pcx-proto.h"
 #include "pcx-generate-id.h"
+#include "pcx-ssl-error.h"
 
 #define DEFAULT_PORT 3648
 
@@ -70,6 +72,8 @@ struct pcx_server {
          * stored here so that people can join it.
          */
         struct pcx_list pending_conversations;
+
+        SSL_CTX *ssl_ctx;
 };
 
 struct pcx_server_client {
@@ -751,7 +755,7 @@ listen_sock_cb(struct pcx_main_context_source *source,
         struct pcx_connection *conn;
         struct pcx_error *error = NULL;
 
-        conn = pcx_connection_accept(fd, &error);
+        conn = pcx_connection_accept(server->ssl_ctx, fd, &error);
 
         if (conn == NULL) {
                 if (error->domain == &pcx_file_error &&
@@ -785,6 +789,56 @@ pcx_server_get_n_players(struct pcx_server *server)
         return pcx_playerbase_get_n_players(server->playerbase);
 }
 
+static int
+ssl_password_cb(char *buf, int size, int rwflag, void *user_data)
+{
+        const struct pcx_config_server *server_config = user_data;
+
+        if (server_config->private_key_password == NULL)
+                return -1;
+
+        size_t length = strlen(server_config->private_key_password);
+
+        if (length > size)
+                return -1;
+
+        memcpy(buf, server_config->private_key_password, length);
+
+        return length;
+}
+
+static bool
+init_ssl(struct pcx_server *server,
+         const struct pcx_config_server *server_config,
+         struct pcx_error **error)
+{
+        server->ssl_ctx = SSL_CTX_new(TLS_server_method());
+        if (server->ssl_ctx == NULL)
+                goto error;
+
+        SSL_CTX_set_default_passwd_cb(server->ssl_ctx, ssl_password_cb);
+        SSL_CTX_set_default_passwd_cb_userdata(server->ssl_ctx,
+                                               (void *) server_config);
+
+        if (SSL_CTX_use_certificate_file(server->ssl_ctx,
+                                         server_config->certificate,
+                                         SSL_FILETYPE_PEM) <= 0)
+                goto error;
+
+        if (SSL_CTX_use_PrivateKey_file(server->ssl_ctx,
+                                        server_config->private_key,
+                                        SSL_FILETYPE_PEM) <= 0)
+                goto error;
+
+        SSL_CTX_set_mode(server->ssl_ctx, SSL_MODE_ENABLE_PARTIAL_WRITE);
+
+        return true;
+
+error:
+        pcx_ssl_error_set(error);
+        return false;
+}
+
 struct pcx_server *
 pcx_server_new(const struct pcx_config *config,
                const struct pcx_config_server *server_config,
@@ -816,6 +870,12 @@ pcx_server_new(const struct pcx_config *config,
                                           server);
         pcx_list_init(&server->pending_conversations);
 
+        if (server_config->certificate &&
+            !init_ssl(server, server_config, error)) {
+                pcx_server_free(server);
+                return NULL;
+        }
+
         return server;
 }
 
@@ -846,6 +906,9 @@ pcx_server_free(struct pcx_server *server)
         remove_pending_conversations(server);
 
         pcx_playerbase_free(server->playerbase);
+
+        if (server->ssl_ctx)
+                SSL_CTX_free(server->ssl_ctx);
 
         if (server->gc_source)
                 pcx_main_context_remove_source(server->gc_source);

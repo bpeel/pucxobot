@@ -104,6 +104,9 @@ server_options[] = {
                 OPTION_TYPE_ ## type,                           \
         }
         OPTION(address, STRING),
+        OPTION(certificate, STRING),
+        OPTION(private_key, STRING),
+        OPTION(private_key_password, STRING),
 #undef OPTION
 };
 
@@ -276,6 +279,36 @@ validate_server(struct pcx_config_server *server,
                 const char *filename,
                 struct pcx_error **error)
 {
+        if (server->certificate && server->private_key == NULL) {
+                pcx_set_error(error,
+                              &pcx_config_error,
+                              PCX_CONFIG_ERROR_IO,
+                              "%s: SSL certificate specified without "
+                              "private key",
+                              filename);
+                return false;
+        }
+
+        if (server->private_key && server->certificate == NULL) {
+                pcx_set_error(error,
+                              &pcx_config_error,
+                              PCX_CONFIG_ERROR_IO,
+                              "%s: SSL private key speficied without "
+                              "certificate",
+                              filename);
+                return false;
+        }
+
+        if (server->private_key_password && server->private_key == NULL) {
+                pcx_set_error(error,
+                              &pcx_config_error,
+                              PCX_CONFIG_ERROR_IO,
+                              "%s: SSL private key password speficied without "
+                              "private key",
+                              filename);
+                return false;
+        }
+
         return true;
 }
 
@@ -419,6 +452,9 @@ free_servers(struct pcx_config *config)
         struct pcx_config_server *server, *tmp;
 
         pcx_list_for_each_safe(server, tmp, &config->servers, link) {
+                pcx_free(server->certificate);
+                pcx_free(server->private_key);
+                pcx_free(server->private_key_password);
                 pcx_free(server->address);
                 pcx_free(server);
         }
