@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2019, 2021  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
+#include <grp.h>
+#include <pwd.h>
 
 #include "pcx-tty-game.h"
 #include "pcx-bot.h"
@@ -63,13 +65,15 @@ struct pcx_main {
         struct pcx_buffer tty_files;
         const char *config_filename;
         const char *log_filename;
+        const char *run_as_user;
+        const char *run_as_group;
         bool daemonize;
         bool curl_inited;
         bool quit;
         int lock_fd;
 };
 
-static const char options[] = "-ht:l:c:d";
+static const char options[] = "-ht:l:c:du:g:";
 
 static void
 quit_cb(struct pcx_main_context_source *source,
@@ -250,7 +254,9 @@ usage(void)
                " -c <file>            Specify a config file. Defaults to\n"
                "                      ~/.pucxobot/conf.txt\n"
                " -d                   Fork and detach from terminal\n"
-               "                      (Daemonize)\n");
+               "                      (Daemonize)\n"
+               " -u <user>            Drop privileges to user\n"
+               " -g <group>           Drop privileges to group\n");
 }
 
 static bool
@@ -296,6 +302,14 @@ process_arguments(struct pcx_main *data,
 
                 case 'd':
                         data->daemonize = true;
+                        break;
+
+                case 'u':
+                        data->run_as_user = optarg;
+                        break;
+
+                case 'g':
+                        data->run_as_group = optarg;
                         break;
                 }
         }
@@ -395,6 +409,74 @@ check_not_already_running(struct pcx_main *data)
         return true;
 }
 
+static bool
+set_user(const char *user_name)
+{
+        struct passwd *user_info;
+
+        user_info = getpwnam(user_name);
+
+        if(user_info == NULL)
+        {
+                fprintf(stderr, "Unknown user \"%s\"\n", user_name);
+                return false;
+        }
+
+        if(setuid(user_info->pw_uid) == -1)
+        {
+                fprintf(stderr,
+                        "Error setting user privileges: %s\n",
+                        strerror(errno));
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+set_group(const char *group_name)
+{
+        struct group *group_info;
+
+        group_info = getgrnam(group_name);
+
+        if(group_info == NULL)
+        {
+                fprintf(stderr, "Unknown group \"%s\"\n", group_name);
+                return false;
+        }
+
+        if(setgid(group_info->gr_gid) == -1)
+        {
+                fprintf(stderr,
+                        "Error setting group privileges: %s\n",
+                         strerror(errno));
+                return false;
+        }
+
+        return true;
+}
+
+static bool
+drop_privileges(struct pcx_main *data)
+{
+        const char *group = (data->run_as_group ?
+                             data->run_as_group :
+                             data->config->group);
+
+        if (group && !set_group(group))
+                return false;
+
+        const char *user = (data->run_as_user ?
+                            data->run_as_user :
+                            data->config->user);
+
+        if (user && !set_user(user))
+                return false;
+
+        return true;
+}
+
 static void
 daemonize(void)
 {
@@ -468,6 +550,11 @@ main(int argc, char **argv)
         }
 
         if (!init_main_server(&data)) {
+                ret = EXIT_FAILURE;
+                goto done;
+        }
+
+        if (!drop_privileges(&data)) {
                 ret = EXIT_FAILURE;
                 goto done;
         }

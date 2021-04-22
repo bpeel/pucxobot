@@ -49,6 +49,8 @@ struct pcx_config_server {
 struct pcx_config {
         char *data_dir;
         char *log_file;
+        char *user;
+        char *group;
         struct pcx_list bots;
         struct pcx_list servers;
 };
