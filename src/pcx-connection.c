@@ -1018,6 +1018,9 @@ do_ssl_read(struct pcx_connection *conn)
                 case SSL_ERROR_WANT_WRITE:
                         conn->ssl_read_block = PCX_MAIN_CONTEXT_POLL_OUT;
                         break;
+                case SSL_ERROR_ZERO_RETURN:
+                        handle_read_error(conn, 0 /* got */);
+                        return;
                 default:
                         pcx_ssl_error_set(&error);
                         pcx_log("For %s: %s",
