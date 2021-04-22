@@ -183,7 +183,7 @@ exchange_button = {
 static const struct coup_text_button
 exchange_inspector_button = {
         .text = PCX_TEXT_STRING_EXCHANGE_INSPECTOR,
-        .data = exchange_button.data
+        .data = "exchange"
 };
 
 static const struct coup_text_button
