@@ -1119,8 +1119,10 @@ handle_write(struct pcx_connection *conn)
          * connection_is_ready_to_write return true but then
          * fill_write_buf will just skip them.
          */
-        if (conn->write_buf_pos == 0)
+        if (conn->write_buf_pos == 0) {
+                update_poll_flags(conn);
                 return;
+        }
 
         if (conn->ssl) {
                 do_ssl_write(conn, conn->write_buf_pos);
