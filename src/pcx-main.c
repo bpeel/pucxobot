@@ -416,14 +416,12 @@ set_user(const char *user_name)
 
         user_info = getpwnam(user_name);
 
-        if(user_info == NULL)
-        {
+        if(user_info == NULL) {
                 fprintf(stderr, "Unknown user \"%s\"\n", user_name);
                 return false;
         }
 
-        if(setuid(user_info->pw_uid) == -1)
-        {
+        if(setuid(user_info->pw_uid) == -1) {
                 fprintf(stderr,
                         "Error setting user privileges: %s\n",
                         strerror(errno));
@@ -440,14 +438,12 @@ set_group(const char *group_name)
 
         group_info = getgrnam(group_name);
 
-        if(group_info == NULL)
-        {
+        if(group_info == NULL) {
                 fprintf(stderr, "Unknown group \"%s\"\n", group_name);
                 return false;
         }
 
-        if(setgid(group_info->gr_gid) == -1)
-        {
+        if(setgid(group_info->gr_gid) == -1) {
                 fprintf(stderr,
                         "Error setting group privileges: %s\n",
                          strerror(errno));
