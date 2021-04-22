@@ -1001,19 +1001,17 @@ process_incoming_data(struct pcx_connection *conn,
 static void
 do_ssl_read(struct pcx_connection *conn)
 {
-        size_t got;
-        int ret = SSL_read_ex(conn->ssl,
-                              conn->read_buf + conn->read_buf_pos,
-                              sizeof conn->read_buf - conn->read_buf_pos,
-                              &got);
+        int got = SSL_read(conn->ssl,
+                           conn->read_buf + conn->read_buf_pos,
+                           sizeof conn->read_buf - conn->read_buf_pos);
         struct pcx_error *error = NULL;
 
-        if (ret > 0) {
+        if (got > 0) {
                 conn->ssl_read_block = 0;
                 update_poll_flags(conn);
                 process_incoming_data(conn, got);
         } else {
-                switch (SSL_get_error(conn->ssl, ret)) {
+                switch (SSL_get_error(conn->ssl, got)) {
                 case SSL_ERROR_WANT_READ:
                         conn->ssl_read_block = PCX_MAIN_CONTEXT_POLL_IN;
                         break;
