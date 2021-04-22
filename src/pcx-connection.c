@@ -1109,6 +1109,16 @@ handle_write(struct pcx_connection *conn)
 
         fill_write_buf(conn);
 
+        /* Don’t bother trying to write if the buffer is empty. This
+         * is important for SSL_write because it will get confused if
+         * we try this. This can happen if there are only private
+         * messages for other players in the queue. That will make
+         * connection_is_ready_to_write return true but then
+         * fill_write_buf will just skip them.
+         */
+        if (conn->write_buf_pos == 0)
+                return;
+
         if (conn->ssl) {
                 do_ssl_write(conn, conn->write_buf_pos);
                 return;
