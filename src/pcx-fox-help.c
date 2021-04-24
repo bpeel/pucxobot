@@ -63,7 +63,7 @@ pcx_fox_help[] = {
         "Fox in the Forest is a trick-taking card game for two players.\n"
         "\n"
         "The deck has the cards 1-11 with the suits 🔔, 🗝 and 🌜. During a "
-        "trick, one player leads and the other followers. If the follower has "
+        "trick, one player leads and the other follows. If the follower has "
         "at least one card with same suit as the lead card then they have to "
         "follow suit. Otherwise they can play any card. The player who plays "
         "the best card takes the trick and leads the next one.\n"
