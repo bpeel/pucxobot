@@ -981,6 +981,65 @@ out:
 }
 
 static bool
+test_become_trump_lead_suit(void)
+{
+        struct test_data *data = create_test_data();
+
+        bool ret = true;
+
+        /* Bob plays 9 of keys */
+        remove_card_from_hand(data->players + 1, 1, 9);
+
+        ret = send_callback_data(data,
+                                 1,
+                                 "play:25", /* 9 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob ludis: 🗝9🎩",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Nun Alice elektas kiun karton ludi.",
+                                 ARG_TYPE_FOLLOW_CHOICE,
+                                 0,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+        /* Alice plays the 11 of keys. Normally this would win because
+         * both cards are of the same suit, but the 9 card’s power
+         * changes it to be bells for the purposes of calculating the
+         * winner.
+         */
+        remove_card_from_hand(data->players + 1, 1, 11);
+
+        ret = send_callback_data(data,
+                                 0,
+                                 "play:27", /* 11 keys */
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Alice ludis: 🗝11↕️",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "Bob gajnis la prenvicon.\n"
+                                 "\n"
+                                 "La prenoj gajnitaj en ĉi tiu raŭndo ĝis nun "
+                                 "estas:\n"
+                                 "Alice: 0\n"
+                                 "Bob: 1",
+                                 TEST_MESSAGE_TYPE_GLOBAL,
+                                 "La dekreta karto estas: 🔔8\n"
+                                 "\n"
+                                 "Bob komencas la prenvicon.",
+                                 ARG_TYPE_LEADER_CHOICE,
+                                 1,
+                                 -1);
+        if (!ret)
+                goto out;
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
 test_two_become_trumps(void)
 {
         struct test_data *data = create_test_data();
@@ -1849,6 +1908,7 @@ main(int argc, char **argv)
             !test_exchange() ||
             !test_draw_card() ||
             !test_become_trump() ||
+            !test_become_trump_lead_suit() ||
             !test_two_become_trumps() ||
             !test_force_best_card() ||
             !test_full_game())
