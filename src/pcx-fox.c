@@ -618,10 +618,8 @@ show_follow_player(struct pcx_fox *fox)
         show_card_question(fox, follow_player);
 }
 
-static void
-get_trick_winner(struct pcx_fox *fox,
-                 int *winning_player_out,
-                 pcx_fox_card_t *winning_card_out)
+static int
+get_trick_winner(struct pcx_fox *fox)
 {
         enum pcx_fox_suit trump_suit = PCX_FOX_CARD_SUIT(fox->trump_card);
         int override_card = -1;
@@ -670,8 +668,7 @@ no_override: (void) 0;
                         winning_card = i;
         }
 
-        *winning_player_out = (fox->leader + winning_card) % PCX_FOX_N_PLAYERS;
-        *winning_card_out = fox->played_cards[winning_card];
+        return (fox->leader + winning_card) % PCX_FOX_N_PLAYERS;
 }
 
 static int
@@ -698,9 +695,7 @@ end_card_play(struct pcx_fox *fox)
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        int winner;
-        pcx_fox_card_t winning_card;
-        get_trick_winner(fox, &winner, &winning_card);
+        int winner = get_trick_winner(fox);
 
         fox->players[winner].tricks_this_round++;
 
