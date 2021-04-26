@@ -52,7 +52,7 @@ typedef uint8_t pcx_fox_card_t;
 #define PCX_FOX_CARD_EXCHANGE 3
 #define PCX_FOX_CARD_DRAW 5
 #define PCX_FOX_CARD_POINT 7
-#define PCX_FOX_CARD_OVERRIDE_TRUMP 9
+#define PCX_FOX_CARD_BECOME_TRUMP 9
 #define PCX_FOX_CARD_FORCE_BEST_CARD 11
 
 enum pcx_fox_suit {
@@ -125,7 +125,7 @@ value_symbols[] = {
         [PCX_FOX_CARD_EXCHANGE] = "🔄",
         [PCX_FOX_CARD_DRAW] = "📤",
         [PCX_FOX_CARD_POINT] = "💎",
-        [PCX_FOX_CARD_OVERRIDE_TRUMP] = "🎩",
+        [PCX_FOX_CARD_BECOME_TRUMP] = "🎩",
         [PCX_FOX_CARD_FORCE_BEST_CARD] = "↕️",
 };
 
@@ -622,25 +622,36 @@ static int
 get_trick_winner(struct pcx_fox *fox)
 {
         enum pcx_fox_suit trump_suit = PCX_FOX_CARD_SUIT(fox->trump_card);
-        int override_card = -1;
+        int become_trump_card = -1;
+        /* Copy of the played cards for the purposes of calculating
+         * the score. This might be different if the BECOME_TRUMP card
+         * is played.
+         */
+        pcx_fox_card_t played_cards[PCX_FOX_N_PLAYERS];
+
+        memcpy(played_cards, fox->played_cards, sizeof played_cards);
 
         for (int i = 0; i < PCX_FOX_N_PLAYERS; i++) {
-                if (PCX_FOX_CARD_VALUE(fox->played_cards[i]) !=
-                    PCX_FOX_CARD_OVERRIDE_TRUMP)
+                if (PCX_FOX_CARD_VALUE(played_cards[i]) !=
+                    PCX_FOX_CARD_BECOME_TRUMP)
                         continue;
 
-                if (override_card != -1)
-                        goto no_override;
+                if (become_trump_card != -1)
+                        goto no_become_trump_card;
 
-                override_card = i;
+                become_trump_card = i;
         }
 
-        if (override_card != -1) {
-                pcx_fox_card_t card = fox->played_cards[override_card];
-                trump_suit = PCX_FOX_CARD_SUIT(card);
+        if (become_trump_card != -1) {
+                /* Replace the card with the same card of the trump
+                 * suit for the purposes of calculating the score.
+                 */
+                played_cards[become_trump_card] =
+                        PCX_FOX_MAKE_CARD(trump_suit,
+                                          PCX_FOX_CARD_BECOME_TRUMP);
         }
 
-no_override: (void) 0;
+no_become_trump_card: (void) 0;
 
         enum pcx_fox_suit lead_suit = PCX_FOX_CARD_SUIT(fox->played_cards[0]);
 
@@ -648,7 +659,7 @@ no_override: (void) 0;
         int card_scores[PCX_FOX_N_PLAYERS];
 
         for (int i = 0; i < PCX_FOX_N_PLAYERS; i++) {
-                pcx_fox_card_t card = fox->played_cards[i];
+                pcx_fox_card_t card = played_cards[i];
                 int score = PCX_FOX_CARD_VALUE(card);
 
                 /* The trump suit scores more than anything else */

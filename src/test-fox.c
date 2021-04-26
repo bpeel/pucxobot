@@ -918,7 +918,7 @@ out:
 }
 
 static bool
-test_override_trump(void)
+test_become_trump(void)
 {
         struct test_data *data = create_test_data();
 
@@ -947,8 +947,8 @@ test_override_trump(void)
         if (!ret)
                 goto out;
 
-        /* Bob plays 9 keys which makes keys be the trump suit and he
-         * wins the trick.
+        /* Bob plays 9 keys which is treated as if it were the 9 of
+         * bells and he wins the trick.
          */
         remove_card_from_hand(data->players + 1, 1, 9);
 
@@ -981,7 +981,7 @@ out:
 }
 
 static bool
-test_two_trump_overrides(void)
+test_two_become_trumps(void)
 {
         struct test_data *data = create_test_data();
 
@@ -992,7 +992,7 @@ test_two_trump_overrides(void)
         if (!ret)
                 goto out;
 
-        /* Alice plays a moon trump override. Bob doesn’t have any
+        /* Alice plays a moon become trump card. Bob doesn’t have any
          * moons so he is free to play any card.
          */
         remove_card_from_hand(data->players + 0, 2, 9);
@@ -1010,8 +1010,8 @@ test_two_trump_overrides(void)
         if (!ret)
                 goto out;
 
-        /* Bob plays 9 keys. This doesn’t override the trump so Alice
-         * wins the trick with the lead suit.
+        /* Bob plays 9 keys. This doesn’t get treated as the 9 of
+         * bells so Alice wins the trick with the lead suit.
          */
         remove_card_from_hand(data->players + 1, 1, 9);
 
@@ -1848,8 +1848,8 @@ main(int argc, char **argv)
             !test_lose_but_lead() ||
             !test_exchange() ||
             !test_draw_card() ||
-            !test_override_trump() ||
-            !test_two_trump_overrides() ||
+            !test_become_trump() ||
+            !test_two_become_trumps() ||
             !test_force_best_card() ||
             !test_full_game())
                 ret = EXIT_FAILURE;
