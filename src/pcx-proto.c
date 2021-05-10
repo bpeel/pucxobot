@@ -75,14 +75,20 @@ pcx_proto_write_frame_header(uint8_t *buffer,
 {
         /* opcode (2) (binary) with FIN bit set */
         buffer[0] = 0x82;
+        /* pcx_proto_write_* stores the numbers as little-endian but
+         * the frame header is big-endian so we always swap the bytes
+         * to make the equivalent of big-endian. Using PCX_*_TO_BE
+         * won’t work, we always want to swap to compensate for the
+         * conversion to LE.
+         */
         if (payload_length > 0xffff) {
                 buffer[1] = 127;
                 pcx_proto_write_uint64_t(buffer + 2,
-                                         PCX_UINT64_TO_BE(payload_length));
+                                         PCX_SWAP_UINT64(payload_length));
         } else if (payload_length >= 126) {
                 buffer[1] = 126;
                 pcx_proto_write_uint16_t(buffer + 2,
-                                         PCX_UINT16_TO_BE(payload_length));
+                                         PCX_SWAP_UINT16(payload_length));
         } else {
                 buffer[1] = payload_length;
         }
