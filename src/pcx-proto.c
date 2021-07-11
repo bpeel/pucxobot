@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include "pcx-proto.h"
+#include "pcx-utf8.h"
 
 #include <stdarg.h>
 #include <assert.h>
@@ -233,6 +234,10 @@ pcx_proto_read_payload(const uint8_t *buffer,
                                 goto done;
                         }
                         *str = (const char *) buffer + pos;
+                        if (!pcx_utf8_is_valid_string(*str)) {
+                                ret = false;
+                                goto done;
+                        }
                         pos = str_end - buffer + 1;
                         break;
 
