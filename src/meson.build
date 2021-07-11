@@ -27,6 +27,7 @@ src = [
         'pcx-conversation.c',
         'pcx-proto.c',
         'pcx-base64.c',
+        'pcx-utf8.c',
         'pcx-ws-parser.c',
         'pcx-connection.c',
         'pcx-netaddress.c',
@@ -112,3 +113,12 @@ test_fox_src += translations
 test_fox = executable('test-fox', test_fox_src,
                        include_directories: configinc)
 test('fox', test_fox)
+
+test_utf8_src = [
+        'pcx-utf8.c',
+        'test-utf8.c',
+]
+
+test_utf8 = executable('test-utf8', test_utf8_src,
+                       include_directories: configinc)
+test('utf8', test_utf8)
