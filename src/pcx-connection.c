@@ -656,7 +656,7 @@ process_message(struct pcx_connection *conn)
                 return handle_keep_alive(conn);
         }
 
-        pcx_log("Client %s sent an unknown message ID (0x%u)",
+        pcx_log("Client %s sent an unknown message ID (0x%x)",
                 conn->remote_address_string,
                 conn->message_data[0]);
         set_error_state(conn);
