@@ -425,7 +425,7 @@ process_control_frame(struct pcx_connection *conn,
                 set_error_state(conn);
                 return false;
         case 0x9:
-                assert(data_length < sizeof conn->pong_data);
+                assert(data_length <= sizeof conn->pong_data);
                 memcpy(conn->pong_data, data, data_length);
                 conn->pong_data_length = data_length;
                 conn->pong_queued = true;
