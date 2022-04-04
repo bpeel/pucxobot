@@ -95,3 +95,16 @@ with tempfile.NamedTemporaryFile() as dictionary:
 
     if not result:
         sys.exit(1)
+
+    with tempfile.NamedTemporaryFile(mode="wt", encoding="utf-8") as word_list:
+        for word in WORDS:
+            print(word, file=word_list)
+
+        word_list.flush()
+
+        with tempfile.NamedTemporaryFile() as tried_list:
+            subprocess.check_call([test_program, dictionary.name],
+                                  stdout=tried_list)
+            tried_list.flush()
+
+            subprocess.check_call(["diff", word_list.name, tried_list.name])

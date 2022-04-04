@@ -23,6 +23,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static void
+test_words(struct pcx_trie *trie,
+           int n_words,
+           char **words)
+{
+        for (int i = 0; i < n_words; i++) {
+                printf("%s: %s\n",
+                       words[i],
+                       pcx_trie_contains_word(trie, words[i]) ?
+                       "yes" :
+                       "no");
+        }
+}
+
+static void
+word_cb(const char *word,
+        void *user_data)
+{
+        fprintf(user_data, "%s\n", word);
+}
+
+static void
+dump_trie(struct pcx_trie *trie)
+{
+        pcx_trie_iterate(trie, word_cb, stdout);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -35,6 +62,9 @@ main(int argc, char **argv)
                 return EXIT_FAILURE;
         }
 
+        char **words = argv + 2;
+        int n_words = argc - 2;
+
         struct pcx_trie *trie = pcx_trie_new(argv[1], &error);
 
         if (trie == NULL) {
@@ -42,13 +72,10 @@ main(int argc, char **argv)
                 pcx_error_free(error);
                 ret = EXIT_FAILURE;
         } else {
-                for (int i = 2; i < argc; i++) {
-                        printf("%s: %s\n",
-                               argv[i],
-                               pcx_trie_contains_word(trie, argv[i]) ?
-                               "yes" :
-                               "no");
-                }
+                if (n_words > 0)
+                        test_words(trie, n_words, words);
+                else
+                        dump_trie(trie);
 
                 pcx_trie_free(trie);
         }

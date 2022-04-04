@@ -23,6 +23,10 @@
 
 #include "pcx-error.h"
 
+typedef void
+(* pcx_trie_iterate_cb)(const char *word,
+                        void *user_data);
+
 struct pcx_trie *
 pcx_trie_new(const char *filename,
              struct pcx_error **error);
@@ -30,6 +34,11 @@ pcx_trie_new(const char *filename,
 bool
 pcx_trie_contains_word(struct pcx_trie *trie,
                        const char *word);
+
+void
+pcx_trie_iterate(struct pcx_trie *trie,
+                 pcx_trie_iterate_cb cb,
+                 void *user_data);
 
 void
 pcx_trie_free(struct pcx_trie *trie);

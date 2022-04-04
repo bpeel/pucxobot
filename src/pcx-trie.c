@@ -30,6 +30,7 @@
 
 #include "pcx-file-error.h"
 #include "pcx-utf8.h"
+#include "pcx-buffer.h"
 
 struct pcx_trie {
         int fd;
@@ -124,6 +125,94 @@ pcx_trie_contains_word(struct pcx_trie *trie,
                         child = child_letter + child_length;
                 }
         }
+}
+
+struct stack_entry {
+        const uint8_t *child;
+        const uint8_t *end;
+        size_t word_length;
+};
+
+static struct stack_entry *
+get_stack_top(struct pcx_buffer *stack)
+{
+        return (struct stack_entry *) (stack->data + stack->length) - 1;
+}
+
+static void
+add_stack_entry(struct pcx_buffer *stack,
+                const uint8_t *child,
+                const uint8_t *end,
+                size_t word_length)
+{
+        pcx_buffer_set_length(stack,
+                              stack->length + sizeof (struct stack_entry));
+        struct stack_entry *entry = get_stack_top(stack);
+
+        entry->child = child;
+        entry->end = end;
+        entry->word_length = word_length;
+}
+
+static void
+stack_pop(struct pcx_buffer *stack)
+{
+        stack->length -= sizeof (struct stack_entry);
+}
+
+void
+pcx_trie_iterate(struct pcx_trie *trie,
+                 pcx_trie_iterate_cb cb,
+                 void *user_data)
+{
+        struct pcx_buffer stack = PCX_BUFFER_STATIC_INIT;
+        struct pcx_buffer word = PCX_BUFFER_STATIC_INIT;
+
+        add_stack_entry(&stack,
+                        trie->data,
+                        trie->data + trie->size,
+                        0 /* word_length */);
+
+        while (stack.length > 0) {
+                struct stack_entry *entry = get_stack_top(&stack);
+
+                size_t child_length;
+
+                const uint8_t *letter_start =
+                        read_length(entry->child,
+                                    entry->end - entry->child,
+                                    &child_length);
+
+                if (letter_start == NULL || letter_start >= entry->end) {
+                        stack_pop(&stack);
+                        continue;
+                }
+
+                const uint8_t *children =
+                        (const uint8_t *) pcx_utf8_next((const char *)
+                                                        letter_start);
+
+                if (children > entry->end) {
+                        stack_pop(&stack);
+                        continue;
+                }
+
+                pcx_buffer_set_length(&word, entry->word_length);
+                pcx_buffer_append(&word, letter_start, children - letter_start);
+
+                if (*letter_start == '\0' &&
+                    pcx_utf8_is_valid_string((const char *) word.data)) {
+                        cb(pcx_utf8_next((const char *) word.data),
+                           user_data);
+                }
+
+                entry->child = letter_start + child_length;
+
+                add_stack_entry(&stack, children, entry->child, word.length);
+        }
+
+        pcx_buffer_destroy(&word);
+        pcx_buffer_destroy(&stack);
 }
 
 struct pcx_trie *

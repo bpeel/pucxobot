@@ -125,6 +125,7 @@ test_utf8 = executable('test-utf8', test_utf8_src,
 test('utf8', test_utf8)
 
 test_trie_src = [
+        'pcx-buffer.c',
         'pcx-error.c',
         'pcx-file-error.c',
         'pcx-trie.c',
