@@ -73,7 +73,14 @@ class WordList:
 
         for element in kap:
             if element.tag == "tld":
-                current_list.append(root)
+                first_letter = element.get("lit")
+
+                if first_letter is None:
+                    current_list.append(root)
+                else:
+                    current_list.append(first_letter)
+                    current_list.append(root[1:])
+
                 current_list = after
 
             if element.tail is not None:
