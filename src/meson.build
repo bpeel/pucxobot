@@ -122,3 +122,16 @@ test_utf8_src = [
 test_utf8 = executable('test-utf8', test_utf8_src,
                        include_directories: configinc)
 test('utf8', test_utf8)
+
+test_trie_src = [
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-trie.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+        'test-trie.c',
+]
+test_trie = executable('test-trie', test_trie_src,
+                       include_directories: configinc)
+
+test('trie', files('test-trie.py'), args : [ test_trie ])
