@@ -137,3 +137,15 @@ test_trie = executable('test-trie', test_trie_src,
                        include_directories: configinc)
 
 test('trie', files('test-trie.py'), args : [ test_trie ])
+
+make_syllables_src = [
+        'pcx-buffer.c',
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-trie.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+        'make-syllables.c',
+]
+make_syllables = executable('make-syllables', make_syllables_src,
+                            include_directories: configinc)
