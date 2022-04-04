@@ -25,6 +25,7 @@ import os
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
     LIST_RE = re.compile(r', *$')
+    PRONOUNS = {"mi", "ni", "ci", "vi", "li", "ŝi", "ri", "ili"}
 
     def __init__(self):
         self.words = set()
@@ -37,11 +38,15 @@ class WordList:
             self.add_word(root + ending)
 
     def add_simple_adjective(self, root):
-        for ending in ["a", "aj", "an", "ajn", "e"]:
+        for ending in ["a", "aj", "an", "ajn"]:
             self.add_word(root + ending)
 
-    def add_adjective(self, root):
+    def add_simple_adjective_and_adverb(self, root):
         self.add_simple_adjective(root)
+        self.add_word(root + "e")
+
+    def add_adjective(self, root):
+        self.add_simple_adjective_and_adverb(root)
         self.add_verb(root)
         self.add_verb(root + "ig")
         self.add_verb(root + "iĝ")
@@ -52,7 +57,7 @@ class WordList:
         for tense in "iao":
             participle = root + tense + "nt"
             self.add_noun(participle)
-            self.add_simple_adjective(participle)
+            self.add_simple_adjective_and_adverb(participle)
 
             self.add_word(root + tense + "s")
 
@@ -85,7 +90,10 @@ class WordList:
         elif after == "o":
             self.add_noun(before)
         elif after == "a":
-            self.add_adjective(before)
+            if before in self.PRONOUNS:
+                self.add_simple_adjective(before)
+            else:
+                self.add_adjective(before)
         else:
             self.add_word(before + after)
 
@@ -135,7 +143,7 @@ def add_correlatives(word_list):
 def add_pronouns(word_list):
     # The pronouns aren’t listed with the accusative so we have to add
     # them manually.
-    for pronoun in ["mi", "ni", "ci", "vi", "li", "ŝi", "ri", "ili"]:
+    for pronoun in WordList.PRONOUNS:
         word_list.add_word(pronoun + "n")
 
 word_list = WordList()
