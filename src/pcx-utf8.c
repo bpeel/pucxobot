@@ -109,3 +109,32 @@ pcx_utf8_is_valid_string(const char *p)
 
         return true;
 }
+
+int
+pcx_utf8_encode(uint32_t ch, char *str)
+{
+        if (ch < 0x80) {
+                *(str++) = ch;
+                return 1;
+        }
+
+        if (ch < 0x800) {
+                *(str++) = (ch >> 6) | 0xc0;
+                *(str++) = (ch & 0x3f) | 0x80;
+                return 2;
+        }
+
+        if (ch < 0x10000) {
+                *(str++) = (ch >> 12) | 0xe0;
+                *(str++) = ((ch >> 6) & 0x3f) | 0x80;
+                *(str++) = (ch & 0x3f) | 0x80;
+                return 3;
+        }
+
+        *(str++) = (ch >> 18) | 0xf0;
+        *(str++) = ((ch >> 12) & 0x3f) | 0x80;
+        *(str++) = ((ch >> 6) & 0x3f) | 0x80;
+        *(str++) = (ch & 0x3f) | 0x80;
+
+        return 4;
+}

@@ -52,6 +52,22 @@ check_sequence(const char *p,
         va_end(ap);
 }
 
+static void
+check_encode(uint32_t ch, int n_bytes)
+{
+        char str[PCX_UTF8_MAX_CHAR_LENGTH + 1];
+
+        int real_n_bytes = pcx_utf8_encode(ch, str);
+
+        assert(n_bytes == real_n_bytes);
+
+        str[n_bytes] = '\0';
+
+        assert(pcx_utf8_is_valid_string(str));
+        assert(pcx_utf8_get_char(str) == ch);
+        assert(pcx_utf8_next(str) - str == n_bytes);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -146,4 +162,24 @@ main(int argc, char **argv)
 
         /* Sequence that would require 5 bytes */
         assert(!pcx_utf8_is_valid_string("a\xf8\x88\x80\x80\x80g"));
+
+        check_encode(1, 1);
+        check_encode(0x42, 1);
+        check_encode(0x6e, 1);
+        check_encode(0x7f, 1);
+
+        check_encode(0x80, 2);
+        check_encode(0x123, 2);
+        check_encode(0x6ed, 2);
+        check_encode(0x7ff, 2);
+
+        check_encode(0x800, 3);
+        check_encode(0x1234, 3);
+        check_encode(0xfedc, 3);
+        check_encode(0xffff, 3);
+
+        check_encode(0x10000, 4);
+        check_encode(0x102345, 4);
+        check_encode(0x10fedc, 4);
+        check_encode(0x10ffff, 4);
 }
