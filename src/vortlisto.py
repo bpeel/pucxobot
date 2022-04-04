@@ -17,8 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from lxml import etree
-from glob import glob
+import glob
 import re
+import sys
+import os
 
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
@@ -115,8 +117,12 @@ word_list = WordList()
 
 add_correlatives(word_list)
 
-for xml_file in glob("*.xml"):
-    word_list.add_from_xml(xml_file)
+for arg in sys.argv[1:]:
+    if os.path.isdir(arg):
+        for xml_file in glob.glob(os.path.join(glob.escape(arg), "*.xml")):
+            word_list.add_from_xml(xml_file)
+    else:
+        word_list.add_from_xml(arg)
 
 for word in sorted(word_list.words):
     print(word)
