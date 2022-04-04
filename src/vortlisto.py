@@ -92,15 +92,15 @@ class WordList:
         return bool(self.ALPHA_RE.search(word))
 
     def _add_pair(self, before, after):
-        if after == "i":
-            self.add_verb(before)
-        elif after == "o":
-            self.add_noun(before)
-        elif after == "a":
+        if after.endswith("i"):
+            self.add_verb(before + after[:-1])
+        elif after.endswith("o"):
+            self.add_noun(before + after[:-1])
+        elif after.endswith("a"):
             if before in self.PRONOUNS:
-                self.add_simple_adjective(before)
+                self.add_simple_adjective(before + after[:-1])
             else:
-                self.add_adjective(before)
+                self.add_adjective(before + after[:-1])
         else:
             self.add_word(before + after)
 
