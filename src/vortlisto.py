@@ -132,9 +132,16 @@ def add_correlatives(word_list):
                        "uj", "un", "ujn"]:
             word_list.add_word(prefix + suffix)
 
+def add_pronouns(word_list):
+    # The pronouns aren’t listed with the accusative so we have to add
+    # them manually.
+    for pronoun in ["mi", "ni", "ci", "vi", "li", "ŝi", "ri", "ili"]:
+        word_list.add_word(pronoun + "n")
+
 word_list = WordList()
 
 add_correlatives(word_list)
+add_pronouns(word_list)
 
 for arg in sys.argv[1:]:
     if os.path.isdir(arg):
