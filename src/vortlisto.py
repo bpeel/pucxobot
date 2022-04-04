@@ -24,6 +24,7 @@ import os
 
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
+    LIST_RE = re.compile(r', *$')
 
     def __init__(self):
         self.words = set()
@@ -78,6 +79,26 @@ class WordList:
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
 
+    def _add_pair(self, before, after):
+        if after == "i":
+            self.add_verb(before)
+        elif after == "o":
+            self.add_noun(before)
+        elif after == "a":
+            self.add_adjective(before)
+        else:
+            self.add_word(before + after)
+
+    def _add_variants(self, derivation, root, before, after):
+        for child in derivation.xpath("./var/kap"):
+            variant = "".join(self._parse_kap(root, child))
+
+            if self._contains_nonalpha(variant):
+                continue
+
+            if variant.endswith(after):
+                self._add_pair(variant[0:len(variant) - len(after)], after)
+
     def add_from_xml(self, filename):
         parser = etree.XMLParser(load_dtd=True,
                                  no_network=False)
@@ -90,18 +111,16 @@ class WordList:
         for derivation in article.xpath("./drv/kap"):
             (before, after) = self._parse_kap(root, derivation)
 
+            md = self.LIST_RE.search(after)
+            if md:
+                after = after[0:md.start()]
+
             if (self._contains_nonalpha(before) or
                 self._contains_nonalpha(after)):
                 continue
 
-            if after == "i":
-                self.add_verb(before)
-            elif after == "o":
-                self.add_noun(before)
-            elif after == "a":
-                self.add_adjective(before)
-            else:
-                self.add_word(before + after)
+            self._add_pair(before, after)
+            self._add_variants(derivation, root, before, after)
 
 def add_correlatives(word_list):
     # The correlatives are listed as root words so they don’t get the
