@@ -46,6 +46,7 @@ src = [
         'pcx-snitch-help.c',
         'pcx-html.c',
         'pcx-hat.c',
+        'pcx-syllabary.c',
         'pcx-love.c',
         'pcx-love-help.c',
         'pcx-six.c',
