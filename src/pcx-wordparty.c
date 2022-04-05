@@ -41,8 +41,11 @@
 
 #define PCX_WORDPARTY_LIVES 2
 
-/* Timeout in ms before the player loses a life */
-#define PCX_WORDPARTY_WORD_TIMEOUT 5000
+/* The timeout that a player needs will be in this range, depending on
+ * the difficulty.
+ */
+#define PCX_WORDPARTY_MIN_WORD_TIMEOUT (5 * 1000)
+#define PCX_WORDPARTY_MAX_WORD_TIMEOUT (60 * 1000)
 
 struct pcx_wordparty_player {
         char *name;
@@ -238,13 +241,19 @@ start_turn(struct pcx_wordparty *wordparty)
                                       &difficulty)) {
                 /* Fallback to at least not crash */
                 strcpy(wordparty->current_syllable, "a");
+                difficulty = 0;
         }
 
         remove_word_timeout(wordparty);
 
+        long timeout = (PCX_WORDPARTY_MIN_WORD_TIMEOUT +
+                        (difficulty * (PCX_WORDPARTY_MAX_WORD_TIMEOUT -
+                                       PCX_WORDPARTY_MIN_WORD_TIMEOUT) /
+                         PCX_SYLLABARY_MAX_DIFFICULTY));
+
         wordparty->word_timeout =
                 pcx_main_context_add_timeout(NULL,
-                                             PCX_WORDPARTY_WORD_TIMEOUT,
+                                             timeout,
                                              word_timeout_cb,
                                              wordparty);
 
