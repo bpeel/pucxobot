@@ -130,6 +130,9 @@ pcx_trie_contains_word(struct pcx_trie *trie,
 
                         /* Skip over this child */
                         child = child_letter + child_length;
+
+                        if (child > data + size)
+                                return false;
                 }
         }
 }
