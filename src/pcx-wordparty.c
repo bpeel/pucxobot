@@ -39,7 +39,7 @@
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 32
 
-#define PCX_WORDPARTY_LIVES 2
+#define PCX_WORDPARTY_LIVES 3
 
 /* The timeout that a player needs will be in this range, depending on
  * the difficulty.
