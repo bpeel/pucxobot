@@ -114,6 +114,20 @@ class WordList:
             if variant.endswith(after):
                 self._add_pair(variant[0:len(variant) - len(after)], after)
 
+    def _add_derivation(self, derivation, root):
+        (before, after) = self._parse_kap(root, derivation)
+
+        md = self.LIST_RE.search(after)
+        if md:
+            after = after[0:md.start()]
+
+        if (self._contains_nonalpha(before) or
+            self._contains_nonalpha(after)):
+            return
+
+        self._add_pair(before, after)
+        self._add_variants(derivation, root, before, after)
+
     def add_from_xml(self, filename):
         parser = etree.XMLParser(load_dtd=True,
                                  no_network=False)
@@ -124,18 +138,10 @@ class WordList:
         root = "".join(root_node[0].itertext()).strip()
 
         for derivation in article.xpath("./drv/kap"):
-            (before, after) = self._parse_kap(root, derivation)
+            self._add_derivation(derivation, root)
 
-            md = self.LIST_RE.search(after)
-            if md:
-                after = after[0:md.start()]
-
-            if (self._contains_nonalpha(before) or
-                self._contains_nonalpha(after)):
-                continue
-
-            self._add_pair(before, after)
-            self._add_variants(derivation, root, before, after)
+        for derivation in article.xpath("./subart/drv/kap"):
+            self._add_derivation(derivation, root)
 
 def add_correlatives(word_list):
     # The correlatives are listed as root words so they don’t get the
