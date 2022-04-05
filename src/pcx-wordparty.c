@@ -230,9 +230,12 @@ start_turn(struct pcx_wordparty *wordparty)
                 return;
         }
 
+        int difficulty;
+
         if (wordparty->syllabary == NULL ||
             !pcx_syllabary_get_random(wordparty->syllabary,
-                                      wordparty->current_syllable)) {
+                                      wordparty->current_syllable,
+                                      &difficulty)) {
                 /* Fallback to at least not crash */
                 strcpy(wordparty->current_syllable, "a");
         }

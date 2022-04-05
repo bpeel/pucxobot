@@ -111,7 +111,8 @@ error:
 
 bool
 pcx_syllabary_get_random(struct pcx_syllabary *syllabary,
-                         char syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1])
+                         char syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1],
+                         int *difficulty)
 {
         if (syllabary->total_hit_count <= 0)
                 return false;
@@ -143,6 +144,10 @@ pcx_syllabary_get_random(struct pcx_syllabary *syllabary,
                                 return false;
 
                         strcpy(syllable, text);
+                        *difficulty = ((syllabary->total_hit_count -
+                                        range_start) *
+                                       PCX_SYLLABARY_MAX_DIFFICULTY /
+                                       syllabary->total_hit_count);
 
                         return true;
                 }

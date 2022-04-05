@@ -27,13 +27,22 @@
 /* Maxmium length in bytes of a syllable */
 #define PCX_SYLLABARY_MAX_SYLLABLE_LENGTH (3 * PCX_UTF8_MAX_CHAR_LENGTH)
 
+/* Maximum (exclusive) value of the difficulty for a syllable */
+#define PCX_SYLLABARY_MAX_DIFFICULTY 100
+
 struct pcx_syllabary *
 pcx_syllabary_new(const char *filename,
                   struct pcx_error **error);
 
+/* Gets a random syllable from the syllabary and stores the letters in
+ * syllable. The easier syllables are more likely. The difficulty
+ * parameter is a number in the range 0,MAX_DIFFICULTY. It is based on
+ * how many words the syllable appears in.
+ */
 bool
 pcx_syllabary_get_random(struct pcx_syllabary *syllabary,
-                         char syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1]);
+                         char syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1],
+                         int *difficulty);
 
 void
 pcx_syllabary_free(struct pcx_syllabary *syllabary);
