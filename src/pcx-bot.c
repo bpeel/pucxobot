@@ -1404,7 +1404,7 @@ is_command(struct pcx_bot *bot,
 
 }
 
-static void
+static bool
 process_entity(struct pcx_bot *bot,
                struct json_object *entity,
                const struct message_info *info)
@@ -1418,13 +1418,13 @@ process_entity(struct pcx_bot *bot,
                               "type", json_type_string, &type,
                               NULL);
         if (!ret)
-                return;
+                return false;
 
         if (offset < 0 || length < 1 || offset + length > strlen(info->text))
-                return;
+                return false;
 
         if (strcmp(type, "bot_command"))
-                return;
+                return false;
 
         const char *at = memchr(info->text + offset, '@', length);
 
@@ -1432,7 +1432,7 @@ process_entity(struct pcx_bot *bot,
                 size_t botname_len = strlen(bot->bot_config->botname);
                 if (info->text + offset + length - at - 1 != botname_len ||
                     memcmp(at + 1, bot->bot_config->botname, botname_len)) {
-                        return;
+                        return false;
                 }
 
                 length = at - (info->text + offset);
@@ -1457,7 +1457,7 @@ process_entity(struct pcx_bot *bot,
 
                 commands[i].func(bot, info);
 
-                return;
+                return true;
         }
 
         /* Make /start run the start command regardless of the actual
@@ -1467,7 +1467,7 @@ process_entity(struct pcx_bot *bot,
          */
         if (is_command_str(info->text + offset, length, "/start")) {
                 process_start(bot, info);
-                return;
+                return true;
         }
 
         for (unsigned i = 0; pcx_game_list[i]; i++) {
@@ -1481,8 +1481,83 @@ process_entity(struct pcx_bot *bot,
 
                 process_create_game(bot, pcx_game_list[i], info);
 
-                return;
+                return true;
         }
+
+        return false;
+}
+
+static bool
+process_entities(struct pcx_bot *bot,
+                 struct json_object *message,
+                 const struct message_info *info)
+{
+        struct json_object *entities;
+
+        if (!get_fields(message,
+                        "entities", json_type_array, &entities,
+                        NULL))
+                return false;
+
+        bool ret = false;
+
+        for (unsigned i = 0; i < json_object_array_length(entities); i++) {
+                struct json_object *entity =
+                        json_object_array_get_idx(entities, i);
+
+                if (process_entity(bot, entity, info))
+                        ret = true;
+        }
+
+        return ret;
+}
+
+static void
+process_game_message(struct pcx_bot *bot,
+                     const struct message_info *info)
+{
+        struct game *game = find_game(bot, info->chat_id);
+
+        if (game == NULL)
+                return;
+
+        if (game->type->handle_message_cb == NULL)
+                return;
+
+        int player_num = find_player_in_game(game, info->from_id);
+
+        if (player_num == -1)
+                return;
+
+        const char *text = info->text;
+
+        /* If the message is directed at someone, then only pay
+         * attention to it if it’s directed at the bot. In that case
+         * we will also strip off the bot username from the message.
+         * This provides a way to interact with the bot even when it
+         * isn’t an admin.
+         */
+        if (*text == '@') {
+                text++;
+
+                size_t botname_len = strlen(bot->bot_config->botname);
+
+                if (strncmp(text, bot->bot_config->botname, botname_len))
+                        return;
+
+                text += botname_len;
+
+                if (*text != ' ' && *text != '\n')
+                        return;
+
+                text++;
+        }
+
+        set_game_timeout(game);
+
+        game->type->handle_message_cb(game->game,
+                                      player_num,
+                                      text);
 }
 
 static void
@@ -1502,19 +1577,8 @@ process_message(struct pcx_bot *bot,
                                     PCX_TEXT_STRING_RECEIVED_PRIVATE_MESSAGE);
         }
 
-        struct json_object *entities;
-
-        if (!get_fields(message,
-                        "entities", json_type_array, &entities,
-                        NULL))
-                return;
-
-        for (unsigned i = 0; i < json_object_array_length(entities); i++) {
-                struct json_object *entity =
-                        json_object_array_get_idx(entities, i);
-
-                process_entity(bot, entity, &info);
-        }
+        if (!process_entities(bot, message, &info))
+                process_game_message(bot, &info);
 }
 
 static bool
