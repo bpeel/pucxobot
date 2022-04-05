@@ -69,6 +69,11 @@ struct pcx_wordparty {
 
         int current_player;
 
+        /* The number times the current syllable has failed. Once each
+         * player has seen it then we’ll pick a new one.
+         */
+        int fail_count;
+
         /* Array of word tokens returned from the trie so that we can
          * detect duplicate words.
          */
@@ -77,6 +82,7 @@ struct pcx_wordparty {
         struct pcx_main_context_source *word_timeout;
 
         char current_syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1];
+        int current_difficulty;
 };
 
 static void
@@ -122,6 +128,34 @@ remove_word_timeout(struct pcx_wordparty *wordparty)
 }
 
 static void
+pick_syllable(struct pcx_wordparty *wordparty)
+{
+        wordparty->fail_count = 0;
+
+        if (wordparty->syllabary == NULL ||
+            !pcx_syllabary_get_random(wordparty->syllabary,
+                                      wordparty->current_syllable,
+                                      &wordparty->current_difficulty)) {
+                /* Fallback to at least not crash */
+                strcpy(wordparty->current_syllable, "a");
+                wordparty->current_difficulty = 0;
+        }
+}
+
+static int
+count_players(struct pcx_wordparty *wordparty)
+{
+        int count = 0;
+
+        for (int i = 0; i < wordparty->n_players; i++) {
+                if (wordparty->players[i].lives > 0)
+                        count++;
+        }
+
+        return count;
+}
+
+static void
 word_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
@@ -131,6 +165,9 @@ word_timeout_cb(struct pcx_main_context_source *source,
 
         struct pcx_wordparty_player *player =
                 wordparty->players + wordparty->current_player;
+
+        if (++wordparty->fail_count >= count_players(wordparty))
+                pick_syllable(wordparty);
 
         player->lives--;
 
@@ -206,19 +243,6 @@ end_game(struct pcx_wordparty *wordparty)
 }
 
 static int
-count_players(struct pcx_wordparty *wordparty)
-{
-        int count = 0;
-
-        for (int i = 0; i < wordparty->n_players; i++) {
-                if (wordparty->players[i].lives > 0)
-                        count++;
-        }
-
-        return count;
-}
-
-static int
 get_n_used_words(struct pcx_wordparty *wordparty)
 {
         return wordparty->used_words.length / sizeof (uint32_t);
@@ -244,19 +268,9 @@ start_turn(struct pcx_wordparty *wordparty)
                 return;
         }
 
-        int difficulty;
-
-        if (wordparty->syllabary == NULL ||
-            !pcx_syllabary_get_random(wordparty->syllabary,
-                                      wordparty->current_syllable,
-                                      &difficulty)) {
-                /* Fallback to at least not crash */
-                strcpy(wordparty->current_syllable, "a");
-                difficulty = 0;
-        }
-
         /* Make the timeouts gradually get shorter as the game progresses */
-        difficulty -= get_n_used_words(wordparty) / wordparty->n_players;
+        int difficulty = (wordparty->current_difficulty -
+                          get_n_used_words(wordparty) / wordparty->n_players);
         if (difficulty < 0)
                 difficulty = 0;
 
@@ -392,6 +406,7 @@ create_game_cb(const struct pcx_config *config,
 
         wordparty->current_player = rand() % n_players;
 
+        pick_syllable(wordparty);
         start_turn(wordparty);
 
         return wordparty;
@@ -526,6 +541,7 @@ handle_message_cb(void *data,
                 reject_word(wordparty, "♻️");
         } else {
                 pcx_buffer_append(&wordparty->used_words, &token, sizeof token);
+                pick_syllable(wordparty);
                 start_turn(wordparty);
         }
 }
