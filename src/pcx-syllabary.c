@@ -118,8 +118,7 @@ pcx_syllabary_get_random(struct pcx_syllabary *syllabary,
                 return false;
 
         int min = 0, max = syllabary->size / ENTRY_SIZE;
-        uint32_t target = (rand() /
-                           (double) RAND_MAX *
+        uint32_t target = (rand() / (RAND_MAX + 1.0) *
                            syllabary->total_hit_count);
 
         while (max > min) {
