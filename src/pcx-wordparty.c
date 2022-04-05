@@ -68,7 +68,11 @@ struct pcx_wordparty {
         struct pcx_buffer word_buf;
 
         int current_player;
-        int n_words_entered;
+
+        /* Array of word tokens returned from the trie so that we can
+         * detect duplicate words.
+         */
+        struct pcx_buffer used_words;
 
         struct pcx_main_context_source *word_timeout;
 
@@ -214,6 +218,12 @@ count_players(struct pcx_wordparty *wordparty)
         return count;
 }
 
+static int
+get_n_used_words(struct pcx_wordparty *wordparty)
+{
+        return wordparty->used_words.length / sizeof (uint32_t);
+}
+
 static void
 start_turn(struct pcx_wordparty *wordparty)
 {
@@ -246,7 +256,7 @@ start_turn(struct pcx_wordparty *wordparty)
         }
 
         /* Make the timeouts gradually get shorter as the game progresses */
-        difficulty -= wordparty->n_words_entered / wordparty->n_players;
+        difficulty -= get_n_used_words(wordparty) / wordparty->n_players;
         if (difficulty < 0)
                 difficulty = 0;
 
@@ -375,6 +385,7 @@ create_game_cb(const struct pcx_config *config,
         wordparty->n_players = n_players;
 
         pcx_buffer_init(&wordparty->word_buf);
+        pcx_buffer_init(&wordparty->used_words);
 
         open_dictionary(wordparty, config, language);
         open_syllabary(wordparty, config, language);
@@ -414,9 +425,11 @@ add_unichar(struct pcx_buffer *buf,
 }
 
 static void
-reject_word(struct pcx_wordparty *wordparty)
+reject_word(struct pcx_wordparty *wordparty,
+            const char *emoji)
 {
-        char *text = pcx_strconcat("👎 ",
+        char *text = pcx_strconcat(emoji,
+                                   " ",
                                    (const char *) wordparty->word_buf.data,
                                    NULL);
 
@@ -431,7 +444,8 @@ reject_word(struct pcx_wordparty *wordparty)
 }
 
 static bool
-is_valid_word(struct pcx_wordparty *wordparty)
+is_valid_word(struct pcx_wordparty *wordparty,
+              uint32_t *token)
 {
         const char *word = (const char *) wordparty->word_buf.data;
 
@@ -439,11 +453,9 @@ is_valid_word(struct pcx_wordparty *wordparty)
         if (!strstr(word, wordparty->current_syllable))
                 return false;
 
-        uint32_t token;
-
         /* The word must be in the dictionary */
         if (wordparty->trie == NULL ||
-            !pcx_trie_contains_word(wordparty->trie, word, &token))
+            !pcx_trie_contains_word(wordparty->trie, word, token))
                 return false;
 
         return true;
@@ -478,6 +490,21 @@ extract_word_from_message(struct pcx_wordparty *wordparty,
         return wordparty->word_buf.length > 1;
 }
 
+static bool
+is_word_used(struct pcx_wordparty *wordparty,
+             uint32_t token)
+{
+        int n_used_words = get_n_used_words(wordparty);
+        const uint32_t *words = (const uint32_t *) wordparty->used_words.data;
+
+        for (int i = 0; i < n_used_words; i++) {
+                if (words[i] == token)
+                        return true;
+        }
+
+        return false;
+}
+
 static void
 handle_message_cb(void *data,
                   int player_num,
@@ -491,11 +518,15 @@ handle_message_cb(void *data,
         if (!extract_word_from_message(wordparty, text))
                 return;
 
-        if (is_valid_word(wordparty)) {
-                wordparty->n_words_entered++;
-                start_turn(wordparty);
+        uint32_t token;
+
+        if (!is_valid_word(wordparty, &token)) {
+                reject_word(wordparty, "👎️");
+        } else if (is_word_used(wordparty, token)) {
+                reject_word(wordparty, "♻️");
         } else {
-                reject_word(wordparty);
+                pcx_buffer_append(&wordparty->used_words, &token, sizeof token);
+                start_turn(wordparty);
         }
 }
 
@@ -521,6 +552,7 @@ free_game_cb(void *data)
                 pcx_syllabary_free(wordparty->syllabary);
 
         pcx_buffer_destroy(&wordparty->word_buf);
+        pcx_buffer_destroy(&wordparty->used_words);
 
         pcx_free(wordparty);
 }
