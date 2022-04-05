@@ -68,6 +68,7 @@ struct pcx_wordparty {
         struct pcx_buffer word_buf;
 
         int current_player;
+        int n_words_entered;
 
         struct pcx_main_context_source *word_timeout;
 
@@ -243,6 +244,11 @@ start_turn(struct pcx_wordparty *wordparty)
                 strcpy(wordparty->current_syllable, "a");
                 difficulty = 0;
         }
+
+        /* Make the timeouts gradually get shorter as the game progresses */
+        difficulty -= wordparty->n_words_entered / wordparty->n_players;
+        if (difficulty < 0)
+                difficulty = 0;
 
         remove_word_timeout(wordparty);
 
@@ -483,10 +489,12 @@ handle_message_cb(void *data,
         if (!extract_word_from_message(wordparty, text))
                 return;
 
-        if (is_valid_word(wordparty))
+        if (is_valid_word(wordparty)) {
+                wordparty->n_words_entered++;
                 start_turn(wordparty);
-        else
+        } else {
                 reject_word(wordparty);
+        }
 }
 
 static void
