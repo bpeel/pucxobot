@@ -40,6 +40,7 @@
 #define PCX_WORDPARTY_MAX_PLAYERS 32
 
 #define PCX_WORDPARTY_LIVES 3
+#define PCX_WORDPARTY_MAX_LIVES 3
 
 /* The timeout that a player needs will be in this range, depending on
  * the difficulty.
@@ -176,6 +177,13 @@ word_timeout_cb(struct pcx_main_context_source *source,
 
         if (++wordparty->fail_count >= count_players(wordparty))
                 pick_syllable(wordparty);
+
+        /* If the player had the maximum number of lives then reset
+         * the letter tally so that they can start trying to gain the
+         * life back.
+         */
+        if (player->lives == PCX_WORDPARTY_MAX_LIVES)
+                player->letters_used = 0;
 
         player->lives--;
 
@@ -596,6 +604,9 @@ tally_word(struct pcx_wordparty *wordparty)
 {
         struct pcx_wordparty_player *player =
                 wordparty->players + wordparty->current_player;
+
+        if (player->lives >= PCX_WORDPARTY_MAX_LIVES)
+                return;
 
         for (const char *p = (const char *) wordparty->word_buf.data;
              *p;
