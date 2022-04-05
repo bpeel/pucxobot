@@ -36,6 +36,8 @@ pcx_text_esperanto[] = {
         "6 Prenas",
         [PCX_TEXT_STRING_NAME_FOX] =
         "Vulpo en la Arbaro",
+        [PCX_TEXT_STRING_NAME_WORDPARTY] =
+        "Vortofesto",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superbatalo",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -60,6 +62,10 @@ pcx_text_esperanto[] = {
         "/vulpo",
         [PCX_TEXT_STRING_FOX_START_COMMAND_DESCRIPTION] =
         "Krei ludon de Vulpo en la Arbaro",
+        [PCX_TEXT_STRING_WORDPARTY_START_COMMAND] =
+        "/vortofesto",
+        [PCX_TEXT_STRING_WORDPARTY_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Vortofesto",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -651,4 +657,12 @@ pcx_text_esperanto[] = {
         "Lasi la antaŭan dekretan karton",
         [PCX_TEXT_STRING_DOESNT_EXCHANGE] =
         "%s decidis ne interŝanĝi la dekretan karton.",
+        [PCX_TEXT_STRING_TYPE_A_WORD] =
+        "Tajpu vorton kiu enhavas:",
+        [PCX_TEXT_STRING_GAME_OVER_WINNER] =
+        "La ludo finiĝis. La venkinto estas…",
+        [PCX_TEXT_STRING_LOST_ALL_LIVES] =
+        "%s prenis tro da tempo kaj perdis sian lastan vivon.",
+        [PCX_TEXT_STRING_LOST_A_LIFE] =
+        "%s prenis tro da tempo kaj perdis vivon.",
 };

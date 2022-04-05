@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2022  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
+#ifndef PCX_WORDPARTY_H
+#define PCX_WORDPARTY_H
 
 #include "pcx-game.h"
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-six.h"
-#include "pcx-fox.h"
-#include "pcx-wordparty.h"
-#include "pcx-zombie.h"
-#include "pcx-superfight.h"
+extern const struct pcx_game pcx_wordparty_game;
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_love_game,
-        &pcx_six_game,
-        &pcx_fox_game,
-        &pcx_wordparty_game,
-        &pcx_zombie_game,
-        &pcx_snitch_game,
-        &pcx_superfight_game,
-        NULL
-};
+#endif /* PCX_WORDPARTY_H */
