@@ -21,8 +21,9 @@
 #include "pcx-html.h"
 
 void
-pcx_html_escape(struct pcx_buffer *buf,
-                const char *text)
+pcx_html_escape_limit(struct pcx_buffer *buf,
+                      const char *text,
+                      int limit)
 {
         static const struct {
                 char ch;
@@ -36,7 +37,7 @@ pcx_html_escape(struct pcx_buffer *buf,
 
         const char *last = text;
 
-        for (; *text; text++) {
+        for (int i = 0; *text && (limit == -1 || i < limit); text++, i++) {
                 for (unsigned i = 0; i < PCX_N_ELEMENTS(replacements); i++) {
                         if (replacements[i].ch == *text) {
                                 pcx_buffer_append(buf, last, text - last);
@@ -51,4 +52,11 @@ pcx_html_escape(struct pcx_buffer *buf,
         pcx_buffer_append(buf, last, text - last);
         pcx_buffer_append_c(buf, '\0');
         buf->length--;
+}
+
+void
+pcx_html_escape(struct pcx_buffer *buf,
+                const char *text)
+{
+        pcx_html_escape_limit(buf, text, -1);
 }

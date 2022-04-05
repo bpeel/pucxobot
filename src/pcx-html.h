@@ -25,4 +25,9 @@ void
 pcx_html_escape(struct pcx_buffer *buf,
                 const char *text);
 
+void
+pcx_html_escape_limit(struct pcx_buffer *buf,
+                      const char *text,
+                      int limit);
+
 #endif /* PCX_HTML_H */
