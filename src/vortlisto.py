@@ -52,14 +52,15 @@ class WordList:
         self.add_verb(root + "iĝ")
 
     def add_verb(self, root):
-        self.add_word(root + "i")
-
         for tense in "iao":
             participle = root + tense + "nt"
             self.add_noun(participle)
             self.add_simple_adjective_and_adverb(participle)
 
             self.add_word(root + tense + "s")
+
+        for tense in ["i", "u", "us"]:
+            self.add_word(root + tense)
 
         self.add_noun(root + "ad")
 
