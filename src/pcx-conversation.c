@@ -367,6 +367,16 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
 
         queue_message(conv, &message, player_num);
 
+        if (conv->game != NULL && conv->game_type->handle_message_cb) {
+                pcx_conversation_ref(conv);
+
+                conv->game_type->handle_message_cb(conv->game,
+                                                   player_num,
+                                                   text);
+
+                pcx_conversation_unref(conv);
+        }
+
         pcx_buffer_destroy(&buf);
 }
 
