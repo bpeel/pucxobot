@@ -28,10 +28,12 @@ test_words(struct pcx_trie *trie,
            int n_words,
            char **words)
 {
+        uint32_t token;
+
         for (int i = 0; i < n_words; i++) {
                 printf("%s: %s\n",
                        words[i],
-                       pcx_trie_contains_word(trie, words[i]) ?
+                       pcx_trie_contains_word(trie, words[i], &token) ?
                        "yes" :
                        "no");
         }

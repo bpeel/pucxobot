@@ -20,6 +20,7 @@
 #define PCX_TRIE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "pcx-error.h"
 
@@ -33,7 +34,8 @@ pcx_trie_new(const char *filename,
 
 bool
 pcx_trie_contains_word(struct pcx_trie *trie,
-                       const char *word);
+                       const char *word,
+                       uint32_t *token);
 
 void
 pcx_trie_iterate(struct pcx_trie *trie,

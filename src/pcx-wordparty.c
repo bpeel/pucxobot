@@ -439,9 +439,11 @@ is_valid_word(struct pcx_wordparty *wordparty)
         if (!strstr(word, wordparty->current_syllable))
                 return false;
 
+        uint32_t token;
+
         /* The word must be in the dictionary */
         if (wordparty->trie == NULL ||
-            !pcx_trie_contains_word(wordparty->trie, word))
+            !pcx_trie_contains_word(wordparty->trie, word, &token))
                 return false;
 
         return true;

@@ -70,7 +70,8 @@ read_length(const uint8_t *data,
 
 bool
 pcx_trie_contains_word(struct pcx_trie *trie,
-                       const char *word)
+                       const char *word,
+                       uint32_t *token)
 {
         const uint8_t *data = trie->data;
         size_t size = trie->size;
@@ -111,8 +112,14 @@ pcx_trie_contains_word(struct pcx_trie *trie,
 
                         if (child_length >= next_letter - word &&
                             !memcmp(child_letter, word, next_letter - word)) {
-                                if (*word == '\0')
+                                if (*word == '\0') {
+                                        /* Use the offset of the
+                                         * terminator as a unique ID
+                                         * for this word.
+                                         */
+                                        *token = child_letter - trie->data;
                                         return true;
+                                }
 
                                 /* We’ve found the child, so descend into it */
                                 size -= child - data;
