@@ -326,6 +326,8 @@ enum pcx_text_string {
         PCX_TEXT_STRING_GAME_OVER_WINNER,
         PCX_TEXT_STRING_LOST_ALL_LIVES,
         PCX_TEXT_STRING_LOST_A_LIFE,
+        PCX_TEXT_STRING_ALPHABET,
+        PCX_TEXT_STRING_ONE_UP,
 };
 
 const char *

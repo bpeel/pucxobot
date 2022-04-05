@@ -50,6 +50,8 @@
 struct pcx_wordparty_player {
         char *name;
         int lives;
+        /* A mask of letters that this player has used */
+        uint32_t letters_used;
 };
 
 struct pcx_wordparty {
@@ -83,6 +85,12 @@ struct pcx_wordparty {
 
         char current_syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1];
         int current_difficulty;
+
+        /* The alphabet for the current language expanded into unicode
+         * codepoints and sorted.
+         */
+        uint32_t *letters;
+        int n_letters;
 };
 
 static void
@@ -372,6 +380,46 @@ open_syllabary(struct pcx_wordparty *wordparty,
         }
 }
 
+static int
+compare_uint32(const void *pa, const void *pb)
+{
+        uint32_t a = *(const uint32_t *) pa;
+        uint32_t b = *(const uint32_t *) pb;
+
+        if (a > b)
+                return 1;
+        else if (a < b)
+                return -1;
+        else
+                return 0;
+}
+
+static void
+create_alphabet(struct pcx_wordparty *wordparty)
+{
+        const char *alphabet = pcx_text_get(wordparty->language,
+                                            PCX_TEXT_STRING_ALPHABET);
+        int n_letters = 0;
+
+        for (const char *p = alphabet; *p; p = pcx_utf8_next(p))
+                n_letters++;
+
+        assert(n_letters > 0 && n_letters < sizeof (uint32_t) * 8);
+
+        wordparty->letters = pcx_alloc(sizeof (uint32_t) * n_letters);
+        wordparty->n_letters = n_letters;
+
+        int i = 0;
+
+        for (const char *p = alphabet; *p; p = pcx_utf8_next(p), i++)
+                wordparty->letters[i] = pcx_utf8_get_char(p);
+
+        qsort(wordparty->letters,
+              n_letters,
+              sizeof (uint32_t),
+              compare_uint32);
+}
+
 static void *
 create_game_cb(const struct pcx_config *config,
                const struct pcx_game_callbacks *callbacks,
@@ -405,6 +453,8 @@ create_game_cb(const struct pcx_config *config,
         open_syllabary(wordparty, config, language);
 
         wordparty->current_player = rand() % n_players;
+
+        create_alphabet(wordparty);
 
         pick_syllable(wordparty);
         start_turn(wordparty);
@@ -520,6 +570,71 @@ is_word_used(struct pcx_wordparty *wordparty,
         return false;
 }
 
+static int
+find_letter(struct pcx_wordparty *wordparty,
+            uint32_t ch)
+{
+        int min = 0, max = wordparty->n_letters;
+
+        while (min < max) {
+                int mid = (min + max) / 2;
+                uint32_t v = wordparty->letters[mid];
+
+                if (ch < v)
+                        max = mid;
+                else if (ch > v)
+                        min = mid + 1;
+                else
+                        return mid;
+        }
+
+        return -1;
+}
+
+static void
+tally_word(struct pcx_wordparty *wordparty)
+{
+        struct pcx_wordparty_player *player =
+                wordparty->players + wordparty->current_player;
+
+        for (const char *p = (const char *) wordparty->word_buf.data;
+             *p;
+             p = pcx_utf8_next(p)) {
+                int letter = find_letter(wordparty, pcx_utf8_get_char(p));
+
+                if (letter == -1)
+                        continue;
+
+                player->letters_used |= UINT32_C(1) << letter;
+        }
+
+        uint32_t all_letters =
+                UINT32_MAX >> (sizeof (uint32_t) * 8 - wordparty->n_letters);
+
+        if (player->letters_used == all_letters) {
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_string(&buf, "➕❤️");
+                pcx_buffer_append_printf(&buf,
+                                         pcx_text_get(wordparty->language,
+                                                      PCX_TEXT_STRING_ONE_UP),
+                                         player->name);
+
+                struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+                message.format = PCX_GAME_MESSAGE_FORMAT_PLAIN;
+                message.text = (const char *) buf.data;
+
+                wordparty->callbacks.send_message(&message,
+                                                  wordparty->user_data);
+
+                pcx_buffer_destroy(&buf);
+
+                player->lives++;
+                player->letters_used = 0;
+        }
+}
+
 static void
 handle_message_cb(void *data,
                   int player_num,
@@ -540,6 +655,7 @@ handle_message_cb(void *data,
         } else if (is_word_used(wordparty, token)) {
                 reject_word(wordparty, "♻️");
         } else {
+                tally_word(wordparty);
                 pcx_buffer_append(&wordparty->used_words, &token, sizeof token);
                 pick_syllable(wordparty);
                 start_turn(wordparty);
@@ -569,6 +685,8 @@ free_game_cb(void *data)
 
         pcx_buffer_destroy(&wordparty->word_buf);
         pcx_buffer_destroy(&wordparty->used_words);
+
+        pcx_free(wordparty->letters);
 
         pcx_free(wordparty);
 }

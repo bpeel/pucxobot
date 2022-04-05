@@ -665,4 +665,8 @@ pcx_text_esperanto[] = {
         "%s prenis tro da tempo kaj perdis sian lastan vivon.",
         [PCX_TEXT_STRING_LOST_A_LIFE] =
         "%s prenis tro da tempo kaj perdis vivon.",
+        [PCX_TEXT_STRING_ALPHABET] =
+        "abcĉdefgĝhĥijĵklmnoprsŝtuŭvz",
+        [PCX_TEXT_STRING_ONE_UP] =
+        "%s uzis la tutan alfabeton kaj gajnis bonusan vivon.",
 };
