@@ -90,6 +90,9 @@ struct pcx_game {
         void (* handle_callback_data_cb)(void *game,
                                          int player_num,
                                          const char *callback_data);
+        void (* handle_message_cb)(void *game,
+                                   int player_num,
+                                   const char *text);
         void (* free_game_cb)(void *game);
 };
 
