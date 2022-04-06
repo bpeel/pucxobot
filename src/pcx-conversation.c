@@ -166,10 +166,19 @@ game_over_cb(void *user_data)
         conv->game = NULL;
 }
 
+static struct pcx_class_store *
+get_class_store_cb(void *user_data)
+{
+        struct pcx_conversation *conv = user_data;
+
+        return conv->class_store;
+}
+
 static const struct pcx_game_callbacks
 game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
+        .get_class_store = get_class_store_cb,
 };
 
 static void
