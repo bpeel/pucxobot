@@ -42,6 +42,11 @@
 #define PCX_WORDPARTY_LIVES 3
 #define PCX_WORDPARTY_MAX_LIVES 3
 
+/* If the player needs to use at most this many letters to regain a
+ * life we will show them a hint about which letters need to be used.
+ */
+#define PCX_WORDPARTY_MAX_LETTERS_FOR_HINT 8
+
 /* The timeout that a player needs will be in this range, depending on
  * the difficulty.
  */
@@ -108,6 +113,14 @@ escape_string(struct pcx_wordparty *wordparty,
 {
         const char *value = pcx_text_get(wordparty->language, string);
         pcx_html_escape(buf, value);
+}
+
+static void
+add_unichar(struct pcx_buffer *buf,
+            uint32_t ch)
+{
+        pcx_buffer_ensure_size(buf, buf->length + PCX_UTF8_MAX_CHAR_LENGTH);
+        buf->length += pcx_utf8_encode(ch, (char *) buf->data + buf->length);
 }
 
 static void
@@ -269,6 +282,37 @@ get_n_used_words(struct pcx_wordparty *wordparty)
 }
 
 static void
+maybe_add_letters_hint(struct pcx_wordparty *wordparty,
+                       const struct pcx_wordparty_player *player,
+                       struct pcx_buffer *buf)
+{
+        if (player->lives >= PCX_WORDPARTY_MAX_LIVES)
+                return;
+
+        int n_letters_remaining = 0;
+
+        for (int i = 0; i < wordparty->n_letters; i++) {
+                if ((player->letters_used & (UINT32_C(1) << i)) == 0)
+                        n_letters_remaining++;
+        }
+
+        if (n_letters_remaining > PCX_WORDPARTY_MAX_LETTERS_FOR_HINT)
+                return;
+
+        escape_string(wordparty, buf, PCX_TEXT_STRING_LETTERS_HINT);
+        pcx_buffer_append_c(buf, ' ');
+
+        for (int i = 0; i < wordparty->n_letters; i++) {
+                if ((player->letters_used & (UINT32_C(1) << i)))
+                        continue;
+
+                add_unichar(buf, wordparty->letters[i]);
+        }
+
+        pcx_buffer_append_string(buf, "\n\n");
+}
+
+static void
 start_turn(struct pcx_wordparty *wordparty)
 {
         int next_player = wordparty->current_player;
@@ -320,6 +364,8 @@ start_turn(struct pcx_wordparty *wordparty)
                 pcx_buffer_append_string(&buf, "❤️");
 
         pcx_buffer_append_string(&buf, "\n\n");
+
+        maybe_add_letters_hint(wordparty, player, &buf);
 
         escape_string(wordparty, &buf, PCX_TEXT_STRING_TYPE_A_WORD);
 
@@ -527,14 +573,6 @@ static bool
 is_space_char(char ch)
 {
         return strchr("\r\n \t", ch) != NULL;
-}
-
-static void
-add_unichar(struct pcx_buffer *buf,
-            uint32_t ch)
-{
-        pcx_buffer_ensure_size(buf, buf->length + PCX_UTF8_MAX_CHAR_LENGTH);
-        buf->length += pcx_utf8_encode(ch, (char *) buf->data + buf->length);
 }
 
 static void

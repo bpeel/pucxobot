@@ -669,4 +669,6 @@ pcx_text_esperanto[] = {
         "abcĉdefgĝhĥijĵklmnoprsŝtuŭvz",
         [PCX_TEXT_STRING_ONE_UP] =
         "%s uzis la tutan alfabeton kaj gajnis bonusan vivon.",
+        [PCX_TEXT_STRING_LETTERS_HINT] =
+        "Uzu la jenajn literojn por regajni vivon:",
 };

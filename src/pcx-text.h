@@ -328,6 +328,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_LOST_A_LIFE,
         PCX_TEXT_STRING_ALPHABET,
         PCX_TEXT_STRING_ONE_UP,
+        PCX_TEXT_STRING_LETTERS_HINT,
 };
 
 const char *
