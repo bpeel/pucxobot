@@ -34,7 +34,6 @@
 #include <grp.h>
 #include <pwd.h>
 
-#include "pcx-tty-game.h"
 #include "pcx-bot.h"
 #include "pcx-server.h"
 #include "pcx-game.h"
@@ -43,13 +42,7 @@
 #include "pcx-curl-multi.h"
 #include "pcx-log.h"
 
-struct tty_file {
-        struct pcx_list link;
-        const char *name;
-};
-
 struct pcx_main {
-        struct pcx_tty_game *tty_game;
         struct pcx_curl_multi *pcurl;
 
         size_t n_bots;
@@ -59,10 +52,6 @@ struct pcx_main {
 
         struct pcx_config *config;
 
-        /* List of const char* pointers. The strings are assumed to
-         * come from the command line arguments and are not freed.
-         */
-        struct pcx_buffer tty_files;
         const char *config_filename;
         const char *log_filename;
         const char *run_as_user;
@@ -129,26 +118,6 @@ info_cb(struct pcx_main_context_source *source,
         }
 }
 
-static bool
-init_main_tty(struct pcx_main *data)
-{
-        struct pcx_error *error = NULL;
-        data->tty_game = pcx_tty_game_new(data->config,
-                                          data->tty_files.length /
-                                          sizeof (const char *),
-                                          (const char *const *)
-                                          data->tty_files.data,
-                                          &error);
-
-        if (data->tty_game == NULL) {
-                pcx_log("%s", error->message);
-                pcx_error_free(error);
-                return false;
-        }
-
-        return true;
-}
-
 static void
 init_main_bots(struct pcx_main *data)
 {
@@ -205,9 +174,6 @@ init_main_server(struct pcx_main *data)
 static void
 destroy_main(struct pcx_main *data)
 {
-        if (data->tty_game)
-                pcx_tty_game_free(data->tty_game);
-
         for (unsigned i = 0; i < data->n_bots; i++)
                 pcx_bot_free(data->bots[i]);
         pcx_free(data->bots);
@@ -215,7 +181,6 @@ destroy_main(struct pcx_main *data)
         if (data->server)
                 pcx_server_free(data->server);
 
-        pcx_buffer_destroy(&data->tty_files);
 
         if (data->pcurl)
                 pcx_curl_multi_free(data->pcurl);
@@ -248,8 +213,6 @@ usage(void)
         printf("Pucxobot - a Telegram robot to play games\n"
                "usage: pucxobot [options]...\n"
                " -h                   Show this help message\n"
-               " -t <file>            Specify a TTY file to listen on instead\n"
-               "                      of running the Telegram bot.\n"
                " -l <file>            Specify a log file. Defaults to stdout.\n"
                " -c <file>            Specify a config file. Defaults to\n"
                "                      ~/.pucxobot/conf.txt\n"
@@ -281,12 +244,6 @@ process_arguments(struct pcx_main *data,
                                 "unexpected argument \"%s\"\n",
                                 optarg);
                         return false;
-
-                case 't':
-                        pcx_buffer_append(&data->tty_files,
-                                          &optarg,
-                                          sizeof optarg);
-                        break;
 
                 case 'h':
                         usage();
@@ -513,7 +470,6 @@ int
 main(int argc, char **argv)
 {
         struct pcx_main data = {
-                .tty_game = NULL,
                 .pcurl = NULL,
                 .n_bots = 0,
                 .bots = NULL,
@@ -521,7 +477,6 @@ main(int argc, char **argv)
                 .config = NULL,
                 .curl_inited = false,
                 .quit = false,
-                .tty_files = PCX_BUFFER_STATIC_INIT,
                 .config_filename = NULL,
                 .lock_fd = -1,
         };
@@ -563,18 +518,11 @@ main(int argc, char **argv)
                 goto done;
         }
 
-        if (data.tty_files.length > 0) {
-                if (!init_main_tty(&data)) {
-                        ret = EXIT_FAILURE;
-                        goto done;
-                }
-        } else {
-                time_t t;
-                time(&t);
-                srand(t);
+        time_t t;
+        time(&t);
+        srand(t);
 
-                init_main_bots(&data);
-        }
+        init_main_bots(&data);
 
         struct pcx_main_context_source *int_source =
                 pcx_main_context_add_signal_source(NULL,

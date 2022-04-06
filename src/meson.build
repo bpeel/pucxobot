@@ -18,7 +18,6 @@ src = [
         'pcx-slab.c',
         'pcx-buffer.c',
         'pcx-list.c',
-        'pcx-tty-game.c',
         'pcx-coup-character.c',
         'pcx-bot.c',
         'pcx-server.c',
