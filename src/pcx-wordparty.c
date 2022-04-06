@@ -40,7 +40,7 @@
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 32
 
-#define PCX_WORDPARTY_LIVES 3
+#define PCX_WORDPARTY_LIVES 2
 #define PCX_WORDPARTY_MAX_LIVES 3
 
 /* If the player needs to use at most this many letters to regain a
