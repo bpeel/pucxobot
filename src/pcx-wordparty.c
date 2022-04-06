@@ -35,6 +35,7 @@
 #include "pcx-utf8.h"
 #include "pcx-hat.h"
 #include "pcx-html.h"
+#include "pcx-wordparty-help.h"
 
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 32
@@ -559,7 +560,7 @@ create_game_cb(const struct pcx_config *config,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("STUB");
+        return pcx_strdup(pcx_wordparty_help[language]);
 }
 
 static void

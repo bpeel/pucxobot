@@ -58,6 +58,7 @@ src = [
         'pcx-superfight-deck.c',
         'pcx-superfight-help.c',
         'pcx-wordparty.c',
+        'pcx-wordparty-help.c',
         'pcx-zombie.c',
         'pcx-zombie-help.c',
         'sha1.c',

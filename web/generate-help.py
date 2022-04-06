@@ -49,7 +49,8 @@ LANGUAGES = [
          "The games on this site are also available via the Telegram bot "
          "<a href=\"https://t.me/bluffingbot\">@bluffingbot</a>.",
          "The source code is available on "
-         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>."),
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
+         skip_games=set(["wordparty"])),
     Lang("eo", "esperanto", "Helpo", "Enhavo", "Pri",
          "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
          "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",
@@ -60,10 +61,11 @@ LANGUAGES = [
          "<a href=\"https://t.me/complotbot\">@complotbot</a>.",
          "Le code source est disponible sur "
          "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["superfight", "fox"])),
+         skip_games=set(["superfight", "fox", "wordparty"])),
 ]
 
-GAMES = [ "coup", "love", "six", "fox", "zombie", "snitch", "superfight" ]
+GAMES = [ "coup", "love", "six", "fox", "wordparty",
+          "zombie", "snitch", "superfight" ]
 
 def get_game_name(game, lang):
     with open("../src/pcx-text-" + lang.name + ".c",
