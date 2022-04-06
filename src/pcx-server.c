@@ -62,6 +62,7 @@ pcx_server_error;
 
 struct pcx_server {
         const struct pcx_config *config;
+        struct pcx_class_store *class_store;
         struct pcx_main_context_source *gc_source;
         struct pcx_list sockets;
         struct pcx_list clients;
@@ -216,7 +217,10 @@ add_pending_conversation(struct pcx_server *server,
                          enum pcx_text_language language)
 {
         struct pcx_conversation *conv =
-                pcx_conversation_new(server->config, game_type, language);
+                pcx_conversation_new(server->config,
+                                     server->class_store,
+                                     game_type,
+                                     language);
         struct pcx_server_pending_conversation *pc = pcx_alloc(sizeof *pc);
 
         pc->conversation = conv;
@@ -910,7 +914,8 @@ pcx_server_add_config(struct pcx_server *server,
 }
 
 struct pcx_server *
-pcx_server_new(const struct pcx_config *config)
+pcx_server_new(const struct pcx_config *config,
+               struct pcx_class_store *class_store)
 {
         struct pcx_server *server = pcx_calloc(sizeof *server);
 
@@ -920,6 +925,7 @@ pcx_server_new(const struct pcx_config *config)
         server->playerbase = pcx_playerbase_new();
 
         server->config = config;
+        server->class_store = class_store;
 
         pcx_list_init(&server->pending_conversations);
 

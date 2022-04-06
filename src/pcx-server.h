@@ -21,6 +21,7 @@
 
 #include <stdbool.h>
 #include "pcx-config.h"
+#include "pcx-class-store.h"
 
 struct pcx_server;
 
@@ -32,7 +33,8 @@ enum pcx_server_error {
 };
 
 struct pcx_server *
-pcx_server_new(const struct pcx_config *config);
+pcx_server_new(const struct pcx_config *config,
+               struct pcx_class_store *class_store);
 
 bool
 pcx_server_add_config(struct pcx_server *server,

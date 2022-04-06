@@ -25,6 +25,7 @@
 #include "pcx-game.h"
 #include "pcx-list.h"
 #include "pcx-config.h"
+#include "pcx-class-store.h"
 
 enum pcx_conversation_event_type {
         PCX_CONVERSATION_EVENT_STARTED,
@@ -76,6 +77,7 @@ struct pcx_conversation {
         enum pcx_text_language language;
 
         const struct pcx_config *config;
+        struct pcx_class_store *class_store;
 
         bool started;
 
@@ -96,6 +98,7 @@ struct pcx_conversation {
 
 struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config,
+                     struct pcx_class_store *class_store,
                      const struct pcx_game *game_type,
                      enum pcx_text_language language);
 

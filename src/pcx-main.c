@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019, 2021  Neil Roberts
+ * Copyright (C) 2019, 2021, 2022  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 #include "pcx-config.h"
 #include "pcx-curl-multi.h"
 #include "pcx-log.h"
+#include "pcx-class-store.h"
 
 struct pcx_main {
         struct pcx_curl_multi *pcurl;
@@ -51,6 +52,8 @@ struct pcx_main {
         struct pcx_server *server;
 
         struct pcx_config *config;
+
+        struct pcx_class_store *class_store;
 
         const char *config_filename;
         const char *log_filename;
@@ -142,6 +145,7 @@ init_main_bots(struct pcx_main *data)
         pcx_list_for_each(bot, &data->config->bots, link) {
                 data->bots[i++] = pcx_bot_new(data->config,
                                               bot,
+                                              data->class_store,
                                               data->pcurl);
         }
 }
@@ -152,7 +156,7 @@ init_main_server(struct pcx_main *data)
         if (pcx_list_empty(&data->config->servers))
                 return true;
 
-        data->server = pcx_server_new(data->config);
+        data->server = pcx_server_new(data->config, data->class_store);
 
         struct pcx_config_server *server_conf;
 
@@ -181,6 +185,8 @@ destroy_main(struct pcx_main *data)
         if (data->server)
                 pcx_server_free(data->server);
 
+        if (data->class_store)
+                pcx_class_store_free(data->class_store);
 
         if (data->pcurl)
                 pcx_curl_multi_free(data->pcurl);
@@ -499,6 +505,8 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
                 goto done;
         }
+
+        data.class_store = pcx_class_store_new();
 
         if (!init_main_server(&data)) {
                 ret = EXIT_FAILURE;

@@ -24,6 +24,7 @@
 
 #include "pcx-text.h"
 #include "pcx-config.h"
+#include "pcx-class-store.h"
 
 enum pcx_game_message_format {
         PCX_GAME_MESSAGE_FORMAT_PLAIN,
@@ -70,6 +71,7 @@ struct pcx_game_callbacks {
         void (* send_message)(const struct pcx_game_message *message,
                               void *user_data);
         void (* game_over)(void *user_data);
+        struct pcx_class_store *(* get_class_store)(void *user_data);
 };
 
 struct pcx_game {

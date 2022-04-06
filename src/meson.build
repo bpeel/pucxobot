@@ -27,6 +27,7 @@ src = [
         'pcx-proto.c',
         'pcx-base64.c',
         'pcx-utf8.c',
+        'pcx-class-store.c',
         'pcx-ws-parser.c',
         'pcx-connection.c',
         'pcx-netaddress.c',

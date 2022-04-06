@@ -30,6 +30,7 @@
 
 struct pcx_conversation *
 pcx_conversation_new(const struct pcx_config *config,
+                     struct pcx_class_store *class_store,
                      const struct pcx_game *game_type,
                      enum pcx_text_language language)
 {
@@ -41,6 +42,7 @@ pcx_conversation_new(const struct pcx_config *config,
         conv->game_type = game_type;
         conv->language = language;
         conv->config = config;
+        conv->class_store = class_store;
 
         pcx_list_init(&conv->messages);
         pcx_signal_init(&conv->event_signal);

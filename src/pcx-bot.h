@@ -21,12 +21,14 @@
 
 #include "pcx-curl-multi.h"
 #include "pcx-config.h"
+#include "pcx-class-store.h"
 
 struct pcx_bot;
 
 struct pcx_bot *
 pcx_bot_new(const struct pcx_config *config,
             const struct pcx_config_bot *bot_config,
+            struct pcx_class_store *class_store,
             struct pcx_curl_multi *pcurl);
 
 int

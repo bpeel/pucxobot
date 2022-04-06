@@ -68,6 +68,8 @@ struct pcx_bot {
         const struct pcx_config *config;
         const struct pcx_config_bot *bot_config;
 
+        struct pcx_class_store *class_store;
+
         char *url_base;
 
         struct pcx_curl_multi *pcurl;
@@ -1946,6 +1948,7 @@ queue_update_commands_request(struct pcx_bot *bot)
 struct pcx_bot *
 pcx_bot_new(const struct pcx_config *config,
             const struct pcx_config_bot *bot_config,
+            struct pcx_class_store *class_store,
             struct pcx_curl_multi *pcurl)
 {
         struct pcx_bot *bot = pcx_calloc(sizeof *bot);
@@ -1959,6 +1962,8 @@ pcx_bot_new(const struct pcx_config *config,
 
         bot->config = config;
         bot->bot_config = bot_config;
+
+        bot->class_store = class_store;
 
         load_known_ids(bot);
 
