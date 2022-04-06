@@ -55,6 +55,11 @@ struct pcx_wordparty_player {
         uint32_t letters_used;
 };
 
+struct pcx_wordparty_class_data {
+        struct pcx_trie *trie;
+        struct pcx_syllabary *syllabary;
+};
+
 struct pcx_wordparty {
         int n_players;
 
@@ -65,8 +70,7 @@ struct pcx_wordparty {
         enum pcx_text_language language;
         struct pcx_main_context_source *game_over_source;
 
-        struct pcx_trie *trie;
-        struct pcx_syllabary *syllabary;
+        struct pcx_wordparty_class_data *class_data;
 
         struct pcx_buffer word_buf;
 
@@ -141,8 +145,8 @@ pick_syllable(struct pcx_wordparty *wordparty)
 {
         wordparty->fail_count = 0;
 
-        if (wordparty->syllabary == NULL ||
-            !pcx_syllabary_get_random(wordparty->syllabary,
+        if (wordparty->class_data->syllabary == NULL ||
+            !pcx_syllabary_get_random(wordparty->class_data->syllabary,
                                       wordparty->current_syllable,
                                       &wordparty->current_difficulty)) {
                 /* Fallback to at least not crash */
@@ -349,7 +353,7 @@ get_data_filename(const struct pcx_config *config,
 }
 
 static void
-open_dictionary(struct pcx_wordparty *wordparty,
+open_dictionary(struct pcx_wordparty_class_data *data,
                 const struct pcx_config *config,
                 enum pcx_text_language language)
 {
@@ -357,11 +361,11 @@ open_dictionary(struct pcx_wordparty *wordparty,
 
         struct pcx_error *error = NULL;
 
-        wordparty->trie = pcx_trie_new(full_filename, &error);
+        data->trie = pcx_trie_new(full_filename, &error);
 
         pcx_free(full_filename);
 
-        if (wordparty->trie == NULL) {
+        if (data->trie == NULL) {
                 pcx_log("Error opening wordparty dictionary: %s",
                         error->message);
                 pcx_error_free(error);
@@ -369,7 +373,7 @@ open_dictionary(struct pcx_wordparty *wordparty,
 }
 
 static void
-open_syllabary(struct pcx_wordparty *wordparty,
+open_syllabary(struct pcx_wordparty_class_data *data,
                const struct pcx_config *config,
                enum pcx_text_language language)
 {
@@ -377,16 +381,48 @@ open_syllabary(struct pcx_wordparty *wordparty,
 
         struct pcx_error *error = NULL;
 
-        wordparty->syllabary = pcx_syllabary_new(full_filename, &error);
+        data->syllabary = pcx_syllabary_new(full_filename, &error);
 
         pcx_free(full_filename);
 
-        if (wordparty->trie == NULL) {
+        if (data->trie == NULL) {
                 pcx_log("Error opening wordparty syllabary: %s",
                         error->message);
                 pcx_error_free(error);
         }
 }
+
+static void *
+create_class_store_data_cb(const struct pcx_config *config,
+                           enum pcx_text_language language)
+{
+        struct pcx_wordparty_class_data *data = pcx_calloc(sizeof *data);
+
+        open_dictionary(data, config, language);
+        open_syllabary(data, config, language);
+
+        return data;
+}
+
+static void
+free_class_store_data_cb(void *user_data)
+{
+        struct pcx_wordparty_class_data *data = user_data;
+
+        if (data->trie)
+                pcx_trie_free(data->trie);
+
+        if (data->syllabary)
+                pcx_syllabary_free(data->syllabary);
+
+        pcx_free(data);
+}
+
+static const struct pcx_class_store_callbacks
+class_store_callbacks = {
+        .create_data = create_class_store_data_cb,
+        .free_data = free_class_store_data_cb,
+};
 
 static int
 compare_uint32(const void *pa, const void *pb)
@@ -457,8 +493,12 @@ create_game_cb(const struct pcx_config *config,
         pcx_buffer_init(&wordparty->word_buf);
         pcx_buffer_init(&wordparty->used_words);
 
-        open_dictionary(wordparty, config, language);
-        open_syllabary(wordparty, config, language);
+        wordparty->class_data =
+                pcx_class_store_ref_data(callbacks->get_class_store(user_data),
+                                         config,
+                                         &pcx_wordparty_game,
+                                         language,
+                                         &class_store_callbacks);
 
         wordparty->current_player = rand() % n_players;
 
@@ -527,8 +567,8 @@ is_valid_word(struct pcx_wordparty *wordparty,
                 return false;
 
         /* The word must be in the dictionary */
-        if (wordparty->trie == NULL ||
-            !pcx_trie_contains_word(wordparty->trie, word, token))
+        if (wordparty->class_data->trie == NULL ||
+            !pcx_trie_contains_word(wordparty->class_data->trie, word, token))
                 return false;
 
         return true;
@@ -688,11 +728,9 @@ free_game_cb(void *data)
         if (wordparty->game_over_source)
                 pcx_main_context_remove_source(wordparty->game_over_source);
 
-        if (wordparty->trie)
-                pcx_trie_free(wordparty->trie);
-
-        if (wordparty->syllabary)
-                pcx_syllabary_free(wordparty->syllabary);
+        struct pcx_class_store *class_store =
+                wordparty->callbacks.get_class_store(wordparty->user_data);
+        pcx_class_store_unref_data(class_store, wordparty->class_data);
 
         pcx_buffer_destroy(&wordparty->word_buf);
         pcx_buffer_destroy(&wordparty->used_words);
