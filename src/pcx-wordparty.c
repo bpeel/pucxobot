@@ -704,7 +704,7 @@ tally_word(struct pcx_wordparty *wordparty)
         if (player->letters_used == all_letters) {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-                pcx_buffer_append_string(&buf, "➕❤️");
+                pcx_buffer_append_string(&buf, "➕❤️ ");
                 pcx_buffer_append_printf(&buf,
                                          pcx_text_get(wordparty->language,
                                                       PCX_TEXT_STRING_ONE_UP),
