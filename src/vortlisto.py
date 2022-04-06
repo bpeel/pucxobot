@@ -25,7 +25,19 @@ import os
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
     LIST_RE = re.compile(r', *$')
-    PRONOUNS = {"mi", "ni", "ci", "vi", "li", "ŝi", "ri", "ili"}
+    PRONOUNS = {
+        "mi",
+        "ni",
+        "ci",
+        "vi",
+        "li",
+        "ŝi",
+        "ri",
+        "ĝi",
+        "oni",
+        "si",
+        "ili"
+    }
 
     def __init__(self):
         self.words = set()
