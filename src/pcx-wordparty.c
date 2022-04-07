@@ -125,6 +125,16 @@ add_unichar(struct pcx_buffer *buf,
 }
 
 static void
+add_uppercase_string(struct pcx_buffer *buf,
+                     const char *str)
+{
+        for (const char *p = str; *p; p = pcx_utf8_next(p))
+                add_unichar(buf, pcx_hat_to_upper(pcx_utf8_get_char(p)));
+        pcx_buffer_append_c(buf, '\0');
+        buf->length--;
+}
+
+static void
 add_player_text(struct pcx_wordparty *wordparty,
                 struct pcx_buffer *buf,
                 enum pcx_text_string string,
@@ -371,7 +381,8 @@ start_turn(struct pcx_wordparty *wordparty)
         escape_string(wordparty, &buf, PCX_TEXT_STRING_TYPE_A_WORD);
 
         pcx_buffer_append_string(&buf, "\n\n<b>");
-        pcx_html_escape(&buf, wordparty->current_syllable);
+        add_uppercase_string(&buf, wordparty->current_syllable);
+
         pcx_buffer_append_string(&buf, "</b>");
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
