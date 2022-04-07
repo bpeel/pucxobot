@@ -41,6 +41,25 @@ pcx_hat_to_lower(uint32_t ch)
         return ch;
 }
 
+uint32_t
+pcx_hat_to_upper(uint32_t ch)
+{
+        if (ch >= 'a' && ch <= 'z')
+                return ch - 'a' + 'A';
+
+        switch (ch) {
+        case 0x0125: /* ĥ */
+        case 0x015d: /* ŝ */
+        case 0x011d: /* ĝ */
+        case 0x0109: /* ĉ */
+        case 0x0135: /* ĵ */
+        case 0x016d: /* ŭ */
+                return ch - 1;
+        }
+
+        return ch;
+}
+
 bool
 pcx_hat_is_alphabetic(uint32_t ch)
 {

@@ -49,6 +49,9 @@ pcx_hat_iter_next(struct pcx_hat_iter *iter);
 uint32_t
 pcx_hat_to_lower(uint32_t ch);
 
+uint32_t
+pcx_hat_to_upper(uint32_t ch);
+
 bool
 pcx_hat_is_alphabetic(uint32_t ch);
 
