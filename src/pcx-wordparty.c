@@ -317,7 +317,7 @@ maybe_add_letters_hint(struct pcx_wordparty *wordparty,
                 if ((player->letters_used & (UINT32_C(1) << i)))
                         continue;
 
-                add_unichar(buf, wordparty->letters[i]);
+                add_unichar(buf, pcx_hat_to_upper(wordparty->letters[i]));
         }
 
         pcx_buffer_append_string(buf, "\n\n");
