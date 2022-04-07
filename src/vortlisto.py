@@ -59,11 +59,9 @@ class WordList:
 
     def add_adjective(self, root):
         self.add_simple_adjective_and_adverb(root)
-        self.add_verb(root)
-        self.add_verb(root + "ig")
-        self.add_verb(root + "iĝ")
+        self.add_verb(root, passive_form=True)
 
-    def add_verb(self, root):
+    def add_verb(self, root, passive_form=False):
         for tense in "iao":
             participle = root + tense + "nt"
             self.add_noun(participle)
@@ -75,6 +73,11 @@ class WordList:
             self.add_word(root + tense)
 
         self.add_noun(root + "ad")
+
+        if not root.endswith("ig") and not root.endswith("iĝ"):
+            self.add_verb(root + "ig")
+            if passive_form:
+                self.add_verb(root + "iĝ")
 
     def _parse_kap(self, root, kap):
         before = []
@@ -104,9 +107,11 @@ class WordList:
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
 
-    def _add_pair(self, before, after):
+    def _add_pair(self, derivation, before, after):
         if after.endswith("i"):
-            self.add_verb(before + after[:-1])
+            is_transitive = len(derivation.xpath("../gra/vspec[text()=\"tr\" "
+                                                 "or text()=\"x\"]")) > 0
+            self.add_verb(before + after[:-1], passive_form=is_transitive)
         elif after.endswith("o"):
             self.add_noun(before + after[:-1])
         elif after.endswith("a"):
@@ -125,7 +130,9 @@ class WordList:
                 continue
 
             if variant.endswith(after):
-                self._add_pair(variant[0:len(variant) - len(after)], after)
+                self._add_pair(derivation,
+                               variant[0:len(variant) - len(after)],
+                               after)
 
     def _add_derivation(self, derivation, root):
         (before, after) = self._parse_kap(root, derivation)
@@ -138,7 +145,7 @@ class WordList:
             self._contains_nonalpha(after)):
             return
 
-        self._add_pair(before, after)
+        self._add_pair(derivation, before, after)
         self._add_variants(derivation, root, before, after)
 
     def add_from_xml(self, filename):
