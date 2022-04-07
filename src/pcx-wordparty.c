@@ -86,6 +86,11 @@ struct pcx_wordparty {
          * player has seen it then we’ll pick a new one.
          */
         int fail_count;
+        /* The number of players still in the game when the current
+         * syllable was chosen. This is used to detect when everyone
+         * has had a go at it.
+         */
+        int max_fail_count;
 
         /* Array of word tokens returned from the trie so that we can
          * detect duplicate words.
@@ -164,21 +169,6 @@ remove_word_timeout(struct pcx_wordparty *wordparty)
         wordparty->word_timeout = NULL;
 }
 
-static void
-pick_syllable(struct pcx_wordparty *wordparty)
-{
-        wordparty->fail_count = 0;
-
-        if (wordparty->class_data->syllabary == NULL ||
-            !pcx_syllabary_get_random(wordparty->class_data->syllabary,
-                                      wordparty->current_syllable,
-                                      &wordparty->current_difficulty)) {
-                /* Fallback to at least not crash */
-                strcpy(wordparty->current_syllable, "a");
-                wordparty->current_difficulty = 0;
-        }
-}
-
 static int
 count_players(struct pcx_wordparty *wordparty)
 {
@@ -193,6 +183,22 @@ count_players(struct pcx_wordparty *wordparty)
 }
 
 static void
+pick_syllable(struct pcx_wordparty *wordparty)
+{
+        wordparty->fail_count = 0;
+        wordparty->max_fail_count = count_players(wordparty);
+
+        if (wordparty->class_data->syllabary == NULL ||
+            !pcx_syllabary_get_random(wordparty->class_data->syllabary,
+                                      wordparty->current_syllable,
+                                      &wordparty->current_difficulty)) {
+                /* Fallback to at least not crash */
+                strcpy(wordparty->current_syllable, "a");
+                wordparty->current_difficulty = 0;
+        }
+}
+
+static void
 word_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
@@ -203,7 +209,7 @@ word_timeout_cb(struct pcx_main_context_source *source,
         struct pcx_wordparty_player *player =
                 wordparty->players + wordparty->current_player;
 
-        if (++wordparty->fail_count >= count_players(wordparty))
+        if (++wordparty->fail_count >= wordparty->max_fail_count)
                 pick_syllable(wordparty);
 
         /* If the player had the maximum number of lives then reset
