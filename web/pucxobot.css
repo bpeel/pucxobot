@@ -173,6 +173,16 @@ body {
     background-color: #cc7079;
 }
 
+#visualisation {
+    width: 100%;
+    height: min(40%, 15em);
+}
+
+#visualisation svg {
+    width: 100%;
+    height: 100%;
+}
+
 @media only all and (max-width: 45em) {
     #content {
         position: absolute;

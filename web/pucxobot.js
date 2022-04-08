@@ -62,6 +62,125 @@ MessageReader.prototype.isFinished = function()
   return this.pos >= this.dv.byteLength;
 };
 
+function WordpartyVisualisation(svg)
+{
+  this.svg = svg;
+  this.players = [];
+
+  this.currentPlayer = 0;
+
+  this.arrow = this.createElement("path");
+  this.arrow.setAttribute("d",
+                          "M -6.71,-2.99 H -3.65 V 8.36 " +
+                          "H 3.63 V -2.99 H 6.68 " +
+                          "L -0.01,-9.68 Z");
+  this.arrow.setAttribute("fill", "blue");
+  this.arrow.setAttribute("stroke", "black");
+  this.arrow.setAttribute("stroke-width", 0.5);
+  this.svg.appendChild(this.arrow);
+}
+
+WordpartyVisualisation.FONT_SIZE = 6;
+WordpartyVisualisation.CIRCLE_RADIUS = 40;
+
+WordpartyVisualisation.prototype.createElement = function(tag)
+{
+  return document.createElementNS("http://www.w3.org/2000/svg", tag);
+};
+
+WordpartyVisualisation.prototype.getPlayer = function(playerNum)
+{
+  if (i < this.players.length)
+    return this.players[i];
+
+  for (var i = this.players.length; i <= playerNum; i++) {
+    var group = this.createElement("g");
+    this.svg.appendChild(group);
+
+    var nameElement = this.createElement("text");
+    nameElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
+    nameElement.setAttribute("font-family", "sans-serif");
+    nameElement.setAttribute("text-anchor", "middle");
+    nameElement.setAttribute("y", WordpartyVisualisation.FONT_SIZE);
+    group.appendChild(nameElement);
+
+    var livesElement = this.createElement("text");
+    livesElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
+    livesElement.setAttribute("font-family", "sans-serif");
+    livesElement.setAttribute("text-anchor", "middle");
+    group.appendChild(livesElement);
+
+    var player = {
+      "name": nameElement,
+      "group": group,
+      "lives": livesElement,
+    };
+
+    this.players.push(player);
+  }
+
+  this.repositionPlayers();
+  this.updateArrow();
+
+  return this.players[playerNum];
+};
+
+WordpartyVisualisation.prototype.repositionPlayers = function()
+{
+  var numPlayers = this.players.length;
+
+  for (var i = 0; i < numPlayers; i++) {
+    var angle = (i / numPlayers + 0.75) * 2.0 * Math.PI;
+    var x = WordpartyVisualisation.CIRCLE_RADIUS * Math.cos(angle);
+    var y = WordpartyVisualisation.CIRCLE_RADIUS * Math.sin(angle);
+    this.players[i].group.setAttribute("transform",
+                                       "translate(" + x + "," + y + ")");
+  }
+};
+
+WordpartyVisualisation.prototype.handlePlayerName = function(playerNum, name)
+{
+  var player = this.getPlayer(playerNum);
+  var nameElement = player.name;
+
+  while (nameElement.lastChild)
+    nameElement.removeChild(nameElement.lastChild);
+
+  nameElement.appendChild(document.createTextNode(name));
+};
+
+WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
+{
+  var val = mr.getUint8();
+
+  if (dataNum == 0) {
+    this.currentPlayer = val;
+    this.updateArrow();
+  } else {
+    var player = this.getPlayer(dataNum - 1);
+    var lives;
+
+    if (val == 0) {
+      lives = "☠️";
+    } else {
+      lives = "";
+
+      for (var i = 0; i < val; i++)
+        lives += "❤️";
+    }
+
+    var livesElement = player.lives;
+    while (livesElement.lastChild)
+      livesElement.removeChild(livesElement.lastChild);
+    livesElement.appendChild(document.createTextNode(lives));
+  }
+};
+
+WordpartyVisualisation.prototype.updateArrow = function() {
+  var angle = this.currentPlayer * 360.0 / this.players.length;
+  this.arrow.setAttribute("transform", "rotate(" + angle + ")");
+};
+
 function Pucxo()
 {
   this.sock = null;
@@ -83,6 +202,8 @@ function Pucxo()
 
   this.namebox = document.getElementById("namebox");
   this.namebox.onkeydown = this.nameboxKeyCb.bind(this);
+
+  this.visualisation = null;
 
   this.gameType = null;
 
@@ -144,7 +265,8 @@ Pucxo.GAMES = [
   { "title": "@SIX_TITLE@", "keyword": "six" },
   { "title": "@FOX_TITLE@", "keyword": "fox" },
   { "title": "@SNITCH_TITLE@", "keyword": "snitch" },
-  { "title": "@WORDPARTY_TITLE@", "keyword": "wordparty" },
+  { "title": "@WORDPARTY_TITLE@", "keyword": "wordparty",
+    "visualisation": WordpartyVisualisation },
   { "title": "@ZOMBIE_DICE_TITLE@", "keyword": "zombie" },
   { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },
 ];
@@ -739,6 +861,21 @@ Pucxo.prototype.handleGameType = function(mr)
       this.setTitle(this.gameType.title);
       this.setHelpAnchor(this.gameType.help || this.gameType.keyword);
 
+      var visualisationClass = this.gameType.visualisation;
+
+      document.getElementById("visualisation").style.display =
+        visualisationClass ? "block" : "none";
+
+      var svg = document.getElementById("visualisationBox");
+
+      while (svg.lastChild)
+        svg.removeChild(svg.lastChild);
+
+      if (visualisationClass)
+        this.visualisation = new visualisationClass(svg);
+      else
+        this.visualisation = null;
+
       break;
     }
   }
@@ -748,6 +885,27 @@ Pucxo.prototype.handlePrivateGameNotFound = function(e)
 {
   this.addServiceNote("@PRIVATE_LINK_INVALID@");
   this.disconnect();
+};
+
+Pucxo.prototype.handlePlayerName = function(mr)
+{
+  if (!this.visualisation)
+    return;
+
+  var playerNum = mr.getUint8();
+  var name = mr.getString();
+
+  this.visualisation.handlePlayerName(playerNum, name);
+};
+
+Pucxo.prototype.handleSidebandData = function(mr)
+{
+  if (!this.visualisation)
+    return;
+
+  var dataNum = mr.getUint8();
+
+  this.visualisation.handleSidebandData(dataNum, mr);
 };
 
 Pucxo.prototype.messageCb = function(e)
@@ -765,6 +923,10 @@ Pucxo.prototype.messageCb = function(e)
     this.handleGameType(mr);
   } else if (msgType == 4) {
     this.handlePrivateGameNotFound(mr);
+  } else if (msgType == 5) {
+    this.handlePlayerName(mr);
+  } else if (msgType == 6) {
+    this.handleSidebandData(mr);
   }
 };
 
