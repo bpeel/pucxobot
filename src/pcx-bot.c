@@ -797,6 +797,25 @@ delete_message(struct pcx_bot *bot,
 }
 
 static void
+remove_buttons_from_message(struct pcx_bot *bot,
+                            int64_t chat_id,
+                            int64_t message_id)
+{
+        struct json_object *args = json_object_new_object();
+
+        json_object_object_add(args,
+                               "chat_id",
+                               json_object_new_int64(chat_id));
+        json_object_object_add(args,
+                               "message_id",
+                               json_object_new_int64(message_id));
+
+        send_request(bot, "editMessageReplyMarkup", args);
+
+        json_object_put(args);
+}
+
+static void
 show_help(struct pcx_bot *bot,
           const struct pcx_game *game,
           int64_t chat_id,
@@ -1673,6 +1692,8 @@ process_create_game_callback_data(struct pcx_bot *bot,
 
         if (!get_message_from_info(from, &info))
                 return;
+
+        remove_buttons_from_message(bot, info.chat_id, info.message_id);
 
         process_create_game(bot, game, &info);
 }
