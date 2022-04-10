@@ -50,9 +50,9 @@ pcx_conversation_new(const struct pcx_config *config,
         return conv;
 }
 
-static const char *
-get_player_name(struct pcx_conversation *conv,
-                int player_num)
+const char *
+pcx_conversation_get_player_name(struct pcx_conversation *conv,
+                                 int player_num)
 {
         assert(player_num >= 0 && player_num < conv->n_players);
         return ((const char **) conv->player_names.data)[player_num];
@@ -201,7 +201,8 @@ append_current_players_message(struct pcx_conversation *conv,
                         else
                                 pcx_buffer_append_string(buf, ", ");
                 }
-                pcx_buffer_append_string(buf, get_player_name(conv, i));
+                const char *name = pcx_conversation_get_player_name(conv, i);
+                pcx_buffer_append_string(buf, name);
         }
 }
 
@@ -218,10 +219,13 @@ send_welcome_message(struct pcx_conversation *conv,
                 PCX_TEXT_STRING_WELCOME_BUTTONS :
                 PCX_TEXT_STRING_WELCOME_BUTTONS_FULL;
 
+        const char *name =
+                pcx_conversation_get_player_name(conv, new_player_num);
+
         pcx_buffer_append_printf(&buf,
                                  pcx_text_get(conv->language,
                                               welcome_note),
-                                 get_player_name(conv, new_player_num));
+                                 name);
 
         if (conv->n_players < conv->game_type->max_players) {
                 pcx_buffer_append_string(&buf, "\n\n");
@@ -285,10 +289,12 @@ pcx_conversation_remove_player(struct pcx_conversation *conv,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        const char *name = pcx_conversation_get_player_name(conv, player_num);
+
         pcx_buffer_append_printf(&buf,
                                  pcx_text_get(conv->language,
                                               PCX_TEXT_STRING_PLAYER_LEFT),
-                                 get_player_name(conv, player_num));
+                                 name);
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
@@ -366,8 +372,10 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
+        const char *name = pcx_conversation_get_player_name(conv, player_num);
+
         pcx_buffer_append_string(&buf, "<b>");
-        pcx_html_escape(&buf, get_player_name(conv, player_num));
+        pcx_html_escape(&buf, name);
         pcx_buffer_append_string(&buf, "</b>\n\n");
         pcx_html_escape(&buf, text);
 
