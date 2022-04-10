@@ -770,11 +770,18 @@ get_class_store_cb(void *user_data)
         return game->bot->class_store;
 }
 
+static void
+dirty_sideband_data_cb(int data_num,
+                       void *user_data)
+{
+}
+
 static const struct pcx_game_callbacks
 game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
+        .dirty_sideband_data = dirty_sideband_data_cb,
 };
 
 static void
