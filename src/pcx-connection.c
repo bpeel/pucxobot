@@ -109,6 +109,9 @@ struct pcx_connection {
          */
         struct pcx_list *last_message_sent;
 
+        /* The number of players that we have sent the name of */
+        int named_players;
+
         SSL *ssl;
 };
 
@@ -205,13 +208,18 @@ connection_is_ready_to_write(struct pcx_connection *conn)
                 if (!conn->sent_conversation_details)
                         return true;
 
-                /* If the last message we sent isn’t the last one then
-                 * we have messages to send.
-                 */
-                if (!conn->player->has_left &&
-                    conn->last_message_sent->next !=
-                    &conn->player->conversation->messages)
-                        return true;
+                if (!conn->player->has_left) {
+                        if (conn->named_players <
+                            conn->player->conversation->n_players)
+                                return true;
+
+                        /* If the last message we sent isn’t the last
+                         * one then we have messages to send.
+                         */
+                        if (conn->last_message_sent->next !=
+                            &conn->player->conversation->messages)
+                                return true;
+                }
         }
 
         return false;
@@ -255,6 +263,38 @@ write_command(struct pcx_connection *conn,
         va_end(ap);
 
         return ret;
+}
+
+static bool
+write_player_names(struct pcx_connection *conn)
+{
+        struct pcx_conversation *conv = conn->player->conversation;
+
+        while (conn->named_players < conv->n_players) {
+                const char *name =
+                        pcx_conversation_get_player_name(conv,
+                                                         conn->named_players);
+
+                int wrote = write_command(conn,
+
+                                          PCX_PROTO_PLAYER_NAME,
+
+                                          PCX_PROTO_TYPE_UINT8,
+                                          conn->named_players,
+
+                                          PCX_PROTO_TYPE_STRING,
+                                          name,
+
+                                          PCX_PROTO_TYPE_NONE);
+
+                if (wrote == -1)
+                        return false;
+
+                conn->named_players++;
+                conn->write_buf_pos += wrote;
+        }
+
+        return true;
 }
 
 static bool
@@ -407,9 +447,13 @@ fill_write_buf(struct pcx_connection *conn)
             !write_conversation_details(conn))
                 return;
 
-        if (!conn->player->has_left &&
-            !write_messages(conn))
-                return;
+        if (!conn->player->has_left) {
+                if (!write_player_names(conn))
+                        return;
+
+                if (!write_messages(conn))
+                        return;
+        }
 }
 
 static bool
@@ -1338,9 +1382,9 @@ conversation_event_cb(struct pcx_listener *listener,
 
         switch (event->type) {
         case PCX_CONVERSATION_EVENT_STARTED:
-        case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
         case PCX_CONVERSATION_EVENT_PLAYER_REMOVED:
                 break;
+        case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
                 update_poll_flags(connection);
                 break;

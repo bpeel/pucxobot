@@ -137,6 +137,16 @@ No data
 Sent after a JOIN_PRIVATE_GAME message if the requested game doesn’t
 exist, it has already started or it is full.
 
+PLAYER_NAME (0x05)
+------------------
+
+• uint8_t player number
+• string name
+
+When the conversation is first joined, this command will be sent for
+each player, including the player who joined, in order to report the
+names. It will also be sent whenever a new player joins later.
+
 MESSAGE (0x01)
 --------------
 
