@@ -328,6 +328,8 @@ Pucxo.prototype.setWelcomeStep = function(step)
   this.setHelpAnchor("");
   this.clearStatusMessage();
 
+  this.updateVisualisation();
+
   var overlay = document.getElementById("welcomeOverlay");
 
   for (elem = overlay.firstElementChild;
@@ -847,6 +849,25 @@ Pucxo.prototype.setHelpAnchor = function(help)
   helpButton.href = "help.html#" + help;
 };
 
+Pucxo.prototype.updateVisualisation = function()
+{
+  var visualisationClass =
+      (this.connected && this.gameType) ? this.gameType.visualisation : null;
+
+  document.getElementById("visualisation").style.display =
+    visualisationClass ? "block" : "none";
+
+  var svg = document.getElementById("visualisationBox");
+
+  while (svg.lastChild)
+    svg.removeChild(svg.lastChild);
+
+  if (visualisationClass)
+    this.visualisation = new visualisationClass(svg);
+  else
+    this.visualisation = null;
+};
+
 Pucxo.prototype.handleGameType = function(mr)
 {
   var typeName = mr.getString();
@@ -861,20 +882,7 @@ Pucxo.prototype.handleGameType = function(mr)
       this.setTitle(this.gameType.title);
       this.setHelpAnchor(this.gameType.help || this.gameType.keyword);
 
-      var visualisationClass = this.gameType.visualisation;
-
-      document.getElementById("visualisation").style.display =
-        visualisationClass ? "block" : "none";
-
-      var svg = document.getElementById("visualisationBox");
-
-      while (svg.lastChild)
-        svg.removeChild(svg.lastChild);
-
-      if (visualisationClass)
-        this.visualisation = new visualisationClass(svg);
-      else
-        this.visualisation = null;
+      this.updateVisualisation();
 
       break;
     }
