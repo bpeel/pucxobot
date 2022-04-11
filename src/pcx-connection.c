@@ -109,6 +109,11 @@ struct pcx_connection {
          */
         struct pcx_list *last_message_sent;
 
+        /* Bitmask of sideband data pieces that need to be send to the
+         * client.
+         */
+        uint64_t dirty_sideband_data;
+
         /* The number of players that we have sent the name of */
         int named_players;
 
@@ -213,6 +218,9 @@ connection_is_ready_to_write(struct pcx_connection *conn)
                             conn->player->conversation->n_players)
                                 return true;
 
+                        if (conn->dirty_sideband_data)
+                                return true;
+
                         /* If the last message we sent isn’t the last
                          * one then we have messages to send.
                          */
@@ -291,6 +299,39 @@ write_player_names(struct pcx_connection *conn)
                         return false;
 
                 conn->named_players++;
+                conn->write_buf_pos += wrote;
+        }
+
+        return true;
+}
+
+static bool
+write_sideband_data(struct pcx_connection *conn)
+{
+        struct pcx_conversation *conv = conn->player->conversation;
+
+        while (true) {
+                int first_bit = ffsll(conn->dirty_sideband_data);
+
+                if (first_bit == 0)
+                        break;
+
+                int data_num = first_bit - 1;
+
+                uint8_t *buf = conn->write_buf + conn->write_buf_pos;
+                size_t size = sizeof conn->write_buf - conn->write_buf_pos;
+
+                int wrote =
+                        conv->game_type->write_sideband_data_cb(conv->game,
+                                                                data_num,
+                                                                buf,
+                                                                size);
+
+                if (wrote == -1)
+                        return false;
+
+                conn->dirty_sideband_data &= ~(UINT64_C(1) << data_num);
+
                 conn->write_buf_pos += wrote;
         }
 
@@ -449,6 +490,9 @@ fill_write_buf(struct pcx_connection *conn)
 
         if (!conn->player->has_left) {
                 if (!write_player_names(conn))
+                        return;
+
+                if (!write_sideband_data(conn))
                         return;
 
                 if (!write_messages(conn))
@@ -1370,6 +1414,21 @@ pcx_connection_get_last_update_time(struct pcx_connection *conn)
         return conn->last_update_time;
 }
 
+static void
+handle_sideband_data_modified(struct pcx_connection *connection,
+                              const struct pcx_conversation_event *base_event)
+{
+        const struct pcx_conversation_sideband_data_modified_event *event =
+                pcx_container_of(base_event,
+                                 struct
+                                 pcx_conversation_sideband_data_modified_event,
+                                 base);
+
+        connection->dirty_sideband_data |= UINT64_C(1) << event->data_num;
+
+        update_poll_flags(connection);
+}
+
 static bool
 conversation_event_cb(struct pcx_listener *listener,
                       void *data)
@@ -1383,11 +1442,13 @@ conversation_event_cb(struct pcx_listener *listener,
         switch (event->type) {
         case PCX_CONVERSATION_EVENT_STARTED:
         case PCX_CONVERSATION_EVENT_PLAYER_REMOVED:
-        case PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED:
                 break;
         case PCX_CONVERSATION_EVENT_PLAYER_ADDED:
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
                 update_poll_flags(connection);
+                break;
+        case PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED:
+                handle_sideband_data_modified(connection, event);
                 break;
         }
 
@@ -1412,6 +1473,9 @@ pcx_connection_set_player(struct pcx_connection *conn,
         conn->sent_conversation_details = false;
 
         conn->last_message_sent = &player->conversation->messages;
+
+        conn->dirty_sideband_data =
+                player->conversation->available_sideband_data;
 
         while (n_messages_received > 0 &&
                conn->last_message_sent->next !=
