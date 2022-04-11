@@ -63,9 +63,14 @@ class WordList:
 
     def add_verb(self, root, passive_form=False):
         for tense in "iao":
-            participle = root + tense + "nt"
-            self.add_noun(participle)
-            self.add_simple_adjective_and_adverb(participle)
+            participles = [root + tense + "nt"]
+
+            if passive_form:
+                participles.append(root + tense + "t")
+
+            for participle in participles:
+                self.add_noun(participle)
+                self.add_simple_adjective_and_adverb(participle)
 
             self.add_word(root + tense + "s")
 
