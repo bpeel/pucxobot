@@ -178,6 +178,20 @@ static void
 dirty_sideband_data_cb(int data_num,
                        void *user_data)
 {
+        struct pcx_conversation *conv = user_data;
+
+        assert(data_num >= 0 &&
+               data_num < 8 * sizeof (conv->available_sideband_data));
+
+        conv->available_sideband_data |= UINT64_C(1) << data_num;
+
+        struct pcx_conversation_sideband_data_modified_event event ={
+                .data_num = data_num,
+        };
+
+        emit_event_with_data(conv,
+                             PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED,
+                             &event.base);
 }
 
 static const struct pcx_game_callbacks

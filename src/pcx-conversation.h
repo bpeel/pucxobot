@@ -32,6 +32,7 @@ enum pcx_conversation_event_type {
         PCX_CONVERSATION_EVENT_PLAYER_ADDED,
         PCX_CONVERSATION_EVENT_PLAYER_REMOVED,
         PCX_CONVERSATION_EVENT_NEW_MESSAGE,
+        PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED,
 };
 
 struct pcx_conversation_event {
@@ -42,6 +43,11 @@ struct pcx_conversation_event {
 struct pcx_conversation_player_removed_event {
         struct pcx_conversation_event base;
         int player_num;
+};
+
+struct pcx_conversation_sideband_data_modified_event {
+        struct pcx_conversation_event base;
+        int data_num;
 };
 
 struct pcx_conversation_message {
@@ -94,6 +100,12 @@ struct pcx_conversation {
         struct pcx_buffer player_names;
 
         struct pcx_list messages;
+
+        /* Bitmask of sideband data numbers that the game has ever
+         * reported as being dirty. This is used to figure out what to
+         * send to a new connection.
+         */
+        uint64_t available_sideband_data;
 };
 
 struct pcx_conversation *

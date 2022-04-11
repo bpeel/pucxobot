@@ -205,6 +205,7 @@ pending_conversation_event_cb(struct pcx_listener *listener,
                 remove_pending_conversation(pc);
                 break;
         case PCX_CONVERSATION_EVENT_NEW_MESSAGE:
+        case PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED:
                 break;
         }
 
