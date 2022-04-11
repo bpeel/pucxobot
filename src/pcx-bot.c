@@ -771,8 +771,9 @@ get_class_store_cb(void *user_data)
 }
 
 static void
-dirty_sideband_data_cb(int data_num,
-                       void *user_data)
+set_sideband_data_cb(int data_num,
+                     uint8_t value,
+                     void *user_data)
 {
 }
 
@@ -781,7 +782,7 @@ game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
-        .dirty_sideband_data = dirty_sideband_data_cb,
+        .set_sideband_data = set_sideband_data_cb,
 };
 
 static void

@@ -75,13 +75,14 @@ struct pcx_game_callbacks {
 
         /* Tell the server that a piece of game-specific sideband data
          * has been changed and needs to be reported to the clients.
-         * If the server supports sideband data then it will
-         * eventually call write_sideband_data for every existing
-         * connection and every new connection with this data_num
-         * until it successfully returns. The data_num has a low
+         * If the server supports sideband data then it will send the
+         * data num and value to all of the clients. The data will
+         * also be sent to any new clients. The data_num has a low
          * maximum value.
          */
-        void (* dirty_sideband_data)(int data_num, void *user_data);
+        void (* set_sideband_data)(int data_num,
+                                   uint8_t value,
+                                   void *user_data);
 };
 
 struct pcx_game {
@@ -99,18 +100,6 @@ struct pcx_game {
                                  int n_players,
                                  const char * const *names);
         char *(* get_help_cb)(enum pcx_text_language language);
-
-        /* Add a command for the corresponding sideband data to the
-         * buffer. This will be called by the server if sideband data
-         * is supported when the game reports that the data is dirty
-         * via dirty_sideband_data. Returns the length of the data
-         * actually written or -1 if the buffer is too small. In the
-         * latter case the server will try again later.
-         */
-        int (* write_sideband_data_cb)(void *game,
-                                       int data_num,
-                                       uint8_t *buffer,
-                                       size_t buffer_length);
 
         void (* handle_callback_data_cb)(void *game,
                                          int player_num,

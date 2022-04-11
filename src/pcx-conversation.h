@@ -101,9 +101,12 @@ struct pcx_conversation {
 
         struct pcx_list messages;
 
+        /* One byte for each piece of sideband data */
+        struct pcx_buffer sideband_data;
+
         /* Bitmask of sideband data numbers that the game has ever
-         * reported as being dirty. This is used to figure out what to
-         * send to a new connection.
+         * set. This is used to figure out what to send to a new
+         * connection.
          */
         uint64_t available_sideband_data;
 };

@@ -175,13 +175,19 @@ get_class_store_cb(void *user_data)
 }
 
 static void
-dirty_sideband_data_cb(int data_num,
-                       void *user_data)
+set_sideband_data_cb(int data_num,
+                     uint8_t value,
+                     void *user_data)
 {
         struct pcx_conversation *conv = user_data;
 
         assert(data_num >= 0 &&
                data_num < 8 * sizeof (conv->available_sideband_data));
+
+        if (conv->sideband_data.length <= data_num)
+                pcx_buffer_set_length(&conv->sideband_data, data_num + 1);
+
+        conv->sideband_data.data[data_num] = value;
 
         conv->available_sideband_data |= UINT64_C(1) << data_num;
 
@@ -199,7 +205,7 @@ game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
-        .dirty_sideband_data = dirty_sideband_data_cb,
+        .set_sideband_data = set_sideband_data_cb,
 };
 
 static void
@@ -454,6 +460,8 @@ pcx_conversation_unref(struct pcx_conversation *conv)
                 pcx_free(player_names[i]);
 
         pcx_buffer_destroy(&conv->player_names);
+
+        pcx_buffer_destroy(&conv->sideband_data);
 
         pcx_free(conv);
 }

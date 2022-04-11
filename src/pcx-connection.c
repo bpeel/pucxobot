@@ -318,14 +318,18 @@ write_sideband_data(struct pcx_connection *conn)
 
                 int data_num = first_bit - 1;
 
-                uint8_t *buf = conn->write_buf + conn->write_buf_pos;
-                size_t size = sizeof conn->write_buf - conn->write_buf_pos;
-
                 int wrote =
-                        conv->game_type->write_sideband_data_cb(conv->game,
-                                                                data_num,
-                                                                buf,
-                                                                size);
+                        write_command(conn,
+
+                                      PCX_PROTO_SIDEBAND,
+
+                                      PCX_PROTO_TYPE_UINT8,
+                                      data_num,
+
+                                      PCX_PROTO_TYPE_UINT8,
+                                      conv->sideband_data.data[data_num],
+
+                                      PCX_PROTO_TYPE_NONE);
 
                 if (wrote == -1)
                         return false;

@@ -36,7 +36,6 @@
 #include "pcx-hat.h"
 #include "pcx-html.h"
 #include "pcx-wordparty-help.h"
-#include "pcx-proto.h"
 
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 16
@@ -206,8 +205,9 @@ set_lives(struct pcx_wordparty *wordparty,
 {
         wordparty->players[player_num].lives = lives;
 
-        wordparty->callbacks.dirty_sideband_data(player_num + 1,
-                                                 wordparty->user_data);
+        wordparty->callbacks.set_sideband_data(player_num + 1, /* data_num */
+                                               lives,
+                                               wordparty->user_data);
 }
 
 static void
@@ -215,7 +215,9 @@ set_current_player(struct pcx_wordparty *wordparty,
                    int player_num)
 {
         wordparty->current_player = player_num;
-        wordparty->callbacks.dirty_sideband_data(0, wordparty->user_data);
+        wordparty->callbacks.set_sideband_data(0, /* data_num */
+                                               player_num,
+                                               wordparty->user_data);
 }
 
 static void
@@ -600,70 +602,6 @@ get_help_cb(enum pcx_text_language language)
         return pcx_strdup(pcx_wordparty_help[language]);
 }
 
-static int
-write_sideband_current_player(struct pcx_wordparty *wordparty,
-                              uint8_t *buffer,
-                              size_t buffer_length)
-{
-        return pcx_proto_write_command(buffer,
-                                       buffer_length,
-                                       PCX_PROTO_SIDEBAND,
-
-                                       /* data_num */
-                                       PCX_PROTO_TYPE_UINT8,
-                                       0,
-
-                                       PCX_PROTO_TYPE_UINT8,
-                                       wordparty->current_player,
-
-                                       PCX_PROTO_TYPE_NONE);
-}
-
-static int
-write_sideband_lives(struct pcx_wordparty *wordparty,
-                     int player_num,
-                     uint8_t *buffer,
-                     size_t buffer_length)
-{
-        const struct pcx_wordparty_player *player =
-                wordparty->players + player_num;
-
-        return pcx_proto_write_command(buffer,
-                                       buffer_length,
-                                       PCX_PROTO_SIDEBAND,
-
-                                       /* data_num */
-                                       PCX_PROTO_TYPE_UINT8,
-                                       player_num + 1,
-
-                                       PCX_PROTO_TYPE_UINT8,
-                                       player->lives,
-
-                                       PCX_PROTO_TYPE_NONE);
-}
-
-static int
-write_sideband_data_cb(void *user_data,
-                       int data_num,
-                       uint8_t *buffer,
-                       size_t buffer_length)
-{
-        struct pcx_wordparty *wordparty = user_data;
-
-        if (data_num == 0) {
-                return write_sideband_current_player(wordparty,
-                                                     buffer,
-                                                     buffer_length);
-        }
-
-        int player_num = data_num - 1;
-
-        return write_sideband_lives(wordparty,
-                                    player_num,
-                                    buffer,
-                                    buffer_length);
-}
-
 static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
@@ -894,7 +832,6 @@ pcx_wordparty_game = {
         .needs_private_messages = false,
         .create_game_cb = create_game_cb,
         .get_help_cb = get_help_cb,
-        .write_sideband_data_cb = write_sideband_data_cb,
         .handle_callback_data_cb = handle_callback_data_cb,
         .handle_message_cb = handle_message_cb,
         .free_game_cb = free_game_cb
