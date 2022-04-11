@@ -164,3 +164,22 @@ the payload.
 
 • string data – The data to send to press this button
 • string text – The text to display on the button
+
+SIDEBAND (0x06)
+---------------
+
+Reports game-specific sideband data that can be used by the client to
+visualise the state of the game.
+
+• uint8_t data number
+
+The remaining data depends on the game type and the data number. The
+current possible values are:
+
+Wordparty:
+
+• PLAYER_NUMBER (0x00)
+  • uint8_t the current player number
+
+Any other number reports the number of lives for a player as a
+uint8_t.

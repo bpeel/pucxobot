@@ -36,6 +36,7 @@
 #include "pcx-hat.h"
 #include "pcx-html.h"
 #include "pcx-wordparty-help.h"
+#include "pcx-proto.h"
 
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 32
@@ -199,6 +200,25 @@ pick_syllable(struct pcx_wordparty *wordparty)
 }
 
 static void
+set_lives(struct pcx_wordparty *wordparty,
+          int player_num,
+          int lives)
+{
+        wordparty->players[player_num].lives = lives;
+
+        wordparty->callbacks.dirty_sideband_data(player_num + 1,
+                                                 wordparty->user_data);
+}
+
+static void
+set_current_player(struct pcx_wordparty *wordparty,
+                   int player_num)
+{
+        wordparty->current_player = player_num;
+        wordparty->callbacks.dirty_sideband_data(0, wordparty->user_data);
+}
+
+static void
 word_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
@@ -219,7 +239,7 @@ word_timeout_cb(struct pcx_main_context_source *source,
         if (player->lives == PCX_WORDPARTY_MAX_LIVES)
                 player->letters_used = 0;
 
-        player->lives--;
+        set_lives(wordparty, wordparty->current_player, player->lives - 1);
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
@@ -342,7 +362,7 @@ start_turn(struct pcx_wordparty *wordparty)
                         break;
         }
 
-        wordparty->current_player = next_player;
+        set_current_player(wordparty, next_player);
 
         if (count_players(wordparty) <= 1) {
                 end_game(wordparty);
@@ -540,19 +560,19 @@ create_game_cb(const struct pcx_config *config,
 
         struct pcx_wordparty *wordparty = pcx_calloc(sizeof *wordparty);
 
-        wordparty->players = pcx_calloc(n_players *
-                                        sizeof (struct pcx_wordparty_player));
-
-        for (unsigned i = 0; i < n_players; i++) {
-                wordparty->players[i].name = pcx_strdup(names[i]);
-                wordparty->players[i].lives = PCX_WORDPARTY_LIVES;
-        }
-
         wordparty->language = language;
         wordparty->callbacks = *callbacks;
         wordparty->user_data = user_data;
 
         wordparty->n_players = n_players;
+
+        wordparty->players = pcx_calloc(n_players *
+                                        sizeof (struct pcx_wordparty_player));
+
+        for (unsigned i = 0; i < n_players; i++) {
+                wordparty->players[i].name = pcx_strdup(names[i]);
+                set_lives(wordparty, i, PCX_WORDPARTY_LIVES);
+        }
 
         pcx_buffer_init(&wordparty->word_buf);
         pcx_buffer_init(&wordparty->used_words);
@@ -564,7 +584,7 @@ create_game_cb(const struct pcx_config *config,
                                          language,
                                          &class_store_callbacks);
 
-        wordparty->current_player = rand() % n_players;
+        set_current_player(wordparty, rand() % n_players);
 
         create_alphabet(wordparty);
 
@@ -578,6 +598,70 @@ static char *
 get_help_cb(enum pcx_text_language language)
 {
         return pcx_strdup(pcx_wordparty_help[language]);
+}
+
+static int
+write_sideband_current_player(struct pcx_wordparty *wordparty,
+                              uint8_t *buffer,
+                              size_t buffer_length)
+{
+        return pcx_proto_write_command(buffer,
+                                       buffer_length,
+                                       PCX_PROTO_SIDEBAND,
+
+                                       /* data_num */
+                                       PCX_PROTO_TYPE_UINT8,
+                                       0,
+
+                                       PCX_PROTO_TYPE_UINT8,
+                                       wordparty->current_player,
+
+                                       PCX_PROTO_TYPE_NONE);
+}
+
+static int
+write_sideband_lives(struct pcx_wordparty *wordparty,
+                     int player_num,
+                     uint8_t *buffer,
+                     size_t buffer_length)
+{
+        const struct pcx_wordparty_player *player =
+                wordparty->players + player_num;
+
+        return pcx_proto_write_command(buffer,
+                                       buffer_length,
+                                       PCX_PROTO_SIDEBAND,
+
+                                       /* data_num */
+                                       PCX_PROTO_TYPE_UINT8,
+                                       player_num + 1,
+
+                                       PCX_PROTO_TYPE_UINT8,
+                                       player->lives,
+
+                                       PCX_PROTO_TYPE_NONE);
+}
+
+static int
+write_sideband_data_cb(void *user_data,
+                       int data_num,
+                       uint8_t *buffer,
+                       size_t buffer_length)
+{
+        struct pcx_wordparty *wordparty = user_data;
+
+        if (data_num == 0) {
+                return write_sideband_current_player(wordparty,
+                                                     buffer,
+                                                     buffer_length);
+        }
+
+        int player_num = data_num - 1;
+
+        return write_sideband_lives(wordparty,
+                                    player_num,
+                                    buffer,
+                                    buffer_length);
 }
 
 static void
@@ -737,7 +821,9 @@ tally_word(struct pcx_wordparty *wordparty)
 
                 pcx_buffer_destroy(&buf);
 
-                player->lives++;
+                set_lives(wordparty,
+                          wordparty->current_player,
+                          player->lives + 1);
                 player->letters_used = 0;
         }
 }
@@ -808,6 +894,7 @@ pcx_wordparty_game = {
         .needs_private_messages = false,
         .create_game_cb = create_game_cb,
         .get_help_cb = get_help_cb,
+        .write_sideband_data_cb = write_sideband_data_cb,
         .handle_callback_data_cb = handle_callback_data_cb,
         .handle_message_cb = handle_message_cb,
         .free_game_cb = free_game_cb
