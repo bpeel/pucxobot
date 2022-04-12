@@ -94,13 +94,20 @@ class WordList:
 
         for element in kap:
             if element.tag == "tld":
+                variant = element.get("var")
+
+                if variant is None:
+                    root_value = root[""]
+                else:
+                    root_value = root[variant]
+
                 first_letter = element.get("lit")
 
                 if first_letter is None:
-                    current_list.append(root)
+                    current_list.append(root_value)
                 else:
                     current_list.append(first_letter)
-                    current_list.append(root[1:])
+                    current_list.append(root_value[1:])
 
                 current_list = after
 
@@ -166,7 +173,11 @@ class WordList:
 
         article = tree.xpath("/vortaro/art")[0]
         root_node = article.xpath("./kap/rad")
-        root = "".join(root_node[0].itertext()).strip()
+        root = { "": "".join(root_node[0].itertext()).strip() }
+
+        for root_variant in root_node[0].xpath("../var/kap/rad"):
+            root_value = "".join(root_variant.itertext()).strip()
+            root[root_variant.get("var")] = root_value
 
         for derivation in article.xpath("./drv/kap"):
             self._add_derivation(derivation, root)
