@@ -107,7 +107,13 @@ class WordList:
             if element.tail is not None:
                 current_list.append(element.tail)
 
-        return ("".join(before).strip(), "".join(after).strip())
+        before = "".join(before).lstrip()
+        after = "".join(after).rstrip()
+
+        if len(after) == 0:
+            before = before.rstrip()
+
+        return (before, after)
 
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
