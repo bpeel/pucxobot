@@ -74,7 +74,7 @@ int
 pcx_list_length(const struct pcx_list *list);
 
 int
-pcx_list_empty(struct pcx_list *list);
+pcx_list_empty(const struct pcx_list *list);
 
 void
 pcx_list_insert_list(struct pcx_list *list, struct pcx_list *other);

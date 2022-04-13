@@ -72,7 +72,7 @@ pcx_list_length(const struct pcx_list *list)
 }
 
 int
-pcx_list_empty(struct pcx_list *list)
+pcx_list_empty(const struct pcx_list *list)
 {
         return list->next == list;
 }
