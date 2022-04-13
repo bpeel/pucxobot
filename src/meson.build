@@ -142,6 +142,16 @@ test_trie = executable('test-trie', test_trie_src,
 
 test('trie', files('test-trie.py'), args : [ test_trie ])
 
+make_dictionary_src = [
+        'pcx-buffer.c',
+        'pcx-slab.c',
+        'pcx-util.c',
+        'pcx-utf8.c',
+        'make-dictionary.c',
+]
+make_dictionary = executable('make-dictionary', make_dictionary_src,
+                             include_directories: configinc)
+
 make_syllables_src = [
         'pcx-buffer.c',
         'pcx-error.c',
