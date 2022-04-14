@@ -38,17 +38,23 @@ TEST_WORDS = {
     "eĥoŝanĝoĉiuĵaŭd🤯" : False,
 }
 
-for word in WORDS:
-    TEST_WORDS[word] = True
-
-if len(sys.argv) != 3:
+if len(sys.argv) not in range(3, 5):
     print("usage: test-trie.py <test-trie executable> "
-          "<make-dictionary executable>",
+          "<make-dictionary executable> "
+          "[word-list]",
           file=sys.stderr)
     sys.exit(1)
 
 test_program = sys.argv[1]
 trie_program = sys.argv[2]
+
+if len(sys.argv) > 3:
+    with open(sys.argv[3], "rt", encoding="utf-8") as f:
+        WORDS = [line.rstrip() for line in f]
+    TEST_WORDS = {}
+
+for word in WORDS:
+    TEST_WORDS[word] = True
 
 with tempfile.NamedTemporaryFile() as dictionary:
     trie_proc = subprocess.Popen([trie_program, dictionary.name],
@@ -65,26 +71,31 @@ with tempfile.NamedTemporaryFile() as dictionary:
         input.append(word)
         expected_output.append("{}: {}".format(word, "yes" if result else "no"))
 
-    test_proc = subprocess.Popen([test_program, dictionary.name, *input],
-                                 encoding="utf-8",
-                                 stdout=subprocess.PIPE)
-
     expected_iter = iter(expected_output)
 
     result = True
 
-    for line in test_proc.stdout:
-        try:
-            expected_line = next(expected_iter)
-        except StopIteration:
-            print("Extra line in output: {}".format(line), file=sys.stderr)
-            sys.exit(1)
+    for i in range(0, len(input), 100):
+        test_proc = subprocess.Popen([test_program,
+                                      dictionary.name,
+                                      *input[i:min(len(input), i + 100)]],
+                                     encoding="utf-8",
+                                     stdout=subprocess.PIPE)
 
-        if line.rstrip() != expected_line:
-            print("Mismatched line:\n"
-                  "< {}\n"
-                  "> {}".format(expected_line, line), end='')
-            result = False
+        for line in test_proc.stdout:
+            try:
+                expected_line = next(expected_iter)
+            except StopIteration:
+                print("Extra line in output: {}".format(line), file=sys.stderr)
+                sys.exit(1)
+
+            if line.rstrip() != expected_line:
+                print("Mismatched line:\n"
+                      "< {}\n"
+                      "> {}".format(expected_line, line), end='')
+                result = False
+
+        test_proc.wait()
 
     try:
         next(expected_iter)
