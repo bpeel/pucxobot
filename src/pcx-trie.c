@@ -38,34 +38,78 @@ struct pcx_trie {
         uint8_t *data;
 };
 
-static const uint8_t *
-read_length(const uint8_t *data,
-            size_t size,
-            size_t *length_out)
+struct node_info {
+        size_t sibling_offset;
+        size_t child_offset;
+        size_t letter_pos;
+        size_t letter_length;
+};
+
+static int
+read_offset(const struct pcx_trie *trie,
+            size_t file_offset,
+            size_t *offset_out)
 {
         size_t length = 0;
         int byte_num = 0;
 
         while (true) {
-                if (size <= 0)
-                        return NULL;
+                if (file_offset >= trie->size)
+                        return -1;
 
-                length |= (*data & 0x7f) << (byte_num * 7);
+                uint8_t byte = trie->data[file_offset];
 
-                size--;
-                data++;
+                length |= (byte & 0x7f) << (byte_num * 7);
+
+                file_offset++;
                 byte_num++;
 
-                if ((data[-1] & 0x80) == 0)
+                if ((byte & 0x80) == 0)
                         break;
         }
 
-        if (length > size || length <= 0)
-                return NULL;
+        *offset_out = length;
 
-        *length_out = length;
+        return byte_num;
+}
 
-        return data;
+static bool
+extract_node(struct pcx_trie *trie,
+             size_t pos,
+             struct node_info *info)
+{
+        int sibling_offset_length = read_offset(trie,
+                                                pos,
+                                                &info->sibling_offset);
+
+        if (sibling_offset_length == -1)
+                return false;
+
+        pos += sibling_offset_length;
+
+        int child_offset_length = read_offset(trie,
+                                              pos,
+                                              &info->child_offset);
+
+        if (child_offset_length == -1)
+                return false;
+
+        pos += child_offset_length;
+
+        info->letter_pos = pos;
+
+        if (pos >= trie->size)
+                return false;
+
+        info->letter_length =
+                pcx_utf8_next((const char *) trie->data + pos) -
+                (const char *) trie->data -
+                pos;
+
+        if (pos + info->letter_length > trie->size)
+                return false;
+
+        return true;
 }
 
 bool
@@ -73,73 +117,48 @@ pcx_trie_contains_word(struct pcx_trie *trie,
                        const char *word,
                        uint32_t *token)
 {
-        const uint8_t *data = trie->data;
-        size_t size = trie->size;
+        struct node_info root_info;
+
+        /* Skip the root node */
+        if (!extract_node(trie, 0, &root_info) ||
+            root_info.child_offset == 0)
+                return false;
+
+        size_t pos = root_info.letter_pos + root_info.child_offset;
 
         while (true) {
-                data = read_length(data, size, &size);
+                struct node_info info;
 
-                if (data == NULL)
+                if (!extract_node(trie, pos, &info))
                         return false;
-
-                /* Skip the letter */
-                if (size < 1)
-                        return false;
-
-                size_t letter_length =
-                        pcx_utf8_next((const char *) data) -
-                        (const char *) data;
-                if (letter_length > size)
-                        return false;
-
-                data += letter_length;
-                size -= letter_length;
 
                 const char *next_letter = pcx_utf8_next(word);
 
-                const uint8_t *child = data;
-
-                while (true) {
-                        size_t child_length;
-
-                        const uint8_t *child_letter =
-                                read_length(child,
-                                            data + size - child,
-                                            &child_length);
-
-                        if (child_letter == NULL)
-                                return false;
-
-                        if (child_length >= next_letter - word &&
-                            !memcmp(child_letter, word, next_letter - word)) {
-                                if (*word == '\0') {
-                                        /* Use the offset of the
-                                         * terminator as a unique ID
-                                         * for this word.
-                                         */
-                                        *token = child_letter - trie->data;
-                                        return true;
-                                }
-
-                                /* We’ve found the child, so descend into it */
-                                size -= child - data;
-                                data = child;
-                                word = next_letter;
-                                break;
+                if (next_letter - word == info.letter_length &&
+                    !memcmp(trie->data + info.letter_pos,
+                            word,
+                            info.letter_length)) {
+                        if (*word == '\0') {
+                                *token = 0; /* FIXME ?? */
+                                return true;
                         }
 
-                        /* Skip over this child */
-                        child = child_letter + child_length;
-
-                        if (child > data + size)
+                        if (info.child_offset == 0)
                                 return false;
+
+                        pos = info.letter_pos + info.child_offset;
+                        word = pcx_utf8_next(word);
+                } else {
+                        if (info.sibling_offset == 0)
+                                return false;
+
+                        pos = info.letter_pos + info.sibling_offset;
                 }
         }
 }
 
 struct stack_entry {
-        const uint8_t *child;
-        const uint8_t *end;
+        size_t pos;
         size_t word_length;
 };
 
@@ -151,16 +170,14 @@ get_stack_top(struct pcx_buffer *stack)
 
 static void
 add_stack_entry(struct pcx_buffer *stack,
-                const uint8_t *child,
-                const uint8_t *end,
+                size_t pos,
                 size_t word_length)
 {
         pcx_buffer_set_length(stack,
                               stack->length + sizeof (struct stack_entry));
         struct stack_entry *entry = get_stack_top(stack);
 
-        entry->child = child;
-        entry->end = end;
+        entry->pos = pos;
         entry->word_length = word_length;
 }
 
@@ -179,46 +196,42 @@ pcx_trie_iterate(struct pcx_trie *trie,
         struct pcx_buffer word = PCX_BUFFER_STATIC_INIT;
 
         add_stack_entry(&stack,
-                        trie->data,
-                        trie->data + trie->size,
+                        0, /* pos */
                         0 /* word_length */);
 
         while (stack.length > 0) {
-                struct stack_entry *entry = get_stack_top(&stack);
+                struct stack_entry entry = *get_stack_top(&stack);
 
-                size_t child_length;
+                stack_pop(&stack);
 
-                const uint8_t *letter_start =
-                        read_length(entry->child,
-                                    entry->end - entry->child,
-                                    &child_length);
+                struct node_info info;
 
-                if (letter_start == NULL || letter_start >= entry->end) {
-                        stack_pop(&stack);
+                if (!extract_node(trie, entry.pos, &info))
                         continue;
+
+                if (info.sibling_offset) {
+                        add_stack_entry(&stack,
+                                        info.letter_pos + info.sibling_offset,
+                                        entry.word_length);
                 }
 
-                const uint8_t *children =
-                        (const uint8_t *) pcx_utf8_next((const char *)
-                                                        letter_start);
+                pcx_buffer_set_length(&word, entry.word_length);
+                pcx_buffer_append(&word,
+                                  trie->data + info.letter_pos,
+                                  info.letter_length);
 
-                if (children > entry->end) {
-                        stack_pop(&stack);
-                        continue;
+                const char *word_str = (const char *) word.data;
+
+                if (trie->data[info.letter_pos] == '\0' &&
+                    pcx_utf8_is_valid_string(word_str)) {
+                        cb(pcx_utf8_next(word_str), user_data);
                 }
 
-                pcx_buffer_set_length(&word, entry->word_length);
-                pcx_buffer_append(&word, letter_start, children - letter_start);
-
-                if (*letter_start == '\0' &&
-                    pcx_utf8_is_valid_string((const char *) word.data)) {
-                        cb(pcx_utf8_next((const char *) word.data),
-                           user_data);
+                if (info.child_offset) {
+                        add_stack_entry(&stack,
+                                        info.letter_pos + info.child_offset,
+                                        word.length);
                 }
-
-                entry->child = letter_start + child_length;
-
-                add_stack_entry(&stack, children, entry->child, word.length);
         }
 
         pcx_buffer_destroy(&word);

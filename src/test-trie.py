@@ -41,20 +41,21 @@ TEST_WORDS = {
 for word in WORDS:
     TEST_WORDS[word] = True
 
-if len(sys.argv) != 2:
-    print("usage: test-trie.py <test-trie executable>",
+if len(sys.argv) != 3:
+    print("usage: test-trie.py <test-trie executable> "
+          "<make-dictionary executable>",
           file=sys.stderr)
     sys.exit(1)
 
-trie_program = os.path.join(os.path.dirname(sys.argv[0]), "trie.py")
 test_program = sys.argv[1]
+trie_program = sys.argv[2]
 
 with tempfile.NamedTemporaryFile() as dictionary:
     trie_proc = subprocess.Popen([trie_program, dictionary.name],
                                  stdin=subprocess.PIPE)
     trie_proc.communicate("\n".join(WORDS).encode("utf-8"))
     if trie_proc.wait() != 0:
-        print("vortlisto.py failed", file=sys.stderr)
+        print("make-dictionary failed", file=sys.stderr)
         sys.exit(1)
 
     input = []
@@ -97,7 +98,7 @@ with tempfile.NamedTemporaryFile() as dictionary:
         sys.exit(1)
 
     with tempfile.NamedTemporaryFile(mode="wt", encoding="utf-8") as word_list:
-        for word in WORDS:
+        for word in sorted(WORDS):
             print(word, file=word_list)
 
         word_list.flush()

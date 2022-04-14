@@ -128,20 +128,6 @@ test_utf8 = executable('test-utf8', test_utf8_src,
                        include_directories: configinc)
 test('utf8', test_utf8)
 
-test_trie_src = [
-        'pcx-buffer.c',
-        'pcx-error.c',
-        'pcx-file-error.c',
-        'pcx-trie.c',
-        'pcx-utf8.c',
-        'pcx-util.c',
-        'test-trie.c',
-]
-test_trie = executable('test-trie', test_trie_src,
-                       include_directories: configinc)
-
-test('trie', files('test-trie.py'), args : [ test_trie ])
-
 make_dictionary_src = [
         'pcx-buffer.c',
         'pcx-slab.c',
@@ -163,3 +149,17 @@ make_syllables_src = [
 ]
 make_syllables = executable('make-syllables', make_syllables_src,
                             include_directories: configinc)
+
+test_trie_src = [
+        'pcx-buffer.c',
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-trie.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+        'test-trie.c',
+]
+test_trie = executable('test-trie', test_trie_src,
+                       include_directories: configinc)
+
+test('trie', files('test-trie.py'), args : [ test_trie, make_dictionary ])
