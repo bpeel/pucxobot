@@ -23,7 +23,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "pcx-trie.h"
+#include "pcx-dictionary.h"
 #include "pcx-util.h"
 #include "pcx-utf8.h"
 
@@ -68,7 +68,7 @@ struct data {
         /* The total number of syllables */
         int n_syllables;
 
-        struct pcx_trie *trie;
+        struct pcx_dictionary *dictionary;
 };
 
 static int
@@ -288,21 +288,21 @@ main(int argc, char **argv)
                 return EXIT_FAILURE;
         }
 
-        struct pcx_trie *trie = pcx_trie_new(argv[1], &error);
+        struct pcx_dictionary *dictionary = pcx_dictionary_new(argv[1], &error);
 
-        if (trie == NULL) {
+        if (dictionary == NULL) {
                 fprintf(stderr, "%s\n", error->message);
                 pcx_error_free(error);
                 ret = EXIT_FAILURE;
         } else {
                 struct data data = {
-                        .trie = trie,
+                        .dictionary = dictionary,
                 };
 
                 allocate_syllables(&data);
                 initialize_letters(&data);
 
-                pcx_trie_iterate(trie, word_cb, &data);
+                pcx_dictionary_iterate(dictionary, word_cb, &data);
 
                 qsort(data.syllables,
                       data.n_syllables,
@@ -321,7 +321,7 @@ main(int argc, char **argv)
 
                 pcx_free(data.syllables);
 
-                pcx_trie_free(trie);
+                pcx_dictionary_free(dictionary);
         }
 
         return ret;

@@ -39,7 +39,7 @@ TEST_WORDS = {
 }
 
 if len(sys.argv) not in range(3, 5):
-    print("usage: test-trie.py <test-trie executable> "
+    print("usage: test-dictionary.py <test-dictionary executable> "
           "<make-dictionary executable> "
           "[word-list]",
           file=sys.stderr)

@@ -18,13 +18,13 @@
 
 #include "config.h"
 
-#include "pcx-trie.h"
+#include "pcx-dictionary.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 static void
-test_words(struct pcx_trie *trie,
+test_words(struct pcx_dictionary *dictionary,
            int n_words,
            char **words)
 {
@@ -33,7 +33,9 @@ test_words(struct pcx_trie *trie,
         for (int i = 0; i < n_words; i++) {
                 printf("%s: %s\n",
                        words[i],
-                       pcx_trie_contains_word(trie, words[i], &token) ?
+                       pcx_dictionary_contains_word(dictionary,
+                                                    words[i],
+                                                    &token) ?
                        "yes" :
                        "no");
         }
@@ -47,9 +49,9 @@ word_cb(const char *word,
 }
 
 static void
-dump_trie(struct pcx_trie *trie)
+dump_dictionary(struct pcx_dictionary *dictionary)
 {
-        pcx_trie_iterate(trie, word_cb, stdout);
+        pcx_dictionary_iterate(dictionary, word_cb, stdout);
 }
 
 int
@@ -60,26 +62,27 @@ main(int argc, char **argv)
         struct pcx_error *error = NULL;
 
         if (argc < 2) {
-                fprintf(stderr, "usage: test-trie <dictionary> [word]...\n");
+                fprintf(stderr,
+                        "usage: test-dictionary <dictionary> [word]...\n");
                 return EXIT_FAILURE;
         }
 
         char **words = argv + 2;
         int n_words = argc - 2;
 
-        struct pcx_trie *trie = pcx_trie_new(argv[1], &error);
+        struct pcx_dictionary *dictionary = pcx_dictionary_new(argv[1], &error);
 
-        if (trie == NULL) {
+        if (dictionary == NULL) {
                 fprintf(stderr, "%s\n", error->message);
                 pcx_error_free(error);
                 ret = EXIT_FAILURE;
         } else {
                 if (n_words > 0)
-                        test_words(trie, n_words, words);
+                        test_words(dictionary, n_words, words);
                 else
-                        dump_trie(trie);
+                        dump_dictionary(dictionary);
 
-                pcx_trie_free(trie);
+                pcx_dictionary_free(dictionary);
         }
 
         return ret;

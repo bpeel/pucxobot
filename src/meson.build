@@ -46,7 +46,7 @@ src = [
         'pcx-snitch-help.c',
         'pcx-html.c',
         'pcx-hat.c',
-        'pcx-trie.c',
+        'pcx-dictionary.c',
         'pcx-syllabary.c',
         'pcx-love.c',
         'pcx-love-help.c',
@@ -142,7 +142,7 @@ make_syllables_src = [
         'pcx-buffer.c',
         'pcx-error.c',
         'pcx-file-error.c',
-        'pcx-trie.c',
+        'pcx-dictionary.c',
         'pcx-utf8.c',
         'pcx-util.c',
         'make-syllables.c',
@@ -150,16 +150,17 @@ make_syllables_src = [
 make_syllables = executable('make-syllables', make_syllables_src,
                             include_directories: configinc)
 
-test_trie_src = [
+test_dictionary_src = [
         'pcx-buffer.c',
         'pcx-error.c',
         'pcx-file-error.c',
-        'pcx-trie.c',
+        'pcx-dictionary.c',
         'pcx-utf8.c',
         'pcx-util.c',
-        'test-trie.c',
+        'test-dictionary.c',
 ]
-test_trie = executable('test-trie', test_trie_src,
-                       include_directories: configinc)
+test_dictionary = executable('test-dictionary', test_dictionary_src,
+                             include_directories: configinc)
 
-test('trie', files('test-trie.py'), args : [ test_trie, make_dictionary ])
+test('dictionary', files('test-dictionary.py'),
+     args : [ test_dictionary, make_dictionary ])

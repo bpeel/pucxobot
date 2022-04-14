@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PCX_TRIE_H
-#define PCX_TRIE_H
+#ifndef PCX_DICTIONARY_H
+#define PCX_DICTIONARY_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -25,24 +25,24 @@
 #include "pcx-error.h"
 
 typedef void
-(* pcx_trie_iterate_cb)(const char *word,
-                        void *user_data);
+(* pcx_dictionary_iterate_cb)(const char *word,
+                              void *user_data);
 
-struct pcx_trie *
-pcx_trie_new(const char *filename,
-             struct pcx_error **error);
+struct pcx_dictionary *
+pcx_dictionary_new(const char *filename,
+                   struct pcx_error **error);
 
 bool
-pcx_trie_contains_word(struct pcx_trie *trie,
-                       const char *word,
-                       uint32_t *token);
+pcx_dictionary_contains_word(struct pcx_dictionary *dict,
+                             const char *word,
+                             uint32_t *token);
 
 void
-pcx_trie_iterate(struct pcx_trie *trie,
-                 pcx_trie_iterate_cb cb,
-                 void *user_data);
+pcx_dictionary_iterate(struct pcx_dictionary *dict,
+                       pcx_dictionary_iterate_cb cb,
+                       void *user_data);
 
 void
-pcx_trie_free(struct pcx_trie *trie);
+pcx_dictionary_free(struct pcx_dictionary *dict);
 
-#endif /* PCX_TRIE_H */
+#endif /* PCX_DICTIONARY_H */

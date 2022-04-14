@@ -30,7 +30,7 @@
 #include "pcx-util.h"
 #include "pcx-main-context.h"
 #include "pcx-log.h"
-#include "pcx-trie.h"
+#include "pcx-dictionary.h"
 #include "pcx-syllabary.h"
 #include "pcx-utf8.h"
 #include "pcx-hat.h"
@@ -62,7 +62,7 @@ struct pcx_wordparty_player {
 };
 
 struct pcx_wordparty_class_data {
-        struct pcx_trie *trie;
+        struct pcx_dictionary *dictionary;
         struct pcx_syllabary *syllabary;
 };
 
@@ -92,8 +92,8 @@ struct pcx_wordparty {
          */
         int max_fail_count;
 
-        /* Array of word tokens returned from the trie so that we can
-         * detect duplicate words.
+        /* Array of word tokens returned from the dictionary so that
+         * we can detect duplicate words.
          */
         struct pcx_buffer used_words;
 
@@ -447,11 +447,11 @@ open_dictionary(struct pcx_wordparty_class_data *data,
 
         struct pcx_error *error = NULL;
 
-        data->trie = pcx_trie_new(full_filename, &error);
+        data->dictionary = pcx_dictionary_new(full_filename, &error);
 
         pcx_free(full_filename);
 
-        if (data->trie == NULL) {
+        if (data->dictionary == NULL) {
                 pcx_log("Error opening wordparty dictionary: %s",
                         error->message);
                 pcx_error_free(error);
@@ -471,7 +471,7 @@ open_syllabary(struct pcx_wordparty_class_data *data,
 
         pcx_free(full_filename);
 
-        if (data->trie == NULL) {
+        if (data->dictionary == NULL) {
                 pcx_log("Error opening wordparty syllabary: %s",
                         error->message);
                 pcx_error_free(error);
@@ -495,8 +495,8 @@ free_class_store_data_cb(void *user_data)
 {
         struct pcx_wordparty_class_data *data = user_data;
 
-        if (data->trie)
-                pcx_trie_free(data->trie);
+        if (data->dictionary)
+                pcx_dictionary_free(data->dictionary);
 
         if (data->syllabary)
                 pcx_syllabary_free(data->syllabary);
@@ -645,8 +645,10 @@ is_valid_word(struct pcx_wordparty *wordparty,
                 return false;
 
         /* The word must be in the dictionary */
-        if (wordparty->class_data->trie == NULL ||
-            !pcx_trie_contains_word(wordparty->class_data->trie, word, token))
+        if (wordparty->class_data->dictionary == NULL ||
+            !pcx_dictionary_contains_word(wordparty->class_data->dictionary,
+                                          word,
+                                          token))
                 return false;
 
         return true;

@@ -18,7 +18,7 @@
 
 #include "config.h"
 
-#include "pcx-trie.h"
+#include "pcx-dictionary.h"
 
 #include <unistd.h>
 #include <stdint.h>
@@ -32,7 +32,7 @@
 #include "pcx-utf8.h"
 #include "pcx-buffer.h"
 
-struct pcx_trie {
+struct pcx_dictionary {
         int fd;
         size_t size;
         uint8_t *data;
@@ -46,7 +46,7 @@ struct node_info {
 };
 
 static int
-read_offset(const struct pcx_trie *trie,
+read_offset(const struct pcx_dictionary *dict,
             size_t file_offset,
             size_t *offset_out)
 {
@@ -54,10 +54,10 @@ read_offset(const struct pcx_trie *trie,
         int byte_num = 0;
 
         while (true) {
-                if (file_offset >= trie->size)
+                if (file_offset >= dict->size)
                         return -1;
 
-                uint8_t byte = trie->data[file_offset];
+                uint8_t byte = dict->data[file_offset];
 
                 length |= (byte & 0x7f) << (byte_num * 7);
 
@@ -74,11 +74,11 @@ read_offset(const struct pcx_trie *trie,
 }
 
 static bool
-extract_node(struct pcx_trie *trie,
+extract_node(struct pcx_dictionary *dict,
              size_t pos,
              struct node_info *info)
 {
-        int sibling_offset_length = read_offset(trie,
+        int sibling_offset_length = read_offset(dict,
                                                 pos,
                                                 &info->sibling_offset);
 
@@ -87,7 +87,7 @@ extract_node(struct pcx_trie *trie,
 
         pos += sibling_offset_length;
 
-        int child_offset_length = read_offset(trie,
+        int child_offset_length = read_offset(dict,
                                               pos,
                                               &info->child_offset);
 
@@ -98,29 +98,29 @@ extract_node(struct pcx_trie *trie,
 
         info->letter_pos = pos;
 
-        if (pos >= trie->size)
+        if (pos >= dict->size)
                 return false;
 
         info->letter_length =
-                pcx_utf8_next((const char *) trie->data + pos) -
-                (const char *) trie->data -
+                pcx_utf8_next((const char *) dict->data + pos) -
+                (const char *) dict->data -
                 pos;
 
-        if (pos + info->letter_length > trie->size)
+        if (pos + info->letter_length > dict->size)
                 return false;
 
         return true;
 }
 
 bool
-pcx_trie_contains_word(struct pcx_trie *trie,
-                       const char *word,
-                       uint32_t *token)
+pcx_dictionary_contains_word(struct pcx_dictionary *dict,
+                             const char *word,
+                             uint32_t *token)
 {
         struct node_info root_info;
 
         /* Skip the root node */
-        if (!extract_node(trie, 0, &root_info) ||
+        if (!extract_node(dict, 0, &root_info) ||
             root_info.child_offset == 0)
                 return false;
 
@@ -129,13 +129,13 @@ pcx_trie_contains_word(struct pcx_trie *trie,
         while (true) {
                 struct node_info info;
 
-                if (!extract_node(trie, pos, &info))
+                if (!extract_node(dict, pos, &info))
                         return false;
 
                 const char *next_letter = pcx_utf8_next(word);
 
                 if (next_letter - word == info.letter_length &&
-                    !memcmp(trie->data + info.letter_pos,
+                    !memcmp(dict->data + info.letter_pos,
                             word,
                             info.letter_length)) {
                         if (*word == '\0') {
@@ -188,9 +188,9 @@ stack_pop(struct pcx_buffer *stack)
 }
 
 void
-pcx_trie_iterate(struct pcx_trie *trie,
-                 pcx_trie_iterate_cb cb,
-                 void *user_data)
+pcx_dictionary_iterate(struct pcx_dictionary *dict,
+                       pcx_dictionary_iterate_cb cb,
+                       void *user_data)
 {
         struct pcx_buffer stack = PCX_BUFFER_STATIC_INIT;
         struct pcx_buffer word = PCX_BUFFER_STATIC_INIT;
@@ -206,7 +206,7 @@ pcx_trie_iterate(struct pcx_trie *trie,
 
                 struct node_info info;
 
-                if (!extract_node(trie, entry.pos, &info))
+                if (!extract_node(dict, entry.pos, &info))
                         continue;
 
                 if (info.sibling_offset) {
@@ -217,12 +217,12 @@ pcx_trie_iterate(struct pcx_trie *trie,
 
                 pcx_buffer_set_length(&word, entry.word_length);
                 pcx_buffer_append(&word,
-                                  trie->data + info.letter_pos,
+                                  dict->data + info.letter_pos,
                                   info.letter_length);
 
                 const char *word_str = (const char *) word.data;
 
-                if (trie->data[info.letter_pos] == '\0' &&
+                if (dict->data[info.letter_pos] == '\0' &&
                     pcx_utf8_is_valid_string(word_str)) {
                         cb(pcx_utf8_next(word_str), user_data);
                 }
@@ -238,41 +238,41 @@ pcx_trie_iterate(struct pcx_trie *trie,
         pcx_buffer_destroy(&stack);
 }
 
-struct pcx_trie *
-pcx_trie_new(const char *filename,
-             struct pcx_error **error)
+struct pcx_dictionary *
+pcx_dictionary_new(const char *filename,
+                   struct pcx_error **error)
 {
-        struct pcx_trie *trie = pcx_calloc(sizeof *trie);
+        struct pcx_dictionary *dict = pcx_calloc(sizeof *dict);
 
-        trie->data = MAP_FAILED;
+        dict->data = MAP_FAILED;
 
-        trie->fd = open(filename, O_RDONLY);
+        dict->fd = open(filename, O_RDONLY);
 
-        if (trie->fd == -1)
+        if (dict->fd == -1)
                 goto error;
 
         struct stat statbuf;
 
-        if (fstat(trie->fd, &statbuf) == -1)
+        if (fstat(dict->fd, &statbuf) == -1)
                 goto error;
 
-        trie->size = statbuf.st_size;
+        dict->size = statbuf.st_size;
 
-        trie->data = mmap(NULL, /* addr */
-                          trie->size,
+        dict->data = mmap(NULL, /* addr */
+                          dict->size,
                           PROT_READ,
                           MAP_PRIVATE,
-                          trie->fd,
+                          dict->fd,
                           0 /* offset */);
 
-        if (trie->data == MAP_FAILED)
+        if (dict->data == MAP_FAILED)
                 goto error;
 
         /* We don’t need to keep the file open after mapping */
-        pcx_close(trie->fd);
-        trie->fd = -1;
+        pcx_close(dict->fd);
+        dict->fd = -1;
 
-        return trie;
+        return dict;
 
 error:
         pcx_file_error_set(error,
@@ -280,18 +280,18 @@ error:
                            "%s: %s",
                            filename,
                            strerror(errno));
-        pcx_trie_free(trie);
+        pcx_dictionary_free(dict);
         return NULL;
 }
 
 void
-pcx_trie_free(struct pcx_trie *trie)
+pcx_dictionary_free(struct pcx_dictionary *dict)
 {
-        if (trie->data != MAP_FAILED)
-                munmap(trie->data, trie->size);
+        if (dict->data != MAP_FAILED)
+                munmap(dict->data, dict->size);
 
-        if (trie->fd != -1)
-                pcx_close(trie->fd);
+        if (dict->fd != -1)
+                pcx_close(dict->fd);
 
-        pcx_free(trie);
+        pcx_free(dict);
 }
