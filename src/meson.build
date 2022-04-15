@@ -164,3 +164,15 @@ test_dictionary = executable('test-dictionary', test_dictionary_src,
 
 test('dictionary', files('test-dictionary.py'),
      args : [ test_dictionary, make_dictionary ])
+
+test_trie_src = [
+        'pcx-buffer.c',
+        'pcx-slab.c',
+        'pcx-trie.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+        'test-trie.c',
+]
+test_trie = executable('test-trie', test_trie_src,
+                       include_directories: configinc)
+test('trie', test_trie)
