@@ -34,8 +34,7 @@ pcx_dictionary_new(const char *filename,
 
 bool
 pcx_dictionary_contains_word(struct pcx_dictionary *dict,
-                             const char *word,
-                             uint32_t *token);
+                             const char *word);
 
 void
 pcx_dictionary_iterate(struct pcx_dictionary *dict,

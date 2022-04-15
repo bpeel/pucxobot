@@ -114,8 +114,7 @@ extract_node(struct pcx_dictionary *dict,
 
 bool
 pcx_dictionary_contains_word(struct pcx_dictionary *dict,
-                             const char *word,
-                             uint32_t *token)
+                             const char *word)
 {
         struct node_info root_info;
 
@@ -138,10 +137,8 @@ pcx_dictionary_contains_word(struct pcx_dictionary *dict,
                     !memcmp(dict->data + info.letter_pos,
                             word,
                             info.letter_length)) {
-                        if (*word == '\0') {
-                                *token = 0; /* FIXME ?? */
+                        if (*word == '\0')
                                 return true;
-                        }
 
                         if (info.child_offset == 0)
                                 return false;

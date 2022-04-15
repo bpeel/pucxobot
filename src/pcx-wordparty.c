@@ -637,8 +637,7 @@ reject_word(struct pcx_wordparty *wordparty,
 }
 
 static bool
-is_valid_word(struct pcx_wordparty *wordparty,
-              uint32_t *token)
+is_valid_word(struct pcx_wordparty *wordparty)
 {
         const char *word = (const char *) wordparty->word_buf.data;
 
@@ -649,8 +648,7 @@ is_valid_word(struct pcx_wordparty *wordparty,
         /* The word must be in the dictionary */
         if (wordparty->class_data->dictionary == NULL ||
             !pcx_dictionary_contains_word(wordparty->class_data->dictionary,
-                                          word,
-                                          token))
+                                          word))
                 return false;
 
         return true;
@@ -768,9 +766,7 @@ handle_message_cb(void *data,
         if (!extract_word_from_message(wordparty, text))
                 return;
 
-        uint32_t token;
-
-        if (!is_valid_word(wordparty, &token)) {
+        if (!is_valid_word(wordparty)) {
                 reject_word(wordparty, "👎️");
         } else if (pcx_trie_add_word(wordparty->used_words,
                                      (const char *) wordparty->word_buf.data) ==

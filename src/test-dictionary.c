@@ -28,14 +28,10 @@ test_words(struct pcx_dictionary *dictionary,
            int n_words,
            char **words)
 {
-        uint32_t token;
-
         for (int i = 0; i < n_words; i++) {
                 printf("%s: %s\n",
                        words[i],
-                       pcx_dictionary_contains_word(dictionary,
-                                                    words[i],
-                                                    &token) ?
+                       pcx_dictionary_contains_word(dictionary, words[i]) ?
                        "yes" :
                        "no");
         }
