@@ -36,6 +36,7 @@
 #include "pcx-hat.h"
 #include "pcx-html.h"
 #include "pcx-wordparty-help.h"
+#include "pcx-trie.h"
 
 #define PCX_WORDPARTY_MIN_PLAYERS 2
 #define PCX_WORDPARTY_MAX_PLAYERS 16
@@ -92,10 +93,16 @@ struct pcx_wordparty {
          */
         int max_fail_count;
 
-        /* Array of word tokens returned from the dictionary so that
-         * we can detect duplicate words.
+        /* Trie of words that the player has already used so that we
+         * can detect duplicates.
          */
-        struct pcx_buffer used_words;
+        struct pcx_trie *used_words;
+
+        /* The number of words that have been successfully guessed.
+         * This is just used to make the timeouts decrease as the game
+         * progresses.
+         */
+        int n_used_words;
 
         struct pcx_main_context_source *word_timeout;
 
@@ -314,12 +321,6 @@ end_game(struct pcx_wordparty *wordparty)
         }
 }
 
-static int
-get_n_used_words(struct pcx_wordparty *wordparty)
-{
-        return wordparty->used_words.length / sizeof (uint32_t);
-}
-
 static void
 maybe_add_letters_hint(struct pcx_wordparty *wordparty,
                        const struct pcx_wordparty_player *player,
@@ -373,7 +374,7 @@ start_turn(struct pcx_wordparty *wordparty)
 
         /* Make the timeouts gradually get shorter as the game progresses */
         int difficulty = (wordparty->current_difficulty -
-                          get_n_used_words(wordparty) / wordparty->n_players);
+                          wordparty->n_used_words / wordparty->n_players);
         if (difficulty < 0)
                 difficulty = 0;
 
@@ -577,7 +578,8 @@ create_game_cb(const struct pcx_config *config,
         }
 
         pcx_buffer_init(&wordparty->word_buf);
-        pcx_buffer_init(&wordparty->used_words);
+
+        wordparty->used_words = pcx_trie_new();
 
         wordparty->class_data =
                 pcx_class_store_ref_data(callbacks->get_class_store(user_data),
@@ -683,21 +685,6 @@ extract_word_from_message(struct pcx_wordparty *wordparty,
         return wordparty->word_buf.length > 1;
 }
 
-static bool
-is_word_used(struct pcx_wordparty *wordparty,
-             uint32_t token)
-{
-        int n_used_words = get_n_used_words(wordparty);
-        const uint32_t *words = (const uint32_t *) wordparty->used_words.data;
-
-        for (int i = 0; i < n_used_words; i++) {
-                if (words[i] == token)
-                        return true;
-        }
-
-        return false;
-}
-
 static int
 find_letter(struct pcx_wordparty *wordparty,
             uint32_t ch)
@@ -785,11 +772,13 @@ handle_message_cb(void *data,
 
         if (!is_valid_word(wordparty, &token)) {
                 reject_word(wordparty, "👎️");
-        } else if (is_word_used(wordparty, token)) {
+        } else if (pcx_trie_add_word(wordparty->used_words,
+                                     (const char *) wordparty->word_buf.data) ==
+                   PCX_TRIE_ADD_RESULT_ALREADY_ADDED) {
                 reject_word(wordparty, "♻️");
         } else {
+                wordparty->n_used_words++;
                 tally_word(wordparty);
-                pcx_buffer_append(&wordparty->used_words, &token, sizeof token);
                 pick_syllable(wordparty);
                 start_turn(wordparty);
         }
@@ -815,7 +804,8 @@ free_game_cb(void *data)
         pcx_class_store_unref_data(class_store, wordparty->class_data);
 
         pcx_buffer_destroy(&wordparty->word_buf);
-        pcx_buffer_destroy(&wordparty->used_words);
+
+        pcx_trie_free(wordparty->used_words);
 
         pcx_free(wordparty->letters);
 

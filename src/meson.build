@@ -48,6 +48,7 @@ src = [
         'pcx-hat.c',
         'pcx-dictionary.c',
         'pcx-syllabary.c',
+        'pcx-trie.c',
         'pcx-love.c',
         'pcx-love-help.c',
         'pcx-six.c',
