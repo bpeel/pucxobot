@@ -20,8 +20,6 @@
 
 #include "pcx-server.h"
 
-#include <json_object.h>
-#include <json_tokener.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
