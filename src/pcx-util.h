@@ -40,6 +40,9 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+#define PCX_STRINGIFY(macro_or_string) PCX_STRINGIFY_ARG(macro_or_string)
+#define PCX_STRINGIFY_ARG(contents) #contents
+
 #define PCX_N_ELEMENTS(array) \
   (sizeof (array) / sizeof ((array)[0]))
 
