@@ -120,9 +120,9 @@ pcx_text_esperanto[] = {
         "%s aliĝis al la ludo. Vi povas atendi pliajn ludantojn aŭ alklaki la "
         "suban butonon por komenci.",
         [PCX_TEXT_STRING_WELCOME_BUTTONS_TOO_FEW] =
-        "%s aliĝis al la ludo.  Atendu pliajn ludantojn por komenci la ludon.",
+        "%s aliĝis al la ludo. Atendu pliajn ludantojn por komenci la ludon.",
         [PCX_TEXT_STRING_WELCOME_BUTTONS_FULL] =
-        "%s aliĝis al la ludo.  La ludo nun estas plena kaj tuj komenciĝos.",
+        "%s aliĝis al la ludo. La ludo nun estas plena kaj tuj komenciĝos.",
         [PCX_TEXT_STRING_PLAYER_LEFT] =
         "%s foriris",
         [PCX_TEXT_STRING_START_BUTTON] =
