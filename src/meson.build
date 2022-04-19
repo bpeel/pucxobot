@@ -7,19 +7,16 @@ translations = [
         'pcx-text-chinese-traditional.c',
 ]
 
-src = [
-        'pcx-main.c',
+server_src = [
         'pcx-log.c',
         'pcx-game.c',
         'pcx-util.c',
-        'pcx-main-context.c',
         'pcx-error.c',
         'pcx-slice.c',
         'pcx-slab.c',
         'pcx-buffer.c',
         'pcx-list.c',
         'pcx-coup-character.c',
-        'pcx-bot.c',
         'pcx-server.c',
         'pcx-player.c',
         'pcx-playerbase.c',
@@ -34,10 +31,8 @@ src = [
         'pcx-generate-id.c',
         'pcx-socket.c',
         'pcx-file-error.c',
-        'pcx-message-queue.c',
         'pcx-key-value.c',
         'pcx-coup-help.c',
-        'pcx-curl-multi.c',
         'pcx-config.c',
         'pcx-text.c',
         'pcx-ssl-error.c',
@@ -65,7 +60,15 @@ src = [
         'sha1.c',
 ]
 
-src += translations
+server_src += translations
+
+src = [
+        'pcx-main.c',
+        'pcx-main-context.c',
+        'pcx-bot.c',
+        'pcx-message-queue.c',
+        'pcx-curl-multi.c',
+] + server_src
 
 curl = dependency('libcurl', version: '>=7.16')
 json = dependency('json-c')
@@ -177,3 +180,12 @@ test_trie_src = [
 test_trie = executable('test-trie', test_trie_src,
                        include_directories: configinc)
 test('trie', test_trie)
+
+test_wordparty_src = [
+        'test-wordparty.c',
+        'test-time-hack.c',
+] + server_src
+test_wordparty = executable('test-wordparty', test_wordparty_src,
+                            dependencies: [thread_dep, openssl],
+                            include_directories: configinc)
+test('wordparty', test_wordparty)
