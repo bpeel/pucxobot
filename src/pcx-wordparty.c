@@ -117,6 +117,8 @@ struct pcx_wordparty {
 
         char current_syllable[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1];
         int current_difficulty;
+        /* The same syllable in upper case in order to send in messages */
+        char current_syllable_upper[PCX_SYLLABARY_MAX_SYLLABLE_LENGTH + 1];
 
         /* The alphabet for the current language expanded into unicode
          * codepoints and sorted.
@@ -143,16 +145,6 @@ add_unichar(struct pcx_buffer *buf,
 {
         pcx_buffer_ensure_size(buf, buf->length + PCX_UTF8_MAX_CHAR_LENGTH);
         buf->length += pcx_utf8_encode(ch, (char *) buf->data + buf->length);
-}
-
-static void
-add_uppercase_string(struct pcx_buffer *buf,
-                     const char *str)
-{
-        for (const char *p = str; *p; p = pcx_utf8_next(p))
-                add_unichar(buf, pcx_hat_to_upper(pcx_utf8_get_char(p)));
-        pcx_buffer_append_c(buf, '\0');
-        buf->length--;
 }
 
 static void
@@ -212,6 +204,26 @@ pick_syllable(struct pcx_wordparty *wordparty)
                 strcpy(wordparty->current_syllable, "a");
                 wordparty->current_difficulty = 0;
         }
+
+        char *upper = wordparty->current_syllable_upper;
+
+        const char *src = wordparty->current_syllable;
+        char *dst = upper;
+
+        while (true) {
+                int ch = pcx_utf8_get_char(src);
+
+                dst += pcx_utf8_encode(pcx_hat_to_upper(ch), dst);
+
+                if (ch == 0)
+                        break;
+
+                src = pcx_utf8_next(src);
+        }
+
+        wordparty->callbacks.set_sideband_string(wordparty->n_players + 1,
+                                                 upper,
+                                                 wordparty->user_data);
 }
 
 static void
@@ -440,7 +452,7 @@ start_turn(struct pcx_wordparty *wordparty)
         escape_string(wordparty, &buf, PCX_TEXT_STRING_TYPE_A_WORD);
 
         pcx_buffer_append_string(&buf, "\n\n<b>");
-        add_uppercase_string(&buf, wordparty->current_syllable);
+        pcx_buffer_append_string(&buf, wordparty->current_syllable_upper);
 
         pcx_buffer_append_string(&buf, "</b>");
 

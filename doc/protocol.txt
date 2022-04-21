@@ -178,8 +178,9 @@ current possible values are:
 
 Wordparty:
 
-• PLAYER_NUMBER (0x00)
+• CURRENT_PLAYER (0x00)
   • uint8_t the current player number
-
-Any other number reports the number of lives for a player as a
-uint8_t.
+• N_LIVES (1-n_players)
+  • uint8_t the number of lives for the corresponding player
+• SYLLABLE (n_players)
+  • string the current syllable to guess

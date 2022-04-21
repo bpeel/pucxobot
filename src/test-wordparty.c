@@ -64,11 +64,12 @@ struct test_harness {
         struct pcx_config *config;
         struct pcx_server *server;
         int n_connections;
-        struct test_connection connections[4];
+        struct test_connection connections[8];
         bool had_error;
 
         int start_player;
         int current_player;
+        char *current_syllable;
 };
 
 #define TEST_PORT 6636
@@ -87,11 +88,9 @@ valid_words[] = {
         "sako",
 };
 
-static const uint8_t
+static const char * const
 syllabary[] = {
-        /* One syllable ‘OM’ */
-        1, 0, 0, 0, /* hit count in LE */
-        'o', 'm', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        "om",
 };
 
 static const char * const
@@ -223,12 +222,13 @@ create_dictionary(const char *data_dir,
 }
 
 static bool
-create_data_file(const char *data_dir,
-                 const char *filename,
-                 const uint8_t *data,
-                 size_t size)
+create_syllabary(const char *data_dir,
+                 const char * const *syllables,
+                 int n_syllables)
 {
-        char *full_filename = pcx_strconcat(data_dir, "/", filename, NULL);
+        char *full_filename = pcx_strconcat(data_dir,
+                                            "/syllabary-eo.bin",
+                                            NULL);
         FILE *out = fopen(full_filename, "wb");
         bool ret = true;
 
@@ -236,7 +236,16 @@ create_data_file(const char *data_dir,
                 fprintf(stderr, "%s: %s\n", full_filename, strerror(errno));
                 ret = false;
         } else {
-                fwrite(data, 1, size, out);
+                for (int i = 0; i < n_syllables; i++) {
+                        uint32_t hit_count_le = PCX_UINT32_TO_LE(i + 1);
+                        fwrite(&hit_count_le, 1, sizeof hit_count_le, out);
+
+                        fputs(syllables[i], out);
+
+                        for (int j = strlen(syllables[i]); j < 16; j++)
+                                fputc(0, out);
+                }
+
                 fclose(out);
         }
 
@@ -247,7 +256,9 @@ create_data_file(const char *data_dir,
 
 static char *
 create_data_dir(const char *const * words,
-                int n_words)
+                int n_words,
+                const char *const *syllables,
+                int n_syllables)
 {
         const char *temp_dir = get_temp_dir();
 
@@ -261,10 +272,7 @@ create_data_dir(const char *const * words,
         }
 
         if (!create_dictionary(data_dir, words, n_words) ||
-            !create_data_file(data_dir,
-                              "syllabary-eo.bin",
-                              syllabary,
-                              sizeof syllabary)) {
+            !create_syllabary(data_dir, syllables, n_syllables)) {
                 free_data_dir(data_dir);
                 return NULL;
         }
@@ -563,12 +571,16 @@ free_harness(struct test_harness *harness)
         if (harness->data_dir)
                 free_data_dir(harness->data_dir);
 
+        pcx_free(harness->current_syllable);
+
         pcx_free(harness);
 }
 
 static struct test_harness *
 create_harness_with_dictionary(const char *const *words,
-                               int n_words)
+                               int n_words,
+                               const char *const *syllables,
+                               int n_syllables)
 {
         struct test_harness *harness = pcx_calloc(sizeof *harness);
 
@@ -581,7 +593,8 @@ create_harness_with_dictionary(const char *const *words,
                 pcx_list_init(&harness->connections[i].messages);
         }
 
-        harness->data_dir = create_data_dir(words, n_words);
+        harness->data_dir = create_data_dir(words, n_words,
+                                            syllables, n_syllables);
 
         if (harness->data_dir == NULL)
                 goto error;
@@ -633,7 +646,9 @@ static struct test_harness *
 create_harness(void)
 {
         return create_harness_with_dictionary(valid_words,
-                                              PCX_N_ELEMENTS(valid_words));
+                                              PCX_N_ELEMENTS(valid_words),
+                                              syllabary,
+                                              PCX_N_ELEMENTS(syllabary));
 }
 
 static const uint8_t ws_terminator[] = "\r\n\r\n";
@@ -798,6 +813,26 @@ handle_current_player(struct test_harness *harness,
 }
 
 static bool
+handle_syllable(struct test_harness *harness,
+                const char *syllable,
+                int syllable_length)
+{
+        const char *end = memchr(syllable, '\0', syllable_length);
+
+        if (end == NULL) {
+                fprintf(stderr,
+                        "Missing zero terminator in current syllable "
+                        "command.\n");
+                return false;
+        }
+
+        pcx_free(harness->current_syllable);
+        harness->current_syllable = pcx_strdup(syllable);
+
+        return true;
+}
+
+static bool
 handle_sideband(struct test_connection *connection,
                 const uint8_t *command,
                 size_t command_length)
@@ -807,6 +842,12 @@ handle_sideband(struct test_connection *connection,
 
         if (command[1] == 0)
                 return handle_current_player(connection->harness, command[2]);
+
+        if (command[1] == connection->harness->n_connections + 1) {
+                return handle_syllable(connection->harness,
+                                       (const char *) command + 2,
+                                       command_length - 2);
+        }
 
         int player_num = command[1] - 1;
 
@@ -1392,7 +1433,9 @@ test_full_alphabet(void)
 
         struct test_harness *harness =
                 create_harness_with_dictionary((const char *const *) words,
-                                               n_words);
+                                               n_words,
+                                               syllabary,
+                                               PCX_N_ELEMENTS(syllabary));
 
         for (unsigned i = 0; i < n_words; i++)
                 pcx_free(words[i]);
@@ -1520,6 +1563,192 @@ out:
         return ret;
 }
 
+static bool
+syllable_matches(const char *a, const char *b)
+{
+        while (*a) {
+                if (*b == '\0')
+                        return false;
+
+                if (pcx_hat_to_lower(pcx_utf8_get_char(a)) !=
+                    pcx_hat_to_lower(pcx_utf8_get_char(b)))
+                        return false;
+
+                a = pcx_utf8_next(a);
+                b = pcx_utf8_next(b);
+        }
+
+        return *b == '\0';
+}
+
+static int
+find_syllable(char **syllables,
+              size_t n_syllables,
+              const char *syllable)
+{
+        for (unsigned i = 0; i < n_syllables; i++) {
+                if (syllable_matches(syllables[i], syllable))
+                        return i;
+        }
+
+        return -1;
+}
+
+static bool
+test_current_syllable(void)
+{
+        const size_t n_syllables = 16 * 16 * 16;
+        char **syllables = pcx_alloc(sizeof (char *) * n_syllables);
+
+        for (int i = 0; i < n_syllables; i++) {
+                syllables[i] = pcx_strconcat(alphabet[i & 0xf],
+                                             alphabet[(i >> 4) & 0xf],
+                                             alphabet[(i >> 8) & 0xf],
+                                             NULL);
+        }
+
+        const size_t n_players = 8;
+
+        /* Make a word for each player for each syllable so that we
+         * never reuse the word even if we get the same syllable
+         * twice.
+         */
+        const size_t n_words = n_syllables * n_players;
+        char **words = pcx_alloc(sizeof (char *) * n_words);
+
+        for (int i = 0; i < n_words; i++) {
+                words[i] = pcx_strconcat(alphabet[i / n_syllables],
+                                         syllables[i % n_syllables],
+                                         NULL);
+        }
+
+        bool ret = true;
+
+        struct test_harness *harness =
+                create_harness_with_dictionary((const char *const *) words,
+                                               n_words,
+                                               (const char *const *) syllables,
+                                               n_syllables);
+
+        if (harness == NULL) {
+                ret = false;
+                goto out;
+        }
+
+        if (!create_game(harness, n_players)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < n_players; i++) {
+                if (!sync_with_server(harness)) {
+                        ret = false;
+                        goto out;
+                }
+
+                if (!check_current_player(harness,
+                                          (harness->start_player + i) %
+                                          n_players)) {
+                        ret = false;
+                        goto out;
+                }
+
+                int syllable_num;
+
+                for (int p = 0; p < n_players; p++) {
+                        const struct test_connection *conn =
+                                harness->connections + p;
+
+                        if (pcx_list_empty(&conn->messages)) {
+                                fprintf(stderr,
+                                        "No message received while expecting "
+                                        "turn message.\n");
+                                ret = false;
+                                goto out;
+                        }
+
+                        struct test_message *message =
+                                pcx_container_of(conn->messages.next,
+                                                 struct test_message,
+                                                 link);
+
+                        const char *note_marker =
+                                "enhavas:\n\n<b>";
+
+                        const char *note = strstr(message->text, note_marker);
+
+                        if (note == NULL) {
+                                fprintf(stderr,
+                                        "Note doesn’t contain the syllable "
+                                        "part\n");
+                                ret = false;
+                                goto out;
+                        }
+
+                        const char *syllable = note + strlen(note_marker);
+                        char *syllable_end = strchr(syllable, '<');
+
+                        if (syllable_end == NULL) {
+                                fprintf(stderr,
+                                        "Missing syllable terminator in "
+                                        "message.\n");
+                                ret = false;
+                                goto out;
+                        }
+
+                        *syllable_end = '\0';
+
+                        syllable_num = find_syllable(syllables,
+                                                     n_syllables,
+                                                     syllable);
+
+                        if (syllable_num == -1) {
+                                fprintf(stderr,
+                                        "Game reported syllable “%s” which "
+                                        "isn’t in the list.\n",
+                                        syllable);
+                                ret = false;
+                                goto out;
+                        }
+
+                        if (harness->current_syllable == NULL ||
+                            strcmp(harness->current_syllable, syllable)) {
+                                fprintf(stderr,
+                                        "Game reported current syllable is "
+                                        "“%s” but in message it is “%s”\n",
+                                        harness->current_syllable,
+                                        syllable);
+                                ret = false;
+                                goto out;
+                        }
+
+                        free_message(message);
+                }
+
+                if (!send_word(harness->connections +
+                               harness->current_player,
+                               words[syllable_num +
+                                     i * n_syllables])) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+out:
+        if (harness)
+                free_harness(harness);
+
+        for (int i = 0; i < n_syllables; i++)
+                pcx_free(syllables[i]);
+        pcx_free(syllables);
+
+        for (int i = 0; i < n_words; i++)
+                pcx_free(words[i]);
+        pcx_free(words);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1535,6 +1764,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_death())
+                ret = EXIT_FAILURE;
+
+        if (!test_current_syllable())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
