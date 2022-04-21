@@ -67,6 +67,15 @@ struct pcx_wordparty_class_data {
         struct pcx_syllabary *syllabary;
 };
 
+/* A letter of the alphabet for the game’s language */
+struct pcx_wordparty_letter {
+        uint32_t ch;
+        /* When displaying the hint about what letters to use, the
+         * letters will be sorted by this value.
+         */
+        int sort_order;
+};
+
 struct pcx_wordparty {
         int n_players;
 
@@ -112,7 +121,7 @@ struct pcx_wordparty {
         /* The alphabet for the current language expanded into unicode
          * codepoints and sorted.
          */
-        uint32_t *letters;
+        struct pcx_wordparty_letter *letters;
         int n_letters;
 };
 
@@ -321,6 +330,15 @@ end_game(struct pcx_wordparty *wordparty)
         }
 }
 
+static int
+compare_letter_by_sort_order(const void *pa, const void *pb)
+{
+        const struct pcx_wordparty_letter *a = pa;
+        const struct pcx_wordparty_letter *b = pb;
+
+        return a->sort_order - b->sort_order;
+}
+
 static void
 maybe_add_letters_hint(struct pcx_wordparty *wordparty,
                        const struct pcx_wordparty_player *player,
@@ -342,12 +360,24 @@ maybe_add_letters_hint(struct pcx_wordparty *wordparty,
         escape_string(wordparty, buf, PCX_TEXT_STRING_LETTERS_HINT);
         pcx_buffer_append_c(buf, ' ');
 
-        for (int i = 0; i < wordparty->n_letters; i++) {
-                if ((player->letters_used & (UINT32_C(1) << i)))
+        struct pcx_wordparty_letter letters[PCX_WORDPARTY_MAX_LETTERS_FOR_HINT];
+
+        for (int letter_num = 0, letters_added = 0;
+             letters_added < n_letters_remaining;
+             letter_num++) {
+                if ((player->letters_used & (UINT32_C(1) << letter_num)))
                         continue;
 
-                add_unichar(buf, pcx_hat_to_upper(wordparty->letters[i]));
+                letters[letters_added++] = wordparty->letters[letter_num];
         }
+
+        qsort(letters,
+              n_letters_remaining,
+              sizeof (struct pcx_wordparty_letter),
+              compare_letter_by_sort_order);
+
+        for (int i = 0; i < n_letters_remaining; i++)
+                add_unichar(buf, pcx_hat_to_upper(letters[i].ch));
 
         pcx_buffer_append_string(buf, "\n\n");
 }
@@ -512,14 +542,14 @@ class_store_callbacks = {
 };
 
 static int
-compare_uint32(const void *pa, const void *pb)
+compare_letter_by_unicode(const void *pa, const void *pb)
 {
-        uint32_t a = *(const uint32_t *) pa;
-        uint32_t b = *(const uint32_t *) pb;
+        const struct pcx_wordparty_letter *a = pa;
+        const struct pcx_wordparty_letter *b = pb;
 
-        if (a > b)
+        if (a->ch > b->ch)
                 return 1;
-        else if (a < b)
+        else if (a->ch < b->ch)
                 return -1;
         else
                 return 0;
@@ -537,18 +567,21 @@ create_alphabet(struct pcx_wordparty *wordparty)
 
         assert(n_letters > 0 && n_letters < sizeof (uint32_t) * 8);
 
-        wordparty->letters = pcx_alloc(sizeof (uint32_t) * n_letters);
+        wordparty->letters = pcx_alloc(sizeof (struct pcx_wordparty_letter) *
+                                       n_letters);
         wordparty->n_letters = n_letters;
 
         int i = 0;
 
-        for (const char *p = alphabet; *p; p = pcx_utf8_next(p), i++)
-                wordparty->letters[i] = pcx_utf8_get_char(p);
+        for (const char *p = alphabet; *p; p = pcx_utf8_next(p), i++) {
+                wordparty->letters[i].ch = pcx_utf8_get_char(p);
+                wordparty->letters[i].sort_order = i;
+        }
 
         qsort(wordparty->letters,
               n_letters,
-              sizeof (uint32_t),
-              compare_uint32);
+              sizeof (struct pcx_wordparty_letter),
+              compare_letter_by_unicode);
 }
 
 static void *
@@ -691,7 +724,7 @@ find_letter(struct pcx_wordparty *wordparty,
 
         while (min < max) {
                 int mid = (min + max) / 2;
-                uint32_t v = wordparty->letters[mid];
+                uint32_t v = wordparty->letters[mid].ch;
 
                 if (ch < v)
                         max = mid;

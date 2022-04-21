@@ -96,8 +96,8 @@ syllabary[] = {
 
 static const char * const
 alphabet[] = {
-        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n",
-        "o", "p", "r", "s", "t", "u", "v", "z", "ĉ", "ĝ", "ĥ", "ĵ", "ŝ", "ŭ",
+        "a", "b", "c", "ĉ", "d", "e", "f", "g", "ĝ", "h", "ĥ", "i", "j", "ĵ",
+        "k", "l", "m", "n", "o", "p", "r", "s", "ŝ", "t", "u", "ŭ", "v", "z",
 };
 
 static bool
