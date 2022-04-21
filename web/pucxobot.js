@@ -71,13 +71,29 @@ function WordpartyVisualisation(svg)
 
   this.arrow = this.createElement("path");
   this.arrow.setAttribute("d",
-                          "M -6.71,-2.99 H -3.65 V 8.36 " +
-                          "H 3.63 V -2.99 H 6.68 " +
-                          "L -0.01,-9.68 Z");
+                          "M -0.01,-23.82 -10.15,-13.70 " +
+                          "h 4.63 " +
+                          "v 2.94 " +
+                          "A 12.10,12.10 0 0 0 -12.10,0 12.10,12.10 0 0 0 " +
+                          "0,12.10 12.10,12.10 0 0 0 12.10,0 12.10,12.10 " +
+                          "0 0 0 5.49,-10.78 " +
+                          "a 12.10,12.10 0 0 0 -0.00,-0.00 " +
+                          "v -2.92 " +
+                          "h 4.61 " +
+                          "z");
   this.arrow.setAttribute("fill", "blue");
   this.arrow.setAttribute("stroke", "black");
   this.arrow.setAttribute("stroke-width", 0.5);
   this.svg.appendChild(this.arrow);
+
+  this.syllable = this.createElement("text");
+  this.syllable.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
+  this.syllable.setAttribute("font-family", "sans-serif");
+  this.syllable.setAttribute("text-anchor", "middle");
+  this.syllable.setAttribute("fill", "white");
+  this.syllable.setAttribute("x", 0);
+  this.syllable.setAttribute("y", WordpartyVisualisation.FONT_SIZE / 2);
+  this.svg.appendChild(this.syllable);
 }
 
 WordpartyVisualisation.FONT_SIZE = 6;
@@ -151,13 +167,12 @@ WordpartyVisualisation.prototype.handlePlayerName = function(playerNum, name)
 
 WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 {
-  var val = mr.getUint8();
-
   if (dataNum == 0) {
-    this.currentPlayer = val;
+    this.currentPlayer = mr.getUint8();
     this.updateArrow();
-  } else {
+  } else if (dataNum <= this.players.length) {
     var player = this.getPlayer(dataNum - 1);
+    var val = mr.getUint8();
     var lives;
 
     if (val == 0) {
@@ -173,6 +188,10 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
     while (livesElement.lastChild)
       livesElement.removeChild(livesElement.lastChild);
     livesElement.appendChild(document.createTextNode(lives));
+  } else if (dataNum == this.players.length + 1) {
+    while (this.syllable.lastChild)
+      this.syllable.removeChild(this.syllable.lastChild);
+    this.syllable.appendChild(document.createTextNode(mr.getString()));
   }
 };
 
