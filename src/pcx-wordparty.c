@@ -221,7 +221,7 @@ set_lives(struct pcx_wordparty *wordparty,
 {
         wordparty->players[player_num].lives = lives;
 
-        wordparty->callbacks.set_sideband_data(player_num + 1, /* data_num */
+        wordparty->callbacks.set_sideband_byte(player_num + 1, /* data_num */
                                                lives,
                                                wordparty->user_data);
 }
@@ -231,7 +231,7 @@ set_current_player(struct pcx_wordparty *wordparty,
                    int player_num)
 {
         wordparty->current_player = player_num;
-        wordparty->callbacks.set_sideband_data(0, /* data_num */
+        wordparty->callbacks.set_sideband_byte(0, /* data_num */
                                                player_num,
                                                wordparty->user_data);
 }

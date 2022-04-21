@@ -80,9 +80,12 @@ struct pcx_game_callbacks {
          * also be sent to any new clients. The data_num has a low
          * maximum value.
          */
-        void (* set_sideband_data)(int data_num,
+        void (* set_sideband_byte)(int data_num,
                                    uint8_t value,
                                    void *user_data);
+        void (* set_sideband_string)(int data_num,
+                                     const char *value,
+                                     void *user_data);
 };
 
 struct pcx_game {

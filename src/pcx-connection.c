@@ -305,6 +305,42 @@ write_player_names(struct pcx_connection *conn)
         return true;
 }
 
+static int
+write_sideband_datum(struct pcx_connection *conn,
+                     int data_num,
+                     const struct pcx_conversation_sideband_data *data)
+{
+        switch (data->type) {
+        case PCX_CONVERSATION_SIDEBAND_TYPE_BYTE:
+                return write_command(conn,
+
+                                     PCX_PROTO_SIDEBAND,
+
+                                     PCX_PROTO_TYPE_UINT8,
+                                     data_num,
+
+                                     PCX_PROTO_TYPE_UINT8,
+                                     data->byte,
+
+                                     PCX_PROTO_TYPE_NONE);
+
+        case PCX_CONVERSATION_SIDEBAND_TYPE_STRING:
+                return write_command(conn,
+
+                                     PCX_PROTO_SIDEBAND,
+
+                                     PCX_PROTO_TYPE_UINT8,
+                                     data_num,
+
+                                     PCX_PROTO_TYPE_STRING,
+                                     data->string,
+
+                                     PCX_PROTO_TYPE_NONE);
+        }
+
+        assert(!"unknown sideband data type");
+}
+
 static bool
 write_sideband_data(struct pcx_connection *conn)
 {
@@ -318,18 +354,10 @@ write_sideband_data(struct pcx_connection *conn)
 
                 int data_num = first_bit - 1;
 
-                int wrote =
-                        write_command(conn,
+                struct pcx_conversation_sideband_data *data =
+                        pcx_conversation_get_sideband_data(conv, data_num);
 
-                                      PCX_PROTO_SIDEBAND,
-
-                                      PCX_PROTO_TYPE_UINT8,
-                                      data_num,
-
-                                      PCX_PROTO_TYPE_UINT8,
-                                      conv->sideband_data.data[data_num],
-
-                                      PCX_PROTO_TYPE_NONE);
+                int wrote = write_sideband_datum(conn, data_num, data);
 
                 if (wrote == -1)
                         return false;

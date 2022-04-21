@@ -74,6 +74,20 @@ struct pcx_conversation_message {
         size_t no_buttons_length;
 };
 
+enum pcx_conversation_sideband_type {
+        PCX_CONVERSATION_SIDEBAND_TYPE_BYTE,
+        PCX_CONVERSATION_SIDEBAND_TYPE_STRING,
+};
+
+struct pcx_conversation_sideband_data {
+        enum pcx_conversation_sideband_type type;
+
+        union {
+                uint8_t byte;
+                char *string;
+        };
+};
+
 struct pcx_conversation {
         /* If this reaches zero the conversation will be immediately
          * destroyed
@@ -101,7 +115,7 @@ struct pcx_conversation {
 
         struct pcx_list messages;
 
-        /* One byte for each piece of sideband data */
+        /* Array of pcx_conversation_sideband_data */
         struct pcx_buffer sideband_data;
 
         /* Bitmask of sideband data numbers that the game has ever
@@ -141,6 +155,10 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
 const char *
 pcx_conversation_get_player_name(struct pcx_conversation *conv,
                                  int player_num);
+
+struct pcx_conversation_sideband_data *
+pcx_conversation_get_sideband_data(struct pcx_conversation *conv,
+                                   int data_num);
 
 void
 pcx_conversation_ref(struct pcx_conversation *conv);

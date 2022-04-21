@@ -174,24 +174,87 @@ get_class_store_cb(void *user_data)
         return conv->class_store;
 }
 
+struct pcx_conversation_sideband_data *
+pcx_conversation_get_sideband_data(struct pcx_conversation *conv,
+                                   int data_num)
+{
+        return ((struct pcx_conversation_sideband_data *)
+                conv->sideband_data.data +
+                data_num);
+}
+
 static void
-set_sideband_data_cb(int data_num,
+destroy_sideband_data(struct pcx_conversation_sideband_data *data)
+{
+        switch (data->type) {
+        case PCX_CONVERSATION_SIDEBAND_TYPE_BYTE:
+                break;
+        case PCX_CONVERSATION_SIDEBAND_TYPE_STRING:
+                pcx_free(data->string);
+                break;
+        }
+}
+
+static struct pcx_conversation_sideband_data *
+modify_sideband_data(struct pcx_conversation *conv,
+                     int data_num)
+{
+        assert(data_num >= 0 &&
+               data_num < 8 * sizeof (conv->available_sideband_data));
+
+        size_t new_length = ((data_num + 1) *
+                             sizeof (struct pcx_conversation_sideband_data));
+
+        if (new_length > conv->sideband_data.length)
+                pcx_buffer_set_length(&conv->sideband_data, new_length);
+
+        struct pcx_conversation_sideband_data *data =
+                pcx_conversation_get_sideband_data(conv, data_num);
+
+        if (conv->available_sideband_data & (UINT64_C(1) << data_num))
+                destroy_sideband_data(data);
+        else
+                conv->available_sideband_data |= UINT64_C(1) << data_num;
+
+        return data;
+}
+
+static void
+set_sideband_byte_cb(int data_num,
                      uint8_t value,
                      void *user_data)
 {
         struct pcx_conversation *conv = user_data;
 
-        assert(data_num >= 0 &&
-               data_num < 8 * sizeof (conv->available_sideband_data));
+        struct pcx_conversation_sideband_data *data =
+                modify_sideband_data(conv, data_num);
 
-        if (conv->sideband_data.length <= data_num)
-                pcx_buffer_set_length(&conv->sideband_data, data_num + 1);
+        data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
+        data->byte = value;
 
-        conv->sideband_data.data[data_num] = value;
+        struct pcx_conversation_sideband_data_modified_event event = {
+                .data_num = data_num,
+        };
 
-        conv->available_sideband_data |= UINT64_C(1) << data_num;
+        emit_event_with_data(conv,
+                             PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED,
+                             &event.base);
+}
 
-        struct pcx_conversation_sideband_data_modified_event event ={
+static void
+set_sideband_string_cb(int data_num,
+                       const char *value,
+                       void *user_data)
+{
+        struct pcx_conversation *conv = user_data;
+
+        struct pcx_conversation_sideband_data *data =
+                modify_sideband_data(conv, data_num);
+
+        data->type = PCX_CONVERSATION_SIDEBAND_TYPE_STRING;
+        data->string = pcx_strdup(value);
+
+        struct pcx_conversation_sideband_data_modified_event event = {
                 .data_num = data_num,
         };
 
@@ -205,7 +268,8 @@ game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
-        .set_sideband_data = set_sideband_data_cb,
+        .set_sideband_byte = set_sideband_byte_cb,
+        .set_sideband_string = set_sideband_string_cb,
 };
 
 static void
@@ -439,6 +503,32 @@ free_message(struct pcx_conversation_message *message)
         pcx_free(message);
 }
 
+static void
+destroy_all_sideband_data(struct pcx_conversation *conv)
+{
+        uint64_t bits = conv->available_sideband_data;
+
+        while (true) {
+                int bit = ffsll(bits);
+
+                if (bit == 0)
+                        break;
+
+                bit--;
+
+                struct pcx_conversation_sideband_data *data =
+                        (struct pcx_conversation_sideband_data *)
+                        conv->sideband_data.data +
+                        bit;
+
+                destroy_sideband_data(data);
+
+                bits &= ~(UINT64_C(1) << bit);
+        }
+
+        pcx_buffer_destroy(&conv->sideband_data);
+}
+
 void
 pcx_conversation_unref(struct pcx_conversation *conv)
 {
@@ -461,7 +551,7 @@ pcx_conversation_unref(struct pcx_conversation *conv)
 
         pcx_buffer_destroy(&conv->player_names);
 
-        pcx_buffer_destroy(&conv->sideband_data);
+        destroy_all_sideband_data(conv);
 
         pcx_free(conv);
 }
