@@ -94,9 +94,13 @@ function WordpartyVisualisation(svg)
   this.syllable.setAttribute("x", 0);
   this.syllable.setAttribute("y", WordpartyVisualisation.FONT_SIZE / 2);
   this.svg.appendChild(this.syllable);
+
+  this.resultIcon = null;
+  this.resultIconTimer = null;
 }
 
 WordpartyVisualisation.FONT_SIZE = 6;
+WordpartyVisualisation.RESULT_SIZE = 12;
 WordpartyVisualisation.CIRCLE_RADIUS = 40;
 
 WordpartyVisualisation.prototype.createElement = function(tag)
@@ -154,6 +158,62 @@ WordpartyVisualisation.prototype.repositionPlayers = function()
   }
 };
 
+WordpartyVisualisation.prototype.removeResultIcon = function()
+{
+  if (this.resultIconTimer != null) {
+    clearTimeout(this.resultIconTimer);
+    this.resultIconTimer = null;
+  }
+
+  if (this.resultIcon != null) {
+    this.resultIcon.parentElement.removeChild(this.resultIcon);
+    this.resultIcon = null;
+  }
+};
+
+WordpartyVisualisation.prototype.setResultIcon = function(playerNum, result)
+{
+  this.removeResultIcon();
+
+  var text;
+
+  if (result == 1)
+    text = "👎️";
+  else if (result == 2)
+    text = "♻️";
+  else
+    return;
+
+  var player = this.getPlayer(playerNum);
+
+  this.resultIcon = this.createElement("text");
+  this.resultIcon.setAttribute("font-size", WordpartyVisualisation.RESULT_SIZE);
+  this.resultIcon.setAttribute("font-family", "sans-serif");
+  this.resultIcon.setAttribute("text-anchor", "middle");
+  this.resultIcon.setAttribute("y", WordpartyVisualisation.RESULT_SIZE / 2.0);
+  this.resultIcon.setAttribute("opacity", 0);
+  this.resultIcon.appendChild(document.createTextNode(text));
+
+  var anim = this.createElement("animate");
+  anim.setAttribute("attributeName", "opacity");
+  anim.setAttribute("begin", "indefinite");
+  anim.setAttribute("dur", "1s");
+  anim.setAttribute("values", "1;1;0");
+  this.resultIcon.appendChild(anim);
+
+  player.group.appendChild(this.resultIcon);
+
+  anim.beginElement();
+
+  function timeoutCb()
+  {
+    this.resultIconTimer = null;
+    this.removeResultIcon();
+  }
+
+  this.resultIconTimer = setTimeout(timeoutCb.bind(this), 1000);
+}
+
 WordpartyVisualisation.prototype.handlePlayerName = function(playerNum, name)
 {
   var player = this.getPlayer(playerNum);
@@ -192,6 +252,9 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
     while (this.syllable.lastChild)
       this.syllable.removeChild(this.syllable.lastChild);
     this.syllable.appendChild(document.createTextNode(mr.getString()));
+  } else if (dataNum == this.players.length + 2) {
+    var val = mr.getUint8();
+    this.setResultIcon(val & 0x0f, val >> 6);
   }
 };
 
