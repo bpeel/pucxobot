@@ -14,6 +14,10 @@ data_files = [
         'send.png',
         'background.png',
         'help.png',
+        'wrong.mp3',
+        'correct.mp3',
+        'loselife.mp3',
+        'gainlife.mp3',
 ]
 
 web_dir = get_option('datadir') / 'web'

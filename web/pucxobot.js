@@ -105,6 +105,11 @@ function WordpartyVisualisation(svg)
 
   this.resultIcon = null;
   this.resultIconTimer = null;
+
+  this.wrongSound = this.makeSound("wrong.mp3");
+  this.correctSound = this.makeSound("correct.mp3");
+  this.loseLifeSound = this.makeSound("loselife.mp3");
+  this.gainLifeSound = this.makeSound("gainlife.mp3");
 }
 
 WordpartyVisualisation.FONT_SIZE = 6;
@@ -114,6 +119,11 @@ WordpartyVisualisation.CIRCLE_RADIUS = 40;
 WordpartyVisualisation.prototype.createElement = function(tag)
 {
   return document.createElementNS("http://www.w3.org/2000/svg", tag);
+};
+
+WordpartyVisualisation.prototype.makeSound = function(filename)
+{
+  return new Audio("../" + filename);
 };
 
 WordpartyVisualisation.prototype.getPlayer = function(playerNum)
@@ -142,6 +152,7 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
       "name": nameElement,
       "group": group,
       "lives": livesElement,
+      "nLives": -10,
     };
 
     this.players.push(player);
@@ -179,18 +190,24 @@ WordpartyVisualisation.prototype.removeResultIcon = function()
   }
 };
 
-WordpartyVisualisation.prototype.setResultIcon = function(playerNum, result)
+WordpartyVisualisation.prototype.handleResult = function(playerNum, result)
 {
   this.removeResultIcon();
 
   var text;
 
-  if (result == 1)
-    text = "👎️";
-  else if (result == 2)
-    text = "♻️";
-  else
+  if (result == 0) {
+    this.correctSound.play();
     return;
+  } else if (result == 1) {
+    text = "👎️";
+  } else if (result == 2) {
+    text = "♻️";
+  } else {
+    return;
+  }
+
+  this.wrongSound.play();
 
   var player = this.getPlayer(playerNum);
 
@@ -252,6 +269,13 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
         lives += "❤️";
     }
 
+    if (player.nLives == val + 1)
+      this.loseLifeSound.play();
+    else if (player.nLives == val - 1)
+      this.gainLifeSound.play();
+
+    player.nLives = val;
+
     var livesElement = player.lives;
     while (livesElement.lastChild)
       livesElement.removeChild(livesElement.lastChild);
@@ -262,7 +286,7 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
     this.syllable.appendChild(document.createTextNode(mr.getString()));
   } else if (dataNum == this.players.length + 2) {
     var val = mr.getUint8();
-    this.setResultIcon(val & 0x0f, val >> 6);
+    this.handleResult(val & 0x0f, val >> 6);
   }
 };
 
