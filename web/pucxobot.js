@@ -190,26 +190,9 @@ WordpartyVisualisation.prototype.removeResultIcon = function()
   }
 };
 
-WordpartyVisualisation.prototype.handleResult = function(playerNum, result)
+WordpartyVisualisation.prototype.setResultIcon = function(player, icon)
 {
   this.removeResultIcon();
-
-  var text;
-
-  if (result == 0) {
-    this.correctSound.play();
-    return;
-  } else if (result == 1) {
-    text = "👎️";
-  } else if (result == 2) {
-    text = "♻️";
-  } else {
-    return;
-  }
-
-  this.wrongSound.play();
-
-  var player = this.getPlayer(playerNum);
 
   this.resultIcon = this.createElement("text");
   this.resultIcon.setAttribute("font-size", WordpartyVisualisation.RESULT_SIZE);
@@ -217,7 +200,7 @@ WordpartyVisualisation.prototype.handleResult = function(playerNum, result)
   this.resultIcon.setAttribute("text-anchor", "middle");
   this.resultIcon.setAttribute("y", WordpartyVisualisation.RESULT_SIZE / 2.0);
   this.resultIcon.setAttribute("opacity", 0);
-  this.resultIcon.appendChild(document.createTextNode(text));
+  this.resultIcon.appendChild(document.createTextNode(icon));
 
   var anim = this.createElement("animate");
   anim.setAttribute("attributeName", "opacity");
@@ -237,7 +220,27 @@ WordpartyVisualisation.prototype.handleResult = function(playerNum, result)
   }
 
   this.resultIconTimer = setTimeout(timeoutCb.bind(this), 1000);
-}
+};
+
+WordpartyVisualisation.prototype.handleResult = function(playerNum, result)
+{
+  var text;
+
+  if (result == 0) {
+    this.correctSound.play();
+    return;
+  } else if (result == 1) {
+    text = "👎️";
+  } else if (result == 2) {
+    text = "♻️";
+  } else {
+    return;
+  }
+
+  this.wrongSound.play();
+
+  this.setResultIcon(this.getPlayer(playerNum), text);
+};
 
 WordpartyVisualisation.prototype.handlePlayerName = function(playerNum, name)
 {
@@ -269,10 +272,12 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
         lives += "❤️";
     }
 
-    if (player.nLives == val + 1)
+    if (player.nLives == val + 1) {
       this.loseLifeSound.play();
-    else if (player.nLives == val - 1)
+    } else if (player.nLives == val - 1) {
       this.gainLifeSound.play();
+      this.setResultIcon(player, "💗️");
+    }
 
     player.nLives = val;
 
