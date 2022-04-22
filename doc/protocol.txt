@@ -182,5 +182,5 @@ Wordparty:
   • uint8_t the current player number
 • N_LIVES (1-n_players)
   • uint8_t the number of lives for the corresponding player
-• SYLLABLE (n_players)
+• SYLLABLE (n_players + 1)
   • string the current syllable to guess
