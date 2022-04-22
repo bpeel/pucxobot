@@ -55,6 +55,13 @@
 #define PCX_WORDPARTY_MIN_WORD_TIMEOUT (5 * 1000)
 #define PCX_WORDPARTY_MAX_WORD_TIMEOUT (60 * 1000)
 
+/* Word results used for the sideband data */
+enum pcx_wordparty_result {
+        PCX_WORDPARTY_RESULT_ACCEPTED,
+        PCX_WORDPARTY_RESULT_REJECTED,
+        PCX_WORDPARTY_RESULT_DUPLICATE,
+};
+
 struct pcx_wordparty_player {
         char *name;
         int lives;
@@ -245,6 +252,18 @@ set_current_player(struct pcx_wordparty *wordparty,
         wordparty->current_player = player_num;
         wordparty->callbacks.set_sideband_byte(0, /* data_num */
                                                player_num,
+                                               wordparty->user_data);
+}
+
+static void
+set_word_result(struct pcx_wordparty *wordparty,
+                int player_num,
+                enum pcx_wordparty_result result)
+{
+        uint8_t data = (player_num & 0x0f) | (result << 6);
+
+        wordparty->callbacks.set_sideband_byte(wordparty->n_players + 2,
+                                               data,
                                                wordparty->user_data);
 }
 
@@ -664,8 +683,11 @@ is_space_char(char ch)
 
 static void
 reject_word(struct pcx_wordparty *wordparty,
-            const char *emoji)
+            const char *emoji,
+            enum pcx_wordparty_result result)
 {
+        set_word_result(wordparty, wordparty->current_player, result);
+
         char *text = pcx_strconcat(emoji,
                                    " ",
                                    (const char *) wordparty->word_buf.data,
@@ -812,12 +834,15 @@ handle_message_cb(void *data,
                 return;
 
         if (!is_valid_word(wordparty)) {
-                reject_word(wordparty, "👎️");
+                reject_word(wordparty, "👎️", PCX_WORDPARTY_RESULT_REJECTED);
         } else if (pcx_trie_add_word(wordparty->used_words,
                                      (const char *) wordparty->word_buf.data) ==
                    PCX_TRIE_ADD_RESULT_ALREADY_ADDED) {
-                reject_word(wordparty, "♻️");
+                reject_word(wordparty, "♻️", PCX_WORDPARTY_RESULT_DUPLICATE);
         } else {
+                set_word_result(wordparty,
+                                wordparty->current_player,
+                                PCX_WORDPARTY_RESULT_ACCEPTED);
                 wordparty->n_used_words++;
                 tally_word(wordparty);
                 pick_syllable(wordparty);

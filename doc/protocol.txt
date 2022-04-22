@@ -184,3 +184,10 @@ Wordparty:
   • uint8_t the number of lives for the corresponding player
 • SYLLABLE (n_players + 1)
   • string the current syllable to guess
+• LAST_RESULT (n_players + 2)
+  • uint8_t
+    bitfield representing the result of the last word typed in by a player
+    bits 0-4: player number
+    bits 6-7: 0: word accepted
+              1: word rejected
+              2: duplicate word

@@ -70,6 +70,8 @@ struct test_harness {
         int start_player;
         int current_player;
         char *current_syllable;
+        int result_player;
+        int result_value;
 };
 
 #define TEST_PORT 6636
@@ -586,6 +588,8 @@ create_harness_with_dictionary(const char *const *words,
 
         harness->start_player = -1;
         harness->current_player = -1;
+        harness->result_player = -1;
+        harness->result_value = -1;
 
         for (int i = 0; i < PCX_N_ELEMENTS(harness->connections); i++) {
                 harness->connections[i].fd = -1;
@@ -835,6 +839,36 @@ handle_syllable(struct test_harness *harness,
 }
 
 static bool
+handle_word_result(struct test_harness *harness,
+                   uint8_t data)
+{
+        int player = data & 0x3f;
+
+        if (player >= harness->n_connections) {
+                fprintf(stderr,
+                        "Received invalid player number in word result: %i\n",
+                        player);
+                harness->had_error = true;
+                return false;
+        }
+
+        int result = data >> 6;
+
+        if (result > 2) {
+                fprintf(stderr,
+                        "Received invalid word result: %i\n",
+                        result);
+                harness->had_error = true;
+                return false;
+        }
+
+        harness->result_player = player;
+        harness->result_value = result;
+
+        return true;
+}
+
+static bool
 handle_sideband(struct test_connection *connection,
                 const uint8_t *command,
                 size_t command_length)
@@ -849,6 +883,11 @@ handle_sideband(struct test_connection *connection,
                 return handle_syllable(connection->harness,
                                        (const char *) command + 2,
                                        command_length - 2);
+        }
+
+        if (command[1] == connection->harness->n_connections + 2) {
+                return handle_word_result(connection->harness,
+                                          command[2]);
         }
 
         int player_num = command[1] - 1;
@@ -1147,6 +1186,25 @@ check_current_player(struct test_harness *harness,
 }
 
 static bool
+check_word_result(struct test_harness *harness,
+                  int player,
+                  int result)
+{
+        if (harness->result_player != player ||
+            harness->result_value != result) {
+                fprintf(stderr,
+                        "Unexpected word result\n"
+                        " Expected: %i:%i\n"
+                        " Received: %i:%i\n",
+                        player, result,
+                        harness->result_player, harness->result_value);
+                return false;
+        }
+
+        return true;
+}
+
+static bool
 check_lives(struct test_harness *harness,
             int expected_lives)
 {
@@ -1192,6 +1250,11 @@ test_correct_word(void)
         }
 
         if (!check_current_player(harness, (harness->start_player ^ 1))) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_word_result(harness, harness->start_player, 0)) {
                 ret = false;
                 goto out;
         }
@@ -1242,6 +1305,11 @@ test_wrong_word(void)
                 goto out;
         }
 
+        if (!check_word_result(harness, harness->start_player, 1)) {
+                ret = false;
+                goto out;
+        }
+
         if (!check_lives(harness, 2)) {
                 ret = false;
                 goto out;
@@ -1260,6 +1328,11 @@ test_wrong_word(void)
         }
 
         if (!expect_turn_message(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_word_result(harness, harness->start_player, 0)) {
                 ret = false;
                 goto out;
         }
@@ -1290,6 +1363,11 @@ test_wrong_word(void)
                 goto out;
         }
 
+        if (!check_word_result(harness, harness->start_player ^ 1, 2)) {
+                ret = false;
+                goto out;
+        }
+
         /* Check a valid word that doesn’t contain the syllable */
 
         if (!send_word(harness->connections + (harness->start_player ^ 1),
@@ -1299,6 +1377,11 @@ test_wrong_word(void)
         }
 
         if (!expect_message(harness, "👎️ sako")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_word_result(harness, harness->start_player ^ 1, 1)) {
                 ret = false;
                 goto out;
         }
