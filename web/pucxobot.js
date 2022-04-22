@@ -113,7 +113,7 @@ function WordpartyVisualisation(svg)
   this.gainLifeSound = this.makeSound("gainlife.mp3");
 }
 
-WordpartyVisualisation.FONT_SIZE = 6;
+WordpartyVisualisation.FONT_SIZE = 4;
 WordpartyVisualisation.RESULT_SIZE = 12;
 WordpartyVisualisation.CIRCLE_RADIUS = 40;
 
@@ -136,24 +136,41 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
     var group = this.createElement("g");
     this.svg.appendChild(group);
 
+    var lineHeight = WordpartyVisualisation.FONT_SIZE * 1.4;
+    var y = WordpartyVisualisation.FONT_SIZE - lineHeight * 3 / 2;
+
     var nameElement = this.createElement("text");
     nameElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
     nameElement.setAttribute("font-family", "sans-serif");
     nameElement.setAttribute("font-weight", "bold");
     nameElement.setAttribute("text-anchor", "middle");
-    nameElement.setAttribute("y", WordpartyVisualisation.FONT_SIZE);
+    nameElement.setAttribute("y", y);
     group.appendChild(nameElement);
+
+    y += lineHeight;
 
     var livesElement = this.createElement("text");
     livesElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
     livesElement.setAttribute("font-family", "sans-serif");
     livesElement.setAttribute("text-anchor", "middle");
+    livesElement.setAttribute("y", y);
     group.appendChild(livesElement);
+
+    y += lineHeight;
+
+    var typedWordElement = this.createElement("text");
+    typedWordElement.setAttribute("font-size",
+                                  WordpartyVisualisation.FONT_SIZE);
+    typedWordElement.setAttribute("font-family", "sans-serif");
+    typedWordElement.setAttribute("text-anchor", "middle");
+    typedWordElement.setAttribute("y", y);
+    group.appendChild(typedWordElement);
 
     var player = {
       "name": nameElement,
       "group": group,
       "lives": livesElement,
+      "typedWord": typedWordElement,
       "nLives": -10,
     };
 
@@ -260,8 +277,13 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
   if (dataNum == 0) {
     this.currentPlayer = mr.getUint8();
     this.updateArrow();
-  } else if (dataNum <= this.players.length) {
-    var player = this.getPlayer(dataNum - 1);
+    return;
+  }
+
+  dataNum--;
+
+  if (dataNum < this.players.length) {
+    var player = this.getPlayer(dataNum);
     var val = mr.getUint8();
     var lives;
 
@@ -287,13 +309,37 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
     while (livesElement.lastChild)
       livesElement.removeChild(livesElement.lastChild);
     livesElement.appendChild(document.createTextNode(lives));
-  } else if (dataNum == this.players.length + 1) {
+
+    return;
+  }
+
+  dataNum -= this.players.length;
+
+  if (dataNum == 0) {
     while (this.syllable.lastChild)
       this.syllable.removeChild(this.syllable.lastChild);
     this.syllable.appendChild(document.createTextNode(mr.getString()));
-  } else if (dataNum == this.players.length + 2) {
+    return;
+  }
+
+  dataNum--;
+
+  if (dataNum == 0) {
     var val = mr.getUint8();
     this.handleResult(val & 0x0f, val >> 6);
+    return;
+  }
+
+  dataNum--;
+
+  if (dataNum < this.players.length) {
+    var player = this.getPlayer(dataNum);
+
+    var typedWordElement = player.typedWord;
+
+    while (typedWordElement.lastChild)
+      typedWordElement.removeChild(typedWordElement.lastChild);
+    typedWordElement.appendChild(document.createTextNode(mr.getString()));
   }
 };
 
