@@ -801,6 +801,7 @@ handle_current_player(struct test_harness *harness,
                         "Server tried to set current player to non-existant "
                         "player %i\n",
                         current_player);
+                harness->had_error = true;
                 return false;
         }
 
@@ -823,6 +824,7 @@ handle_syllable(struct test_harness *harness,
                 fprintf(stderr,
                         "Missing zero terminator in current syllable "
                         "command.\n");
+                harness->had_error = true;
                 return false;
         }
 
