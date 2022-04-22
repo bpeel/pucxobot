@@ -268,6 +268,18 @@ set_word_result(struct pcx_wordparty *wordparty,
 }
 
 static void
+set_typed_word(struct pcx_wordparty *wordparty,
+               int player_num,
+               const char *word)
+{
+        wordparty->callbacks.set_sideband_string(wordparty->n_players +
+                                                 3 +
+                                                 player_num,
+                                                 word,
+                                                 wordparty->user_data);
+}
+
+static void
 word_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
@@ -832,6 +844,10 @@ handle_message_cb(void *data,
 
         if (!extract_word_from_message(wordparty, text))
                 return;
+
+        set_typed_word(wordparty,
+                       player_num,
+                       (const char *) wordparty->word_buf.data);
 
         if (!is_valid_word(wordparty)) {
                 reject_word(wordparty, "👎️", PCX_WORDPARTY_RESULT_REJECTED);

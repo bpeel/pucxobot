@@ -54,6 +54,7 @@ struct test_connection {
         int read_pos;
 
         int n_lives;
+        char *typed_word;
 
         struct pcx_list messages;
 };
@@ -64,7 +65,7 @@ struct test_harness {
         struct pcx_config *config;
         struct pcx_server *server;
         int n_connections;
-        struct test_connection connections[8];
+        struct test_connection connections[16];
         bool had_error;
 
         int start_player;
@@ -453,32 +454,41 @@ expect_join_messages(struct test_harness *harness)
                                          "%s aliĝis al la ludo. ",
                                          harness->connections[i].name);
 
-                if (i == 0) {
+                if (i == 15) {
                         pcx_buffer_append_string(&buf,
-                                                 "Atendu pliajn "
-                                                 "ludantojn por komenci "
-                                                 "la ludon.");
+                                                 "La ludo nun estas plena kaj "
+                                                 "tuj komenciĝos.");
                 } else {
-                        pcx_buffer_append_string(&buf,
-                                                 "Vi povas atendi pliajn "
-                                                 "ludantojn aŭ alklaki la "
-                                                 "suban butonon por komenci.");
-                }
-
-                pcx_buffer_append_string(&buf,
-                                         "\n"
-                                         "\n"
-                                         "La aktualaj ludantoj estas:\n");
-
-                for (int j = 0; j <= i; j++) {
-                        if (j > 0) {
+                        if (i == 0) {
                                 pcx_buffer_append_string(&buf,
-                                                         j == i ?
-                                                         " kaj " :
-                                                         ", ");
+                                                         "Atendu pliajn "
+                                                         "ludantojn por "
+                                                         "komenci la ludon.");
+                        } else {
+                                pcx_buffer_append_string(&buf,
+                                                         "Vi povas atendi "
+                                                         "pliajn ludantojn aŭ "
+                                                         "alklaki la suban "
+                                                         "butonon por "
+                                                         "komenci.");
                         }
 
-                        pcx_buffer_append_c(&buf, j + 'A');
+                        pcx_buffer_append_string(&buf,
+                                                 "\n"
+                                                 "\n"
+                                                 "La aktualaj ludantoj "
+                                                 "estas:\n");
+
+                        for (int j = 0; j <= i; j++) {
+                                if (j > 0) {
+                                        pcx_buffer_append_string(&buf,
+                                                                 j == i ?
+                                                                 " kaj " :
+                                                                 ", ");
+                                }
+
+                                pcx_buffer_append_c(&buf, j + 'A');
+                        }
                 }
 
                 pcx_buffer_append_c(&buf, '\0');
@@ -559,6 +569,8 @@ free_harness(struct test_harness *harness)
                         pcx_main_context_remove_source(connection->read_source);
 
                 flush_messages(connection);
+
+                pcx_free(connection->typed_word);
         }
 
         if (harness->server)
@@ -818,6 +830,16 @@ handle_current_player(struct test_harness *harness,
 }
 
 static bool
+handle_n_lives(struct test_harness *harness,
+               int player_num,
+               int n_lives)
+{
+        harness->connections[player_num].n_lives = n_lives;
+
+        return true;
+}
+
+static bool
 handle_syllable(struct test_harness *harness,
                 const char *syllable,
                 int syllable_length)
@@ -869,6 +891,30 @@ handle_word_result(struct test_harness *harness,
 }
 
 static bool
+handle_typed_word(struct test_harness *harness,
+                  int player_num,
+                  const char *word,
+                  int word_length)
+{
+        const char *end = memchr(word, '\0', word_length);
+
+        if (end == NULL) {
+                fprintf(stderr,
+                        "Missing zero terminator in typed word "
+                        "command.\n");
+                harness->had_error = true;
+                return false;
+        }
+
+        struct test_connection *connection = harness->connections + player_num;
+
+        pcx_free(connection->typed_word);
+        connection->typed_word = pcx_strdup(word);
+
+        return true;
+}
+
+static bool
 handle_sideband(struct test_connection *connection,
                 const uint8_t *command,
                 size_t command_length)
@@ -876,33 +922,48 @@ handle_sideband(struct test_connection *connection,
         if (command_length < 3)
                 goto error;
 
-        if (command[1] == 0)
+        int command_num = command[1];
+
+        if (command_num == 0)
                 return handle_current_player(connection->harness, command[2]);
 
-        if (command[1] == connection->harness->n_connections + 1) {
+        command_num--;
+
+        if (command_num < connection->harness->n_connections) {
+                return handle_n_lives(connection->harness,
+                                      command_num,
+                                      command[2]);
+        }
+
+        command_num -= connection->harness->n_connections;
+
+        if (command_num == 0) {
                 return handle_syllable(connection->harness,
                                        (const char *) command + 2,
                                        command_length - 2);
         }
 
-        if (command[1] == connection->harness->n_connections + 2) {
+        command_num--;
+
+        if (command_num == 0) {
                 return handle_word_result(connection->harness,
                                           command[2]);
         }
 
-        int player_num = command[1] - 1;
+        command_num--;
 
-        if (player_num >= connection->harness->n_connections)
-                goto error;
-
-        connection->harness->connections[player_num].n_lives = command[2];
-
-        return true;
+        if (command_num < connection->harness->n_connections) {
+                return handle_typed_word(connection->harness,
+                                         command_num,
+                                         (const char *) command + 2,
+                                         command_length - 2);
+        }
 
 error:
         fprintf(stderr,
                 "Invalid sideband command received\n");
-        set_connection_error(connection);
+        connection->harness->had_error = true;
+
         return false;
 }
 
@@ -1045,17 +1106,19 @@ create_game(struct test_harness *harness,
         if (!expect_join_messages(harness))
                 return false;
 
-        static const uint8_t start_command[] = {
-                0x82, 7, 0x82, 's', 't', 'a', 'r', 't', '\0',
-        };
+        if (n_players < 16) {
+                static const uint8_t start_command[] = {
+                        0x82, 7, 0x82, 's', 't', 'a', 'r', 't', '\0',
+                };
 
-        if (!write_all(harness->connections[0].fd,
-                       start_command,
-                       sizeof start_command))
-                return false;
+                if (!write_all(harness->connections[0].fd,
+                               start_command,
+                               sizeof start_command))
+                        return false;
 
-        if (!check_start_condition(harness))
-                return false;
+                if (!check_start_condition(harness))
+                        return false;
+        }
 
         return true;
 }
@@ -1218,6 +1281,24 @@ check_lives(struct test_harness *harness,
                                 expected_lives);
                         return false;
                 }
+        }
+
+        return true;
+}
+
+static bool
+check_typed_word(struct test_connection *connection,
+                 const char *word)
+{
+        if (connection->typed_word == NULL ||
+            strcmp(word, connection->typed_word)) {
+                fprintf(stderr,
+                        "Typed word does not match.\n"
+                        " Expected: %s\n"
+                        " Received: %s\n",
+                        word,
+                        connection->typed_word);
+                return false;
         }
 
         return true;
@@ -1834,6 +1915,140 @@ out:
         return ret;
 }
 
+static bool
+test_typed_word(void)
+{
+        /* Use the full number of players so we can test the large
+         * amount of sideband data that will be involved.
+         */
+        const size_t n_players = 16;
+
+        /* Create a dictionary with a word for each player */
+        char **words = pcx_alloc(sizeof (char *) * n_players);
+
+        for (int i = 0; i < n_players; i++) {
+                words[i] = pcx_strconcat(alphabet[i],
+                                         syllabary[0],
+                                         NULL);
+        }
+
+        bool ret = true;
+
+        struct test_harness *harness =
+                create_harness_with_dictionary((const char *const *) words,
+                                               n_players,
+                                               syllabary,
+                                               1 /* n_syllables */);
+
+        if (harness == NULL) {
+                ret = false;
+                goto out;
+        }
+
+        if (!create_game(harness, n_players)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < n_players; i++) {
+                if (!expect_turn_message(harness)) {
+                        ret = false;
+                        goto out;
+                }
+
+                if (!check_current_player(harness,
+                                          (harness->start_player + i) %
+                                          n_players)) {
+                        ret = false;
+                        goto out;
+                }
+
+                if (!send_word(harness->connections +
+                               harness->current_player,
+                               words[i])) {
+                        ret = false;
+                        goto out;
+                }
+
+                if (!sync_with_server(harness)) {
+                        ret = false;
+                        goto out;
+                }
+
+                if (!check_typed_word(harness->connections +
+                                      (harness->start_player + i) %
+                                      n_players,
+                                      words[i])) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        if (!expect_turn_message(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Check that typing a bad word also updates the typed word */
+
+        if (!send_word(harness->connections + harness->start_player, "zzz")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!expect_message(harness, "👎️ zzz")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections + harness->start_player,
+                              "zzz")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Check that typing from another player doesn’t update the
+         * typed word.
+         */
+
+        if (!send_word(harness->connections +
+                       (harness->start_player + 1) % n_players,
+                       "zzz")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections +
+                              (harness->start_player + 1) % n_players,
+                              "bom") ||
+            !check_typed_word(harness->connections + harness->start_player,
+                              "zzz")) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        if (harness)
+                free_harness(harness);
+
+        for (int i = 0; i < n_players; i++)
+                pcx_free(words[i]);
+        pcx_free(words);
+
+        return ret;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -1852,6 +2067,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_current_syllable())
+                ret = EXIT_FAILURE;
+
+        if (!test_typed_word())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
