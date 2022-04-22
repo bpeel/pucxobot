@@ -86,6 +86,14 @@ function WordpartyVisualisation(svg)
   this.arrow.setAttribute("stroke-width", 0.5);
   this.svg.appendChild(this.arrow);
 
+  this.arrowRotation = 0;
+  this.arrowAnimation = this.createElement("animateTransform");
+  this.arrowAnimation.setAttribute("begin", "indefinite");
+  this.arrowAnimation.setAttribute("dur", "0.2s");
+  this.arrowAnimation.setAttribute("type", "rotate");
+  this.arrowAnimation.setAttribute("attributeName", "transform");
+  this.arrow.appendChild(this.arrowAnimation);
+
   this.syllable = this.createElement("text");
   this.syllable.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
   this.syllable.setAttribute("font-family", "sans-serif");
@@ -260,7 +268,18 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 
 WordpartyVisualisation.prototype.updateArrow = function() {
   var angle = this.currentPlayer * 360.0 / this.players.length;
+
+  if (angle == this.arrowRotation)
+    return;
+
   this.arrow.setAttribute("transform", "rotate(" + angle + ")");
+
+  var end = angle < this.arrowRotation ? angle + 360.0 : angle;
+  this.arrowAnimation.setAttribute("from", this.arrowRotation);
+  this.arrowAnimation.setAttribute("to", end);
+  this.arrowAnimation.beginElement();
+
+  this.arrowRotation = angle;
 };
 
 function Pucxo()
