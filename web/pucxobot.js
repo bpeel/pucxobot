@@ -97,6 +97,7 @@ function WordpartyVisualisation(svg)
   this.syllable = this.createElement("text");
   this.syllable.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
   this.syllable.setAttribute("font-family", "sans-serif");
+  this.syllable.setAttribute("font-weight", "bold");
   this.syllable.setAttribute("text-anchor", "middle");
   this.syllable.setAttribute("fill", "white");
   this.syllable.setAttribute("x", 0);
@@ -138,6 +139,7 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
     var nameElement = this.createElement("text");
     nameElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
     nameElement.setAttribute("font-family", "sans-serif");
+    nameElement.setAttribute("font-weight", "bold");
     nameElement.setAttribute("text-anchor", "middle");
     nameElement.setAttribute("y", WordpartyVisualisation.FONT_SIZE);
     group.appendChild(nameElement);
