@@ -197,7 +197,8 @@ destroy_sideband_data(struct pcx_conversation_sideband_data *data)
 
 static struct pcx_conversation_sideband_data *
 get_or_create_sideband_data(struct pcx_conversation *conv,
-                            int data_num)
+                            int data_num,
+                            bool *created)
 {
         assert(data_num >= 0 &&
                data_num < 8 * sizeof (conv->available_sideband_data));
@@ -212,8 +213,10 @@ get_or_create_sideband_data(struct pcx_conversation *conv,
                 pcx_conversation_get_sideband_data(conv, data_num);
 
         if ((conv->available_sideband_data & (UINT64_C(1) << data_num)) == 0) {
-                data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
                 conv->available_sideband_data |= UINT64_C(1) << data_num;
+                *created = true;
+        } else {
+                *created = false;
         }
 
         return data;
@@ -227,10 +230,18 @@ set_sideband_byte_cb(int data_num,
 {
         struct pcx_conversation *conv = user_data;
 
+        bool created;
         struct pcx_conversation_sideband_data *data =
-                get_or_create_sideband_data(conv, data_num);
+                get_or_create_sideband_data(conv, data_num, &created);
 
-        destroy_sideband_data(data);
+        if (!created) {
+                if (data->type == PCX_CONVERSATION_SIDEBAND_TYPE_BYTE) {
+                        if (!force && data->byte == value)
+                                return;
+                } else {
+                        destroy_sideband_data(data);
+                }
+        }
 
         data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
         data->byte = value;
@@ -252,14 +263,32 @@ set_sideband_string_cb(int data_num,
 {
         struct pcx_conversation *conv = user_data;
 
+        bool created;
         struct pcx_conversation_sideband_data *data =
-                get_or_create_sideband_data(conv, data_num);
+                get_or_create_sideband_data(conv, data_num, &created);
 
         size_t needed_size = strlen(value) + 1;
 
-        if (data->type != PCX_CONVERSATION_SIDEBAND_TYPE_STRING ||
-            data->string->size < needed_size) {
+        bool need_allocate;
+
+        if (created) {
+                need_allocate = true;
+        } else if (data->type == PCX_CONVERSATION_SIDEBAND_TYPE_STRING) {
+                if (!force && !strcmp(data->string->text, value))
+                        return;
+
+                if (data->string->size < needed_size) {
+                        destroy_sideband_data(data);
+                        need_allocate = true;
+                } else {
+                        need_allocate = false;
+                }
+        } else {
                 destroy_sideband_data(data);
+                need_allocate = true;
+        }
+
+        if (need_allocate) {
                 size_t alloc_size =
                         (offsetof(struct pcx_conversation_sideband_string,
                                   text) +
