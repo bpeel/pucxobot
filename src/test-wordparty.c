@@ -68,6 +68,11 @@ struct test_harness {
         struct test_connection connections[16];
         bool had_error;
 
+        /* Bitmask of sideband data points that have been modified
+         * since the bitmask was last reset.
+         */
+        uint64_t sideband_modified;
+
         int start_player;
         int current_player;
         char *current_syllable;
@@ -922,6 +927,8 @@ handle_sideband(struct test_connection *connection,
         if (command_length < 3)
                 goto error;
 
+        connection->harness->sideband_modified |= UINT64_C(1) << command[1];
+
         int command_num = command[1];
 
         if (command_num == 0)
@@ -1397,6 +1404,32 @@ test_wrong_word(void)
         }
 
         if (!expect_message(harness, "👎️ notawordomo")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Send the same word again. This should send the same result.
+         * We want to ensure we still get the command for the result
+         * even though it’s actually the same value.
+         */
+        harness->sideband_modified = 0;
+
+        if (!send_word(harness->connections + harness->start_player,
+                       "notawordomo")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!expect_message(harness, "👎️ notawordomo")) {
+                ret = false;
+                goto out;
+        }
+
+        if ((harness->sideband_modified &
+             (UINT64_C(1) << (harness->n_connections + 2))) == 0) {
+                fprintf(stderr,
+                        "Same result not resent after sending the same "
+                        "wrong word twice.\n");
                 ret = false;
                 goto out;
         }
