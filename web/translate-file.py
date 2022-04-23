@@ -28,9 +28,11 @@ def process_arguments():
                         required=True,
                         metavar="translation-file")
     parser.add_argument("-i", "--input",
-                        help="Set the input file",
+                        help="Set the input file. Can be specified multiple "
+                        "times",
                         required=True,
-                        metavar="input-file")
+                        metavar="input-file",
+                        action='append')
     parser.add_argument("-o", "--output",
                         help="Set the output file",
                         required=True,
@@ -68,28 +70,30 @@ def read_translation_file(filename):
     return trans
 
 
-def translate_file(trans, filename_in, filename_out):
+def translate_files(trans, filenames_in, filename_out):
     key_re = re.compile(r'@(\w+)@')
-    line_num = 1
 
-    def get_replacement(md):
-        k = md.group(1)
-        try:
-            return trans[k]
-        except KeyError:
-            print("warning: {}:{}: untranslated key: {}".
-                  format(filename_in,
-                         line_num,
-                         k),
-                  file=sys.stderr)
-            return md.group(0)
+    with open(filename_out, "wt", encoding="utf-8") as outfile:
+        for filename_in in filenames_in:
+            line_num = 1
 
-    with open(filename_in, "rt", encoding="utf-8") as infile:
-        with open(filename_out, "wt", encoding="utf-8") as outfile:
-            for line in infile:
-                print(key_re.sub(get_replacement, line),
-                      file=outfile,
-                      end='')
+            def get_replacement(md):
+                k = md.group(1)
+                try:
+                    return trans[k]
+                except KeyError:
+                    print("warning: {}:{}: untranslated key: {}".
+                          format(filename_in,
+                                 line_num,
+                                 k),
+                          file=sys.stderr)
+                    return md.group(0)
+
+            with open(filename_in, "rt", encoding="utf-8") as infile:
+                for line in infile:
+                    print(key_re.sub(get_replacement, line),
+                          file=outfile,
+                          end='')
 
                 line_num += 1
 
@@ -97,4 +101,4 @@ def translate_file(trans, filename_in, filename_out):
 if __name__ == '__main__':
     args = process_arguments()
     trans = read_translation_file(args.language)
-    translate_file(trans, args.input, args.output)
+    translate_files(trans, args.input, args.output)
