@@ -773,6 +773,7 @@ get_class_store_cb(void *user_data)
 static void
 set_sideband_byte_cb(int data_num,
                      uint8_t value,
+                     bool force,
                      void *user_data)
 {
 }
@@ -780,6 +781,7 @@ set_sideband_byte_cb(int data_num,
 static void
 set_sideband_string_cb(int data_num,
                        const char *value,
+                       bool force,
                        void *user_data)
 {
 }

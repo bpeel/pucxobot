@@ -222,6 +222,7 @@ get_or_create_sideband_data(struct pcx_conversation *conv,
 static void
 set_sideband_byte_cb(int data_num,
                      uint8_t value,
+                     bool force,
                      void *user_data)
 {
         struct pcx_conversation *conv = user_data;
@@ -246,6 +247,7 @@ set_sideband_byte_cb(int data_num,
 static void
 set_sideband_string_cb(int data_num,
                        const char *value,
+                       bool force,
                        void *user_data)
 {
         struct pcx_conversation *conv = user_data;

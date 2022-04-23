@@ -230,6 +230,7 @@ pick_syllable(struct pcx_wordparty *wordparty)
 
         wordparty->callbacks.set_sideband_string(wordparty->n_players + 1,
                                                  upper,
+                                                 false, /* force */
                                                  wordparty->user_data);
 }
 
@@ -242,6 +243,7 @@ set_lives(struct pcx_wordparty *wordparty,
 
         wordparty->callbacks.set_sideband_byte(player_num + 1, /* data_num */
                                                lives,
+                                               false, /* force */
                                                wordparty->user_data);
 }
 
@@ -252,6 +254,7 @@ set_current_player(struct pcx_wordparty *wordparty,
         wordparty->current_player = player_num;
         wordparty->callbacks.set_sideband_byte(0, /* data_num */
                                                player_num,
+                                               false, /* force */
                                                wordparty->user_data);
 }
 
@@ -262,8 +265,15 @@ set_word_result(struct pcx_wordparty *wordparty,
 {
         uint8_t data = (player_num & 0x0f) | (result << 6);
 
+        /* We need to force the update of the sideband data even if
+         * the value hasn’t changed because we’re effectively misusing
+         * the state to send an event. If the player types another
+         * invalid word we still want to resend the result even though
+         * it’s the same as the last one.
+         */
         wordparty->callbacks.set_sideband_byte(wordparty->n_players + 2,
                                                data,
+                                               true, /* force */
                                                wordparty->user_data);
 }
 
@@ -276,6 +286,7 @@ set_typed_word(struct pcx_wordparty *wordparty,
                                                  3 +
                                                  player_num,
                                                  word,
+                                                 false, /* force */
                                                  wordparty->user_data);
 }
 

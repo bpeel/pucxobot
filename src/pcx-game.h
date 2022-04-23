@@ -79,12 +79,20 @@ struct pcx_game_callbacks {
          * data num and value to all of the clients. The data will
          * also be sent to any new clients. The data_num has a low
          * maximum value.
+         *
+         * The force argument forces sending the corresponding piece
+         * of sideband data to the clients even if it hasn’t changed.
+         * This is to allow games to (mis)use the sideband data to
+         * send events instead of state. Without this if the value is
+         * the same the server might choose not to resend it.
          */
         void (* set_sideband_byte)(int data_num,
                                    uint8_t value,
+                                   bool force,
                                    void *user_data);
         void (* set_sideband_string)(int data_num,
                                      const char *value,
+                                     bool force,
                                      void *user_data);
 };
 
