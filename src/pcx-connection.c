@@ -333,7 +333,7 @@ write_sideband_datum(struct pcx_connection *conn,
                                      data_num,
 
                                      PCX_PROTO_TYPE_STRING,
-                                     data->string,
+                                     data->string->text,
 
                                      PCX_PROTO_TYPE_NONE);
         }

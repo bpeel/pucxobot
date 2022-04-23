@@ -196,8 +196,8 @@ destroy_sideband_data(struct pcx_conversation_sideband_data *data)
 }
 
 static struct pcx_conversation_sideband_data *
-modify_sideband_data(struct pcx_conversation *conv,
-                     int data_num)
+get_or_create_sideband_data(struct pcx_conversation *conv,
+                            int data_num)
 {
         assert(data_num >= 0 &&
                data_num < 8 * sizeof (conv->available_sideband_data));
@@ -211,10 +211,10 @@ modify_sideband_data(struct pcx_conversation *conv,
         struct pcx_conversation_sideband_data *data =
                 pcx_conversation_get_sideband_data(conv, data_num);
 
-        if (conv->available_sideband_data & (UINT64_C(1) << data_num))
-                destroy_sideband_data(data);
-        else
+        if ((conv->available_sideband_data & (UINT64_C(1) << data_num)) == 0) {
+                data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
                 conv->available_sideband_data |= UINT64_C(1) << data_num;
+        }
 
         return data;
 }
@@ -227,7 +227,9 @@ set_sideband_byte_cb(int data_num,
         struct pcx_conversation *conv = user_data;
 
         struct pcx_conversation_sideband_data *data =
-                modify_sideband_data(conv, data_num);
+                get_or_create_sideband_data(conv, data_num);
+
+        destroy_sideband_data(data);
 
         data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
         data->byte = value;
@@ -249,10 +251,23 @@ set_sideband_string_cb(int data_num,
         struct pcx_conversation *conv = user_data;
 
         struct pcx_conversation_sideband_data *data =
-                modify_sideband_data(conv, data_num);
+                get_or_create_sideband_data(conv, data_num);
 
-        data->type = PCX_CONVERSATION_SIDEBAND_TYPE_STRING;
-        data->string = pcx_strdup(value);
+        size_t needed_size = strlen(value) + 1;
+
+        if (data->type != PCX_CONVERSATION_SIDEBAND_TYPE_STRING ||
+            data->string->size < needed_size) {
+                destroy_sideband_data(data);
+                size_t alloc_size =
+                        (offsetof(struct pcx_conversation_sideband_string,
+                                  text) +
+                         needed_size);
+                data->string = pcx_alloc(alloc_size);
+                data->string->size = needed_size;
+                data->type = PCX_CONVERSATION_SIDEBAND_TYPE_STRING;
+        }
+
+        memcpy(data->string->text, value, needed_size);
 
         struct pcx_conversation_sideband_data_modified_event event = {
                 .data_num = data_num,
