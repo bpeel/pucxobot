@@ -26,7 +26,7 @@ install_data(sources : data_files, install_dir : web_dir)
              
 install_data('htaccess', install_dir : web_dir, rename : '.htaccess')
 
-perl = find_program('perl')
+python = find_program('python3')
 
 foreach lang : languages
   install_data(lang / 'help.html', install_dir : web_dir / lang)

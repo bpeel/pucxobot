@@ -1,10 +1,10 @@
 foreach file : translatable_files
   custom_target(lang + '-' + file,
-                input : [ '../translate-file.pl',
+                input : [ '../translate-file.py',
                           '..' / lang + '.language-file',
                           '..' / file ],
                 output : file,
-                command : [ perl, '@INPUT0@',
+                command : [ python, '@INPUT0@',
                             '-l', '@INPUT1@',
                             '-i', '@INPUT2@',
                             '-o', '@OUTPUT0@' ],
