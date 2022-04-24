@@ -1,7 +1,7 @@
-translatable_files = [
-        'index.html',
-        'pucxobot.js',
-]
+translatable_files = {
+        'index.html': ['index.html'],
+        'pucxobot.js': ['pucxobot.js'],
+}
 
 languages = [
         'eo',
