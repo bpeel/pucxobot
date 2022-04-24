@@ -1,6 +1,8 @@
 translatable_files = {
         'index.html': ['index.html'],
-        'pucxobot.js': ['pucxobot.js'],
+        'pucxobot.js': ['message-reader.js',
+                        'wordparty-visualisation.js',
+                        'pucxo.js'],
 }
 
 languages = [
