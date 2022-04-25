@@ -691,6 +691,8 @@ Pucxo.prototype.updateVisualisation = function()
 
   document.getElementById("visualisation").style.display =
     visualisationClass ? "block" : "none";
+  document.getElementById("content").className =
+    visualisationClass ? "visual" : "";
 
   var svg = document.getElementById("visualisationBox");
 
