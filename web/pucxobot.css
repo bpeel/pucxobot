@@ -176,6 +176,7 @@ body {
 #visualisation {
     width: 100%;
     height: min(40%, 15em);
+    background-color: #463e3e;
 }
 
 #visualisation svg {

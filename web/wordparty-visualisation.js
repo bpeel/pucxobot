@@ -98,6 +98,7 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
     nameElement.setAttribute("font-family", "sans-serif");
     nameElement.setAttribute("font-weight", "bold");
     nameElement.setAttribute("text-anchor", "middle");
+    nameElement.setAttribute("fill", "white");
     nameElement.setAttribute("y", y);
     group.appendChild(nameElement);
 
@@ -107,6 +108,7 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
     livesElement.setAttribute("font-size", WordpartyVisualisation.FONT_SIZE);
     livesElement.setAttribute("font-family", "sans-serif");
     livesElement.setAttribute("text-anchor", "middle");
+    livesElement.setAttribute("fill", "white");
     livesElement.setAttribute("y", y);
     group.appendChild(livesElement);
 
@@ -117,6 +119,7 @@ WordpartyVisualisation.prototype.getPlayer = function(playerNum)
                                   WordpartyVisualisation.FONT_SIZE);
     typedWordElement.setAttribute("font-family", "sans-serif");
     typedWordElement.setAttribute("text-anchor", "middle");
+    typedWordElement.setAttribute("fill", "white");
     typedWordElement.setAttribute("y", y);
     group.appendChild(typedWordElement);
 
