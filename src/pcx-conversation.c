@@ -537,6 +537,26 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
 }
 
 void
+pcx_conversation_set_sideband(struct pcx_conversation *conv,
+                              int player_num,
+                              int data_num,
+                              const char *text)
+{
+        assert(player_num >= 0 && player_num < conv->n_players);
+
+        if (conv->game != NULL && conv->game_type->handle_sideband_cb) {
+                pcx_conversation_ref(conv);
+
+                conv->game_type->handle_sideband_cb(conv->game,
+                                                    player_num,
+                                                    data_num,
+                                                    text);
+
+                pcx_conversation_unref(conv);
+        }
+}
+
+void
 pcx_conversation_ref(struct pcx_conversation *conv)
 {
         conv->ref_count++;

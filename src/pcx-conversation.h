@@ -162,6 +162,12 @@ pcx_conversation_add_chat_message(struct pcx_conversation *conv,
                                   int player_num,
                                   const char *text);
 
+void
+pcx_conversation_set_sideband(struct pcx_conversation *conv,
+                              int player_num,
+                              int data_num,
+                              const char *text);
+
 const char *
 pcx_conversation_get_player_name(struct pcx_conversation *conv,
                                  int player_num);
