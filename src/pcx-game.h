@@ -104,6 +104,7 @@ struct pcx_game {
         int min_players;
         int max_players;
         bool needs_private_messages;
+
         void *(* create_game_cb)(const struct pcx_config *config,
                                  const struct pcx_game_callbacks *callbacks,
                                  void *user_data,
@@ -118,6 +119,10 @@ struct pcx_game {
         void (* handle_message_cb)(void *game,
                                    int player_num,
                                    const char *text);
+        void (* handle_sideband_cb)(void *game,
+                                    int player_num,
+                                    int data_num,
+                                    const char *text);
         void (* free_game_cb)(void *game);
 };
 
