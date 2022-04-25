@@ -1222,6 +1222,34 @@ send_word(struct test_connection *connection,
 }
 
 static bool
+send_sideband_data(struct test_connection *connection,
+                   int data_num,
+                   const char *text)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        int text_length = strlen(text);
+
+        pcx_buffer_append_c(&buf, 0x82);
+        pcx_buffer_append_c(&buf, text_length + 3);
+        pcx_buffer_append_c(&buf, 0x88);
+        pcx_buffer_append_c(&buf, data_num);
+        pcx_buffer_append(&buf, text, text_length + 1);
+
+        bool ret = write_all(connection->fd, buf.data, buf.length);
+
+        pcx_buffer_destroy(&buf);
+
+        return ret;
+}
+
+static bool
+send_typed_word(struct test_connection *connection,
+                const char *word)
+{
+        return send_sideband_data(connection, 0 /* data_num */, word);
+}
+
+static bool
 send_ping(struct test_harness *harness)
 {
         static const uint8_t ping_command[] = {
@@ -2066,6 +2094,89 @@ test_typed_word(void)
                               "bom") ||
             !check_typed_word(harness->connections + harness->start_player,
                               "zzz")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Test updating the in-progress typed word */
+
+        if (!send_typed_word(harness->connections + harness->start_player,
+                             " eĤoŜanĝoĉiuĵaŭde ")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections + harness->start_player,
+                              "eĥoŝanĝoĉiuĵaŭde")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Check that setting the in-progress word from another player
+         * doesn’t update the typed word.
+         */
+
+        if (!send_typed_word(harness->connections +
+                             (harness->start_player + 1) % n_players,
+                             "kato")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections +
+                              (harness->start_player + 1) % n_players,
+                              "bom") ||
+            !check_typed_word(harness->connections + harness->start_player,
+                              "eĥoŝanĝoĉiuĵaŭde")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Test that sending an invalid word clears it instead */
+
+        if (!send_typed_word(harness->connections + harness->start_player,
+                             "a sentence is not a word")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections + harness->start_player,
+                              "")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Test that sending an invalid data num does nothing */
+
+        if (!send_sideband_data(harness->connections + harness->start_player,
+                                1,
+                                "a")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_typed_word(harness->connections + harness->start_player,
+                              "")) {
                 ret = false;
                 goto out;
         }

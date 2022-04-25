@@ -109,6 +109,11 @@ Send game-specific sideband data to the server. The data following the
 data num depends on the game. Currently this will be one of the
 following:
 
+Wordparty:
+
+• TYPED_WORD (0x00)
+  • string The in-progress word that the player is currently typing
+
 Messages to the client
 ======================
 

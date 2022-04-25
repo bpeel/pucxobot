@@ -878,6 +878,33 @@ handle_message_cb(void *data,
 }
 
 static void
+handle_sideband_cb(void *data,
+                   int player_num,
+                   int data_num,
+                   const char *text)
+{
+        struct pcx_wordparty *wordparty = data;
+
+        if (data_num != 0)
+                return;
+
+        if (player_num != wordparty->current_player)
+                return;
+
+        while (*text && is_space_char(*text))
+                text++;
+
+        const char *word;
+
+        if (extract_word_from_message(wordparty, text))
+                word = (const char *) wordparty->word_buf.data;
+        else
+                word = "";
+
+        set_typed_word(wordparty, player_num, word);
+}
+
+static void
 free_game_cb(void *data)
 {
         struct pcx_wordparty *wordparty = data;
@@ -919,5 +946,6 @@ pcx_wordparty_game = {
         .get_help_cb = get_help_cb,
         .handle_callback_data_cb = handle_callback_data_cb,
         .handle_message_cb = handle_message_cb,
+        .handle_sideband_cb = handle_sideband_cb,
         .free_game_cb = free_game_cb
 };
