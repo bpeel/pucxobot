@@ -577,6 +577,40 @@ handle_send_message(struct pcx_server *server,
 }
 
 static bool
+handle_sideband(struct pcx_server *server,
+                struct pcx_server_client *client,
+                const struct pcx_connection_sideband_event *event)
+{
+        const char *remote_address_string =
+                pcx_connection_get_remote_address_string(client->connection);
+        struct pcx_player *player =
+                pcx_connection_get_player(client->connection);
+
+        if (player == NULL) {
+                pcx_log("Client %s sent a sideband message before sending "
+                        "a hello message",
+                       remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        if (player->has_left) {
+                pcx_log("Client %s tried to sent a sideband message after "
+                        "leaving",
+                        remote_address_string);
+                remove_client(server, client);
+                return false;
+        }
+
+        pcx_conversation_set_sideband(player->conversation,
+                                      player->player_num,
+                                      event->data_num,
+                                      event->text);
+
+        return true;
+}
+
+static bool
 connection_event_cb(struct pcx_listener *listener,
                     void *data)
 {
@@ -621,8 +655,10 @@ connection_event_cb(struct pcx_listener *listener,
                 return handle_send_message(server, client, de);
         }
 
-        case PCX_CONNECTION_EVENT_SIDEBAND:
-                break;
+        case PCX_CONNECTION_EVENT_SIDEBAND: {
+                struct pcx_connection_sideband_event *de = (void *) event;
+                return handle_sideband(server, client, de);
+        }
 
         }
 
