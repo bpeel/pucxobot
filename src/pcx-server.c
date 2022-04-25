@@ -621,6 +621,9 @@ connection_event_cb(struct pcx_listener *listener,
                 return handle_send_message(server, client, de);
         }
 
+        case PCX_CONNECTION_EVENT_SIDEBAND:
+                break;
+
         }
 
         return true;

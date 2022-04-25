@@ -100,6 +100,15 @@ SEND_MESSAGE (0x85)
 
 Send a message to the chat
 
+CLIENT_SIDEBAND (0x88)
+----------------------
+
+• uint8_t data_num
+
+Send game-specific sideband data to the server. The data following the
+data num depends on the game. Currently this will be one of the
+following:
+
 Messages to the client
 ======================
 

@@ -755,6 +755,32 @@ handle_keep_alive(struct pcx_connection *conn)
 }
 
 static bool
+handle_client_sideband(struct pcx_connection *conn)
+{
+        struct pcx_connection_sideband_event event;
+
+        if (!pcx_proto_read_payload(conn->message_data + 1,
+                                    conn->message_data_length - 1,
+
+                                    PCX_PROTO_TYPE_UINT8,
+                                    &event.data_num,
+
+                                    PCX_PROTO_TYPE_STRING,
+                                    &event.text,
+
+                                    PCX_PROTO_TYPE_NONE)) {
+                pcx_log("Invalid sideband message command received from %s",
+                        conn->remote_address_string);
+                set_error_state(conn);
+                return false;
+        }
+
+        return emit_event(conn,
+                          PCX_CONNECTION_EVENT_SIDEBAND,
+                          &event.base);
+}
+
+static bool
 process_message(struct pcx_connection *conn)
 {
         switch (conn->message_data[0]) {
@@ -774,6 +800,8 @@ process_message(struct pcx_connection *conn)
                 return handle_send_message(conn);
         case PCX_PROTO_KEEP_ALIVE:
                 return handle_keep_alive(conn);
+        case PCX_PROTO_CLIENT_SIDEBAND:
+                return handle_client_sideband(conn);
         }
 
         pcx_log("Client %s sent an unknown message ID (0x%x)",
