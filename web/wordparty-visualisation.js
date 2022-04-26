@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function WordpartyVisualisation(svg)
+function WordpartyVisualisation(svg, sendMessageCb)
 {
   this.svg = svg;
+  this.sendMessageCb = sendMessageCb;
   this.players = [];
 
   this.currentPlayer = 0;

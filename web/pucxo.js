@@ -702,10 +702,12 @@ Pucxo.prototype.updateVisualisation = function()
   while (svg.lastChild)
     svg.removeChild(svg.lastChild);
 
-  if (visualisationClass)
-    this.visualisation = new visualisationClass(svg);
-  else
+  if (visualisationClass) {
+    var cb = this.sendMessage.bind(this);
+    this.visualisation = new visualisationClass(svg, cb);
+  } else {
     this.visualisation = null;
+  }
 };
 
 Pucxo.prototype.handleGameType = function(mr)
