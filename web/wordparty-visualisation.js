@@ -317,3 +317,13 @@ WordpartyVisualisation.prototype.updateArrow = function()
 
   this.arrowRotation = angle;
 };
+
+WordpartyVisualisation.prototype.handleInputChanged = function(input)
+{
+  var text = input.trim();
+
+  if (text.match(/\P{Alpha}/u))
+    return;
+
+  this.sendMessageCb(0x88, 'Cs', 0x00, input);
+};
