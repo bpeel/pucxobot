@@ -427,6 +427,7 @@ Pucxo.prototype.sockErrorCb = function(e)
 
 Pucxo.ARG_SIZES = {
   "B": 8,
+  "C": 1,
   "W": 2,
 };
 
@@ -468,6 +469,8 @@ Pucxo.prototype.sendMessage = function(msgType, argTypes)
     } else if (t == 'W') {
       dv.setUint16(pos, arg, true);
       pos += 2;
+    } else if (t == 'C') {
+      dv.setUint8(pos++, arg, true);
     } else if (t == 's') {
       arg = stringArgs[stringArg++];
       var j;
