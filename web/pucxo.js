@@ -60,6 +60,7 @@ function Pucxo()
 
   this.inputbox = document.getElementById("inputbox");
   this.inputbox.onkeydown = this.inputboxKeyCb.bind(this);
+  this.inputbox.oninput = this.messageInputCb.bind(this);
 
   document.getElementById("sendButton").onclick =
     this.sendChatMessage.bind(this);
@@ -228,6 +229,14 @@ Pucxo.prototype.setPrivacy = function(privacy)
   this.isPrivate = privacy;
   this.gameType = null;
   window.location.hash = "#chooseGame";
+};
+
+Pucxo.prototype.messageInputCb = function(event)
+{
+  if (!this.visualisation || !('handleInputChanged' in this.visualisation))
+    return;
+
+  this.visualisation.handleInputChanged(this.inputbox.innerText);
 };
 
 Pucxo.prototype.nameboxKeyCb = function(event)
