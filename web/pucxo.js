@@ -107,6 +107,30 @@ Pucxo.GAMES = [
   { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },
 ];
 
+Pucxo.prototype.getFixedGame = function()
+{
+  /* If the last part of the URL is the name of one of the games then
+   * we’ll jump directly to that game
+   */
+
+  var re = /(?:^|\/)([a-z]+)(?:\/index\.html|\/*)$/;
+  var match = document.location.pathname.match(re);
+
+  if (match == null)
+    return null;
+
+  var name = match[1].toLowerCase();
+
+  var i;
+
+  for (i = 0; i < Pucxo.GAMES.length; i++) {
+    if (Pucxo.GAMES[i].title.toLowerCase() == name)
+      return Pucxo.GAMES[i];
+  }
+
+  return null;
+};
+
 Pucxo.prototype.makeGameButtons = function()
 {
   var buttonDiv = document.getElementById("chooseGame");
@@ -160,7 +184,9 @@ Pucxo.prototype.setWelcomeStep = function(step)
 
   this.disconnect();
   this.clearMessages();
-  this.setTitle("@TITLE@");
+
+  var fixedGame = this.getFixedGame();
+  this.setTitle(fixedGame ? fixedGame.title : "@TITLE@");
   this.setHelpAnchor("");
   this.clearStatusMessage();
 
@@ -228,7 +254,13 @@ Pucxo.prototype.setPrivacy = function(privacy)
 {
   this.isPrivate = privacy;
   this.gameType = null;
-  window.location.hash = "#chooseGame";
+
+  var fixedGame = this.getFixedGame();
+
+  if (fixedGame)
+    this.gameButtonClickCb(fixedGame);
+  else
+    window.location.hash = "#chooseGame";
 };
 
 Pucxo.prototype.messageInputCb = function(event)
