@@ -256,6 +256,7 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 
     if (player.nLives == val + 1) {
       this.loseLifeSound.play();
+      player.typedWord.setAttribute("text-decoration", "line-through");
     } else if (player.nLives == val - 1) {
       this.gainLifeSound.play();
       this.setResultIcon(player, "💗️");
@@ -298,6 +299,7 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
     while (typedWordElement.lastChild)
       typedWordElement.removeChild(typedWordElement.lastChild);
     typedWordElement.appendChild(document.createTextNode(mr.getString()));
+    typedWordElement.removeAttribute("text-decoration", "line-through");
   }
 };
 
