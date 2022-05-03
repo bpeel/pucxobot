@@ -56,6 +56,8 @@ struct test_connection {
         int n_lives;
         char *typed_word;
 
+        bool had_player_num;
+
         struct pcx_list messages;
 };
 
@@ -499,6 +501,13 @@ expect_join_messages(struct test_harness *harness)
                 pcx_buffer_append_c(&buf, '\0');
 
                 if (!expect_message(harness, (const char *) buf.data)) {
+                        ret = false;
+                        break;
+                }
+
+                if (!harness->connections[i].had_player_num) {
+                        fprintf(stderr,
+                                "Missing PLAYER_NUM message\n");
                         ret = false;
                         break;
                 }
@@ -974,6 +983,44 @@ error:
         return false;
 }
 
+static bool
+handle_player_num(struct test_connection *connection,
+                  const uint8_t *command,
+                  size_t command_length)
+{
+        if (command_length != 2) {
+                fprintf(stderr,
+                        "Invalid sideband command received\n");
+                connection->harness->had_error = true;
+                return false;
+        }
+
+        if (connection->had_player_num) {
+                fprintf(stderr,
+                        "Player num received more than once\n");
+                connection->harness->had_error = true;
+                return false;
+        }
+
+        int received_player_num = command[1];
+        int expected_player_num = connection - connection->harness->connections;
+
+        if (received_player_num != expected_player_num) {
+                fprintf(stderr,
+                        "Incorrect player num\n"
+                        " Expected: %i\n"
+                        " Received: %i\n",
+                        expected_player_num,
+                        received_player_num);
+                connection->harness->had_error = true;
+                return false;
+        }
+
+        connection->had_player_num = true;
+
+        return true;
+}
+
 static void
 process_commands(struct test_connection *connection)
 {
@@ -1012,6 +1059,12 @@ process_commands(struct test_connection *connection)
                                                      length))
                                         return;
                                 break;
+                        case 0x07:
+                                if (!handle_player_num(connection,
+                                                       connection->read_buf +
+                                                       data_start,
+                                                       length))
+                                        return;
                         }
                 }
 
