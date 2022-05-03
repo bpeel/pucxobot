@@ -305,7 +305,9 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 
 WordpartyVisualisation.prototype.updateArrow = function()
 {
-  var angle = this.currentPlayer * 360.0 / this.players.length;
+  var angle = (this.players.length <= 0 ?
+               0.0 :
+               this.currentPlayer * 360.0 / this.players.length);
 
   if (angle == this.arrowRotation)
     return;
