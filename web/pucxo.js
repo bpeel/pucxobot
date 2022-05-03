@@ -43,6 +43,8 @@ function Pucxo()
 
   this.gameType = null;
 
+  this.enabledGames = "@ENABLED_GAMES@".split(" ");
+
   this.makeGameButtons();
 
   this.checkQueryString();
@@ -110,22 +112,15 @@ Pucxo.GAMES = [
 
 Pucxo.prototype.getFixedGame = function()
 {
-  /* If the last part of the URL is the name of one of the games then
-   * we’ll jump directly to that game
-   */
+  /* If ony one game is enabled then we’ll jump directly to that game */
 
-  var re = /(?:^|\/)([a-z]+)(?:\/index\.html|\/*)$/;
-  var match = document.location.pathname.match(re);
-
-  if (match == null)
+  if (this.enabledGames.length != 1)
     return null;
-
-  var name = match[1].toLowerCase();
 
   var i;
 
   for (i = 0; i < Pucxo.GAMES.length; i++) {
-    if (Pucxo.GAMES[i].title.toLowerCase() == name)
+    if (Pucxo.GAMES[i].keyword == this.enabledGames[0])
       return Pucxo.GAMES[i];
   }
 
@@ -138,12 +133,10 @@ Pucxo.prototype.makeGameButtons = function()
 
   this.gameButtons = [];
 
-  var enabledGames = "@ENABLED_GAMES@".split(" ");
-
   var i, j;
-  for (j = 0; j < enabledGames.length; j++) {
+  for (j = 0; j < this.enabledGames.length; j++) {
     for (i = 0; i < Pucxo.GAMES.length; i++) {
-      if (Pucxo.GAMES[i].keyword != enabledGames[j])
+      if (Pucxo.GAMES[i].keyword != this.enabledGames[j])
         continue;
 
       var button = document.createElement("button");
