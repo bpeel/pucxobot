@@ -24,9 +24,11 @@ import sys
 def process_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-l", "--language",
-                        help="Set the translation file",
+                        help="Load translations. Can be specified multiple "
+                        "times",
                         required=True,
-                        metavar="translation-file")
+                        metavar="translation-file",
+                        action='append')
     parser.add_argument("-i", "--input",
                         help="Set the input file. Can be specified multiple "
                         "times",
@@ -100,5 +102,10 @@ def translate_files(trans, filenames_in, filename_out):
 
 if __name__ == '__main__':
     args = process_arguments()
-    trans = read_translation_file(args.language)
+
+    trans = {}
+
+    for translation_file in args.language:
+        trans.update(read_translation_file(translation_file))
+
     translate_files(trans, args.input, args.output)
