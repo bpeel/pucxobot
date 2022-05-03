@@ -34,3 +34,5 @@ foreach lang : languages
   install_data(lang / 'help.html', install_dir : web_dir / lang)
   subdir(lang)
 endforeach
+
+subdir('vortofesto')
