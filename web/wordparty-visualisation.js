@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function WordpartyVisualisation(svg, sendMessageCb)
+function WordpartyVisualisation(svg, playerNum, sendMessageCb)
 {
   this.svg = svg;
   this.sendMessageCb = sendMessageCb;
   this.players = [];
 
+  this.playerNum = playerNum;
   this.currentPlayer = 0;
 
   this.arrow = this.createElement("path");
@@ -235,6 +236,13 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
   if (dataNum == 0) {
     this.currentPlayer = mr.getUint8();
     this.updateArrow();
+
+    if (this.currentPlayer == this.playerNum) {
+      var input = document.getElementById("inputbox");
+      if (input)
+        input.focus();
+    }
+
     return;
   }
 

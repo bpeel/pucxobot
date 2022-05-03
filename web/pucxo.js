@@ -21,6 +21,7 @@ function Pucxo()
   this.sock = null;
   this.sockHandlers = [];
   this.connected = false;
+  this.playerNum = null;
   this.playerId = null;
   this.playerName = null;
   this.isPrivate = null;
@@ -660,6 +661,11 @@ Pucxo.prototype.handlePlayerId = function(mr)
   this.reconnectCount = 0;
 };
 
+Pucxo.prototype.handlePlayerNum = function(mr)
+{
+  this.playerNum = mr.getUint8();
+};
+
 Pucxo.prototype.addServiceNote = function(note)
 {
   var messageDiv = document.createElement("div");
@@ -745,7 +751,7 @@ Pucxo.prototype.updateVisualisation = function()
 
   if (visualisationClass) {
     var cb = this.sendMessage.bind(this);
-    this.visualisation = new visualisationClass(svg, cb);
+    this.visualisation = new visualisationClass(svg, this.playerNum, cb);
   } else {
     this.visualisation = null;
   }
@@ -806,6 +812,8 @@ Pucxo.prototype.messageCb = function(e)
 
   if (msgType == 0) {
     this.handlePlayerId(mr);
+  } else if (msgType == 7) {
+    this.handlePlayerNum(mr);
   } else if (msgType == 3) {
     this.handlePrivateGameId(mr);
   } else if (msgType == 1) {
