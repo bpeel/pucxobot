@@ -125,6 +125,13 @@ PLAYER_ID (0x00)
 This is sent as the first message whenever NEW_PLAYER or RECONNECT is
 sent.
 
+PLAYER_NUM (0x07)
+-----------------
+
+• uint8_t player_num
+
+Reports the number of this player within the game.
+
 GAME_TYPE (0x02)
 ----------------
 

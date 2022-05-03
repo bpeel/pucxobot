@@ -452,6 +452,20 @@ write_conversation_details(struct pcx_connection *conn)
 
         wrote = write_command(conn,
 
+                              PCX_PROTO_PLAYER_NUM,
+
+                              PCX_PROTO_TYPE_UINT8,
+                              conn->player->player_num,
+
+                              PCX_PROTO_TYPE_NONE);
+
+        if (wrote == -1)
+                goto failed;
+
+        conn->write_buf_pos += wrote;
+
+        wrote = write_command(conn,
+
                               PCX_PROTO_GAME_TYPE,
 
                               PCX_PROTO_TYPE_STRING,
