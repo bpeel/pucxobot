@@ -228,10 +228,15 @@ pick_syllable(struct pcx_wordparty *wordparty)
                 src = pcx_utf8_next(src);
         }
 
-        wordparty->callbacks.set_sideband_string(wordparty->n_players + 1,
-                                                 upper,
-                                                 false, /* force */
-                                                 wordparty->user_data);
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_STRING,
+                .string = upper,
+        };
+
+        wordparty->callbacks.set_sideband_data(wordparty->n_players + 1,
+                                               &data,
+                                               false, /* force */
+                                               wordparty->user_data);
 }
 
 static void
@@ -241,8 +246,13 @@ set_lives(struct pcx_wordparty *wordparty,
 {
         wordparty->players[player_num].lives = lives;
 
-        wordparty->callbacks.set_sideband_byte(player_num + 1, /* data_num */
-                                               lives,
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_BYTE,
+                .byte = lives,
+        };
+
+        wordparty->callbacks.set_sideband_data(player_num + 1, /* data_num */
+                                               &data,
                                                false, /* force */
                                                wordparty->user_data);
 }
@@ -252,8 +262,14 @@ set_current_player(struct pcx_wordparty *wordparty,
                    int player_num)
 {
         wordparty->current_player = player_num;
-        wordparty->callbacks.set_sideband_byte(0, /* data_num */
-                                               player_num,
+
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_BYTE,
+                .byte = player_num,
+        };
+
+        wordparty->callbacks.set_sideband_data(0, /* data_num */
+                                               &data,
                                                false, /* force */
                                                wordparty->user_data);
 }
@@ -263,7 +279,10 @@ set_word_result(struct pcx_wordparty *wordparty,
                 int player_num,
                 enum pcx_wordparty_result result)
 {
-        uint8_t data = (player_num & 0x0f) | (result << 6);
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_BYTE,
+                .byte = (player_num & 0x0f) | (result << 6),
+        };
 
         /* We need to force the update of the sideband data even if
          * the value hasn’t changed because we’re effectively misusing
@@ -271,8 +290,8 @@ set_word_result(struct pcx_wordparty *wordparty,
          * invalid word we still want to resend the result even though
          * it’s the same as the last one.
          */
-        wordparty->callbacks.set_sideband_byte(wordparty->n_players + 2,
-                                               data,
+        wordparty->callbacks.set_sideband_data(wordparty->n_players + 2,
+                                               &data,
                                                true, /* force */
                                                wordparty->user_data);
 }
@@ -282,12 +301,17 @@ set_typed_word(struct pcx_wordparty *wordparty,
                int player_num,
                const char *word)
 {
-        wordparty->callbacks.set_sideband_string(wordparty->n_players +
-                                                 3 +
-                                                 player_num,
-                                                 word,
-                                                 false, /* force */
-                                                 wordparty->user_data);
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_STRING,
+                .string = word,
+        };
+
+        wordparty->callbacks.set_sideband_data(wordparty->n_players +
+                                               3 +
+                                               player_num,
+                                               &data,
+                                               false, /* force */
+                                               wordparty->user_data);
 }
 
 static void

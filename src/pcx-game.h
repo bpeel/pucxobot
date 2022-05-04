@@ -62,6 +62,15 @@ enum pcx_game_sideband_type {
         PCX_GAME_SIDEBAND_TYPE_STRING,
 };
 
+struct pcx_game_sideband_data {
+        enum pcx_game_sideband_type type;
+
+        union {
+                const char *string;
+                uint8_t byte;
+        };
+};
+
 /* The default parameters for a message so that callers don’t have to
  * understand all of them.
  */
@@ -91,14 +100,10 @@ struct pcx_game_callbacks {
          * send events instead of state. Without this if the value is
          * the same the server might choose not to resend it.
          */
-        void (* set_sideband_byte)(int data_num,
-                                   uint8_t value,
+        void (* set_sideband_data)(int data_num,
+                                   const struct pcx_game_sideband_data *value,
                                    bool force,
                                    void *user_data);
-        void (* set_sideband_string)(int data_num,
-                                     const char *value,
-                                     bool force,
-                                     void *user_data);
 };
 
 struct pcx_game {

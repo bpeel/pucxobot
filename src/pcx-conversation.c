@@ -222,22 +222,19 @@ get_or_create_sideband_data(struct pcx_conversation *conv,
         return data;
 }
 
-static void
-set_sideband_byte_cb(int data_num,
-                     uint8_t value,
-                     bool force,
-                     void *user_data)
+static bool
+set_sideband_byte(struct pcx_conversation *conv,
+                  int data_num,
+                  uint8_t value)
 {
-        struct pcx_conversation *conv = user_data;
-
         bool created;
         struct pcx_conversation_sideband_data *data =
                 get_or_create_sideband_data(conv, data_num, &created);
 
         if (!created) {
                 if (data->type == PCX_GAME_SIDEBAND_TYPE_BYTE) {
-                        if (!force && data->byte == value)
-                                return;
+                        if (data->byte == value)
+                                return false;
                 } else {
                         destroy_sideband_data(data);
                 }
@@ -246,23 +243,14 @@ set_sideband_byte_cb(int data_num,
         data->type = PCX_GAME_SIDEBAND_TYPE_BYTE;
         data->byte = value;
 
-        struct pcx_conversation_sideband_data_modified_event event = {
-                .data_num = data_num,
-        };
-
-        emit_event_with_data(conv,
-                             PCX_CONVERSATION_EVENT_SIDEBAND_DATA_MODIFIED,
-                             &event.base);
+        return true;
 }
 
-static void
-set_sideband_string_cb(int data_num,
-                       const char *value,
-                       bool force,
-                       void *user_data)
+static bool
+set_sideband_string(struct pcx_conversation *conv,
+                    int data_num,
+                    const char *value)
 {
-        struct pcx_conversation *conv = user_data;
-
         bool created;
         struct pcx_conversation_sideband_data *data =
                 get_or_create_sideband_data(conv, data_num, &created);
@@ -274,8 +262,8 @@ set_sideband_string_cb(int data_num,
         if (created) {
                 need_allocate = true;
         } else if (data->type == PCX_GAME_SIDEBAND_TYPE_STRING) {
-                if (!force && !strcmp(data->string->text, value))
-                        return;
+                if (!strcmp(data->string->text, value))
+                        return false;
 
                 if (data->string->size < needed_size) {
                         destroy_sideband_data(data);
@@ -300,6 +288,35 @@ set_sideband_string_cb(int data_num,
 
         memcpy(data->string->text, value, needed_size);
 
+        return true;
+}
+
+static void
+set_sideband_data_cb(int data_num,
+                     const struct pcx_game_sideband_data *value,
+                     bool force,
+                     void *user_data)
+{
+        struct pcx_conversation *conv = user_data;
+
+        bool modified;
+
+        switch (value->type) {
+        case PCX_GAME_SIDEBAND_TYPE_BYTE:
+                modified = set_sideband_byte(conv, data_num, value->byte);
+                goto found_type;
+        case PCX_GAME_SIDEBAND_TYPE_STRING:
+                modified = set_sideband_string(conv, data_num, value->string);
+                goto found_type;
+        }
+
+        assert(!"unknown sideband data type");
+        return;
+
+found_type:
+        if (!modified && !force)
+                return;
+
         struct pcx_conversation_sideband_data_modified_event event = {
                 .data_num = data_num,
         };
@@ -314,8 +331,7 @@ game_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
-        .set_sideband_byte = set_sideband_byte_cb,
-        .set_sideband_string = set_sideband_string_cb,
+        .set_sideband_data = set_sideband_data_cb,
 };
 
 static void
