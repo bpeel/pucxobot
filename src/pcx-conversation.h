@@ -89,6 +89,7 @@ struct pcx_conversation_sideband_data {
 
         union {
                 uint8_t byte;
+                uint32_t uint32;
                 struct pcx_conversation_sideband_string *string;
         };
 };

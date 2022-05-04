@@ -324,6 +324,19 @@ write_sideband_datum(struct pcx_connection *conn,
 
                                      PCX_PROTO_TYPE_NONE);
 
+        case PCX_GAME_SIDEBAND_TYPE_UINT32:
+                return write_command(conn,
+
+                                     PCX_PROTO_SIDEBAND,
+
+                                     PCX_PROTO_TYPE_UINT8,
+                                     data_num,
+
+                                     PCX_PROTO_TYPE_UINT32,
+                                     data->uint32,
+
+                                     PCX_PROTO_TYPE_NONE);
+
         case PCX_GAME_SIDEBAND_TYPE_STRING:
                 return write_command(conn,
 

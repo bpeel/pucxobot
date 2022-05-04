@@ -60,6 +60,7 @@ struct pcx_game_message {
 enum pcx_game_sideband_type {
         PCX_GAME_SIDEBAND_TYPE_BYTE,
         PCX_GAME_SIDEBAND_TYPE_STRING,
+        PCX_GAME_SIDEBAND_TYPE_UINT32,
 };
 
 struct pcx_game_sideband_data {
@@ -68,6 +69,7 @@ struct pcx_game_sideband_data {
         union {
                 const char *string;
                 uint8_t byte;
+                uint32_t uint32;
         };
 };
 

@@ -188,6 +188,7 @@ destroy_sideband_data(struct pcx_conversation_sideband_data *data)
 {
         switch (data->type) {
         case PCX_GAME_SIDEBAND_TYPE_BYTE:
+        case PCX_GAME_SIDEBAND_TYPE_UINT32:
                 break;
         case PCX_GAME_SIDEBAND_TYPE_STRING:
                 pcx_free(data->string);
@@ -242,6 +243,30 @@ set_sideband_byte(struct pcx_conversation *conv,
 
         data->type = PCX_GAME_SIDEBAND_TYPE_BYTE;
         data->byte = value;
+
+        return true;
+}
+
+static bool
+set_sideband_uint32(struct pcx_conversation *conv,
+                    int data_num,
+                    uint32_t value)
+{
+        bool created;
+        struct pcx_conversation_sideband_data *data =
+                get_or_create_sideband_data(conv, data_num, &created);
+
+        if (!created) {
+                if (data->type == PCX_GAME_SIDEBAND_TYPE_UINT32) {
+                        if (data->uint32 == value)
+                                return false;
+                } else {
+                        destroy_sideband_data(data);
+                }
+        }
+
+        data->type = PCX_GAME_SIDEBAND_TYPE_UINT32;
+        data->uint32 = value;
 
         return true;
 }
@@ -304,6 +329,9 @@ set_sideband_data_cb(int data_num,
         switch (value->type) {
         case PCX_GAME_SIDEBAND_TYPE_BYTE:
                 modified = set_sideband_byte(conv, data_num, value->byte);
+                goto found_type;
+        case PCX_GAME_SIDEBAND_TYPE_UINT32:
+                modified = set_sideband_uint32(conv, data_num, value->uint32);
                 goto found_type;
         case PCX_GAME_SIDEBAND_TYPE_STRING:
                 modified = set_sideband_string(conv, data_num, value->string);
