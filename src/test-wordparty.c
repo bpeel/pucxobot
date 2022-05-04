@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <assert.h>
 #include <sys/socket.h>
+#include <inttypes.h>
 
 #include "pcx-server.h"
 #include "pcx-util.h"
@@ -55,6 +56,8 @@ struct test_connection {
 
         int n_lives;
         char *typed_word;
+
+        uint32_t letters_used;
 
         bool had_player_num;
 
@@ -929,6 +932,29 @@ handle_typed_word(struct test_harness *harness,
 }
 
 static bool
+handle_letters_used(struct test_harness *harness,
+                    int player_num,
+                    const char *data,
+                    int data_length)
+{
+        uint32_t letters_used_le;
+
+        if (data_length != sizeof letters_used_le) {
+                fprintf(stderr,
+                        "Invalid letters used sideband data.\n");
+                harness->had_error = true;
+                return false;
+        }
+
+        memcpy(&letters_used_le, data, sizeof letters_used_le);
+
+        harness->connections[player_num].letters_used =
+                PCX_UINT32_FROM_LE(letters_used_le);
+
+        return true;
+}
+
+static bool
 handle_sideband(struct test_connection *connection,
                 const uint8_t *command,
                 size_t command_length)
@@ -973,6 +999,15 @@ handle_sideband(struct test_connection *connection,
                                          command_num,
                                          (const char *) command + 2,
                                          command_length - 2);
+        }
+
+        command_num -= connection->harness->n_connections;
+
+        if (command_num < connection->harness->n_connections) {
+                return handle_letters_used(connection->harness,
+                                           command_num,
+                                           (const char *) command + 2,
+                                           command_length - 2);
         }
 
 error:
@@ -1627,6 +1662,46 @@ expect_bonus_life(struct test_connection *connection)
 }
 
 static bool
+check_letters_used(struct test_connection *connection,
+                   uint32_t expected_letters_used)
+{
+        uint32_t actual_letters_used = connection->letters_used;
+
+        if (actual_letters_used != expected_letters_used) {
+                fprintf(stderr,
+                        "letters_used does not match.\n"
+                        " Expected 0x%" PRIx32 "\n"
+                        " Received 0x%" PRIx32 "\n",
+                        expected_letters_used,
+                        actual_letters_used);
+                return false;
+        }
+
+        return true;
+}
+
+static int
+compare_string(const void *pa, const void *pb)
+{
+        const char * const *a = pa;
+        const char * const *b = pb;
+
+        return strcmp(*a, *b);
+}
+
+static int
+find_letter(const char *const * sorted_alphabet, const char *letter)
+{
+        int letter_bit;
+
+        for (letter_bit = 0;
+             strcmp(sorted_alphabet[letter_bit], letter);
+             letter_bit++);
+
+        return letter_bit;
+}
+
+static bool
 run_full_alphabet(struct test_harness *harness,
                   int base_letter)
 {
@@ -1634,8 +1709,22 @@ run_full_alphabet(struct test_harness *harness,
         struct pcx_buffer bonus_buf = PCX_BUFFER_STATIC_INIT;
         bool ret = true;
 
+        const char *sorted_alphabet[PCX_N_ELEMENTS(alphabet)];
+
+        memcpy(sorted_alphabet, alphabet, sizeof alphabet);
+        qsort(sorted_alphabet,
+              PCX_N_ELEMENTS(alphabet),
+              sizeof (const char *),
+              compare_string);
+
+        uint32_t expected_letters_used = ((UINT32_C(1) << ('o' - 'a')) |
+                                          (UINT32_C(1) << ('m' - 'a')));
+
         for (int i = 0; i < PCX_N_ELEMENTS(alphabet); i++) {
                 const char *letter = alphabet[i];
+                int letter_bit = find_letter(sorted_alphabet, letter);
+
+                expected_letters_used |= UINT32_C(1) << letter_bit;
 
                 for (int player = 0; player < 2; player++) {
                         pcx_buffer_set_length(&word_buf, 0);
@@ -1675,6 +1764,23 @@ run_full_alphabet(struct test_harness *harness,
                         if (can_have_bonus &&
                             i + 1 >= PCX_N_ELEMENTS(alphabet) &&
                             !expect_bonus_life(connection)) {
+                                ret = false;
+                                goto out;
+                        }
+
+                        uint32_t player_expected_letters;
+
+                        if (connection->n_lives < 3) {
+                                player_expected_letters =
+                                        expected_letters_used |
+                                        (UINT32_C(1) <<
+                                         (base_letter - 'a' + player));
+                        } else {
+                                player_expected_letters = UINT32_MAX;
+                        }
+
+                        if (!check_letters_used(connection,
+                                                player_expected_letters)) {
                                 ret = false;
                                 goto out;
                         }
@@ -1751,6 +1857,32 @@ test_full_alphabet(void)
          * at the maximum.
          */
         if (!check_lives(harness, 3)) {
+                ret = false;
+                goto out;
+        }
+
+        /* When the life gauge is full the letters used mask should
+         * always be full as well.
+         */
+        for (int i = 0; i < harness->n_connections; i++) {
+                if (!check_letters_used(harness->connections + i, UINT32_MAX)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        /* Check that losing a life resets the letters used mask */
+        test_time_hack_add_time(61);
+
+        if (!send_ping(harness) ||
+            !sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_letters_used(harness->connections +
+                                (harness->current_player ^ 1),
+                                0)) {
                 ret = false;
                 goto out;
         }
@@ -2089,10 +2221,22 @@ test_typed_word(void)
                         goto out;
                 }
 
-                if (!check_typed_word(harness->connections +
-                                      (harness->start_player + i) %
-                                      n_players,
-                                      words[i])) {
+                struct test_connection *connection =
+                        harness->connections +
+                        (harness->start_player + i) %
+                        n_players;
+
+                if (!check_typed_word(connection, words[i])) {
+                        ret = false;
+                        goto out;
+                }
+
+                /* Check that we got an update of the letters used for
+                 * this player.
+                 */
+                if (connection->letters_used == 0) {
+                        fprintf(stderr,
+                                "letters_used is zero\n");
                         ret = false;
                         goto out;
                 }

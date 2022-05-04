@@ -315,6 +315,26 @@ set_typed_word(struct pcx_wordparty *wordparty,
 }
 
 static void
+set_letters_used(struct pcx_wordparty *wordparty,
+                 int player_num,
+                 uint32_t letters_used)
+{
+        wordparty->players[player_num].letters_used = letters_used;
+
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_UINT32,
+                .uint32 = letters_used,
+        };
+
+        wordparty->callbacks.set_sideband_data(wordparty->n_players * 2 +
+                                               3 +
+                                               player_num,
+                                               &data,
+                                               false, /* force */
+                                               wordparty->user_data);
+}
+
+static void
 word_timeout_cb(struct pcx_main_context_source *source,
                 void *user_data)
 {
@@ -333,7 +353,7 @@ word_timeout_cb(struct pcx_main_context_source *source,
          * life back.
          */
         if (player->lives == PCX_WORDPARTY_MAX_LIVES)
-                player->letters_used = 0;
+                set_letters_used(wordparty, wordparty->current_player, 0);
 
         set_lives(wordparty, wordparty->current_player, player->lives - 1);
 
@@ -827,6 +847,8 @@ tally_word(struct pcx_wordparty *wordparty)
         if (player->lives >= PCX_WORDPARTY_MAX_LIVES)
                 return;
 
+        uint32_t letters_used = player->letters_used;
+
         for (const char *p = (const char *) wordparty->word_buf.data;
              *p;
              p = pcx_utf8_next(p)) {
@@ -835,13 +857,13 @@ tally_word(struct pcx_wordparty *wordparty)
                 if (letter == -1)
                         continue;
 
-                player->letters_used |= UINT32_C(1) << letter;
+                letters_used |= UINT32_C(1) << letter;
         }
 
         uint32_t all_letters =
                 UINT32_MAX >> (sizeof (uint32_t) * 8 - wordparty->n_letters);
 
-        if (player->letters_used == all_letters) {
+        if (letters_used == all_letters) {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
                 pcx_buffer_append_string(&buf, "➕❤️ ");
@@ -863,8 +885,18 @@ tally_word(struct pcx_wordparty *wordparty)
                 set_lives(wordparty,
                           wordparty->current_player,
                           player->lives + 1);
-                player->letters_used = 0;
+
+                /* If the player can’t gain an extra life then set the
+                 * letters used to UINT32_MAX so that the client can
+                 * recognise this.
+                 */
+                if (player->lives < PCX_WORDPARTY_MAX_LIVES)
+                        letters_used = 0;
+                else
+                        letters_used = UINT32_MAX;
         }
+
+        set_letters_used(wordparty, wordparty->current_player, letters_used);
 }
 
 static void

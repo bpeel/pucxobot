@@ -214,3 +214,17 @@ Wordparty:
               2: duplicate word
 • TYPED_WORD [n_players + 3, n_players * 2 + 3 - 1]
   • string the last word that this player typed or the word being typed
+• LETTERS_USED [n_players * 2 + 3, n_players * 3 + 3 - 1]
+  • uint32_t
+    a bitfield representing the letters that this player has used. The
+    letter corresponding to each bit depends on the language used, but
+    they will always sorted by the unicode character value. In
+    Esperanto for example the bits are:
+    Bits 0-15:  abcdefghijklmnop
+    Bits 16-20: rstuv
+    Bit 21:     z
+    Bits 22-27: ĉĝĥĵŝŭ
+
+    If the player already has the maximum number of lives then the
+    letters used will be set to UINT32_MAX instead so that the client
+    can recognise this.
