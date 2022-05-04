@@ -201,7 +201,7 @@ Wordparty:
 
 • CURRENT_PLAYER (0x00)
   • uint8_t the current player number
-• N_LIVES (1-n_players)
+• N_LIVES [1, n_players]
   • uint8_t the number of lives for the corresponding player
 • SYLLABLE (n_players + 1)
   • string the current syllable to guess
@@ -212,5 +212,5 @@ Wordparty:
     bits 6-7: 0: word accepted
               1: word rejected
               2: duplicate word
-• TYPED_WORD (n_players + 3 - n_players * 2 + 3 - 1)
+• TYPED_WORD [n_players + 3, n_players * 2 + 3 - 1]
   • string the last word that this player typed or the word being typed
