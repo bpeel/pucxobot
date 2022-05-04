@@ -74,11 +74,6 @@ struct pcx_conversation_message {
         size_t no_buttons_length;
 };
 
-enum pcx_conversation_sideband_type {
-        PCX_CONVERSATION_SIDEBAND_TYPE_BYTE,
-        PCX_CONVERSATION_SIDEBAND_TYPE_STRING,
-};
-
 struct pcx_conversation_sideband_string {
         /* Length of the buffer below. This can be longer than the
          * length of the string if the value was overwritten with a
@@ -90,7 +85,7 @@ struct pcx_conversation_sideband_string {
 };
 
 struct pcx_conversation_sideband_data {
-        enum pcx_conversation_sideband_type type;
+        enum pcx_game_sideband_type type;
 
         union {
                 uint8_t byte;

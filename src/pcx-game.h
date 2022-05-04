@@ -57,6 +57,11 @@ struct pcx_game_message {
         uint32_t button_players;
 };
 
+enum pcx_game_sideband_type {
+        PCX_GAME_SIDEBAND_TYPE_BYTE,
+        PCX_GAME_SIDEBAND_TYPE_STRING,
+};
+
 /* The default parameters for a message so that callers don’t have to
  * understand all of them.
  */

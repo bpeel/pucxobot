@@ -311,7 +311,7 @@ write_sideband_datum(struct pcx_connection *conn,
                      const struct pcx_conversation_sideband_data *data)
 {
         switch (data->type) {
-        case PCX_CONVERSATION_SIDEBAND_TYPE_BYTE:
+        case PCX_GAME_SIDEBAND_TYPE_BYTE:
                 return write_command(conn,
 
                                      PCX_PROTO_SIDEBAND,
@@ -324,7 +324,7 @@ write_sideband_datum(struct pcx_connection *conn,
 
                                      PCX_PROTO_TYPE_NONE);
 
-        case PCX_CONVERSATION_SIDEBAND_TYPE_STRING:
+        case PCX_GAME_SIDEBAND_TYPE_STRING:
                 return write_command(conn,
 
                                      PCX_PROTO_SIDEBAND,

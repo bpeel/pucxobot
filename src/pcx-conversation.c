@@ -187,9 +187,9 @@ static void
 destroy_sideband_data(struct pcx_conversation_sideband_data *data)
 {
         switch (data->type) {
-        case PCX_CONVERSATION_SIDEBAND_TYPE_BYTE:
+        case PCX_GAME_SIDEBAND_TYPE_BYTE:
                 break;
-        case PCX_CONVERSATION_SIDEBAND_TYPE_STRING:
+        case PCX_GAME_SIDEBAND_TYPE_STRING:
                 pcx_free(data->string);
                 break;
         }
@@ -235,7 +235,7 @@ set_sideband_byte_cb(int data_num,
                 get_or_create_sideband_data(conv, data_num, &created);
 
         if (!created) {
-                if (data->type == PCX_CONVERSATION_SIDEBAND_TYPE_BYTE) {
+                if (data->type == PCX_GAME_SIDEBAND_TYPE_BYTE) {
                         if (!force && data->byte == value)
                                 return;
                 } else {
@@ -243,7 +243,7 @@ set_sideband_byte_cb(int data_num,
                 }
         }
 
-        data->type = PCX_CONVERSATION_SIDEBAND_TYPE_BYTE;
+        data->type = PCX_GAME_SIDEBAND_TYPE_BYTE;
         data->byte = value;
 
         struct pcx_conversation_sideband_data_modified_event event = {
@@ -273,7 +273,7 @@ set_sideband_string_cb(int data_num,
 
         if (created) {
                 need_allocate = true;
-        } else if (data->type == PCX_CONVERSATION_SIDEBAND_TYPE_STRING) {
+        } else if (data->type == PCX_GAME_SIDEBAND_TYPE_STRING) {
                 if (!force && !strcmp(data->string->text, value))
                         return;
 
@@ -295,7 +295,7 @@ set_sideband_string_cb(int data_num,
                          needed_size);
                 data->string = pcx_alloc(alloc_size);
                 data->string->size = needed_size;
-                data->type = PCX_CONVERSATION_SIDEBAND_TYPE_STRING;
+                data->type = PCX_GAME_SIDEBAND_TYPE_STRING;
         }
 
         memcpy(data->string->text, value, needed_size);
