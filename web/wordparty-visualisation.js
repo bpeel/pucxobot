@@ -19,6 +19,10 @@
 function WordpartyVisualisation(svg, playerNum, sendMessageCb)
 {
   this.svg = svg;
+
+  this.svg.setAttribute("viewBox",
+                        "-50 -50 100 " +
+                        (WordpartyVisualisation.USED_LETTER_SIZE * 2.0 + 100));
   this.sendMessageCb = sendMessageCb;
   this.players = [];
 
@@ -67,11 +71,15 @@ function WordpartyVisualisation(svg, playerNum, sendMessageCb)
   this.correctSound = this.makeSound("correct.mp3");
   this.loseLifeSound = this.makeSound("loselife.mp3");
   this.gainLifeSound = this.makeSound("gainlife.mp3");
+
+  this.makeAlphabet();
 }
 
 WordpartyVisualisation.FONT_SIZE = 4;
 WordpartyVisualisation.RESULT_SIZE = 12;
 WordpartyVisualisation.CIRCLE_RADIUS = 40;
+WordpartyVisualisation.USED_LETTER_SIZE = 4;
+WordpartyVisualisation.USED_LETTERS_PER_ROW = 14;
 
 WordpartyVisualisation.prototype.createElement = function(tag)
 {
@@ -308,6 +316,15 @@ WordpartyVisualisation.prototype.handleSidebandData = function(dataNum, mr)
       typedWordElement.removeChild(typedWordElement.lastChild);
     typedWordElement.appendChild(document.createTextNode(mr.getString()));
     typedWordElement.removeAttribute("text-decoration", "line-through");
+    return;
+  }
+
+  dataNum -= this.players.length;
+
+  if (dataNum < this.players.length) {
+    if (dataNum == this.playerNum)
+      this.updateUsedLetters(mr.getUint32());
+    return;
   }
 };
 
@@ -338,4 +355,95 @@ WordpartyVisualisation.prototype.handleInputChanged = function(input)
     return;
 
   this.sendMessageCb(0x88, 'Cs', 0x00, input);
+};
+
+WordpartyVisualisation.prototype.setUsedLetterState = function(letterNum, state)
+{
+  var letter = this.lettersUsed[letterNum];
+
+  letter.rect.setAttribute("fill", state ? "none" : "blue");
+  letter.text.setAttribute("fill", state ? "grey" : "white");
+};
+
+WordpartyVisualisation.prototype.makeAlphabet = function()
+{
+  var alphabet = "@ALPHABET@";
+
+  var xStart = (WordpartyVisualisation.USED_LETTER_SIZE *
+                -WordpartyVisualisation.USED_LETTERS_PER_ROW / 2.0);
+
+  this.lettersUsedGroup = this.createElement("g");
+  this.lettersUsedGroup.setAttribute("transform",
+                                     "translate(" + xStart + " 50)");
+
+  this.lettersUsed = [];
+
+  var x = 0, y = 0;
+
+  for (var i = 0; i < alphabet.length; i++) {
+    var letter = alphabet.substring(i, i + 1);
+
+    var rect = this.createElement("rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", WordpartyVisualisation.USED_LETTER_SIZE);
+    rect.setAttribute("height", WordpartyVisualisation.USED_LETTER_SIZE);
+
+    this.lettersUsedGroup.appendChild(rect);
+
+    var text = this.createElement("text");
+    text.appendChild(document.createTextNode(letter));
+    text.setAttribute("font-size",
+                      WordpartyVisualisation.USED_LETTER_SIZE * 0.5);
+    text.setAttribute("font-family", "sans-serif");
+    text.setAttribute("font-weight", "bold");
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("x", x + WordpartyVisualisation.USED_LETTER_SIZE * 0.5);
+    text.setAttribute("y", y + WordpartyVisualisation.USED_LETTER_SIZE * 0.75);
+
+    this.lettersUsedGroup.appendChild(text);
+
+    this.lettersUsed.push({
+      "letter": letter,
+      "rect": rect,
+      "text": text,
+    });
+
+    this.setUsedLetterState(i, false);
+
+    if ((i + 1) % WordpartyVisualisation.USED_LETTERS_PER_ROW == 0) {
+      x = 0;
+      y += WordpartyVisualisation.USED_LETTER_SIZE;
+    } else {
+      x += WordpartyVisualisation.USED_LETTER_SIZE;
+    }
+  }
+
+  /* Sort the letters by unicode character so that we can easily find
+   * them by the bit number in the sideband data.
+   */
+  this.lettersUsed.sort(function(a, b) {
+    return a.letter < b.letter ? -1 : 1;
+  });
+
+  this.svg.appendChild(this.lettersUsedGroup);
+};
+
+WordpartyVisualisation.prototype.updateUsedLetters = function(bitmask)
+{
+  /* Hide the used letters group if the player can’t gain another
+   * life
+   */
+  if (bitmask == 0xffffffff) {
+    if (this.lettersUsedGroup.parentNode)
+      this.lettersUsedGroup.parentNode.removeChild(this.lettersUsedGroup);
+
+    return;
+  }
+
+  for (var i = 0; i < this.lettersUsed.length; i++)
+    this.setUsedLetterState(i, !!(bitmask & (1 << i)));
+
+  if (this.lettersUsedGroup.parentNode == null)
+    this.svg.appendChild(this.lettersUsedGroup);
 };
