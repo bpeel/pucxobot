@@ -41,6 +41,13 @@ MessageReader.prototype.getString = function()
   return decodeURIComponent(s);
 };
 
+MessageReader.prototype.getUint32 = function()
+{
+  var value = this.dv.getUint32(this.pos, true /* littleEndian */);
+  this.pos++;
+  return value;
+};
+
 MessageReader.prototype.getUint64 = function()
 {
   var a = new Uint8Array(8);
