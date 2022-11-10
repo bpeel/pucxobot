@@ -55,6 +55,8 @@ server_src = [
         'pcx-superfight-help.c',
         'pcx-wordparty.c',
         'pcx-wordparty-help.c',
+        'pcx-chameleon.c',
+        'pcx-chameleon-list.c',
         'pcx-zombie.c',
         'pcx-zombie-help.c',
         'sha1.c',

@@ -38,6 +38,8 @@ pcx_text_esperanto[] = {
         "Vulpo en la Arbaro",
         [PCX_TEXT_STRING_NAME_WORDPARTY] =
         "Vortofesto",
+        [PCX_TEXT_STRING_NAME_CHAMELEON] =
+        "Kameleono",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superbatalo",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -66,6 +68,10 @@ pcx_text_esperanto[] = {
         "/vortofesto",
         [PCX_TEXT_STRING_WORDPARTY_START_COMMAND_DESCRIPTION] =
         "Krei ludon de Vortofesto",
+        [PCX_TEXT_STRING_CHAMELEON_START_COMMAND] =
+        "/kameleono",
+        [PCX_TEXT_STRING_CHAMELEON_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Kameleono",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superbatalo",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
