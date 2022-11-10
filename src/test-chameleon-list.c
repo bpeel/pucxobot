@@ -37,6 +37,7 @@ struct group_test {
 static const struct group_test
 group_tests[] = {
         {
+                "food\n"
                 "potato\n"
                 "  courgette  \n"
                 "lemon\n"
@@ -46,25 +47,30 @@ group_tests[] = {
                 "\n"
                 "\n"
                 "# start a new group\n"
+                "animals\n"
                 "ĝirafo\n"
                 "muso\n"
                 "elefanto\n"
                 "\n"
+                "transport\n"
                 "trajno\n"
                 "buso\n"
                 "granda helikoptero\n"
                 "\n",
                 (const char * const[]) {
+                        "food",
                         "potato",
                         "courgette",
                         "lemon",
                         NULL,
 
+                        "animals",
                         "ĝirafo",
                         "muso",
                         "elefanto",
                         NULL,
 
+                        "transport",
                         "trajno",
                         "buso",
                         "granda helikoptero",
@@ -76,8 +82,10 @@ group_tests[] = {
 
         {
                 /* No trailing empty group */
+                "bodily functions\n"
                 "poop",
                 (const char * const[]) {
+                        "bodily functions",
                         "poop",
                         NULL,
 
@@ -86,6 +94,7 @@ group_tests[] = {
         },
 
         {
+                "long words\n"
                 /* Word that is too long */
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -122,7 +131,43 @@ group_tests[] = {
                 "a\n"
                 "b",
                 (const char * const[]) {
+                        "long words",
                         "b",
+                        NULL,
+
+                        NULL,
+                },
+        },
+
+        {
+                "letters\n"
+                /* Blank lines after the topic don’t start a new group */
+                "\n"
+                "a\n"
+                "b\n",
+                (const char * const[]) {
+                        "letters",
+                        "a",
+                        "b",
+                        NULL,
+
+                        NULL,
+                },
+        },
+
+        {
+                "Names\n"
+                "Alice\n"
+                "Bob\n"
+                "Charlie\n"
+                "\n"
+                /* Trailing group with no words. This will be ignored */
+                "Empty\n",
+                (const char * const[]) {
+                        "Names",
+                        "Alice",
+                        "Bob",
+                        "Charlie",
                         NULL,
 
                         NULL,
@@ -197,11 +242,28 @@ run_test(const struct group_test *test)
                         goto out;
                 }
 
-                const struct pcx_list *words =
+                const struct pcx_chameleon_list_group *group =
                         pcx_chameleon_list_get_group(list, group_num);
+
+                if (strcmp(group->topic, *word_p)) {
+                        fprintf(stderr,
+                                "topic does not match\n"
+                                " expected: %s\n"
+                                " received: %s\n"
+                                "source:\n"
+                                "%s\n",
+                                *word_p,
+                                group->topic,
+                                test->source);
+                        ret = false;
+                        goto out;
+                }
+
+                word_p++;
+
                 const struct pcx_chameleon_list_word *word;
 
-                pcx_list_for_each(word, words, link) {
+                pcx_list_for_each(word, &group->words, link) {
                         if (*word_p == NULL) {
                                 fprintf(stderr,
                                         "too many words in group for:\n"
@@ -320,10 +382,10 @@ check_error_with_filename(const struct pcx_error *error,
 }
 
 static bool
-test_empty(void)
+test_empty(const char *source)
 {
         struct pcx_error *error = NULL;
-        struct pcx_chameleon_list *list = load_string("", &error);
+        struct pcx_chameleon_list *list = load_string(source, &error);
 
         if (list != NULL) {
                 fprintf(stderr,
@@ -375,7 +437,10 @@ main(int argc, char **argv)
         if (!run_tests())
                 ret = false;
 
-        if (!test_empty())
+        if (!test_empty(""))
+                ret = false;
+
+        if (!test_empty("only topic"))
                 ret = false;
 
         if (!test_no_file())

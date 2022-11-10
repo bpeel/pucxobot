@@ -37,13 +37,13 @@ pcx_chameleon_list_error;
 
 struct pcx_chameleon_list {
         struct pcx_slab_allocator slab;
-        /* Array of lists of words */
-        struct pcx_list *groups;
+        struct pcx_chameleon_list_group *groups;
         size_t n_groups;
 };
 
 struct word_group {
         struct pcx_list link;
+        char *topic;
         struct pcx_list words;
 };
 
@@ -57,12 +57,20 @@ struct read_list_data {
 #define MAX_WORD_LENGTH (PCX_SLAB_SIZE / 2)
 
 static void
-start_group(struct read_list_data *data)
+start_group(struct read_list_data *data,
+            const char *topic,
+            size_t topic_length)
 {
         struct word_group *group = pcx_slice_alloc(&data->group_allocator);
 
         pcx_list_init(&group->words);
         pcx_list_insert(data->groups.prev, &group->link);
+
+        group->topic = pcx_slab_allocate(&data->word_list->slab,
+                                         topic_length + 1,
+                                         1 /* alignment */);
+        memcpy(group->topic, topic, topic_length);
+        group->topic[topic_length] = '\0';
 
         data->current_group = group;
 }
@@ -108,13 +116,15 @@ process_line(struct read_list_data *data,
                 length--;
 
         if (length == 0) {
-                /* Empty line. Start a new group if the current one
-                 * isn’t empty
-                 */
-                if (!pcx_list_empty(&data->current_group->words))
-                        start_group(data);
+                /* Empty line. End the current group if its not empty */
+                if (data->current_group &&
+                    !pcx_list_empty(&data->current_group->words))
+                        data->current_group = NULL;
         } else if (*line != '#' && length <= MAX_WORD_LENGTH) {
-                add_word(data, line, length);
+                if (data->current_group)
+                        add_word(data, line, length);
+                else
+                        start_group(data, line, length);
         }
 }
 
@@ -145,17 +155,20 @@ convert_groups_to_array(struct read_list_data *data)
         struct pcx_chameleon_list *word_list = data->word_list;
 
         word_list->n_groups = pcx_list_length(&data->groups);
-        word_list->groups = pcx_alloc(sizeof (struct pcx_list) *
+        word_list->groups = pcx_alloc(sizeof (struct pcx_chameleon_list_group) *
                                       MAX(1, word_list->n_groups));
 
         int i = 0;
-        struct word_group *group;
+        struct word_group *g;
 
-        pcx_list_for_each(group, &data->groups, link) {
-                struct pcx_list *list = word_list->groups + i++;
+        pcx_list_for_each(g, &data->groups, link) {
+                struct pcx_chameleon_list_group *group =
+                        word_list->groups + i++;
 
-                pcx_list_init(list);
-                pcx_list_insert_list(list, &group->words);
+                group->topic = g->topic;
+
+                pcx_list_init(&group->words);
+                pcx_list_insert_list(&group->words, &g->words);
         }
 }
 
@@ -173,7 +186,6 @@ read_words(struct pcx_chameleon_list *word_list,
                                  sizeof (struct word_group),
                                  alignof(struct word_group));
         pcx_list_init(&data.groups);
-        start_group(&data);
 
         while (true) {
                 pcx_buffer_ensure_size(&buf, buf.length + 1024);
@@ -203,7 +215,7 @@ read_words(struct pcx_chameleon_list *word_list,
         }
 
         /* If the last group was empty then remove it */
-        if (pcx_list_empty(&data.current_group->words))
+        if (data.current_group && pcx_list_empty(&data.current_group->words))
                 pcx_list_remove(&data.current_group->link);
 
         pcx_buffer_destroy(&buf);
@@ -256,7 +268,7 @@ pcx_chameleon_list_get_n_groups(struct pcx_chameleon_list *word_list)
         return word_list->n_groups;
 }
 
-const struct pcx_list *
+const struct pcx_chameleon_list_group *
 pcx_chameleon_list_get_group(struct pcx_chameleon_list *word_list,
                              int group)
 {

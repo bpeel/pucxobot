@@ -35,6 +35,11 @@ enum pcx_chameleon_list_error {
 
 struct pcx_chameleon_list;
 
+struct pcx_chameleon_list_group {
+        char *topic;
+        struct pcx_list words;
+};
+
 struct pcx_chameleon_list_word {
         struct pcx_list link;
         /* over-allocated */
@@ -48,7 +53,7 @@ pcx_chameleon_list_new(const char *filename,
 size_t
 pcx_chameleon_list_get_n_groups(struct pcx_chameleon_list *word_list);
 
-const struct pcx_list *
+const struct pcx_chameleon_list_group *
 pcx_chameleon_list_get_group(struct pcx_chameleon_list *word_list,
                              int group);
 

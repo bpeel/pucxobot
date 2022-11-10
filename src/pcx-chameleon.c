@@ -65,7 +65,7 @@ struct pcx_chameleon {
         int *group_order;
 
         int next_group_index;
-        const struct pcx_list *current_group;
+        const struct pcx_chameleon_list_group *current_group;
 
         int next_player_clue;
         int chameleon_player;
@@ -210,13 +210,13 @@ shuffle_groups(struct pcx_chameleon *chameleon)
 static void
 pick_secret_word(struct pcx_chameleon *chameleon)
 {
-        size_t n_words = pcx_list_length(chameleon->current_group);
+        size_t n_words = pcx_list_length(&chameleon->current_group->words);
 
         int secret_word_num = chameleon->rand_func() % n_words;
 
         const struct pcx_chameleon_list_word *word;
 
-        pcx_list_for_each(word, chameleon->current_group, link) {
+        pcx_list_for_each(word, &chameleon->current_group->words, link) {
                 if (secret_word_num-- == 0) {
                         chameleon->secret_word = word;
                         return;
@@ -237,12 +237,12 @@ send_word_list(struct pcx_chameleon *chameleon)
 
         const struct pcx_chameleon_list_word *word;
 
-        pcx_list_for_each(word, chameleon->current_group, link) {
+        pcx_list_for_each(word, &chameleon->current_group->words, link) {
                 pcx_buffer_append_string(&buf, "<b>");
                 pcx_html_escape(&buf, word->word);
                 pcx_buffer_append_string(&buf, "</b>");
 
-                if (word->link.next != chameleon->current_group)
+                if (word->link.next != &chameleon->current_group->words)
                         pcx_buffer_append_string(&buf, "\n");
         }
 
