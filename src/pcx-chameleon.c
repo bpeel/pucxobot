@@ -531,6 +531,8 @@ pcx_chameleon_new(const struct pcx_config *config,
         chameleon->vote_buttons = pcx_alloc(n_players *
                                             sizeof (struct pcx_game_button));
 
+        chameleon->dealer = get_random(chameleon) % n_players;
+
         for (unsigned i = 0; i < n_players; i++) {
                 chameleon->players[i].name = pcx_strdup(names[i]);
                 pcx_buffer_init(&chameleon->players[i].guess);
