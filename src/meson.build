@@ -209,3 +209,31 @@ test_chameleon_list_src = [
 test_chameleon_list = executable('test-chameleon-list', test_chameleon_list_src,
                                  include_directories: configinc)
 test('chameleon-list', test_chameleon_list)
+
+test_chameleon_src = [
+        'pcx-buffer.c',
+        'pcx-chameleon.c',
+        'pcx-chameleon-list.c',
+        'pcx-class-store.c',
+        'pcx-config.c',
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-html.c',
+        'pcx-key-value.c',
+        'pcx-list.c',
+        'pcx-log.c',
+        'pcx-main-context.c',
+        'pcx-slab.c',
+        'pcx-slice.c',
+        'pcx-text.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+        'test-message.c',
+        'test-chameleon.c',
+]
+
+test_chameleon_src += translations
+
+test_chameleon = executable('test-chameleon', test_chameleon_src,
+                            include_directories: configinc)
+test('chameleon', test_chameleon)
