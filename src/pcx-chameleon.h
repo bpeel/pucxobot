@@ -23,4 +23,19 @@
 
 extern const struct pcx_game pcx_chameleon_game;
 
+struct pcx_chameleon;
+
+struct pcx_chameleon_debug_overrides {
+        int (*rand_func)(void);
+};
+
+struct pcx_chameleon *
+pcx_chameleon_new(const struct pcx_config *config,
+                  const struct pcx_game_callbacks *callbacks,
+                  void *user_data,
+                  enum pcx_text_language language,
+                  int n_players,
+                  const char *const *names,
+                  const struct pcx_chameleon_debug_overrides *overrides);
+
 #endif /* PCX_CHAMELEON_H */

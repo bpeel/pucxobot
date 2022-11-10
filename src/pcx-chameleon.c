@@ -480,13 +480,14 @@ start_voting(struct pcx_chameleon *chameleon)
         start_vote_timeout(chameleon);
 }
 
-static void *
-create_game_cb(const struct pcx_config *config,
-               const struct pcx_game_callbacks *callbacks,
-               void *user_data,
-               enum pcx_text_language language,
-               int n_players,
-               const char * const *names)
+struct pcx_chameleon *
+pcx_chameleon_new(const struct pcx_config *config,
+                  const struct pcx_game_callbacks *callbacks,
+                  void *user_data,
+                  enum pcx_text_language language,
+                  int n_players,
+                  const char *const *names,
+                  const struct pcx_chameleon_debug_overrides *overrides)
 {
         assert(n_players > 0 && n_players <= PCX_CHAMELEON_MAX_PLAYERS);
 
@@ -497,6 +498,11 @@ create_game_cb(const struct pcx_config *config,
         chameleon->user_data = user_data;
 
         chameleon->rand_func = rand;
+
+        if (overrides) {
+                if (overrides->rand_func)
+                        chameleon->rand_func = overrides->rand_func;
+        }
 
         chameleon->n_players = n_players;
 
@@ -539,6 +545,23 @@ create_game_cb(const struct pcx_config *config,
         start_round(chameleon);
 
         return chameleon;
+}
+
+static void *
+create_game_cb(const struct pcx_config *config,
+               const struct pcx_game_callbacks *callbacks,
+               void *user_data,
+               enum pcx_text_language language,
+               int n_players,
+               const char * const *names)
+{
+        return pcx_chameleon_new(config,
+                                 callbacks,
+                                 user_data,
+                                 language,
+                                 n_players,
+                                 names,
+                                 NULL /* overrides */);
 }
 
 static char *
