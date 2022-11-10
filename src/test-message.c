@@ -273,10 +273,19 @@ game_over_cb(void *user_data)
         free_message(message);
 }
 
+static struct pcx_class_store *
+get_class_store_cb(void *user_data)
+{
+        struct test_message_data *data = user_data;
+
+        return data->class_store;
+}
+
 const struct pcx_game_callbacks
 test_message_callbacks = {
         .send_message = send_message_cb,
         .game_over = game_over_cb,
+        .get_class_store = get_class_store_cb,
 };
 
 static void
@@ -346,6 +355,8 @@ test_message_data_init(struct test_message_data *data)
         memset(data, 0, sizeof *data);
 
         pcx_list_init(&data->queue);
+
+        data->class_store = pcx_class_store_new();
 }
 
 void
@@ -356,4 +367,6 @@ test_message_data_destroy(struct test_message_data *data)
         pcx_list_for_each_safe(message, tmp, &data->queue, link) {
                 free_message(message);
         }
+
+        pcx_class_store_free(data->class_store);
 }

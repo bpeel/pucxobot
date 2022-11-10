@@ -23,6 +23,7 @@
 
 #include "pcx-list.h"
 #include "pcx-main-context.h"
+#include "pcx-class-store.h"
 
 enum test_message_type {
         TEST_MESSAGE_TYPE_PRIVATE,
@@ -48,6 +49,7 @@ struct test_message {
 struct test_message_data {
         struct pcx_list queue;
         struct pcx_main_context_source *check_timeout_source;
+        struct pcx_class_store *class_store;
         bool had_error;
 };
 

@@ -85,6 +85,7 @@ executable('pucxobot', src,
 test_coup_src = [
         'pcx-util.c',
         'pcx-main-context.c',
+        'pcx-class-store.c',
         'pcx-error.c',
         'pcx-slice.c',
         'pcx-slab.c',
@@ -107,6 +108,7 @@ test('coup', test_coup)
 test_fox_src = [
         'pcx-util.c',
         'pcx-main-context.c',
+        'pcx-class-store.c',
         'pcx-error.c',
         'pcx-slice.c',
         'pcx-slab.c',
