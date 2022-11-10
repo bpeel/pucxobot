@@ -21,16 +21,36 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "pcx-error.h"
+#include "pcx-list.h"
 
-struct pcx_chameleon_list {
-        int stub;
+extern struct pcx_error_domain
+pcx_chameleon_list_error;
+
+enum pcx_chameleon_list_error {
+        PCX_CHAMELEON_LIST_ERROR_EMPTY,
+};
+
+struct pcx_chameleon_list;
+
+struct pcx_chameleon_list_word {
+        struct pcx_list link;
+        /* over-allocated */
+        char word[1];
 };
 
 struct pcx_chameleon_list *
 pcx_chameleon_list_new(const char *filename,
                        struct pcx_error **error);
+
+size_t
+pcx_chameleon_list_get_n_groups(struct pcx_chameleon_list *word_list);
+
+const struct pcx_list *
+pcx_chameleon_list_get_group(struct pcx_chameleon_list *word_list,
+                             int group);
 
 void
 pcx_chameleon_list_free(struct pcx_chameleon_list *word_list);

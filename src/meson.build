@@ -191,3 +191,19 @@ test_wordparty = executable('test-wordparty', test_wordparty_src,
                             dependencies: [thread_dep, openssl],
                             include_directories: configinc)
 test('wordparty', test_wordparty)
+
+test_chameleon_list_src = [
+        'test-chameleon-list.c',
+        'pcx-buffer.c',
+        'pcx-chameleon-list.c',
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-list.c',
+        'pcx-slab.c',
+        'pcx-slice.c',
+        'pcx-utf8.c',
+        'pcx-util.c',
+]
+test_chameleon_list = executable('test-chameleon-list', test_chameleon_list_src,
+                                 include_directories: configinc)
+test('chameleon-list', test_chameleon_list)
