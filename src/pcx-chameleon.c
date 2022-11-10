@@ -383,13 +383,30 @@ start_vote_timeout(struct pcx_chameleon *chameleon)
 static void
 start_voting(struct pcx_chameleon *chameleon)
 {
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(chameleon, &buf, PCX_TEXT_STRING_START_DEBATE);
+
+        pcx_buffer_append_string(&buf, "\n");
+
+        for (unsigned i = 0; i < chameleon->n_players; i++) {
+                const struct pcx_chameleon_player *player =
+                        chameleon->players + i;
+
+                pcx_buffer_append_string(&buf, "\n<b>");
+                pcx_html_escape(&buf, player->name);
+                pcx_buffer_append_string(&buf, "</b>: ");
+                pcx_html_escape(&buf, (const char *) player->guess.data);
+        }
+
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
         message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
-        message.text = pcx_text_get(chameleon->language,
-                                    PCX_TEXT_STRING_START_DEBATE);
+        message.text = (const char *) buf.data;
 
         chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        pcx_buffer_destroy(&buf);
 
         start_vote_timeout(chameleon);
 }
