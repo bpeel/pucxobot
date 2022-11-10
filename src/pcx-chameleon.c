@@ -69,7 +69,7 @@ struct pcx_chameleon {
         int next_group_index;
         const struct pcx_chameleon_list_group *current_group;
 
-        int next_player_clue;
+        int n_players_sent_clue;
         int chameleon_player;
         int dealer;
 
@@ -155,6 +155,14 @@ get_winner(struct pcx_chameleon *chameleon)
         }
 
         return winner;
+}
+
+static int
+get_next_clue_player(struct pcx_chameleon *chameleon)
+{
+        return ((chameleon->dealer +
+                 chameleon->n_players_sent_clue) %
+                chameleon->n_players);
 }
 
 static void
@@ -347,7 +355,7 @@ send_clue_question(struct pcx_chameleon *chameleon)
         add_player_message(chameleon,
                            &buf,
                            PCX_TEXT_STRING_CLUE_QUESTION,
-                           chameleon->next_player_clue);
+                           get_next_clue_player(chameleon));
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
@@ -395,7 +403,7 @@ start_round(struct pcx_chameleon *chameleon)
 
         chameleon->current_group =
                 pcx_chameleon_list_get_group(word_list, group_num);
-        chameleon->next_player_clue = 0;
+        chameleon->n_players_sent_clue = 0;
         chameleon->chameleon_player =
                 chameleon->rand_func() % chameleon->n_players;
         chameleon->voted_players = 0;
@@ -763,7 +771,7 @@ handle_vote(struct pcx_chameleon *chameleon,
         if (vote_num >= chameleon->n_players)
                 return;
 
-        if (chameleon->next_player_clue < chameleon->n_players ||
+        if (chameleon->n_players_sent_clue < chameleon->n_players ||
             chameleon->voted_players == (1 << chameleon->n_players) - 1) {
                 /* It’s not time to vote */
                 return;
@@ -783,7 +791,7 @@ handle_guess(struct pcx_chameleon *chameleon,
              int player_num,
              long word_num)
 {
-        if (chameleon->next_player_clue < chameleon->n_players ||
+        if (chameleon->n_players_sent_clue < chameleon->n_players ||
             chameleon->voted_players != (1 << chameleon->n_players) - 1) {
                 /* It’s not time to guess */
                 return;
@@ -911,7 +919,8 @@ handle_message_cb(void *data,
 {
         struct pcx_chameleon *chameleon = data;
 
-        if (player_num != chameleon->next_player_clue)
+        if (chameleon->n_players_sent_clue >= chameleon->n_players ||
+            player_num != get_next_clue_player(chameleon))
                 return;
 
         while (is_space_char(*text))
@@ -933,9 +942,9 @@ handle_message_cb(void *data,
         pcx_buffer_append(buf, text, length);
         pcx_buffer_append_c(buf, '\0');
 
-        chameleon->next_player_clue++;
+        chameleon->n_players_sent_clue++;
 
-        if (chameleon->next_player_clue < chameleon->n_players)
+        if (chameleon->n_players_sent_clue < chameleon->n_players)
                 send_clue_question(chameleon);
         else
                 start_voting(chameleon);
