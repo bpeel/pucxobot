@@ -33,12 +33,16 @@
 #include "pcx-utf8.h"
 #include "pcx-html.h"
 #include "pcx-chameleon-list.h"
+#include "pcx-buffer.h"
 
 #define PCX_CHAMELEON_MIN_PLAYERS 4
 #define PCX_CHAMELEON_MAX_PLAYERS 6
 
 struct pcx_chameleon_player {
         char *name;
+        struct pcx_buffer guess;
+        int vote;
+        int vote_count;
 };
 
 struct pcx_chameleon_class_data {
@@ -56,7 +60,31 @@ struct pcx_chameleon {
         struct pcx_main_context_source *game_over_source;
 
         struct pcx_chameleon_class_data *class_data;
+
+        size_t n_groups;
+        int *group_order;
+
+        int next_group_index;
+        const struct pcx_list *current_group;
+
+        int next_player_clue;
+        int chameleon_player;
+        int dealer;
+
+        /* Bitmask of players that have voted */
+        int voted_players;
+
+        const struct pcx_chameleon_list_word *secret_word;
+
+        struct pcx_main_context_source *vote_timeout;
+        struct pcx_game_button *vote_buttons;
+
+        /* Options for unit testing */
+        int (* rand_func)(void);
 };
+
+static void
+start_vote_timeout(struct pcx_chameleon *chameleon);
 
 static void
 escape_string(struct pcx_chameleon *chameleon,
@@ -65,6 +93,26 @@ escape_string(struct pcx_chameleon *chameleon,
 {
         const char *value = pcx_text_get(chameleon->language, string);
         pcx_html_escape(buf, value);
+}
+
+static void
+add_player_message(struct pcx_chameleon *chameleon,
+                   struct pcx_buffer *buf,
+                   enum pcx_text_string string,
+                   int player_num)
+{
+        const char *text = pcx_text_get(chameleon->language, string);
+        const char *marker = strstr(text, "%p");
+
+        assert(marker);
+
+        pcx_html_escape_limit(buf, text, marker - text);
+
+        pcx_buffer_append_string(buf, "<b>");
+        pcx_html_escape(buf, chameleon->players[player_num].name);
+        pcx_buffer_append_string(buf, "</b>");
+
+        pcx_html_escape(buf, marker + 2);
 }
 
 static void
@@ -142,6 +190,210 @@ class_store_callbacks = {
         .free_data = free_class_store_data_cb,
 };
 
+static void
+shuffle_groups(struct pcx_chameleon *chameleon)
+{
+        for (unsigned i = 0; i < chameleon->n_groups; i++)
+                chameleon->group_order[i] = i;
+
+        if (chameleon->n_groups < 2)
+                return;
+
+        for (unsigned i = chameleon->n_groups - 1; i > 0; i--) {
+                int j = chameleon->rand_func() % (i + 1);
+                int t = chameleon->group_order[j];
+                chameleon->group_order[j] = chameleon->group_order[i];
+                chameleon->group_order[i] = t;
+        }
+}
+
+static void
+pick_secret_word(struct pcx_chameleon *chameleon)
+{
+        size_t n_words = pcx_list_length(chameleon->current_group);
+
+        int secret_word_num = chameleon->rand_func() % n_words;
+
+        const struct pcx_chameleon_list_word *word;
+
+        pcx_list_for_each(word, chameleon->current_group, link) {
+                if (secret_word_num-- == 0) {
+                        chameleon->secret_word = word;
+                        return;
+                }
+        }
+
+        assert(!"secret word not in list?");
+}
+
+static void
+send_word_list(struct pcx_chameleon *chameleon)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(chameleon, &buf, PCX_TEXT_STRING_WORDS_ARE);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        const struct pcx_chameleon_list_word *word;
+
+        pcx_list_for_each(word, chameleon->current_group, link) {
+                pcx_buffer_append_string(&buf, "<b>");
+                pcx_html_escape(&buf, word->word);
+                pcx_buffer_append_string(&buf, "</b>");
+
+                if (word->link.next != chameleon->current_group)
+                        pcx_buffer_append_string(&buf, "\n");
+        }
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (char *) buf.data;
+
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+send_secret_word(struct pcx_chameleon *chameleon)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        escape_string(chameleon, &buf, PCX_TEXT_STRING_SECRET_WORD_IS);
+
+        pcx_buffer_append_string(&buf, " <b>");
+        pcx_html_escape(&buf, chameleon->secret_word->word);
+        pcx_buffer_append_string(&buf, "</b>");
+
+        struct pcx_game_message normal_message = PCX_GAME_DEFAULT_MESSAGE;
+
+        normal_message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        normal_message.text = (const char *) buf.data;
+
+        struct pcx_game_message chameleon_message = PCX_GAME_DEFAULT_MESSAGE;
+
+        chameleon_message.text =
+                pcx_text_get(chameleon->language,
+                             PCX_TEXT_STRING_YOU_ARE_THE_CHAMELEON);
+
+        for (unsigned i = 0; i < chameleon->n_players; i++) {
+                struct pcx_game_message *message =
+                        i == chameleon->chameleon_player ?
+                        &chameleon_message :
+                        &normal_message;
+                message->target = i;
+                chameleon->callbacks.send_message(message,
+                                                  chameleon->user_data);
+        }
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+send_clue_question(struct pcx_chameleon *chameleon)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        add_player_message(chameleon,
+                           &buf,
+                           PCX_TEXT_STRING_CLUE_QUESTION,
+                           chameleon->next_player_clue);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (const char *) buf.data;
+
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
+start_round(struct pcx_chameleon *chameleon)
+{
+        if (chameleon->next_group_index >= chameleon->n_groups) {
+                end_game(chameleon);
+                return;
+        }
+
+        int group_num = chameleon->group_order[chameleon->next_group_index++];
+
+        struct pcx_chameleon_list *word_list =
+                chameleon->class_data->word_list;
+
+        chameleon->current_group =
+                pcx_chameleon_list_get_group(word_list, group_num);
+        chameleon->next_player_clue = 0;
+        chameleon->chameleon_player =
+                chameleon->rand_func() % chameleon->n_players;
+        chameleon->voted_players = 0;
+        pick_secret_word(chameleon);
+
+        send_word_list(chameleon);
+        send_secret_word(chameleon);
+        send_clue_question(chameleon);
+}
+
+static void
+stop_vote_timeout(struct pcx_chameleon *chameleon)
+{
+        if (chameleon->vote_timeout == NULL)
+                return;
+
+        pcx_main_context_remove_source(chameleon->vote_timeout);
+        chameleon->vote_timeout = NULL;
+}
+
+static void
+vote_cb(struct pcx_main_context_source *source,
+        void *user_data)
+{
+        struct pcx_chameleon *chameleon = user_data;
+
+        chameleon->vote_timeout = NULL;
+
+        start_vote_timeout(chameleon);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = pcx_text_get(chameleon->language,
+                                    PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_PLAYER);
+        message.n_buttons = chameleon->n_players;
+        message.buttons = chameleon->vote_buttons;
+
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+}
+
+static void
+start_vote_timeout(struct pcx_chameleon *chameleon)
+{
+        if (chameleon->vote_timeout)
+                return;
+
+        chameleon->vote_timeout =
+                pcx_main_context_add_timeout(NULL,
+                                             1 * 60 * 1000,
+                                             vote_cb,
+                                             chameleon);
+}
+
+static void
+start_voting(struct pcx_chameleon *chameleon)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = pcx_text_get(chameleon->language,
+                                    PCX_TEXT_STRING_START_DEBATE);
+
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        start_vote_timeout(chameleon);
+}
+
 static void *
 create_game_cb(const struct pcx_config *config,
                const struct pcx_game_callbacks *callbacks,
@@ -158,13 +410,27 @@ create_game_cb(const struct pcx_config *config,
         chameleon->callbacks = *callbacks;
         chameleon->user_data = user_data;
 
+        chameleon->rand_func = rand;
+
         chameleon->n_players = n_players;
 
         chameleon->players = pcx_calloc(n_players *
                                         sizeof (struct pcx_chameleon_player));
+        chameleon->vote_buttons = pcx_alloc(n_players *
+                                            sizeof (struct pcx_game_button));
 
-        for (unsigned i = 0; i < n_players; i++)
+        for (unsigned i = 0; i < n_players; i++) {
                 chameleon->players[i].name = pcx_strdup(names[i]);
+                pcx_buffer_init(&chameleon->players[i].guess);
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+                pcx_buffer_append_printf(&buf, "vote:%i", i);
+
+                chameleon->vote_buttons[i].text =
+                        chameleon->players[i].name;
+                chameleon->vote_buttons[i].data =
+                        (char *) buf.data;
+        }
 
         chameleon->class_data =
                 pcx_class_store_ref_data(callbacks->get_class_store(user_data),
@@ -172,6 +438,19 @@ create_game_cb(const struct pcx_config *config,
                                          &pcx_chameleon_game,
                                          language,
                                          &class_store_callbacks);
+
+        struct pcx_chameleon_list *word_list =
+                chameleon->class_data->word_list;
+
+        if (word_list) {
+                chameleon->n_groups =
+                        pcx_chameleon_list_get_n_groups(word_list);
+                chameleon->group_order =
+                        pcx_alloc(sizeof (int) * chameleon->n_groups);
+                shuffle_groups(chameleon);
+        }
+
+        start_round(chameleon);
 
         return chameleon;
 }
@@ -183,10 +462,163 @@ get_help_cb(enum pcx_text_language language)
 }
 
 static void
+tally_votes(struct pcx_chameleon *chameleon,
+            struct pcx_buffer *buf)
+{
+        for (unsigned i = 0; i < chameleon->n_players; i++)
+                chameleon->players[i].vote_count = 0;
+
+        for (unsigned i = 0; i < chameleon->n_players; i++) {
+                pcx_buffer_append_string(buf, "<b>");
+                pcx_html_escape(buf, chameleon->players[i].name);
+                pcx_buffer_append_string(buf, "</b>: ");
+
+                int voted_player = chameleon->players[i].vote;
+
+                pcx_html_escape(buf, chameleon->players[voted_player].name);
+                pcx_buffer_append_c(buf, '\n');
+
+                chameleon->players[voted_player].vote_count++;
+        }
+}
+
+static int
+get_chosen_player(struct pcx_chameleon *chameleon,
+                  struct pcx_buffer *buf)
+{
+        int most_voted_player = -1;
+        int most_votes = -1;
+        int equalled_count = 0;
+
+        for (unsigned i = 0; i < chameleon->n_players; i++) {
+                int votes = chameleon->players[i].vote_count;
+
+                if (votes > most_votes) {
+                        most_votes = votes;
+                        most_voted_player = i;
+                        equalled_count = 1;
+                } else if (votes == most_votes) {
+                        equalled_count++;
+                }
+        }
+
+        if (equalled_count > 1) {
+                add_player_message(chameleon,
+                                   buf,
+                                   PCX_TEXT_STRING_ITS_A_DRAW,
+                                   chameleon->dealer);
+                most_voted_player = chameleon->players[chameleon->dealer].vote;
+                pcx_buffer_append_c(buf, ' ');
+        }
+
+        add_player_message(chameleon,
+                           buf,
+                           PCX_TEXT_STRING_CHOSEN_PLAYER,
+                           most_voted_player);
+
+        return most_voted_player;
+}
+
+static void
+end_voting(struct pcx_chameleon *chameleon)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        stop_vote_timeout(chameleon);
+
+        escape_string(chameleon, &buf, PCX_TEXT_STRING_EVERYBODY_VOTED);
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        tally_votes(chameleon, &buf);
+
+        pcx_buffer_append_c(&buf, '\n');
+
+        int chosen_player = get_chosen_player(chameleon, &buf);
+
+        pcx_buffer_append_string(&buf, "\n\n");
+
+        if (chosen_player == chameleon->chameleon_player) {
+                escape_string(chameleon,
+                              &buf,
+                              PCX_TEXT_STRING_YOU_FOUND_THE_CHAMELEON);
+        } else {
+                escape_string(chameleon,
+                              &buf,
+                              PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON);
+        }
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
+        message.text = (char *) buf.data;
+
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        pcx_buffer_destroy(&buf);
+
+        chameleon->dealer = chameleon->chameleon_player;
+
+        start_round(chameleon);
+}
+
+static void
+show_voted_message(struct pcx_chameleon *chameleon,
+                   int player_num)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_printf(&buf,
+                                 pcx_text_get(chameleon->language,
+                                              PCX_TEXT_STRING_PLAYER_VOTED),
+                                 chameleon->players[player_num].name);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = (char *) buf.data;
+        chameleon->callbacks.send_message(&message, chameleon->user_data);
+
+        pcx_buffer_destroy(&buf);
+}
+
+static void
 handle_callback_data_cb(void *user_data,
                         int player_num,
                         const char *callback_data)
 {
+        struct pcx_chameleon *chameleon = user_data;
+
+        assert(player_num >= 0 && player_num < chameleon->n_players);
+
+        size_t length = strlen(callback_data);
+
+        if (length < 6 || memcmp(callback_data, "vote:", 5))
+                return;
+
+        char *tail;
+
+        errno = 0;
+        long vote_num = strtol(callback_data + 5, &tail, 10);
+
+        if (*tail || errno || vote_num < 0 || vote_num >= chameleon->n_players)
+                return;
+
+        if (chameleon->next_player_clue < chameleon->n_players) {
+                /* Voting hasn’t started yet */
+                return;
+        }
+
+        chameleon->players[player_num].vote = vote_num;
+        chameleon->voted_players |= 1 << player_num;
+
+        if (chameleon->voted_players == (1 << chameleon->n_players) - 1)
+                end_voting(chameleon);
+        else
+                show_voted_message(chameleon, player_num);
+}
+
+static bool
+is_space_char(char ch)
+{
+        return ch != 0 && strchr("\r\n \t", ch) != NULL;
 }
 
 static void
@@ -195,6 +627,35 @@ handle_message_cb(void *data,
                   const char *text)
 {
         struct pcx_chameleon *chameleon = data;
+
+        if (player_num != chameleon->next_player_clue)
+                return;
+
+        while (is_space_char(*text))
+                text++;
+
+        size_t length = strlen(text);
+
+        while (length > 0 && is_space_char(text[length - 1]))
+                length--;
+
+        if (length <= 0)
+                return;
+
+        if (memchr(text, '\n', length))
+                return;
+
+        struct pcx_buffer *buf = &chameleon->players[player_num].guess;
+        pcx_buffer_set_length(buf, 0);
+        pcx_buffer_append(buf, text, length);
+        pcx_buffer_append_c(buf, '\0');
+
+        chameleon->next_player_clue++;
+
+        if (chameleon->next_player_clue < chameleon->n_players)
+                send_clue_question(chameleon);
+        else
+                start_voting(chameleon);
 }
 
 static void
@@ -202,10 +663,16 @@ free_game_cb(void *data)
 {
         struct pcx_chameleon *chameleon = data;
 
-        for (int i = 0; i < chameleon->n_players; i++)
+        stop_vote_timeout(chameleon);
+
+        for (int i = 0; i < chameleon->n_players; i++) {
                 pcx_free(chameleon->players[i].name);
+                pcx_buffer_destroy(&chameleon->players[i].guess);
+                pcx_free((void *) chameleon->vote_buttons[i].data);
+        }
 
         pcx_free(chameleon->players);
+        pcx_free(chameleon->vote_buttons);
 
         if (chameleon->game_over_source)
                 pcx_main_context_remove_source(chameleon->game_over_source);
@@ -213,6 +680,8 @@ free_game_cb(void *data)
         struct pcx_class_store *class_store =
                 chameleon->callbacks.get_class_store(chameleon->user_data);
         pcx_class_store_unref_data(class_store, chameleon->class_data);
+
+        pcx_free(chameleon->group_order);
 
         pcx_free(chameleon);
 }

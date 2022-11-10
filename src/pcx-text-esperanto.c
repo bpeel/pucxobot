@@ -677,4 +677,30 @@ pcx_text_esperanto[] = {
         "%s uzis la tutan alfabeton kaj gajnis bonusan vivon.",
         [PCX_TEXT_STRING_LETTERS_HINT] =
         "Uzu la jenajn literojn por regajni vivon:",
+        [PCX_TEXT_STRING_WORDS_ARE] =
+        "La vortolisto estas:",
+        [PCX_TEXT_STRING_SECRET_WORD_IS] =
+        "La sekreta vorto estas:",
+        [PCX_TEXT_STRING_YOU_ARE_THE_CHAMELEON] =
+        "Vi estas la kameleono 🦎",
+        [PCX_TEXT_STRING_CLUE_QUESTION] =
+        "%p, bonvolu tajpi vian indikon",
+        [PCX_TEXT_STRING_START_DEBATE] =
+        "Nun vi devas debati pri kiun vi kredas esti la kameleono. "
+        "Kiam vi estos pretaj vi povos voĉdoni.",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_PLAYER] =
+        "Se vi jam finis la debaton, vi povas voĉdoni por la ludanto "
+        "kiun vi suspektas esti la kameleono.",
+        [PCX_TEXT_STRING_PLAYER_VOTED] =
+        "%s voĉdonis",
+        [PCX_TEXT_STRING_EVERYBODY_VOTED] =
+        "Ĉiu voĉdonis!",
+        [PCX_TEXT_STRING_ITS_A_DRAW] =
+        "Estas egala rezulto! %p havas la decidan voĉdonon.",
+        [PCX_TEXT_STRING_CHOSEN_PLAYER] =
+        "La elektita ludanto estas %p.",
+        [PCX_TEXT_STRING_YOU_FOUND_THE_CHAMELEON] =
+        "Vi sukcese trovis la kameleonon! 🦎",
+        [PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON] =
+        "Vi fuŝe elektis normalan homon!",
 };

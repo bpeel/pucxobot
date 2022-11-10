@@ -26,6 +26,7 @@
 #include "pcx-six.h"
 #include "pcx-fox.h"
 #include "pcx-wordparty.h"
+#include "pcx-chameleon.h"
 #include "pcx-zombie.h"
 #include "pcx-superfight.h"
 
@@ -36,6 +37,7 @@ pcx_game_list[] = {
         &pcx_six_game,
         &pcx_fox_game,
         &pcx_wordparty_game,
+        &pcx_chameleon_game,
         &pcx_zombie_game,
         &pcx_snitch_game,
         &pcx_superfight_game,
