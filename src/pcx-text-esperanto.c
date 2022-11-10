@@ -703,4 +703,20 @@ pcx_text_esperanto[] = {
         "Vi sukcese trovis la kameleonon! 🦎",
         [PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON] =
         "Vi fuŝe elektis normalan homon!",
+        [PCX_TEXT_STRING_CHAMELEON_WINS_POINTS] =
+        "%p gajnas 2 poentojn kaj ĉiu alia gajnas nenion.",
+        [PCX_TEXT_STRING_SCORES] =
+        "Poentoj:",
+        [PCX_TEXT_STRING_NOW_GUESS] =
+        "%p, nun provu diveni la sekretan vorton.",
+        [PCX_TEXT_STRING_CHAMELEON_GUESSED] =
+        "La kameleono divenis %p.",
+        [PCX_TEXT_STRING_CORRECT_GUESS] =
+        "Tio estis la ĝusta vorto!",
+        [PCX_TEXT_STRING_CORRECT_WORD_IS] =
+        "La ĝusta sekreta vorto estas %p.",
+        [PCX_TEXT_STRING_ESCAPED_SCORE] =
+        "%p gajnas unu poenton kaj ĉiu alia gajnas nenion.",
+        [PCX_TEXT_STRING_CAUGHT_SCORE] =
+        "Ĉiu krom %p gajnas 2 poentojn.",
 };
