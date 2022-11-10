@@ -82,7 +82,7 @@ struct pcx_chameleon {
         struct pcx_game_button *vote_buttons;
 
         /* Options for unit testing */
-        int (* rand_func)(void);
+        int (* rand_func)(void *user_data);
 };
 
 static void
@@ -246,6 +246,12 @@ class_store_callbacks = {
         .free_data = free_class_store_data_cb,
 };
 
+static int
+get_random(struct pcx_chameleon *chameleon)
+{
+        return chameleon->rand_func(chameleon->user_data);
+}
+
 static void
 shuffle_groups(struct pcx_chameleon *chameleon)
 {
@@ -256,7 +262,7 @@ shuffle_groups(struct pcx_chameleon *chameleon)
                 return;
 
         for (unsigned i = chameleon->n_groups - 1; i > 0; i--) {
-                int j = chameleon->rand_func() % (i + 1);
+                int j = get_random(chameleon) % (i + 1);
                 int t = chameleon->group_order[j];
                 chameleon->group_order[j] = chameleon->group_order[i];
                 chameleon->group_order[i] = t;
@@ -268,7 +274,7 @@ pick_secret_word(struct pcx_chameleon *chameleon)
 {
         size_t n_words = pcx_list_length(&chameleon->current_group->words);
 
-        int secret_word_num = chameleon->rand_func() % n_words;
+        int secret_word_num = get_random(chameleon) % n_words;
 
         const struct pcx_chameleon_list_word *word;
 
@@ -405,7 +411,7 @@ start_round(struct pcx_chameleon *chameleon)
                 pcx_chameleon_list_get_group(word_list, group_num);
         chameleon->n_players_sent_clue = 0;
         chameleon->chameleon_player =
-                chameleon->rand_func() % chameleon->n_players;
+                get_random(chameleon) % chameleon->n_players;
         chameleon->voted_players = 0;
         pick_secret_word(chameleon);
 
@@ -488,6 +494,12 @@ start_voting(struct pcx_chameleon *chameleon)
         start_vote_timeout(chameleon);
 }
 
+static int
+default_rand_func(void *user_data)
+{
+        return rand();
+}
+
 struct pcx_chameleon *
 pcx_chameleon_new(const struct pcx_config *config,
                   const struct pcx_game_callbacks *callbacks,
@@ -505,7 +517,7 @@ pcx_chameleon_new(const struct pcx_config *config,
         chameleon->callbacks = *callbacks;
         chameleon->user_data = user_data;
 
-        chameleon->rand_func = rand;
+        chameleon->rand_func = default_rand_func;
 
         if (overrides) {
                 if (overrides->rand_func)

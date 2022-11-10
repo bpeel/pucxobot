@@ -64,7 +64,7 @@ basic_word_list[] =
         "Elephant\n";
 
 static int
-fake_random_number_generator(void)
+fake_random_number_generator(void *user_data)
 {
         return 0;
 }

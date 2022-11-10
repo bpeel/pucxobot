@@ -26,7 +26,7 @@ extern const struct pcx_game pcx_chameleon_game;
 struct pcx_chameleon;
 
 struct pcx_chameleon_debug_overrides {
-        int (*rand_func)(void);
+        int (*rand_func)(void *user_data);
 };
 
 struct pcx_chameleon *
