@@ -41,6 +41,7 @@ struct test_data {
         struct test_message_data message_data;
         struct pcx_config *config;
         char *data_dir;
+        int random_override;
 };
 
 static const char
@@ -66,7 +67,11 @@ basic_word_list[] =
 static int
 fake_random_number_generator(void *user_data)
 {
-        return 0;
+        struct test_data *data = pcx_container_of(user_data,
+                                                  struct test_data,
+                                                  message_data);
+
+        return data->random_override;
 }
 
 static char *
