@@ -233,14 +233,14 @@ send_word_list(struct pcx_chameleon *chameleon)
 
         escape_string(chameleon, &buf, PCX_TEXT_STRING_WORDS_ARE);
 
-        pcx_buffer_append_string(&buf, "\n\n");
+        pcx_buffer_append_string(&buf, "\n\n<b>");
+        pcx_html_escape(&buf, chameleon->current_group->topic);
+        pcx_buffer_append_string(&buf, "</b>\n\n");
 
         const struct pcx_chameleon_list_word *word;
 
         pcx_list_for_each(word, &chameleon->current_group->words, link) {
-                pcx_buffer_append_string(&buf, "<b>");
                 pcx_html_escape(&buf, word->word);
-                pcx_buffer_append_string(&buf, "</b>");
 
                 if (word->link.next != &chameleon->current_group->words)
                         pcx_buffer_append_string(&buf, "\n");
