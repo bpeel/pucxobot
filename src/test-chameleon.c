@@ -787,6 +787,199 @@ out:
         return ret;
 }
 
+static bool
+test_nonzero_dealer(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_clues(data,
+                        "lemon",
+                        "blood",
+                        "tomato",
+                        "china",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 1)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        /* Change the random number so that the chamelon will be
+         * someone else
+         */
+        data->random_override = 19;
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Bob\n"
+                             "<b>Bob</b>: Bob\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Bob</b>.\n"
+                             "\n"
+                             "Vi fuŝe elektis normalan homon!\n"
+                             "\n"
+                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                             "gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 2\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 0");
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Animals</b>\n"
+                             "\n"
+                             "Dog\n"
+                             "Cat\n"
+                             "Wolf\n"
+                             "Elephant");
+
+        for (int i = 0; i < 3; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: "
+                                      "<b>Elephant</b>");
+        }
+
+        queue_private_message(data,
+                              3,
+                              "Vi estas la kameleono 🦎");
+
+        queue_clue_question(data, 0);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "cute",
+                        "friend",
+                        "hunter",
+                        "bark",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 1)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Bob\n"
+                             "<b>Bob</b>: Bob\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Bob</b>.\n"
+                             "\n"
+                             "Vi fuŝe elektis normalan homon!\n"
+                             "\n"
+                             "<b>David</b> gajnas 2 poentojn kaj ĉiu alia "
+                             "gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 2\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 2");
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Fruit</b>\n"
+                             "\n"
+                             "Apple\n"
+                             "Pear\n"
+                             "Banana\n"
+                             "Orange");
+
+        for (int i = 0; i < 3; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: <b>Orange</b>");
+        }
+
+        queue_private_message(data,
+                              3,
+                              "Vi estas la kameleono 🦎");
+
+        /* David should now be the dealer and the first person that is
+         * asked.
+         */
+        queue_clue_question(data, 3);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!send_message(data, 3, "david-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 1);
+
+        if (!send_message(data, 0, "alice-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 2);
+
+        if (!send_message(data, 1, "bob-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Nun vi devas debati pri kiun vi kredas "
+                             "esti la kameleono. Kiam vi estos pretaj vi "
+                             "povos voĉdoni.\n"
+                             "\n"
+                             "<b>Alice</b>: alice-clue\n"
+                             "<b>Bob</b>: bob-clue\n"
+                             "<b>Charles</b>: charles-clue\n"
+                             "<b>David</b>: david-clue");
+
+        if (!send_message(data, 2, "charles-clue")) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -801,6 +994,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_wrong_guess())
+                ret = EXIT_FAILURE;
+
+        if (!test_nonzero_dealer())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
