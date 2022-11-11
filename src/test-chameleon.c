@@ -1234,6 +1234,109 @@ out:
         return ret;
 }
 
+static bool
+test_invalid_guess(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        /* It’s not time to vote, this should be ignored */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:0");
+
+        if (!send_clues(data,
+                        "lemon",
+                        "blood",
+                        "tomato",
+                        "china",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        /* It’s not time to vote, this should be ignored */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:0");
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 0)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Alice\n"
+                             "<b>Bob</b>: Alice\n"
+                             "<b>Charles</b>: Alice\n"
+                             "<b>David</b>: Alice\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Alice</b>.\n"
+                             "\n"
+                             "Vi sukcese trovis la kameleonon! 🦎\n"
+                             "\n"
+                             "<b>Alice</b>, nun provu diveni la sekretan "
+                             "vorton.");
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Wrong person voting */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   1,
+                                                   "guess:0");
+        /* Invalid word number */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:4");
+
+        /* Missing colon */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess3");
+
+        /* Garbage number */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:"
+                                                   "18446744073709551616");
+
+        /* Training data */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:3three");
+
+        /* Negative number */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "guess:-1");
+
+        /* Unknown command */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "sgues:0");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1260,6 +1363,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_invalid_vote())
+                ret = EXIT_FAILURE;
+
+        if (!test_invalid_guess())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
