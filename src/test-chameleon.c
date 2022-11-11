@@ -1419,6 +1419,52 @@ out:
         return ret;
 }
 
+static bool
+test_ignore_game_over(void)
+{
+        struct test_data *data = create_test_data("");
+
+        if (data == NULL)
+                return false;
+
+        queue_global_message(data, "🏆 Alice gajnis la partion!");
+
+        /* The word list is empty so this should queue a game over
+         * message immediately.
+         */
+        data->chameleon = pcx_chameleon_new(data->config,
+                                            &test_message_callbacks,
+                                            &data->message_data,
+                                            PCX_TEXT_LANGUAGE_ESPERANTO,
+                                            4, /* n_players */
+                                            test_message_player_names,
+                                            NULL /* overrides */);
+
+        /* Destroy the test data before letting the game over callback
+         * be invoked.
+         */
+        free_test_data(data);
+
+        bool timeout_hit = false;
+
+        /* Run the main context. If the game over callback ends up
+         * getting invoked this will probably cause a crash to fail
+         * the test.
+         */
+        struct pcx_main_context_source *timeout =
+                pcx_main_context_add_timeout(NULL,
+                                             0, /* milliseconds */
+                                             zero_timeout_cb,
+                                             &timeout_hit);
+
+        pcx_main_context_poll(NULL);
+
+        if (!timeout_hit)
+                pcx_main_context_remove_source(timeout);
+
+        return true;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1451,6 +1497,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_invalid_clues())
+                ret = EXIT_FAILURE;
+
+        if (!test_ignore_game_over())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
