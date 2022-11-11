@@ -657,6 +657,31 @@ out:
         return ret;
 }
 
+static bool
+test_empty_word_list(void)
+{
+        struct test_data *data = create_test_data("");
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_global_message(data, "🏆 Alice gajnis la partion!");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!start_game(data, 4)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -665,6 +690,9 @@ main(int argc, char **argv)
         pcx_log_start();
 
         if (!test_basic())
+                ret = EXIT_FAILURE;
+
+        if (!test_empty_word_list())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
