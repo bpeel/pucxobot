@@ -420,15 +420,13 @@ send_guess(struct test_data *data,
         return test_message_run_queue(&data->message_data);
 }
 
-static bool
-test_basic(void)
+static struct test_data *
+start_basic_game(void)
 {
         struct test_data *data = create_test_data(basic_word_list);
 
         if (data == NULL)
-                return false;
-
-        bool ret = true;
+                return NULL;
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -452,9 +450,22 @@ test_basic(void)
         queue_clue_question(data, 0);
 
         if (!start_game(data, 4)) {
-                ret = false;
-                goto out;
+                free_test_data(data);
+                return NULL;
         }
+
+        return data;
+}
+
+static bool
+test_basic(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
 
         if (!send_clues(data,
                         "lemon",
@@ -682,6 +693,100 @@ out:
         return ret;
 }
 
+static bool
+test_wrong_guess(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_clues(data,
+                        "lemon",
+                        "blood",
+                        "tomato",
+                        "china",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 0)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Alice\n"
+                             "<b>Bob</b>: Alice\n"
+                             "<b>Charles</b>: Alice\n"
+                             "<b>David</b>: Alice\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Alice</b>.\n"
+                             "\n"
+                             "Vi sukcese trovis la kameleonon! 🦎\n"
+                             "\n"
+                             "<b>Alice</b>, nun provu diveni la sekretan "
+                             "vorton.");
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "La kameleono divenis <b>Green</b>.\n"
+                             "\n"
+                             "La ĝusta sekreta vorto estas <b>Red</b>.\n"
+                             "\n"
+                             "Ĉiu krom <b>Alice</b> gajnas 2 poentojn.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 0\n"
+                             "<b>Bob</b>: 2\n"
+                             "<b>Charles</b>: 2\n"
+                             "<b>David</b>: 2");
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Animals</b>\n"
+                             "\n"
+                             "Dog\n"
+                             "Cat\n"
+                             "Wolf\n"
+                             "Elephant");
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: <b>Dog</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!send_guess(data, 0, 1)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -693,6 +798,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_empty_word_list())
+                ret = EXIT_FAILURE;
+
+        if (!test_wrong_guess())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
