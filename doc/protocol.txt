@@ -228,3 +228,10 @@ Wordparty:
     If the player already has the maximum number of lives then the
     letters used will be set to UINT32_MAX instead so that the client
     can recognise this.
+
+Chameleon:
+
+• WORD [0, n_words)
+  • string the word at that position in the word list. An empty string
+    will be send to clear the word if a later word list is shorter
+    than a previous one.

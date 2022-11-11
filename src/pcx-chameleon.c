@@ -77,6 +77,12 @@ struct pcx_chameleon {
         /* Bitmask of players that have voted */
         int voted_players;
 
+        /* Number of words in the group the last time we sent sideband
+         * data. This is used so that if the next group has fewer
+         * words then we’ll clear the extra ones.
+         */
+        int last_group_size;
+
         const struct pcx_chameleon_list_word *secret_word;
 
         struct pcx_main_context_source *vote_timeout;
@@ -290,7 +296,7 @@ pick_secret_word(struct pcx_chameleon *chameleon)
 }
 
 static void
-send_word_list(struct pcx_chameleon *chameleon)
+send_word_list_message(struct pcx_chameleon *chameleon)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
@@ -317,6 +323,49 @@ send_word_list(struct pcx_chameleon *chameleon)
         chameleon->callbacks.send_message(&message, chameleon->user_data);
 
         pcx_buffer_destroy(&buf);
+}
+
+static void
+send_word_list_sideband_data(struct pcx_chameleon *chameleon)
+{
+        int word_count = 0;
+
+        const struct pcx_chameleon_list_word *word;
+
+        pcx_list_for_each(word, &chameleon->current_group->words, link) {
+                struct pcx_game_sideband_data data = {
+                        .type = PCX_GAME_SIDEBAND_TYPE_STRING,
+                        .string = word->word,
+                };
+
+                chameleon->callbacks.set_sideband_data(word_count,
+                                                       &data,
+                                                       false, /* force */
+                                                       chameleon->user_data);
+                word_count++;
+        }
+
+        /* Clear any extra words from the previous group */
+        for (int i = word_count; i < chameleon->last_group_size; i++) {
+                static const struct pcx_game_sideband_data data = {
+                        .type = PCX_GAME_SIDEBAND_TYPE_STRING,
+                        .string = "",
+                };
+
+                chameleon->callbacks.set_sideband_data(i,
+                                                       &data,
+                                                       false, /* force */
+                                                       chameleon->user_data);
+        }
+
+        chameleon->last_group_size = word_count;
+}
+
+static void
+send_word_list(struct pcx_chameleon *chameleon)
+{
+        send_word_list_message(chameleon);
+        send_word_list_sideband_data(chameleon);
 }
 
 static void

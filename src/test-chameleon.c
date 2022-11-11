@@ -272,6 +272,35 @@ queue_private_message(struct test_data *data,
         return message;
 }
 
+static PCX_NULL_TERMINATED void
+queue_sideband_word_list(struct test_data *data,
+                         ...)
+{
+        va_list ap;
+
+        va_start(ap, data);
+
+        int data_num = 0;
+
+        while (true) {
+                const char *word = va_arg(ap, const char *);
+
+                if (word == NULL)
+                        break;
+
+                struct test_message *message =
+                        test_message_queue(&data->message_data,
+                                           TEST_MESSAGE_TYPE_SIDEBAND_STRING);
+
+                message->destination = data_num;
+                message->message = pcx_strdup(word);
+
+                data_num++;
+        }
+
+        va_end(ap);
+}
+
 static bool
 start_game(struct test_data *data,
            int n_players)
@@ -473,6 +502,13 @@ start_basic_game(void)
                              "Blue\n"
                              "Pink");
 
+        queue_sideband_word_list(data,
+                                 "Red",
+                                 "Green",
+                                 "Blue",
+                                 "Pink",
+                                 NULL);
+
         queue_private_message(data,
                               0,
                               "Vi estas la kameleono 🦎");
@@ -550,6 +586,13 @@ test_basic(void)
                              "Cat\n"
                              "Wolf\n"
                              "Elephant");
+
+        queue_sideband_word_list(data,
+                                 "Dog",
+                                 "Cat",
+                                 "Wolf",
+                                 "Elephant",
+                                 NULL);
 
         queue_private_message(data,
                               0,
@@ -632,6 +675,13 @@ test_basic(void)
                              "Pear\n"
                              "Banana\n"
                              "Orange");
+
+        queue_sideband_word_list(data,
+                                 "Apple",
+                                 "Pear",
+                                 "Banana",
+                                 "Orange",
+                                 NULL);
 
         queue_private_message(data,
                               0,
@@ -745,6 +795,10 @@ test_one_group(void)
                              "<b>Famous people</b>\n"
                              "\n"
                              "Ada Lovelace");
+
+        queue_sideband_word_list(data,
+                                 "Ada Lovelace",
+                                 NULL);
 
         queue_private_message(data,
                               0,
@@ -888,6 +942,13 @@ test_wrong_guess(void)
                              "Wolf\n"
                              "Elephant");
 
+        queue_sideband_word_list(data,
+                                 "Dog",
+                                 "Cat",
+                                 "Wolf",
+                                 "Elephant",
+                                 NULL);
+
         queue_private_message(data,
                               0,
                               "Vi estas la kameleono 🦎");
@@ -975,6 +1036,13 @@ test_nonzero_dealer(void)
                              "Wolf\n"
                              "Elephant");
 
+        queue_sideband_word_list(data,
+                                 "Dog",
+                                 "Cat",
+                                 "Wolf",
+                                 "Elephant",
+                                 NULL);
+
         for (int i = 0; i < 3; i++) {
                 queue_private_message(data,
                                       i,
@@ -1041,6 +1109,13 @@ test_nonzero_dealer(void)
                              "Pear\n"
                              "Banana\n"
                              "Orange");
+
+        queue_sideband_word_list(data,
+                                 "Apple",
+                                 "Pear",
+                                 "Banana",
+                                 "Orange",
+                                 NULL);
 
         for (int i = 0; i < 3; i++) {
                 queue_private_message(data,
