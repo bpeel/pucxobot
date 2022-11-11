@@ -403,6 +403,24 @@ send_simple_vote(struct test_data *data,
 }
 
 static bool
+send_guess(struct test_data *data,
+           int guesser,
+           int guess)
+{
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_printf(&buf, "guess:%i", guess);
+
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   guesser,
+                                                   (const char *) buf.data);
+
+        pcx_buffer_destroy(&buf);
+
+        return test_message_run_queue(&data->message_data);
+}
+
+static bool
 test_basic(void)
 {
         struct test_data *data = create_test_data(basic_word_list);
@@ -497,6 +515,136 @@ test_basic(void)
         }
 
         queue_clue_question(data, 0);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "cute",
+                        "friend",
+                        "hunter",
+                        "bark",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 0) ||
+            !send_simple_vote(data, 1, 0) ||
+            !send_simple_vote(data, 2, 0) ||
+            /* try changing the vote */
+            !send_simple_vote(data, 2, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Alice\n"
+                             "<b>Bob</b>: Alice\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "Estas egala rezulto! <b>Alice</b> havas la "
+                             "decidan voĉdonon. "
+                             "La elektita ludanto estas <b>Alice</b>.\n"
+                             "\n"
+                             "Vi sukcese trovis la kameleonon! 🦎\n"
+                             "\n"
+                             "<b>Alice</b>, nun provu diveni la sekretan "
+                             "vorton.");
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "La kameleono divenis <b>Dog</b>.\n"
+                             "\n"
+                             "Tio estis la ĝusta vorto!\n"
+                             "\n"
+                             "<b>Alice</b> gajnas unu poenton kaj ĉiu "
+                             "alia gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 3\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 0");
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Fruit</b>\n"
+                             "\n"
+                             "Apple\n"
+                             "Pear\n"
+                             "Banana\n"
+                             "Orange");
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: <b>Apple</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!send_guess(data, 0, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "clockwork",
+                        "computer",
+                        "steve",
+                        "jobs",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 1)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Bob\n"
+                             "<b>Bob</b>: Bob\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Bob</b>.\n"
+                             "\n"
+                             "Vi fuŝe elektis normalan homon!\n"
+                             "\n"
+                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                             "gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 5\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 0");
+
+        queue_global_message(data, "🏆 Alice gajnis la partion!");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
         if (!send_vote(data, 3, 1)) {
                 ret = false;
