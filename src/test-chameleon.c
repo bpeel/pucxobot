@@ -1337,6 +1337,88 @@ out:
         return ret;
 }
 
+static bool
+test_invalid_clues(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        /* Send clue for the wrong player */
+        pcx_chameleon_game.handle_message_cb(data->chameleon,
+                                             1,
+                                             "potato");
+
+        /* Clue with newlines in it */
+        pcx_chameleon_game.handle_message_cb(data->chameleon,
+                                             0,
+                                             "Hi\nThere");
+
+        /* Clue with only spaces in it */
+        pcx_chameleon_game.handle_message_cb(data->chameleon,
+                                             0,
+                                             "  ");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 1);
+
+        if (!send_message(data, 0, "   alice-clue    ")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 2);
+
+        if (!send_message(data, 1, "bob-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_clue_question(data, 3);
+
+        if (!send_message(data, 2, "charles-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Nun vi devas debati pri kiun vi kredas "
+                             "esti la kameleono. Kiam vi estos pretaj vi "
+                             "povos voĉdoni.\n"
+                             "\n"
+                             "<b>Alice</b>: alice-clue\n"
+                             "<b>Bob</b>: bob-clue\n"
+                             "<b>Charles</b>: charles-clue\n"
+                             "<b>David</b>: david-clue");
+
+        if (!send_message(data, 3, "david-clue")) {
+                ret = false;
+                goto out;
+        }
+
+        /* Not time for clues */
+        pcx_chameleon_game.handle_message_cb(data->chameleon,
+                                             0,
+                                             "alice-clue");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1366,6 +1448,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_invalid_guess())
+                ret = EXIT_FAILURE;
+
+        if (!test_invalid_clues())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
