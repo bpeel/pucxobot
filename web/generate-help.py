@@ -50,7 +50,7 @@ LANGUAGES = [
          "<a href=\"https://t.me/bluffingbot\">@bluffingbot</a>.",
          "The source code is available on "
          "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["wordparty"])),
+         skip_games=set(["wordparty", "chameleon"])),
     Lang("eo", "esperanto", "Helpo", "Enhavo", "Pri",
          "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
          "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",
@@ -61,10 +61,10 @@ LANGUAGES = [
          "<a href=\"https://t.me/complotbot\">@complotbot</a>.",
          "Le code source est disponible sur "
          "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["superfight", "fox", "wordparty"])),
+         skip_games=set(["superfight", "fox", "wordparty", "chameleon"])),
 ]
 
-GAMES = [ "coup", "love", "six", "fox", "wordparty",
+GAMES = [ "coup", "love", "six", "fox", "wordparty", "chameleon",
           "zombie", "snitch", "superfight" ]
 
 def get_game_name(game, lang):

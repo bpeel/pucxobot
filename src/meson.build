@@ -56,6 +56,7 @@ server_src = [
         'pcx-wordparty.c',
         'pcx-wordparty-help.c',
         'pcx-chameleon.c',
+        'pcx-chameleon-help.c',
         'pcx-chameleon-list.c',
         'pcx-zombie.c',
         'pcx-zombie-help.c',
@@ -213,6 +214,7 @@ test('chameleon-list', test_chameleon_list)
 test_chameleon_src = [
         'pcx-buffer.c',
         'pcx-chameleon.c',
+        'pcx-chameleon-help.c',
         'pcx-chameleon-list.c',
         'pcx-class-store.c',
         'pcx-config.c',

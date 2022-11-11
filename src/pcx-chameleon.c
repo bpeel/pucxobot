@@ -34,6 +34,7 @@
 #include "pcx-utf8.h"
 #include "pcx-html.h"
 #include "pcx-chameleon-list.h"
+#include "pcx-chameleon-help.h"
 #include "pcx-buffer.h"
 
 #define PCX_CHAMELEON_MIN_PLAYERS 4
@@ -589,7 +590,7 @@ create_game_cb(const struct pcx_config *config,
 static char *
 get_help_cb(enum pcx_text_language language)
 {
-        return pcx_strdup("stub");
+        return pcx_strdup(pcx_chameleon_help[language]);
 }
 
 static void
