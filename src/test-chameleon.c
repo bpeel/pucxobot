@@ -46,11 +46,11 @@ struct test_data {
 
 static const char
 basic_word_list[] =
-        "Fruit\n"
-        "Apple\n"
-        "Pear\n"
-        "Banana\n"
-        "Orange\n"
+        "Drinks\n"
+        "Beer\n"
+        "Tea\n"
+        "Coffee\n"
+        "Ovaltine\n"
         "\n"
         "Colors\n"
         "Red\n"
@@ -62,7 +62,13 @@ basic_word_list[] =
         "Dog\n"
         "Cat\n"
         "Wolf\n"
-        "Elephant\n";
+        "Elephant\n"
+        "\n"
+        "Fruit\n"
+        "Apple\n"
+        "Pear\n"
+        "Banana\n"
+        "Orange\n";
 
 static int
 fake_random_number_generator(void *user_data)
