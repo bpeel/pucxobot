@@ -222,13 +222,13 @@ test_chameleon_src = [
         'pcx-key-value.c',
         'pcx-list.c',
         'pcx-log.c',
-        'pcx-main-context.c',
         'pcx-slab.c',
         'pcx-slice.c',
         'pcx-text.c',
         'pcx-utf8.c',
         'pcx-util.c',
         'test-message.c',
+        'test-time-hack.c',
         'test-chameleon.c',
 ]
 

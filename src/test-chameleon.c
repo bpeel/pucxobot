@@ -35,6 +35,7 @@
 #include "pcx-main-context.h"
 #include "pcx-log.h"
 #include "test-message.h"
+#include "test-time-hack.h"
 
 struct test_data {
         struct pcx_chameleon *chameleon;
@@ -1075,6 +1076,85 @@ out:
         return ret;
 }
 
+static void
+zero_timeout_cb(struct pcx_main_context_source *source,
+                void *user_data)
+{
+        bool *timeout_hit = user_data;
+
+        *timeout_hit = true;
+}
+
+static bool
+test_vote_message(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_clues(data,
+                        "lemon",
+                        "blood",
+                        "tomato",
+                        "china",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 1; i++) {
+                /* Make time pass and make sure we don’t get a message */
+                test_time_hack_add_time(i == 0 ? 59 : 50);
+
+                bool timeout_hit = false;
+
+                struct pcx_main_context_source *timeout =
+                        pcx_main_context_add_timeout(NULL,
+                                                     0, /* milliseconds */
+                                                     zero_timeout_cb,
+                                                     &timeout_hit);
+
+                pcx_main_context_poll(NULL);
+
+                if (!timeout_hit)
+                        pcx_main_context_remove_source(timeout);
+
+                if (!test_message_run_queue(&data->message_data)) {
+                        ret = false;
+                        goto out;
+                }
+
+                /* Make enough extra time pass to get the message */
+                test_time_hack_add_time(i == 0 ? 2 : 11);
+
+                struct test_message *message =
+                        queue_global_message(data,
+                                             "Se vi jam finis la debaton, vi "
+                                             "povas voĉdoni por la ludanto "
+                                             "kiun vi suspektas esti la "
+                                             "kameleono.");
+
+                test_message_enable_check_buttons(message);
+                test_message_add_button(message, "vote:0", "Alice");
+                test_message_add_button(message, "vote:1", "Bob");
+                test_message_add_button(message, "vote:2", "Charles");
+                test_message_add_button(message, "vote:3", "David");
+
+                if (!test_message_run_queue(&data->message_data)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1095,6 +1175,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_nonzero_dealer())
+                ret = EXIT_FAILURE;
+
+        if (!test_vote_message())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
