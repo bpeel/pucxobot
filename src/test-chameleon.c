@@ -427,6 +427,34 @@ send_guess(struct test_data *data,
         return test_message_run_queue(&data->message_data);
 }
 
+static void
+zero_timeout_cb(struct pcx_main_context_source *source,
+                void *user_data)
+{
+        bool *timeout_hit = user_data;
+
+        *timeout_hit = true;
+}
+
+static bool
+check_idle(struct test_data *data)
+{
+        bool timeout_hit = false;
+
+        struct pcx_main_context_source *timeout =
+                pcx_main_context_add_timeout(NULL,
+                                             0, /* milliseconds */
+                                             zero_timeout_cb,
+                                             &timeout_hit);
+
+        pcx_main_context_poll(NULL);
+
+        if (!timeout_hit)
+                pcx_main_context_remove_source(timeout);
+
+        return test_message_run_queue(&data->message_data);
+}
+
 static struct test_data *
 start_basic_game(void)
 {
@@ -1076,15 +1104,6 @@ out:
         return ret;
 }
 
-static void
-zero_timeout_cb(struct pcx_main_context_source *source,
-                void *user_data)
-{
-        bool *timeout_hit = user_data;
-
-        *timeout_hit = true;
-}
-
 static bool
 test_vote_message(void)
 {
@@ -1109,20 +1128,7 @@ test_vote_message(void)
                 /* Make time pass and make sure we don’t get a message */
                 test_time_hack_add_time(i == 0 ? 59 : 50);
 
-                bool timeout_hit = false;
-
-                struct pcx_main_context_source *timeout =
-                        pcx_main_context_add_timeout(NULL,
-                                                     0, /* milliseconds */
-                                                     zero_timeout_cb,
-                                                     &timeout_hit);
-
-                pcx_main_context_poll(NULL);
-
-                if (!timeout_hit)
-                        pcx_main_context_remove_source(timeout);
-
-                if (!test_message_run_queue(&data->message_data)) {
+                if (!check_idle(data)) {
                         ret = false;
                         goto out;
                 }
@@ -1155,6 +1161,79 @@ out:
         return ret;
 }
 
+static bool
+test_invalid_vote(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        /* Its not time to vote. This should just be ignored */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "vote:0");
+
+        if (!send_clues(data,
+                        "lemon",
+                        "blood",
+                        "tomato",
+                        "china",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Invalid player number, should be ignored */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "vote:5");
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 0)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Alice\n"
+                             "<b>Bob</b>: Alice\n"
+                             "<b>Charles</b>: Alice\n"
+                             "<b>David</b>: Alice\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Alice</b>.\n"
+                             "\n"
+                             "Vi sukcese trovis la kameleonon! 🦎\n"
+                             "\n"
+                             "<b>Alice</b>, nun provu diveni la sekretan "
+                             "vorton.");
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Everybody has already voted, this should be ignored */
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0,
+                                                   "vote:0");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1178,6 +1257,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_vote_message())
+                ret = EXIT_FAILURE;
+
+        if (!test_invalid_vote())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
