@@ -2,6 +2,7 @@ translatable_files = {
         'index.html': ['index.html'],
         'pucxobot.js': ['message-reader.js',
                         'wordparty-visualisation.js',
+                        'chameleon-visualisation.js',
                         'pucxo.js'],
 }
 

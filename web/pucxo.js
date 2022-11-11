@@ -106,7 +106,8 @@ Pucxo.GAMES = [
   { "title": "@SNITCH_TITLE@", "keyword": "snitch" },
   { "title": "@WORDPARTY_TITLE@", "keyword": "wordparty",
     "visualisation": WordpartyVisualisation },
-  { "title": "@CHAMELEON_TITLE@", "keyword": "chameleon" },
+  { "title": "@CHAMELEON_TITLE@", "keyword": "chameleon",
+    "visualisation": ChameleonVisualisation },
   { "title": "@ZOMBIE_DICE_TITLE@", "keyword": "zombie" },
   { "title": "@SUPERFIGHT_TITLE@", "keyword": "superfight" },
 ];
