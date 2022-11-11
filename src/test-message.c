@@ -234,6 +234,81 @@ handle_public_message(struct test_message_data *data,
 }
 
 static void
+set_sideband_data_cb(int data_num,
+                     const struct pcx_game_sideband_data *value,
+                     bool force,
+                     void *user_data)
+{
+        struct test_message_data *data = user_data;
+
+        if (value->type != PCX_GAME_SIDEBAND_TYPE_STRING) {
+                fprintf(stderr,
+                        "Received side band data in a format that the "
+                        "test harness doesn’t support.\n");
+                data->had_error = true;
+                return;
+        }
+
+        if (pcx_list_empty(&data->queue)) {
+                fprintf(stderr,
+                        "Unexpected sideband string sent: %i: %s\n",
+                        data_num,
+                        value->string);
+                data->had_error = true;
+                return;
+        }
+
+        struct test_message *message =
+                pcx_container_of(data->queue.next,
+                                 struct test_message,
+                                 link);
+
+        if (message->type != TEST_MESSAGE_TYPE_SIDEBAND_STRING) {
+                fprintf(stderr,
+                        "Sideband string received when a different "
+                        "type was expected: %i: %s\n",
+                        data_num,
+                        value->string);
+                data->had_error = true;
+                return;
+        }
+
+        if (data_num != message->destination) {
+                fprintf(stderr,
+                        "Received sideband string data_num %i but %i "
+                        "was expected\n",
+                        data_num,
+                        message->destination);
+                data->had_error = true;
+                return;
+        }
+
+        if (strcmp(value->string, message->message)) {
+                fprintf(stderr,
+                        "Sideband string does not match expected string.\n"
+                        "Received: %s\n"
+                        "Expected: %s\n",
+                        value->string,
+                        message->message);
+                data->had_error = true;
+                return;
+        }
+
+        if (force) {
+                fprintf(stderr,
+                        "Received sideband string with the force argument set "
+                        "but the test harness does not support this: %i: %s\n",
+                        data_num,
+                        value->string);
+                data->had_error = true;
+                return;
+        }
+
+        pcx_list_remove(&message->link);
+        free_message(message);
+}
+
+static void
 send_message_cb(const struct pcx_game_message *message,
                 void *user_data)
 {
@@ -284,6 +359,7 @@ get_class_store_cb(void *user_data)
 const struct pcx_game_callbacks
 test_message_callbacks = {
         .send_message = send_message_cb,
+        .set_sideband_data = set_sideband_data_cb,
         .game_over = game_over_cb,
         .get_class_store = get_class_store_cb,
 };

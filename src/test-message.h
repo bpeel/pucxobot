@@ -28,6 +28,7 @@
 enum test_message_type {
         TEST_MESSAGE_TYPE_PRIVATE,
         TEST_MESSAGE_TYPE_GLOBAL,
+        TEST_MESSAGE_TYPE_SIDEBAND_STRING,
         TEST_MESSAGE_TYPE_GAME_OVER,
 };
 

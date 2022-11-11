@@ -303,6 +303,9 @@ handle_message_type(struct test_data *data,
         case TEST_MESSAGE_TYPE_GLOBAL:
                 message->message = pcx_strdup(va_arg(ap, const char *));
                 return;
+        case TEST_MESSAGE_TYPE_SIDEBAND_STRING:
+                assert(!"sideband string arg used");
+                return;
         case TEST_MESSAGE_TYPE_GAME_OVER:
                 return;
         }
