@@ -1540,6 +1540,130 @@ test_ignore_game_over(void)
         return true;
 }
 
+static bool
+test_shorter_word_list(void)
+{
+        static const char word_list[] =
+                "One letter\n"
+                "A\n"
+                "\n"
+                "Three numbers\n"
+                "One\n"
+                "Two\n"
+                "Three\n";
+
+        struct test_data *data = create_test_data(word_list);
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Three numbers</b>\n"
+                             "\n"
+                             "One\n"
+                             "Two\n"
+                             "Three");
+
+        queue_sideband_word_list(data,
+                                 "One",
+                                 "Two",
+                                 "Three",
+                                 NULL);
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: <b>One</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!start_game(data, 4)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "Prime",
+                        "6/6",
+                        "0+1",
+                        "Lonely",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 1)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Bob\n"
+                             "<b>Bob</b>: Bob\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Bob</b>.\n"
+                             "\n"
+                             "Vi fuŝe elektis normalan homon!\n"
+                             "\n"
+                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                             "gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 2\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 0");
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>One letter</b>\n"
+                             "\n"
+                             "A");
+
+        queue_sideband_word_list(data,
+                                 "A",
+                                 "",
+                                 "",
+                                 NULL);
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: <b>A</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1575,6 +1699,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_ignore_game_over())
+                ret = EXIT_FAILURE;
+
+        if (!test_shorter_word_list())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
