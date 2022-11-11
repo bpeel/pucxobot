@@ -694,6 +694,95 @@ out:
 }
 
 static bool
+test_one_group(void)
+{
+        struct test_data *data = create_test_data("Famous people\n"
+                                                  "Ada Lovelace");
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Famous people</b>\n"
+                             "\n"
+                             "Ada Lovelace");
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: "
+                                      "<b>Ada Lovelace</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!start_game(data, 4)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "programming",
+                        "charles",
+                        "cabbage",
+                        "hair",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 1)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Bob\n"
+                             "<b>Bob</b>: Bob\n"
+                             "<b>Charles</b>: Bob\n"
+                             "<b>David</b>: Bob\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Bob</b>.\n"
+                             "\n"
+                             "Vi fuŝe elektis normalan homon!\n"
+                             "\n"
+                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                             "gajnas nenion.\n"
+                             "\n"
+                             "Poentoj:\n"
+                             "\n"
+                             "<b>Alice</b>: 2\n"
+                             "<b>Bob</b>: 0\n"
+                             "<b>Charles</b>: 0\n"
+                             "<b>David</b>: 0");
+
+        queue_global_message(data, "🏆 Alice gajnis la partion!");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
 test_wrong_guess(void)
 {
         struct test_data *data = start_basic_game();
@@ -991,6 +1080,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_empty_word_list())
+                ret = EXIT_FAILURE;
+
+        if (!test_one_group())
                 ret = EXIT_FAILURE;
 
         if (!test_wrong_guess())
