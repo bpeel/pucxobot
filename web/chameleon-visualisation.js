@@ -33,6 +33,7 @@ function ChameleonVisualisation(svg, playerNum, sendMessageCb)
 
 ChameleonVisualisation.TITLE_FONT_SIZE = 8;
 ChameleonVisualisation.WORD_FONT_SIZE = 2;
+ChameleonVisualisation.LINE_SPLIT_LENGTH = 20;
 
 ChameleonVisualisation.prototype.createTextElement = function(fontSize,
                                                               x,
@@ -66,6 +67,43 @@ ChameleonVisualisation.prototype.setTextValue = function(elem, value)
   elem.appendChild(document.createTextNode(value));
 };
 
+ChameleonVisualisation.prototype.splitLine = function(elem, value)
+{
+  var middle = value.length / 2;
+  var bestPoint = null;
+  var bestDistance = value.length + 1;
+
+  for (var i = 0; i < value.length; i++) {
+    if (value.charAt(i) == " ") {
+      var distance = Math.abs(i - middle);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestPoint = i;
+      }
+    }
+  }
+
+  if (bestPoint === null)
+    return false;
+
+  while (elem.lastChild)
+    elem.removeChild(elem.lastChild);
+
+  var line1 = this.createElement("tspan");
+  line1.appendChild(document.createTextNode(value.substring(0, bestPoint)));
+  line1.setAttribute("x", elem.getAttribute("x"));
+  line1.setAttribute("dy", -ChameleonVisualisation.WORD_FONT_SIZE / 2);
+  elem.appendChild(line1);
+  var line2 = this.createElement("tspan");
+  line2.appendChild(document.createTextNode(value.substring(bestPoint + 1)));
+  line2.setAttribute("x", elem.getAttribute("x"));
+  line2.setAttribute("dy", ChameleonVisualisation.WORD_FONT_SIZE * 1.5);
+  elem.appendChild(line2);
+
+  return true;
+};
+
 ChameleonVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 {
   if (dataNum == 0) {
@@ -89,7 +127,9 @@ ChameleonVisualisation.prototype.handleSidebandData = function(dataNum, mr)
         this.words[wordNum] = elem;
       }
 
-      this.setTextValue(this.words[wordNum], value);
+      if (value.length < ChameleonVisualisation.LINE_SPLIT_LENGTH ||
+          !this.splitLine(this.words[wordNum], value))
+        this.setTextValue(this.words[wordNum], value);
     }
   }
 };
