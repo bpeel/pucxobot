@@ -47,4 +47,25 @@ pcx_chameleon_help[] = {
         "ĉiu krom ri gajnas 2 poentojn.\n"
         "\n"
         "La ludo finiĝas kiam iu havas 5 poentojn.",
+        [PCX_TEXT_LANGUAGE_ENGLISH] =
+        "<b>Chameleon</b>\n"
+        "\n"
+        "In every round a player is randomly chosen to be the chameleon. "
+        "Nobody knows who that is, except for the the chameleon themself. "
+        "Next, there’s a list of words with a topic. One of the words is "
+        "the secret word. All of the players apart from the chameleon know "
+        "which word it is. Everybody, including the chameleon, takes turns "
+        "giving a clue for the secret word. You want to give a clue that "
+        "is clear enough to prove that you aren’t the chameleon "
+        "but not so obvious that the chameleon could use it to guess the "
+        "secret word. When everybody has given their clue, it’s time for "
+        "everyone to discuss who they think the chameleon is.\n"
+        "\n"
+        "When everybody is ready, you can vote. If the person with the most "
+        "votes really is the chameleon, they still have a chance to win "
+        "if they can guess the secret word using the clues. If they manage it "
+        "they get one point. Otherwise everyone part from the chameleon "
+        "gets two points.\n"
+        "\n"
+        "The first person to get 5 points wins the game.\n",
 };

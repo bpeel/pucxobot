@@ -36,6 +36,8 @@ pcx_text_english[] = {
         "6 Takes!",
         [PCX_TEXT_STRING_NAME_FOX] =
         "Fox in the Forest",
+        [PCX_TEXT_STRING_NAME_CHAMELEON] =
+        "Chameleon",
         [PCX_TEXT_STRING_NAME_SUPERFIGHT] =
         "Superfight",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -60,6 +62,10 @@ pcx_text_english[] = {
         "/fox",
         [PCX_TEXT_STRING_FOX_START_COMMAND_DESCRIPTION] =
         "Create a game of Fox in the Forest",
+        [PCX_TEXT_STRING_CHAMELEON_START_COMMAND] =
+        "/chameleon",
+        [PCX_TEXT_STRING_CHAMELEON_START_COMMAND_DESCRIPTION] =
+        "Create a game of Chameleon",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND] =
         "/superfight",
         [PCX_TEXT_STRING_SUPERFIGHT_START_COMMAND_DESCRIPTION] =
@@ -636,4 +642,48 @@ pcx_text_english[] = {
         "Don’t change the card",
         [PCX_TEXT_STRING_DOESNT_EXCHANGE] =
         "%s decided not to change the decree card.",
+        [PCX_TEXT_STRING_WORDS_ARE] =
+        "The word list is:",
+        [PCX_TEXT_STRING_SECRET_WORD_IS] =
+        "The secret word is:",
+        [PCX_TEXT_STRING_YOU_ARE_THE_CHAMELEON] =
+        "You are the chameleon 🦎",
+        [PCX_TEXT_STRING_CLUE_QUESTION] =
+        "%p, please type your clue.",
+        [PCX_TEXT_STRING_START_DEBATE] =
+        "Now you need to discuss who you think the chameleon is. "
+        "When you are ready you can vote.",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_PLAYER] =
+        "If you’ve finished the discussion, you can vote for who you think "
+        "the chameleon is.",
+        [PCX_TEXT_STRING_PLAYER_VOTED] =
+        "%s voted",
+        [PCX_TEXT_STRING_EVERYBODY_VOTED] =
+        "Everybody voted!",
+        [PCX_TEXT_STRING_ITS_A_DRAW] =
+        "It’s a draw! %p has the deciding vote.",
+        [PCX_TEXT_STRING_CHOSEN_PLAYER] =
+        "The chosen player is %p.",
+        [PCX_TEXT_STRING_YOU_FOUND_THE_CHAMELEON] =
+        "You found the chameleon! 🦎",
+        [PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON] =
+        "You all picked the wrong player!",
+        [PCX_TEXT_STRING_CHAMELEON_WINS_POINTS] =
+        "%p gets two points and everybody else gets nothing.",
+        [PCX_TEXT_STRING_SCORES] =
+        "Scores:",
+        [PCX_TEXT_STRING_NOW_GUESS] =
+        "%p, now try to guess the secret word.",
+        [PCX_TEXT_STRING_CHAMELEON_GUESSED] =
+        "The chameleon guessed %p.",
+        [PCX_TEXT_STRING_CORRECT_GUESS] =
+        "That’s the right word!",
+        [PCX_TEXT_STRING_CORRECT_WORD_IS] =
+        "The real secret word is %p.",
+        [PCX_TEXT_STRING_ESCAPED_SCORE] =
+        "%p gets one point and everybody else gets nothing.",
+        [PCX_TEXT_STRING_CAUGHT_SCORE] =
+        "Everybody except %p gets 2 points.",
+        [PCX_TEXT_STRING_START_ROUND_BUTTON] =
+        "Start the next round",
 };

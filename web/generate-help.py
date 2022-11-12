@@ -50,7 +50,7 @@ LANGUAGES = [
          "<a href=\"https://t.me/bluffingbot\">@bluffingbot</a>.",
          "The source code is available on "
          "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["wordparty", "chameleon"])),
+         skip_games=set(["wordparty"])),
     Lang("eo", "esperanto", "Helpo", "Enhavo", "Pri",
          "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
          "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",
