@@ -1694,6 +1694,116 @@ out:
         return ret;
 }
 
+static bool
+test_game_over_after_guess(void)
+{
+        struct test_data *data = create_test_data("Creators of Esperanto\n"
+                                                  "Zamenhof\n");
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_global_message(data,
+                             "La vortolisto estas:\n"
+                             "\n"
+                             "<b>Creators of Esperanto</b>\n"
+                             "\n"
+                             "Zamenhof");
+
+        queue_sideband_word_list(data,
+                                 "Creators of Esperanto",
+                                 "Zamenhof",
+                                 NULL);
+
+        queue_private_message(data,
+                              0,
+                              "Vi estas la kameleono 🦎");
+        for (int i = 1; i < 4; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "La sekreta vorto estas: "
+                                      "<b>Zamenhof</b>");
+        }
+
+        queue_clue_question(data, 0);
+
+        if (!start_game(data, 4)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_clues(data,
+                        "beard",
+                        "cool",
+                        "peaceful",
+                        "polyglot",
+                        NULL)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 3; i++) {
+                if (!send_simple_vote(data, i, 0)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        queue_global_message(data,
+                             "Ĉiu voĉdonis!\n"
+                             "\n"
+                             "<b>Alice</b>: Alice\n"
+                             "<b>Bob</b>: Alice\n"
+                             "<b>Charles</b>: Alice\n"
+                             "<b>David</b>: Alice\n"
+                             "\n"
+                             "La elektita ludanto estas <b>Alice</b>.\n"
+                             "\n"
+                             "Vi sukcese trovis la kameleonon! 🦎\n"
+                             "\n"
+                             "<b>Alice</b>, nun provu diveni la sekretan "
+                             "vorton.");
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        struct test_message *message =
+                queue_global_message(data,
+                                     "La kameleono divenis <b>Zamenhof</b>.\n"
+                                     "\n"
+                                     "Tio estis la ĝusta vorto!\n"
+                                     "\n"
+                                     "<b>Alice</b> gajnas unu poenton kaj ĉiu "
+                                     "alia gajnas nenion.\n"
+                                     "\n"
+                                     "Poentoj:\n"
+                                     "\n"
+                                     "<b>Alice</b>: 1\n"
+                                     "<b>Bob</b>: 0\n"
+                                     "<b>Charles</b>: 0\n"
+                                     "<b>David</b>: 0");
+
+        test_message_enable_check_buttons(message);
+
+        queue_global_message(data, "🏆 Alice gajnis la partion!");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_guess(data, 0, 0)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1732,6 +1842,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_shorter_word_list())
+                ret = EXIT_FAILURE;
+
+        if (!test_game_over_after_guess())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
