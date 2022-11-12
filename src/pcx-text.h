@@ -352,6 +352,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_CORRECT_WORD_IS,
         PCX_TEXT_STRING_ESCAPED_SCORE,
         PCX_TEXT_STRING_CAUGHT_SCORE,
+        PCX_TEXT_STRING_START_ROUND_BUTTON,
 };
 
 const char *

@@ -719,4 +719,6 @@ pcx_text_esperanto[] = {
         "%p gajnas unu poenton kaj ĉiu alia gajnas nenion.",
         [PCX_TEXT_STRING_CAUGHT_SCORE] =
         "Ĉiu krom %p gajnas 2 poentojn.",
+        [PCX_TEXT_STRING_START_ROUND_BUTTON] =
+        "Komenci sekvan raŭndon",
 };

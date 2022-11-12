@@ -56,6 +56,7 @@ enum pcx_chameleon_phase {
         PCX_CHAMELEON_PHASE_CLUES,
         PCX_CHAMELEON_PHASE_VOTES,
         PCX_CHAMELEON_PHASE_GUESS,
+        PCX_CHAMELEON_PHASE_WAITING_TO_START_ROUND,
 };
 
 struct pcx_chameleon {
@@ -94,6 +95,8 @@ struct pcx_chameleon {
 
         struct pcx_main_context_source *vote_timeout;
         struct pcx_game_button *vote_buttons;
+
+        struct pcx_game_button start_round_button;
 
         /* Options for unit testing */
         int (* rand_func)(void *user_data);
@@ -606,6 +609,11 @@ pcx_chameleon_new(const struct pcx_config *config,
         chameleon->vote_buttons = pcx_alloc(n_players *
                                             sizeof (struct pcx_game_button));
 
+        chameleon->start_round_button.text =
+                pcx_text_get(language,
+                             PCX_TEXT_STRING_START_ROUND_BUTTON);
+        chameleon->start_round_button.data = "start_round";
+
         chameleon->dealer = get_random(chameleon) % n_players;
 
         for (unsigned i = 0; i < n_players; i++) {
@@ -768,6 +776,15 @@ add_word_buttons(struct pcx_chameleon *chameleon,
 }
 
 static void
+start_waiting_for_round(struct pcx_chameleon *chameleon,
+                        struct pcx_game_message *message)
+{
+        message->n_buttons = 1;
+        message->buttons = &chameleon->start_round_button;
+        chameleon->phase = PCX_CHAMELEON_PHASE_WAITING_TO_START_ROUND;
+}
+
+static void
 end_voting(struct pcx_chameleon *chameleon)
 {
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -789,6 +806,8 @@ end_voting(struct pcx_chameleon *chameleon)
 
         pcx_buffer_append_string(&buf, "\n\n");
 
+        bool free_buttons = false;
+
         if (chosen_player == chameleon->chameleon_player) {
                 escape_string(chameleon,
                               &buf,
@@ -802,6 +821,10 @@ end_voting(struct pcx_chameleon *chameleon)
                                    chameleon->chameleon_player);
 
                 add_word_buttons(chameleon, &message);
+
+                free_buttons = true;
+
+                chameleon->phase = PCX_CHAMELEON_PHASE_GUESS;
         } else {
                 escape_string(chameleon,
                               &buf,
@@ -816,6 +839,9 @@ end_voting(struct pcx_chameleon *chameleon)
                 pcx_buffer_append_string(&buf, "\n\n");
 
                 add_scores(chameleon, &buf);
+
+                if (!is_game_over(chameleon))
+                        start_waiting_for_round(chameleon, &message);
         }
 
         message.text = (char *) buf.data;
@@ -824,16 +850,16 @@ end_voting(struct pcx_chameleon *chameleon)
 
         pcx_buffer_destroy(&buf);
 
-        for (unsigned i = 0; i < message.n_buttons; i++)
-                pcx_free((char *) message.buttons[i].data);
-        pcx_free((void *) message.buttons);
+        if (free_buttons) {
+                for (unsigned i = 0; i < message.n_buttons; i++)
+                        pcx_free((char *) message.buttons[i].data);
+                pcx_free((void *) message.buttons);
+        }
 
         chameleon->dealer = chameleon->chameleon_player;
 
         if (message.n_buttons == 0)
                 start_round(chameleon);
-        else
-                chameleon->phase = PCX_CHAMELEON_PHASE_GUESS;
 }
 
 static void
@@ -945,9 +971,22 @@ found_word:
         message.format = PCX_GAME_MESSAGE_FORMAT_HTML;
         message.text = (char *) buf.data;
 
+        if (!is_game_over(chameleon))
+                start_waiting_for_round(chameleon, &message);
+
         chameleon->callbacks.send_message(&message, chameleon->user_data);
 
         pcx_buffer_destroy(&buf);
+
+        if (message.n_buttons == 0)
+                start_round(chameleon);
+}
+
+static void
+handle_start_round(struct pcx_chameleon *chameleon)
+{
+        if (chameleon->phase != PCX_CHAMELEON_PHASE_WAITING_TO_START_ROUND)
+                return;
 
         start_round(chameleon);
 }
@@ -960,6 +999,11 @@ handle_callback_data_cb(void *user_data,
         struct pcx_chameleon *chameleon = user_data;
 
         assert(player_num >= 0 && player_num < chameleon->n_players);
+
+        if (!strcmp(callback_data, chameleon->start_round_button.data)) {
+                handle_start_round(chameleon);
+                return;
+        }
 
         const char *colon = strchr(callback_data, ':');
 

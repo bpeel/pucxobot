@@ -301,6 +301,21 @@ queue_sideband_word_list(struct test_data *data,
         va_end(ap);
 }
 
+static struct test_message *
+queue_wait_round(struct test_data *data,
+                 const char *text)
+{
+        struct test_message *message = queue_global_message(data, text);
+
+        test_message_enable_check_buttons(message);
+
+        test_message_add_button(message,
+                                "start_round",
+                                "Komenci sekvan raŭndon");
+
+        return message;
+}
+
 static bool
 start_game(struct test_data *data,
            int n_players)
@@ -317,6 +332,16 @@ start_game(struct test_data *data,
                                             test_message_player_names,
                                             &overrides);
 
+
+        return test_message_run_queue(&data->message_data);
+}
+
+static bool
+start_round(struct test_data *data)
+{
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0, /* player_num */
+                                                   "start_round");
 
         return test_message_run_queue(&data->message_data);
 }
@@ -556,27 +581,32 @@ test_basic(void)
                 }
         }
 
-        queue_global_message(data,
-                             "Ĉiu voĉdonis!\n"
-                             "\n"
-                             "<b>Alice</b>: Bob\n"
-                             "<b>Bob</b>: Bob\n"
-                             "<b>Charles</b>: Bob\n"
-                             "<b>David</b>: Bob\n"
-                             "\n"
-                             "La elektita ludanto estas <b>Bob</b>.\n"
-                             "\n"
-                             "Vi fuŝe elektis normalan homon!\n"
-                             "\n"
-                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
-                             "gajnas nenion.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 2\n"
-                             "<b>Bob</b>: 0\n"
-                             "<b>Charles</b>: 0\n"
-                             "<b>David</b>: 0");
+        queue_wait_round(data,
+                         "Ĉiu voĉdonis!\n"
+                         "\n"
+                         "<b>Alice</b>: Bob\n"
+                         "<b>Bob</b>: Bob\n"
+                         "<b>Charles</b>: Bob\n"
+                         "<b>David</b>: Bob\n"
+                         "\n"
+                         "La elektita ludanto estas <b>Bob</b>.\n"
+                         "\n"
+                         "Vi fuŝe elektis normalan homon!\n"
+                         "\n"
+                         "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                         "gajnas nenion.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 2\n"
+                         "<b>Bob</b>: 0\n"
+                         "<b>Charles</b>: 0\n"
+                         "<b>David</b>: 0");
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -607,7 +637,7 @@ test_basic(void)
 
         queue_clue_question(data, 0);
 
-        if (!send_vote(data, 3, 1)) {
+        if (!start_round(data)) {
                 ret = false;
                 goto out;
         }
@@ -653,20 +683,26 @@ test_basic(void)
                 goto out;
         }
 
-        queue_global_message(data,
-                             "La kameleono divenis <b>Dog</b>.\n"
-                             "\n"
-                             "Tio estis la ĝusta vorto!\n"
-                             "\n"
-                             "<b>Alice</b> gajnas unu poenton kaj ĉiu "
-                             "alia gajnas nenion.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 3\n"
-                             "<b>Bob</b>: 0\n"
-                             "<b>Charles</b>: 0\n"
-                             "<b>David</b>: 0");
+        queue_wait_round(data,
+                         "La kameleono divenis <b>Dog</b>.\n"
+                         "\n"
+                         "Tio estis la ĝusta vorto!\n"
+                         "\n"
+                         "<b>Alice</b> gajnas unu poenton kaj ĉiu "
+                         "alia gajnas nenion.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 3\n"
+                         "<b>Bob</b>: 0\n"
+                         "<b>Charles</b>: 0\n"
+                         "<b>David</b>: 0");
+
+
+        if (!send_guess(data, 0, 0)) {
+                ret = false;
+                goto out;
+        }
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -697,7 +733,7 @@ test_basic(void)
 
         queue_clue_question(data, 0);
 
-        if (!send_guess(data, 0, 0)) {
+        if (!start_round(data)) {
                 ret = false;
                 goto out;
         }
@@ -922,49 +958,19 @@ test_wrong_guess(void)
                 goto out;
         }
 
-        queue_global_message(data,
-                             "La kameleono divenis <b>Green</b>.\n"
-                             "\n"
-                             "La ĝusta sekreta vorto estas <b>Red</b>.\n"
-                             "\n"
-                             "Ĉiu krom <b>Alice</b> gajnas 2 poentojn.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 0\n"
-                             "<b>Bob</b>: 2\n"
-                             "<b>Charles</b>: 2\n"
-                             "<b>David</b>: 2");
-
-        queue_global_message(data,
-                             "La vortolisto estas:\n"
-                             "\n"
-                             "<b>Animals</b>\n"
-                             "\n"
-                             "Dog\n"
-                             "Cat\n"
-                             "Wolf\n"
-                             "Elephant");
-
-        queue_sideband_word_list(data,
-                                 "Animals",
-                                 "Dog",
-                                 "Cat",
-                                 "Wolf",
-                                 "Elephant",
-                                 NULL);
-
-        queue_private_message(data,
-                              0,
-                              "Vi estas la kameleono 🦎");
-
-        for (int i = 1; i < 4; i++) {
-                queue_private_message(data,
-                                      i,
-                                      "La sekreta vorto estas: <b>Dog</b>");
-        }
-
-        queue_clue_question(data, 0);
+        queue_wait_round(data,
+                         "La kameleono divenis <b>Green</b>.\n"
+                         "\n"
+                         "La ĝusta sekreta vorto estas <b>Red</b>.\n"
+                         "\n"
+                         "Ĉiu krom <b>Alice</b> gajnas 2 poentojn.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 0\n"
+                         "<b>Bob</b>: 2\n"
+                         "<b>Charles</b>: 2\n"
+                         "<b>David</b>: 2");
 
         if (!send_guess(data, 0, 1)) {
                 ret = false;
@@ -1009,27 +1015,32 @@ test_nonzero_dealer(void)
          */
         data->random_override = 19;
 
-        queue_global_message(data,
-                             "Ĉiu voĉdonis!\n"
-                             "\n"
-                             "<b>Alice</b>: Bob\n"
-                             "<b>Bob</b>: Bob\n"
-                             "<b>Charles</b>: Bob\n"
-                             "<b>David</b>: Bob\n"
-                             "\n"
-                             "La elektita ludanto estas <b>Bob</b>.\n"
-                             "\n"
-                             "Vi fuŝe elektis normalan homon!\n"
-                             "\n"
-                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
-                             "gajnas nenion.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 2\n"
-                             "<b>Bob</b>: 0\n"
-                             "<b>Charles</b>: 0\n"
-                             "<b>David</b>: 0");
+        queue_wait_round(data,
+                         "Ĉiu voĉdonis!\n"
+                         "\n"
+                         "<b>Alice</b>: Bob\n"
+                         "<b>Bob</b>: Bob\n"
+                         "<b>Charles</b>: Bob\n"
+                         "<b>David</b>: Bob\n"
+                         "\n"
+                         "La elektita ludanto estas <b>Bob</b>.\n"
+                         "\n"
+                         "Vi fuŝe elektis normalan homon!\n"
+                         "\n"
+                         "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                         "gajnas nenion.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 2\n"
+                         "<b>Bob</b>: 0\n"
+                         "<b>Charles</b>: 0\n"
+                         "<b>David</b>: 0");
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -1062,7 +1073,7 @@ test_nonzero_dealer(void)
 
         queue_clue_question(data, 0);
 
-        if (!send_vote(data, 3, 1)) {
+        if (!start_round(data)) {
                 ret = false;
                 goto out;
         }
@@ -1084,27 +1095,32 @@ test_nonzero_dealer(void)
                 }
         }
 
-        queue_global_message(data,
-                             "Ĉiu voĉdonis!\n"
-                             "\n"
-                             "<b>Alice</b>: Bob\n"
-                             "<b>Bob</b>: Bob\n"
-                             "<b>Charles</b>: Bob\n"
-                             "<b>David</b>: Bob\n"
-                             "\n"
-                             "La elektita ludanto estas <b>Bob</b>.\n"
-                             "\n"
-                             "Vi fuŝe elektis normalan homon!\n"
-                             "\n"
-                             "<b>David</b> gajnas 2 poentojn kaj ĉiu alia "
-                             "gajnas nenion.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 2\n"
-                             "<b>Bob</b>: 0\n"
-                             "<b>Charles</b>: 0\n"
-                             "<b>David</b>: 2");
+        queue_wait_round(data,
+                         "Ĉiu voĉdonis!\n"
+                         "\n"
+                         "<b>Alice</b>: Bob\n"
+                         "<b>Bob</b>: Bob\n"
+                         "<b>Charles</b>: Bob\n"
+                         "<b>David</b>: Bob\n"
+                         "\n"
+                         "La elektita ludanto estas <b>Bob</b>.\n"
+                         "\n"
+                         "Vi fuŝe elektis normalan homon!\n"
+                         "\n"
+                         "<b>David</b> gajnas 2 poentojn kaj ĉiu alia "
+                         "gajnas nenion.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 2\n"
+                         "<b>Bob</b>: 0\n"
+                         "<b>Charles</b>: 0\n"
+                         "<b>David</b>: 2");
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -1139,7 +1155,7 @@ test_nonzero_dealer(void)
          */
         queue_clue_question(data, 3);
 
-        if (!send_vote(data, 3, 1)) {
+        if (!start_round(data)) {
                 ret = false;
                 goto out;
         }
@@ -1616,27 +1632,32 @@ test_shorter_word_list(void)
                 }
         }
 
-        queue_global_message(data,
-                             "Ĉiu voĉdonis!\n"
-                             "\n"
-                             "<b>Alice</b>: Bob\n"
-                             "<b>Bob</b>: Bob\n"
-                             "<b>Charles</b>: Bob\n"
-                             "<b>David</b>: Bob\n"
-                             "\n"
-                             "La elektita ludanto estas <b>Bob</b>.\n"
-                             "\n"
-                             "Vi fuŝe elektis normalan homon!\n"
-                             "\n"
-                             "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
-                             "gajnas nenion.\n"
-                             "\n"
-                             "Poentoj:\n"
-                             "\n"
-                             "<b>Alice</b>: 2\n"
-                             "<b>Bob</b>: 0\n"
-                             "<b>Charles</b>: 0\n"
-                             "<b>David</b>: 0");
+        queue_wait_round(data,
+                         "Ĉiu voĉdonis!\n"
+                         "\n"
+                         "<b>Alice</b>: Bob\n"
+                         "<b>Bob</b>: Bob\n"
+                         "<b>Charles</b>: Bob\n"
+                         "<b>David</b>: Bob\n"
+                         "\n"
+                         "La elektita ludanto estas <b>Bob</b>.\n"
+                         "\n"
+                         "Vi fuŝe elektis normalan homon!\n"
+                         "\n"
+                         "<b>Alice</b> gajnas 2 poentojn kaj ĉiu alia "
+                         "gajnas nenion.\n"
+                         "\n"
+                         "Poentoj:\n"
+                         "\n"
+                         "<b>Alice</b>: 2\n"
+                         "<b>Bob</b>: 0\n"
+                         "<b>Charles</b>: 0\n"
+                         "<b>David</b>: 0");
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
 
         queue_global_message(data,
                              "La vortolisto estas:\n"
@@ -1663,7 +1684,7 @@ test_shorter_word_list(void)
 
         queue_clue_question(data, 0);
 
-        if (!send_vote(data, 3, 1)) {
+        if (!start_round(data)) {
                 ret = false;
                 goto out;
         }
