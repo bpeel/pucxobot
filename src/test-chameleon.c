@@ -1804,6 +1804,31 @@ out:
         return ret;
 }
 
+static bool
+test_invalid_start_round(void)
+{
+        struct test_data *data = start_basic_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        pcx_chameleon_game.handle_callback_data_cb(data->chameleon,
+                                                   0, /* player_num */
+                                                   "start_round");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1845,6 +1870,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_game_over_after_guess())
+                ret = EXIT_FAILURE;
+
+        if (!test_invalid_start_round())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
