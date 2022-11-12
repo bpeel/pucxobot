@@ -231,7 +231,10 @@ Wordparty:
 
 Chameleon:
 
-• WORD [0, n_words)
+• TOPIC 0
+  • string the topic for the current word list.
+
+• WORD [1, n_words]
   • string the word at that position in the word list. An empty string
     will be send to clear the word if a later word list is shorter
     than a previous one.

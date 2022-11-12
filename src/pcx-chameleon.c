@@ -326,6 +326,20 @@ send_word_list_message(struct pcx_chameleon *chameleon)
 }
 
 static void
+send_topic_sideband_data(struct pcx_chameleon *chameleon)
+{
+        struct pcx_game_sideband_data data = {
+                .type = PCX_GAME_SIDEBAND_TYPE_STRING,
+                .string = chameleon->current_group->topic,
+        };
+
+        chameleon->callbacks.set_sideband_data(0, /* data_num */
+                                               &data,
+                                               false, /* force */
+                                               chameleon->user_data);
+}
+
+static void
 send_word_list_sideband_data(struct pcx_chameleon *chameleon)
 {
         int word_count = 0;
@@ -338,7 +352,7 @@ send_word_list_sideband_data(struct pcx_chameleon *chameleon)
                         .string = word->word,
                 };
 
-                chameleon->callbacks.set_sideband_data(word_count,
+                chameleon->callbacks.set_sideband_data(word_count + 1,
                                                        &data,
                                                        false, /* force */
                                                        chameleon->user_data);
@@ -352,7 +366,7 @@ send_word_list_sideband_data(struct pcx_chameleon *chameleon)
                         .string = "",
                 };
 
-                chameleon->callbacks.set_sideband_data(i,
+                chameleon->callbacks.set_sideband_data(i + 1,
                                                        &data,
                                                        false, /* force */
                                                        chameleon->user_data);
@@ -365,6 +379,7 @@ static void
 send_word_list(struct pcx_chameleon *chameleon)
 {
         send_word_list_message(chameleon);
+        send_topic_sideband_data(chameleon);
         send_word_list_sideband_data(chameleon);
 }
 

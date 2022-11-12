@@ -503,6 +503,7 @@ start_basic_game(void)
                              "Pink");
 
         queue_sideband_word_list(data,
+                                 "Colors",
                                  "Red",
                                  "Green",
                                  "Blue",
@@ -588,6 +589,7 @@ test_basic(void)
                              "Elephant");
 
         queue_sideband_word_list(data,
+                                 "Animals",
                                  "Dog",
                                  "Cat",
                                  "Wolf",
@@ -677,6 +679,7 @@ test_basic(void)
                              "Orange");
 
         queue_sideband_word_list(data,
+                                 "Fruit",
                                  "Apple",
                                  "Pear",
                                  "Banana",
@@ -797,6 +800,7 @@ test_one_group(void)
                              "Ada Lovelace");
 
         queue_sideband_word_list(data,
+                                 "Famous people",
                                  "Ada Lovelace",
                                  NULL);
 
@@ -943,6 +947,7 @@ test_wrong_guess(void)
                              "Elephant");
 
         queue_sideband_word_list(data,
+                                 "Animals",
                                  "Dog",
                                  "Cat",
                                  "Wolf",
@@ -1037,6 +1042,7 @@ test_nonzero_dealer(void)
                              "Elephant");
 
         queue_sideband_word_list(data,
+                                 "Animals",
                                  "Dog",
                                  "Cat",
                                  "Wolf",
@@ -1111,6 +1117,7 @@ test_nonzero_dealer(void)
                              "Orange");
 
         queue_sideband_word_list(data,
+                                 "Fruit",
                                  "Apple",
                                  "Pear",
                                  "Banana",
@@ -1569,6 +1576,7 @@ test_shorter_word_list(void)
                              "Three");
 
         queue_sideband_word_list(data,
+                                 "Three numbers",
                                  "One",
                                  "Two",
                                  "Three",
@@ -1638,6 +1646,7 @@ test_shorter_word_list(void)
                              "A");
 
         queue_sideband_word_list(data,
+                                 "One letter",
                                  "A",
                                  "",
                                  "",
