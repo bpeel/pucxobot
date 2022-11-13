@@ -64,7 +64,7 @@ pcx_chameleon_help[] = {
         "When everybody is ready, you can vote. If the person with the most "
         "votes really is the chameleon, they still have a chance to win "
         "if they can guess the secret word using the clues. If they manage it "
-        "they get one point. Otherwise everyone part from the chameleon "
+        "they get one point. Otherwise everyone apart from the chameleon "
         "gets two points.\n"
         "\n"
         "The first person to get 5 points wins the game.\n",
