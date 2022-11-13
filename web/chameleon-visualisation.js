@@ -32,8 +32,8 @@ function ChameleonVisualisation(svg, playerNum, sendMessageCb)
 }
 
 ChameleonVisualisation.TITLE_FONT_SIZE = 8;
-ChameleonVisualisation.WORD_FONT_SIZE = 2;
-ChameleonVisualisation.LINE_SPLIT_LENGTH = 20;
+ChameleonVisualisation.WORD_FONT_SIZE = 3;
+ChameleonVisualisation.LINE_SPLIT_LENGTH = 10;
 
 ChameleonVisualisation.prototype.createTextElement = function(fontSize,
                                                               x,
