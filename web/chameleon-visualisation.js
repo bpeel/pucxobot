@@ -28,6 +28,12 @@ function ChameleonVisualisation(svg, playerNum, sendMessageCb)
   this.topic.setAttribute("font-weight", "bold");
   this.svg.appendChild(this.topic);
 
+  this.cover = this.createTextElement(ChameleonVisualisation.TITLE_FONT_SIZE,
+                                      50,
+                                      50);
+  this.setTextValue(this.cover, "@CHAMELEON_TITLE@ 🦎");
+  this.svg.appendChild(this.cover);
+
   this.words = [];
 }
 
@@ -118,6 +124,11 @@ ChameleonVisualisation.prototype.splitLine = function(elem, value)
 
 ChameleonVisualisation.prototype.handleSidebandData = function(dataNum, mr)
 {
+  if (this.cover) {
+    this.svg.removeChild(this.cover);
+    this.cover = null;
+  }
+
   if (dataNum == 0) {
     this.setTextValue(this.topic, mr.getString());
   } else {
