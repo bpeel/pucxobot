@@ -69,39 +69,51 @@ ChameleonVisualisation.prototype.setTextValue = function(elem, value)
 
 ChameleonVisualisation.prototype.splitLine = function(elem, value)
 {
-  var middle = value.length / 2;
-  var bestPoint = null;
-  var bestDistance = value.length + 1;
+  var lines = [];
+  var nSplitPoints = Math.floor(value.length /
+                                ChameleonVisualisation.LINE_SPLIT_LENGTH);
 
-  for (var i = 0; i < value.length; i++) {
-    if (value.charAt(i) == " ") {
-      var distance = Math.abs(i - middle);
+  for (var split = 0; split < nSplitPoints; split++) {
+    var target = value.length / (nSplitPoints + 1);
+    var bestPoint = null;
+    var bestDistance = value.length + 1;
 
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestPoint = i;
+    for (var i = 0; i < value.length; i++) {
+      if (value.charAt(i) == " ") {
+        var distance = Math.abs(i - target);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestPoint = i;
+        }
       }
     }
+
+    if (bestPoint === null)
+      break;
+
+    lines.push(value.substring(0, bestPoint));
+    value = value.substring(bestPoint + 1);
   }
 
-  if (bestPoint === null)
-    return false;
+  lines.push(value);
 
   while (elem.lastChild)
     elem.removeChild(elem.lastChild);
 
-  var line1 = this.createElement("tspan");
-  line1.appendChild(document.createTextNode(value.substring(0, bestPoint)));
-  line1.setAttribute("x", elem.getAttribute("x"));
-  line1.setAttribute("dy", -ChameleonVisualisation.WORD_FONT_SIZE / 2);
-  elem.appendChild(line1);
-  var line2 = this.createElement("tspan");
-  line2.appendChild(document.createTextNode(value.substring(bestPoint + 1)));
-  line2.setAttribute("x", elem.getAttribute("x"));
-  line2.setAttribute("dy", ChameleonVisualisation.WORD_FONT_SIZE * 1.5);
-  elem.appendChild(line2);
-
-  return true;
+  for (var i = 0; i < lines.length; i++) {
+    var line = this.createElement("tspan");
+    line.appendChild(document.createTextNode(lines[i]));
+    line.setAttribute("x", elem.getAttribute("x"));
+    line.setAttribute("dy",
+                      i == 0 ?
+                      (lines.length - 1) *
+                      1.5 *
+                      -ChameleonVisualisation.WORD_FONT_SIZE /
+                      2.0 :
+                      ChameleonVisualisation.WORD_FONT_SIZE * 1.5);
+    elem.appendChild(line);
+  }
 };
 
 ChameleonVisualisation.prototype.handleSidebandData = function(dataNum, mr)
@@ -127,9 +139,7 @@ ChameleonVisualisation.prototype.handleSidebandData = function(dataNum, mr)
         this.words[wordNum] = elem;
       }
 
-      if (value.length < ChameleonVisualisation.LINE_SPLIT_LENGTH ||
-          !this.splitLine(this.words[wordNum], value))
-        this.setTextValue(this.words[wordNum], value);
+      this.splitLine(this.words[wordNum], value);
     }
   }
 };
