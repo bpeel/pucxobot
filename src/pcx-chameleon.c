@@ -925,7 +925,7 @@ handle_guess(struct pcx_chameleon *chameleon,
         /* word_num is off the end of the list */
         return;
 
-found_word:
+found_word: (void) 0;
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
