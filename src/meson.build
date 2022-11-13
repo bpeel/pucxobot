@@ -237,5 +237,6 @@ test_chameleon_src = [
 test_chameleon_src += translations
 
 test_chameleon = executable('test-chameleon', test_chameleon_src,
-                            include_directories: configinc)
+                            include_directories: configinc,
+                            dependencies: [thread_dep])
 test('chameleon', test_chameleon)
