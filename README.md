@@ -4,6 +4,7 @@ Pucxobot is a Telegram robot and website to play the following games:
 * Love Letter
 * 6 Takes!
 * Fox in the Forest
+* Vortofesto
 * Chameleon
 * Zombie Dice
 * Snitch
