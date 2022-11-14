@@ -31,9 +31,8 @@ On Debian you can install them with the following command:
 
 Next, to build the project type the following:
 
-    mkdir build && cd build
-    meson ..
-    ninja
+    meson build
+    ninja -C build
 
 Before running it, you need to create a configuration file in
 `~/.pucxobot/conf.txt`. You can either run the server as the Telegram
