@@ -24,7 +24,7 @@ import os
 
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
-    LIST_RE = re.compile(r'\s*,\s*$')
+    LIST_RE = re.compile(r'[\s*,]+$')
     PRONOUNS = {
         "mi",
         "ni",
