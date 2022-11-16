@@ -25,6 +25,8 @@ import os
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
     LIST_RE = re.compile(r'[\s*,]+$')
+    NOUN_RE = re.compile(r'oj?$')
+    ADJECTIVE_RE = re.compile(r'aj?$')
     PRONOUNS = {
         "mi",
         "ni",
@@ -134,24 +136,36 @@ class WordList:
             for variant in variants:
                 if variant.endswith("i"):
                     self.add_verb(variant[:-1], passive_form=is_transitive)
-        elif after.endswith("o"):
-            self.add_noun(before + after[:-1])
+
+            return
+
+        md = self.NOUN_RE.search(after)
+        if md:
+            self.add_noun(before + after[:md.start()])
 
             for variant in variants:
-                if variant.endswith("o"):
-                    self.add_noun(variant[:-1])
-        elif after.endswith("a"):
+                md = self.NOUN_RE.search(variant)
+                if md:
+                    self.add_noun(variant[:md.start()])
+
+            return
+
+        md = self.ADJECTIVE_RE.search(after)
+        if md:
             if before in self.PRONOUNS:
-                self.add_simple_adjective(before + after[:-1])
+                self.add_simple_adjective(before + after[:md.start()])
             else:
-                self.add_adjective(before + after[:-1])
+                self.add_adjective(before + after[:md.start()])
                 for variant in variants:
-                    if variant.endswith("a"):
-                        self.add_adjective(variant[:-1])
-        else:
-            self.add_word(before + after)
-            for variant in variants:
-                self.add_word(variant)
+                    md = self.ADJECTIVE_RE.search(variant)
+                    if md:
+                        self.add_adjective(variant[:md.start()])
+
+            return
+
+        self.add_word(before + after)
+        for variant in variants:
+            self.add_word(variant)
 
     def _get_variants(self, derivation, root):
         variants = []
