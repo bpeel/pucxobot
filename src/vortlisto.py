@@ -125,32 +125,46 @@ class WordList:
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
 
-    def _add_pair(self, derivation, before, after):
+    def _add_pair(self, derivation, before, after, variants):
         if after.endswith("i"):
             is_transitive = len(derivation.xpath("../gra/vspec[text()=\"tr\" "
                                                  "or text()=\"x\"]")) > 0
             self.add_verb(before + after[:-1], passive_form=is_transitive)
+
+            for variant in variants:
+                if variant.endswith("i"):
+                    self.add_verb(variant[:-1], passive_form=is_transitive)
         elif after.endswith("o"):
             self.add_noun(before + after[:-1])
+
+            for variant in variants:
+                if variant.endswith("o"):
+                    self.add_noun(variant[:-1])
         elif after.endswith("a"):
             if before in self.PRONOUNS:
                 self.add_simple_adjective(before + after[:-1])
             else:
                 self.add_adjective(before + after[:-1])
+                for variant in variants:
+                    if variant.endswith("a"):
+                        self.add_adjective(variant[:-1])
         else:
             self.add_word(before + after)
+            for variant in variants:
+                self.add_word(variant)
 
-    def _add_variants(self, derivation, root, before, after):
+    def _get_variants(self, derivation, root):
+        variants = []
+
         for child in derivation.xpath("./var/kap"):
             variant = "".join(self._parse_kap(root, child))
 
             if self._contains_nonalpha(variant):
                 continue
 
-            if variant.endswith(after):
-                self._add_pair(derivation,
-                               variant[0:len(variant) - len(after)],
-                               after)
+            variants.append(variant)
+
+        return variants
 
     def _add_derivation(self, derivation, root):
         (before, after) = self._parse_kap(root, derivation)
@@ -163,8 +177,8 @@ class WordList:
             self._contains_nonalpha(after)):
             return
 
-        self._add_pair(derivation, before, after)
-        self._add_variants(derivation, root, before, after)
+        variants = self._get_variants(derivation, root)
+        self._add_pair(derivation, before, after, variants)
 
     def add_from_xml(self, filename):
         parser = etree.XMLParser(load_dtd=True,
