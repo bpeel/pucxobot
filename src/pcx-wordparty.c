@@ -38,7 +38,7 @@
 #include "pcx-wordparty-help.h"
 #include "pcx-trie.h"
 
-#define PCX_WORDPARTY_MIN_PLAYERS 2
+#define PCX_WORDPARTY_MIN_PLAYERS 1
 #define PCX_WORDPARTY_MAX_PLAYERS 16
 
 #define PCX_WORDPARTY_LIVES 2
@@ -495,7 +495,7 @@ start_turn(struct pcx_wordparty *wordparty)
 
         set_current_player(wordparty, next_player);
 
-        if (count_players(wordparty) <= 1) {
+        if (count_players(wordparty) <= (wordparty->n_players > 1 ? 1 : 0)) {
                 end_game(wordparty);
                 return;
         }

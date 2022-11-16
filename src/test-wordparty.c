@@ -469,19 +469,12 @@ expect_join_messages(struct test_harness *harness)
                                                  "La ludo nun estas plena kaj "
                                                  "tuj komenciĝos.");
                 } else {
-                        if (i == 0) {
-                                pcx_buffer_append_string(&buf,
-                                                         "Atendu pliajn "
-                                                         "ludantojn por "
-                                                         "komenci la ludon.");
-                        } else {
-                                pcx_buffer_append_string(&buf,
-                                                         "Vi povas atendi "
-                                                         "pliajn ludantojn aŭ "
-                                                         "alklaki la suban "
-                                                         "butonon por "
-                                                         "komenci.");
-                        }
+                        pcx_buffer_append_string(&buf,
+                                                 "Vi povas atendi "
+                                                 "pliajn ludantojn aŭ "
+                                                 "alklaki la suban "
+                                                 "butonon por "
+                                                 "komenci.");
 
                         pcx_buffer_append_string(&buf,
                                                  "\n"
@@ -2397,6 +2390,94 @@ out:
         return ret;
 }
 
+static bool
+test_one_player(void)
+{
+        struct test_harness *harness = create_harness_with_game(1);
+
+        if (harness == NULL)
+                return false;
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        bool ret = true;
+
+        if (!expect_turn_message(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_word(harness->connections, "terpomo")) {
+                ret = false;
+                goto out;
+        }
+
+        if (!sync_with_server(harness)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_current_player(harness, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!check_word_result(harness, harness->start_player, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        for (int i = 0; i < 2; i++) {
+                if (!expect_turn_message(harness)) {
+                        ret = false;
+                        goto out;
+                }
+
+                test_time_hack_add_time(61);
+
+                /* Send a ping so that the connections don’t time out */
+                if (!send_ping(harness)) {
+                        ret = false;
+                        goto out;
+                }
+
+                struct test_connection *connection =
+                        harness->connections;
+
+                pcx_buffer_set_length(&buf, 0);
+
+                if (i == 1) {
+                        pcx_buffer_append_printf(&buf,
+                                                 "💥 %s prenis tro da tempo "
+                                                 "kaj perdis sian lastan "
+                                                 "vivon.",
+                                                 connection->name);
+                } else {
+                        pcx_buffer_append_printf(&buf,
+                                                 "💔 %s prenis tro da tempo "
+                                                 "kaj perdis vivon.",
+                                                 connection->name);
+                }
+
+                if (!expect_message(harness, (const char *) buf.data)) {
+                        ret = false;
+                        goto out;
+                }
+        }
+
+        if (!expect_message(harness,
+                            "La ludo finiĝis. La venkinto estas…\n"
+                            "\n"
+                            "🏆 <b>A</b> 🏆")) {
+                ret = false;
+                goto out;
+        }
+
+        out:
+        free_harness(harness);
+        pcx_buffer_destroy(&buf);
+
+        return ret;
+}
 
 int
 main(int argc, char **argv)
@@ -2419,6 +2500,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_typed_word())
+                ret = EXIT_FAILURE;
+
+        if (!test_one_player())
                 ret = EXIT_FAILURE;
 
         pcx_log_close();
