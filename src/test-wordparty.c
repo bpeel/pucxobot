@@ -1968,6 +1968,14 @@ test_death(void)
                 }
         }
 
+        if (!expect_message(harness,
+                            "La ludo finiĝis. La venkinto estas…\n"
+                            "\n"
+                            "🏆 <b>A</b> 🏆")) {
+                ret = false;
+                goto out;
+        }
+
 out:
         free_harness(harness);
         pcx_buffer_destroy(&buf);
