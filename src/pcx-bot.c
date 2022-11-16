@@ -662,6 +662,7 @@ game_timeout_cb(struct pcx_main_context_source *source,
         game->game_timeout_source = NULL;
 
         if (game->game == NULL &&
+            game->n_players > 1 &&
             game->n_players >= game->type->min_players) {
                 send_message_printf(bot,
                                     game->chat,
