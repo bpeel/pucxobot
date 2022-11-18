@@ -159,6 +159,12 @@ make_syllables_src = [
 make_syllables = executable('make-syllables', make_syllables_src,
                             include_directories: configinc)
 
+dump_syllabary_src = [
+        'dump-syllabary.c',
+]
+dump_syllabary = executable('dump-syllabary', dump_syllabary_src,
+                            include_directories: configinc)
+
 test_dictionary_src = [
         'pcx-buffer.c',
         'pcx-error.c',
