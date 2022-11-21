@@ -207,7 +207,7 @@ body {
     }
 }
 
-@media only all and (min-width: 90em) {
+@media only all and (min-width: 80em) {
     #content.visual {
         position: fixed !important;
         top: 0px;
@@ -220,7 +220,7 @@ body {
         border-radius: 0px !important;
         display: grid !important;
         grid-template-rows: auto auto 1fr auto;
-        grid-template-columns: 1fr 45em;
+        grid-template-columns: 1fr 40em;
     }
 
     #content.visual #visualisation {
