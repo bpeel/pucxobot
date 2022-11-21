@@ -702,7 +702,7 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_YOU_FOUND_THE_CHAMELEON] =
         "Vi sukcese trovis la kameleonon! 🦎",
         [PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON] =
-        "Vi fuŝe elektis normalan homon!",
+        "Tiu ne estas la kameleono!",
         [PCX_TEXT_STRING_CHAMELEON_WINS_POINTS] =
         "%p gajnas 2 poentojn kaj ĉiu alia gajnas nenion.",
         [PCX_TEXT_STRING_SCORES] =

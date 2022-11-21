@@ -667,7 +667,7 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_YOU_FOUND_THE_CHAMELEON] =
         "You found the chameleon! 🦎",
         [PCX_TEXT_STRING_YOU_DIDNT_FIND_THE_CHAMELEON] =
-        "You all picked the wrong player!",
+        "That’s not the chameleon!",
         [PCX_TEXT_STRING_CHAMELEON_WINS_POINTS] =
         "%p gets two points and everybody else gets nothing.",
         [PCX_TEXT_STRING_SCORES] =
