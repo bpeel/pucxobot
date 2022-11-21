@@ -680,6 +680,8 @@ pcx_text_english[] = {
         "That’s the right word!",
         [PCX_TEXT_STRING_CORRECT_WORD_IS] =
         "The real secret word is %p.",
+        [PCX_TEXT_STRING_SECRET_WORD_WAS] =
+        "The secret word was %p.",
         [PCX_TEXT_STRING_ESCAPED_SCORE] =
         "%p gets one point and everybody else gets nothing.",
         [PCX_TEXT_STRING_CAUGHT_SCORE] =

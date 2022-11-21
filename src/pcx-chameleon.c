@@ -838,6 +838,13 @@ end_voting(struct pcx_chameleon *chameleon)
 
                 pcx_buffer_append_string(&buf, "\n\n");
 
+                add_marker_message(chameleon,
+                                   &buf,
+                                   PCX_TEXT_STRING_SECRET_WORD_WAS,
+                                   chameleon->secret_word->word);
+
+                pcx_buffer_append_string(&buf, "\n\n");
+
                 add_scores(chameleon, &buf);
 
                 if (!is_game_over(chameleon))

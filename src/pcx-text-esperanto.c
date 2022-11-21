@@ -715,6 +715,8 @@ pcx_text_esperanto[] = {
         "Tio estis la ĝusta vorto!",
         [PCX_TEXT_STRING_CORRECT_WORD_IS] =
         "La ĝusta sekreta vorto estas %p.",
+        [PCX_TEXT_STRING_SECRET_WORD_WAS] =
+        "La sekreta vorto estis %p.",
         [PCX_TEXT_STRING_ESCAPED_SCORE] =
         "%p gajnas unu poenton kaj ĉiu alia gajnas nenion.",
         [PCX_TEXT_STRING_CAUGHT_SCORE] =
