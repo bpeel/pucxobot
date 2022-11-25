@@ -1,0 +1,123 @@
+No <tld>
+
+ajnulo
+
+Main word has spaces
+
+akvorozo
+antaŭmasto
+antaŭnelonge
+denun
+depost
+desub
+desur
+deteniĝi
+dikfingro
+distanciĝi
+ekzistopruvo
+elinter
+etfingro
+etlitero
+fluanto
+fosfatacido
+frontmasto
+funkciserio
+funkcivico
+genealogiarbo
+grandveziro
+kompaktdisko
+koordinatakso
+korpkulturo
+laplacoperatoro
+linoleumo
+lumdiodo
+malsufiĉe
+metrolinio
+mezfingro
+minuskomplekso
+montrofingro
+morskodo
+mortnaskita
+mortpeko
+naftotajdo
+naturgeografio
+necespapero
+nesufiĉe
+neŭtraĵo
+okulsekvi
+paralelprojekcio
+polusdistanco
+radiokarbono
+ringofingro
+stansoldato
+sterlingfunto
+stratolanterno
+tempaltempe
+testofunkcio
+tieldire
+urinveziko
+vektorspaco
+vintroĝardeno
+ĉeflitero
+ĝispost
+
+Main word has a capital letter
+
+aprilo
+aŭgusto
+decembro
+februaro
+januaro
+julio
+junio
+majo
+marto
+novembro
+oktobro
+parizano
+parizanino
+septembro
+
+Main word has a hyphen
+
+ekvivilentklaso
+ekvivilentrilato
+kurre
+trafprove
+ĉimomente
+
+<tld> appears twice
+
+iompostiom
+iompostioma
+supremalsupren
+
+article only has a derived word with a space
+
+glu
+pando
+tin
+
+Errors in ReVo?
+
+cens/i ne havas artikolon pri verbo.
+indukci/i " " "
+krement/i " " "
+neŭrotransmisi/i " " "
+paraglis/i " " "
+reglament/i " " "
+retroefik/i " " "
+kirgiz/o ne havas artikolon pri substantivo
+zoomorf/o " " "
+sentiment/a ne havas artikolon pri adjektivo
+spit/e ne havas artikolon pri adverbo
+devanagara skribsistemo sed ne estas artikolo por devanagara
+ejgeno, la alternativo estas nur en la radiko
+sekvestraci/i,  " " "
+kvinoo havas variaĵon kiu ne estas en <var>
+navaho, estas komo en la variaĵo
+ordino, la variaĵo havas oblikvan strekon
+raĵa/o, " " "
+teknikum/o, " " "
+sigarda, la a estas ekster la <var>
+suededoj, ŝajne estas tajperaro en la radiko
