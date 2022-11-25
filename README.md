@@ -211,3 +211,14 @@ The Stainless Steel Rat
 It
 The Girl with the Dragon Tattoo
 ```
+
+## Superfight data
+
+The Superfight game needs two lists to work, one for the roles and one for the attributes. These aren’t in the git repo so you need to write them yourself. There is a separate set of lists for each language. For example the files for a game in English are expected to be at:
+
+```
+~/.pucxobot/superfight-roles-en.txt
+~/.pucxobot/superfight-attributes-en.txt
+```
+
+Each file is just a list with one line per entry. Blank lines and lines beginning with `#` are ignored.
