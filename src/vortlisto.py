@@ -24,7 +24,7 @@ import os
 
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
-    LIST_RE = re.compile(r'[\s*,]+$')
+    LIST_RE = re.compile(r'[\s,]+$')
     NOUN_RE = re.compile(r'oj?$')
     ADJECTIVE_RE = re.compile(r'aj?$')
     PRONOUNS = {
