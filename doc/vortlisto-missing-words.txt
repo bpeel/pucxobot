@@ -3,11 +3,6 @@ Main word has spaces
 okulsekvi
 tieldire
 
-Main word has a hyphen
-
-ekvivilentklaso
-ekvivilentrilato
-
 article only has a derived word with a space
 
 glu
