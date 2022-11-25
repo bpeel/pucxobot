@@ -24,7 +24,7 @@ import os
 
 class WordList:
     ALPHA_RE = re.compile(r'[^a-pr-vzĥŝĝĉĵŭ]')
-    LIST_RE = re.compile(r'[\s,]+$')
+    LIST_RE = re.compile(r'[\s,]+')
     NOUN_RE = re.compile(r'oj?$')
     ADJECTIVE_RE = re.compile(r'aj?$')
     PRONOUNS = {
@@ -122,10 +122,29 @@ class WordList:
         before = "".join(before_list).lstrip()
 
         if current_list is before_list:
-            return (before.rstrip(), None)
+            before = before.rstrip()
+
+        # If the kap consists of multiple words, we’ll try to just take
+        # the parts that are surrounding the root. This is to help
+        # with articles like the one for pand/o where there is only a
+        # derivation for “granda pando” but not for “pando” alone.
+        try:
+            last_space = before.rindex(" ")
+        except ValueError:
+            pass
         else:
-            after = "".join(after_list).rstrip()
-            return (before, after)
+            before = before[last_space + 1:]
+
+        if current_list is before_list:
+            return (before, None)
+
+        after = "".join(after_list)
+
+        md = self.LIST_RE.search(after)
+        if md:
+            after = after[0:md.start()]
+
+        return (before, after)
 
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
@@ -188,10 +207,6 @@ class WordList:
 
         if after is None:
             after = ""
-        else:
-            md = self.LIST_RE.search(after)
-            if md:
-                after = after[0:md.start()]
 
         variants = self._get_variants(derivation, root)
         self._add_pair(derivation, before, after, variants)
