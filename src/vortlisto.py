@@ -45,6 +45,9 @@ class WordList:
         self.words = set()
 
     def add_word(self, word):
+        if self._contains_nonalpha(word):
+            return
+
         self.words.add(word)
 
     def add_noun(self, root):
@@ -173,9 +176,6 @@ class WordList:
         for child in derivation.xpath("./var/kap"):
             variant = "".join(self._parse_kap(root, child))
 
-            if self._contains_nonalpha(variant):
-                continue
-
             variants.append(variant)
 
         return variants
@@ -186,10 +186,6 @@ class WordList:
         md = self.LIST_RE.search(after)
         if md:
             after = after[0:md.start()]
-
-        if (self._contains_nonalpha(before) or
-            self._contains_nonalpha(after)):
-            return
 
         variants = self._get_variants(derivation, root)
         self._add_pair(derivation, before, after, variants)
