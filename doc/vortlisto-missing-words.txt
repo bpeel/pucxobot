@@ -1,7 +1,3 @@
-No <tld>
-
-ajnulo
-
 Main word has spaces
 
 okulsekvi
@@ -34,10 +30,3 @@ spit/e ne havas artikolon pri adverbo
 devanagara skribsistemo sed ne estas artikolo por devanagara
 ejgeno, la alternativo estas nur en la radiko
 sekvestraci/i,  " " "
-kvinoo havas variaĵon kiu ne estas en <var>
-navaho, estas komo en la variaĵo
-ordino, la variaĵo havas oblikvan strekon
-raĵa/o, " " "
-teknikum/o, " " "
-sigarda, la a estas ekster la <var>
-suededoj, ŝajne estas tajperaro en la radiko
