@@ -114,3 +114,59 @@ the log file by adding an extra section to the config like this:
 
 The program needs write access to the data directory in order to store
 its state.
+
+## Vortofesto data
+
+In order for the Vortofesto game to work, the program needs to have access to word and syllable lists in the data directory. These are stored in a binary format so that they can be accessed more efficiently. The git repo includes a script to extract a word list from the XML files of the [Reta Vortaro](https://reta-vortaro.de/). Here are the commands needed to create the dictionary. If you want to update the dictionary later, you can rerun the commands without having to restart the server. It will pick up the newer version of the dictionary as soon as a new game is started when no other games are already running.
+
+### Clone the ReVo data
+
+```bash
+git clone --depth 1 https://github.com/revuloj/voko-grundo.git
+git clone --depth 1 https://github.com/revuloj/revo-fonto.git
+```
+
+The XML files in `revo-fonto` refer to the DTD files in `voko-grundo` as if they were in the same repo so we need to set up a symbolic link to get that to work:
+
+```bash
+ln -s ../voko-grundo/dtd revo-fonto/dtd
+```
+
+### Create the dictionary
+
+```bash
+./src/vortlisto.py revo-fonto/revo | \
+ ./build/src/make-dictionary dictionary-eo.bin
+# Separate step to replace the file atomically in case the server
+# is running
+mv dictionary-eo.bin ~/.pucxobot
+```
+
+### Create the syllabary
+
+```bash
+./build/src/make-syllables ~/.pucxobot/dictionary-eo.bin syllabary-eo.bin
+mv syllabary-eo.bin ~/.pucxobot
+```
+
+### Test the dictionary
+
+If you want to you can test that the dictionary data structure is working for the current word list with the following commands:
+
+```bash
+./src/vortlisto.py revo-fonto/revo > wordlist.txt
+./src/test-dictionary.py \
+ ./build/src/test-dictionary \
+ ./build/src/make-dictionary \
+ wordlist.txt
+```
+
+### Look at the syllables
+
+If you are curious about what syllables are in the data, you can run the following command to see thim:
+
+```bash
+./build/src/dump-syllabary ~/.pucxobot/syllabary-eo.bin | less
+```
+
+The first number in each line is the cumulative number of times that syllable was found in the word list. The second number is just the difference with the previous line. If you divide the second number by the first number on the last line you will get the probability that this syllable will be chosen.
