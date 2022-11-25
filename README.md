@@ -170,3 +170,44 @@ If you are curious about what syllables are in the data, you can run the followi
 ```
 
 The first number in each line is the cumulative number of times that syllable was found in the word list. The second number is just the difference with the previous line. If you divide the second number by the first number on the last line you will get the probability that this syllable will be chosen.
+
+## Chameleon data
+
+The Chameleon game needs to have a list of cards to work and this is not provided in the git repo so you’ll have to create it yourself. There is a different file for each language. For example, the file for playing in English is stored at:
+
+```
+~/.pucxobot/chameleon-word-list-en.txt
+```
+
+The list is just a simple text file with a list of words for each card. The cards are separated by a blank line. The first line of each card is the topic. You can add an extra blank line between the topic and the words if you want. A card can have as many or as few cards as you want but if you add more than 16 the website won’t display it properly. You can also add comments preceded with a `#` character. Here is an example:
+
+```
+Colours
+
+Green
+Violet
+Red
+Blue
+Orange
+Cyan
+Magenta
+Yellow
+Ingigo
+Brown
+Purple
+Black
+Grey
+White
+Pink
+Mauve
+
+Books
+
+Twenty Thousand Leagues Under the Seas
+The bible
+Harry Potter and the Philosopher’s Stone
+Flatland
+The Stainless Steel Rat
+It
+The Girl with the Dragon Tattoo
+```
