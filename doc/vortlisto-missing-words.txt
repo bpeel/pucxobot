@@ -1,14 +1,3 @@
-Main word has spaces
-
-okulsekvi
-tieldire
-
-article only has a derived word with a space
-
-glu
-pando
-tin
-
 Errors in ReVo?
 
 cens/i ne havas artikolon pri verbo.
@@ -17,11 +6,8 @@ krement/i " " "
 neŭrotransmisi/i " " "
 paraglis/i " " "
 reglament/i " " "
-retroefik/i " " "
 kirgiz/o ne havas artikolon pri substantivo
 zoomorf/o " " "
 sentiment/a ne havas artikolon pri adjektivo
-spit/e ne havas artikolon pri adverbo
-devanagara skribsistemo sed ne estas artikolo por devanagara
 ejgeno, la alternativo estas nur en la radiko
 sekvestraci/i,  " " "
