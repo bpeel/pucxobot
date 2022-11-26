@@ -90,12 +90,12 @@ class WordList:
                 self.add_verb(root + "iĝ")
 
     def _parse_kap(self, root, kap):
-        before = []
-        after = []
-        current_list = before
+        before_list = []
+        after_list = []
+        current_list = before_list
 
         if kap.text is not None:
-            before.append(kap.text)
+            before_list.append(kap.text)
 
         for element in kap:
             if element.tag == "tld":
@@ -114,18 +114,18 @@ class WordList:
                     current_list.append(first_letter)
                     current_list.append(root_value[1:])
 
-                current_list = after
+                current_list = after_list
 
             if element.tail is not None:
                 current_list.append(element.tail)
 
-        before = "".join(before).lstrip()
-        after = "".join(after).rstrip()
+        before = "".join(before_list).lstrip()
 
-        if len(after) == 0:
-            before = before.rstrip()
-
-        return (before, after)
+        if current_list is before_list:
+            return (before.rstrip(), None)
+        else:
+            after = "".join(after_list).rstrip()
+            return (before, after)
 
     def _contains_nonalpha(self, word):
         return bool(self.ALPHA_RE.search(word))
@@ -174,18 +174,24 @@ class WordList:
         variants = []
 
         for child in derivation.xpath("./var/kap"):
-            variant = "".join(self._parse_kap(root, child))
+            (before, after) = self._parse_kap(root, child)
 
-            variants.append(variant)
+            if after is not None:
+                self._add_pair(derivation, before, after, [])
+            else:
+                variants.append(before)
 
         return variants
 
     def _add_derivation(self, derivation, root):
         (before, after) = self._parse_kap(root, derivation)
 
-        md = self.LIST_RE.search(after)
-        if md:
-            after = after[0:md.start()]
+        if after is None:
+            after = ""
+        else:
+            md = self.LIST_RE.search(after)
+            if md:
+                after = after[0:md.start()]
 
         variants = self._get_variants(derivation, root)
         self._add_pair(derivation, before, after, variants)
