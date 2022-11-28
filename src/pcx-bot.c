@@ -1564,6 +1564,9 @@ process_game_message(struct pcx_bot *bot,
         if (game->type->handle_message_cb == NULL)
                 return;
 
+        if (game->game == NULL)
+                return;
+
         int player_num = find_player_in_game(game, info->from_id);
 
         if (player_num == -1)
