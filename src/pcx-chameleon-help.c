@@ -51,7 +51,7 @@ pcx_chameleon_help[] = {
         "<b>Chameleon</b>\n"
         "\n"
         "In every round a player is randomly chosen to be the chameleon. "
-        "Nobody knows who that is, except for the the chameleon themself. "
+        "Nobody knows who that is, except for the chameleon themself. "
         "Next, there’s a list of words with a topic. One of the words is "
         "the secret word. All of the players apart from the chameleon know "
         "which word it is. Everybody, including the chameleon, takes turns "
