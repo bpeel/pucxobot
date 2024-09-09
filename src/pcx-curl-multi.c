@@ -98,6 +98,26 @@ find_handle(struct pcx_curl_multi *pcurl,
 }
 
 static void
+flush_messages(struct pcx_curl_multi *pcurl)
+{
+        CURLMsg *msg;
+        int msgs_in_queue;
+
+        while ((msg = curl_multi_info_read(pcurl->curlm, &msgs_in_queue))) {
+                if (msg->msg != CURLMSG_DONE)
+                        continue;
+
+                struct handle_data *handle =
+                        find_handle(pcurl, msg->easy_handle);
+
+                if (handle && handle->finished_cb) {
+                        handle->finished_cb(msg->data.result,
+                                            handle->user_data);
+                }
+        }
+}
+
+static void
 socket_action_cb(struct pcx_main_context_source *source,
                  int fd,
                  enum pcx_main_context_poll_flags flags,
@@ -121,21 +141,7 @@ socket_action_cb(struct pcx_main_context_source *source,
                                  ev_bitmask,
                                  &running_handles);
 
-        CURLMsg *msg;
-        int msgs_in_queue;
-
-        while ((msg = curl_multi_info_read(pcurl->curlm, &msgs_in_queue))) {
-                if (msg->msg != CURLMSG_DONE)
-                        continue;
-
-                struct handle_data *handle =
-                        find_handle(pcurl, msg->easy_handle);
-
-                if (handle && handle->finished_cb) {
-                        handle->finished_cb(msg->data.result,
-                                            handle->user_data);
-                }
-        }
+        flush_messages(pcurl);
 }
 
 static int
@@ -208,6 +214,8 @@ timeout_cb(struct pcx_main_context_source *source,
                                  CURL_SOCKET_TIMEOUT,
                                  0, /* ev_bitmask */
                                  &running_handles);
+
+        flush_messages(pcurl);
 }
 
 static int
