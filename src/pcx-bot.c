@@ -1988,6 +1988,27 @@ queue_update_commands_request(struct pcx_bot *bot)
         json_object_put(args);
 }
 
+static char *
+get_url_base(const struct pcx_config *config,
+             const struct pcx_config_bot *bot_config)
+{
+        struct pcx_buffer url = PCX_BUFFER_STATIC_INIT;
+
+        pcx_buffer_append_string(&url,
+                                 config->telegram_url ?
+                                 config->telegram_url :
+                                 "https://api.telegram.org/");
+
+        if (url.length == 0 || url.data[url.length - 1] != '/')
+                pcx_buffer_append_c(&url, '/');
+
+        pcx_buffer_append_string(&url, "bot");
+        pcx_buffer_append_string(&url, bot_config->apikey);
+        pcx_buffer_append_string(&url, "/");
+
+        return (char *) url.data;
+}
+
 struct pcx_bot *
 pcx_bot_new(const struct pcx_config *config,
             const struct pcx_config_bot *bot_config,
@@ -2012,10 +2033,7 @@ pcx_bot_new(const struct pcx_config *config,
 
         bot->tokener = json_tokener_new();
 
-        bot->url_base = pcx_strconcat("https://api.telegram.org/bot",
-                                      bot->bot_config->apikey,
-                                      "/",
-                                      NULL);
+        bot->url_base = get_url_base(config, bot_config);
 
         bot->pcurl = pcurl;
 

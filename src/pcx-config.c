@@ -122,6 +122,7 @@ general_options[] = {
         OPTION(log_file, STRING),
         OPTION(user, STRING),
         OPTION(group, STRING),
+        OPTION(telegram_url, STRING),
 #undef OPTION
 };
 
@@ -473,6 +474,7 @@ pcx_config_free(struct pcx_config *config)
         pcx_free(config->log_file);
         pcx_free(config->user);
         pcx_free(config->group);
+        pcx_free(config->telegram_url);
 
         pcx_free(config);
 }

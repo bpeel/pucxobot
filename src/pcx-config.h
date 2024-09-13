@@ -51,6 +51,7 @@ struct pcx_config {
         char *log_file;
         char *user;
         char *group;
+        char *telegram_url;
         struct pcx_list bots;
         struct pcx_list servers;
 };
