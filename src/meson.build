@@ -30,6 +30,7 @@ server_src = [
         'pcx-netaddress.c',
         'pcx-generate-id.c',
         'pcx-socket.c',
+        'pcx-listen-socket.c',
         'pcx-file-error.c',
         'pcx-key-value.c',
         'pcx-coup-help.c',
