@@ -247,3 +247,22 @@ test_chameleon = executable('test-chameleon', test_chameleon_src,
                             include_directories: configinc,
                             dependencies: [thread_dep])
 test('chameleon', test_chameleon)
+
+fake_telegram_src = [
+        'fake-telegram.c',
+        'pcx-main-context.c',
+        'pcx-util.c',
+        'pcx-list.c',
+        'pcx-slice.c',
+        'pcx-buffer.c',
+        'pcx-slab.c',
+        'pcx-listen-socket.c',
+        'pcx-netaddress.c',
+        'pcx-error.c',
+        'pcx-file-error.c',
+        'pcx-socket.c',
+]
+
+fake_telegram = executable('fake-telegram', fake_telegram_src,
+                           dependencies: [json],
+                           include_directories: configinc)
