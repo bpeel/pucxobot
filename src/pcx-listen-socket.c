@@ -73,7 +73,7 @@ pcx_listen_socket_create_for_netaddress(const struct pcx_netaddress *netaddress,
 
 error:
         pcx_close(sock);
-        return false;
+        return -1;
 }
 
 int
