@@ -172,6 +172,7 @@ handle_connection_line(struct connection *connection,
         fprintf(stderr,
                 "no command found in URL from %s",
                 connection->remote_address_string);
+        connection->server->ret = EXIT_FAILURE;
         free_connection(connection);
         return false;
 
@@ -430,6 +431,7 @@ handle_request(struct connection *connection)
                 fprintf(stderr,
                         "request without a JSON object from %s\n",
                         connection->remote_address_string);
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
                 return;
         }
@@ -468,6 +470,7 @@ handle_payload(struct connection *connection,
                                 "got second json object from %s\n",
                                 connection->remote_address_string);
                         json_object_put(obj);
+                        connection->server->ret = EXIT_FAILURE;
                         free_connection(connection);
                 }
         } else {
@@ -479,6 +482,7 @@ handle_payload(struct connection *connection,
                                 "error parsing JSON from %s: %s\n",
                                 connection->remote_address_string,
                                 json_tokener_error_desc(error));
+                        connection->server->ret = EXIT_FAILURE;
                         free_connection(connection);
                 }
         }
@@ -503,6 +507,7 @@ handle_connection_lines(struct connection *connection)
                                 fprintf(stderr,
                                         "no command in request from %s\n",
                                         connection->remote_address_string);
+                                connection->server->ret = EXIT_FAILURE;
                                 free_connection(connection);
                         } else {
                                 connection->state =
@@ -545,11 +550,13 @@ read_connection_lines(struct connection *connection)
                         "error reading from %s: %s\n",
                         connection->remote_address_string,
                         strerror(errno));
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
         } else if (got == 0) {
                 fprintf(stderr,
                         "EOF on socket while reading lines %s\n",
                         connection->remote_address_string);
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
         } else {
                 connection->line_buffer.length += got;
@@ -572,6 +579,7 @@ read_payload(struct connection *connection)
                         "error reading from %s: %s\n",
                         connection->remote_address_string,
                         strerror(errno));
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
         } else if (got == 0) {
                 handle_request(connection);
@@ -599,6 +607,7 @@ handle_write_response(struct connection *connection)
                         "error writing to %s: %s\n",
                         connection->remote_address_string,
                         strerror(errno));
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
         } else {
                 connection->response_wrote += wrote;
@@ -620,6 +629,7 @@ connection_poll_cb(struct pcx_main_context_source *source,
                 fprintf(stderr,
                         "error on socket for %s\n",
                         connection->remote_address_string);
+                connection->server->ret = EXIT_FAILURE;
                 free_connection(connection);
         } else if ((flags & PCX_MAIN_CONTEXT_POLL_IN)) {
                 switch (connection->state) {
@@ -917,7 +927,8 @@ handle_change_chat(struct server *server,
                       const char *data,
                       size_t data_length)
 {
-        parse_int(data, data_length, &server->current_chat_id);
+        if (!parse_int(data, data_length, &server->current_chat_id))
+                server->ret = EXIT_FAILURE;
 }
 
 static void
@@ -925,7 +936,8 @@ handle_change_user(struct server *server,
                    const char *data,
                    size_t data_length)
 {
-        parse_int(data, data_length, &server->current_user_id);
+        if (!parse_int(data, data_length, &server->current_user_id))
+                server->ret = EXIT_FAILURE;
 }
 
 static void
@@ -1064,6 +1076,7 @@ handle_stdin_command(struct server *server,
                 "unknown command “%.*s”\n",
                 (int) (name_end - command),
                 command);
+        server->ret = EXIT_FAILURE;
 }
 
 static void
