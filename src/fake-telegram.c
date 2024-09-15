@@ -1207,6 +1207,11 @@ main(int argc, char **argv)
 {
         struct server *server = pcx_calloc(sizeof (struct server));
 
+        /* Enable line-buffering on stdout in case we are being piped
+         * to another process that wants to see messages immediately.
+         */
+        setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+
         pcx_buffer_init(&server->stdin_buffer);
         pcx_list_init(&server->connections);
         pcx_list_init(&server->updates);
