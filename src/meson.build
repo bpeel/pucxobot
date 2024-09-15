@@ -79,10 +79,10 @@ json = dependency('json-c')
 openssl = dependency('openssl')
 thread_dep = dependency('threads')
 
-executable('pucxobot', src,
-           dependencies: [curl, json, thread_dep, openssl],
-           include_directories: configinc,
-           install: true)
+pucxobot = executable('pucxobot', src,
+                      dependencies: [curl, json, thread_dep, openssl],
+                      include_directories: configinc,
+                      install: true)
 
 test_coup_src = [
         'pcx-util.c',
@@ -266,3 +266,6 @@ fake_telegram_src = [
 fake_telegram = executable('fake-telegram', fake_telegram_src,
                            dependencies: [json],
                            include_directories: configinc)
+
+test('bot', files('test-bot.py'),
+     args : [ fake_telegram, pucxobot, files('test-bot.script') ])

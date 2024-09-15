@@ -1,0 +1,889 @@
+<setMyCommands:
+<  {
+<    "commands":
+<      [
+<        {
+<          "command": "pucxo",
+<          "description": "Krei ludon de Puĉo"
+<        },
+<        {
+<          "command": "amletero",
+<          "description": "Krei ludon de Amletero"
+<        },
+<        {
+<          "command": "ses",
+<          "description": "Krei ludon de 6 Prenas"
+<        },
+<        {
+<          "command": "vulpo",
+<          "description": "Krei ludon de Vulpo en la Arbaro"
+<        },
+<        {
+<          "command": "vortofesto",
+<          "description": "Krei ludon de Vortofesto"
+<        },
+<        {
+<          "command": "kameleono",
+<          "description": "Krei ludon de Kameleono"
+<        },
+<        {
+<          "command": "zombio",
+<          "description": "Krei ludon de Zombiaj Kuboj"
+<        },
+<        {
+<          "command": "perfidulo",
+<          "description": "Krei ludon de Perfidulo"
+<        },
+<        {
+<          "command": "superbatalo",
+<          "description": "Krei ludon de Superbatalo"
+<        },
+<        {
+<          "command": "aligxi",
+<          "description": "Aligxi al jam kreita ludo"
+<        },
+<        {
+<          "command": "komenci",
+<          "description": "Komenci jam kreitan ludon"
+<        },
+<        {
+<          "command": "nuligi",
+<          "description": "Nuligi jam kreitan ludon"
+<        },
+<        {
+<          "command": "helpo",
+<          "description": "Montri resumon de la reguloj"
+<        }
+<      ]
+<  }
+
+u 1
+user_name Alice
+u 2
+user_name Bob
+c 3
+chat_name GameRoom
+
+u 1
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 1,
+<    "text": "Antaŭ ol aliĝi al ludo, bonvolu alklaki @testbot kaj sendi mesaĝon por ke mi povu sendi al vi viajn kartojn en privata mesaĝo. Farinte tion, vi povos reveni ĉi tien por aliĝi al ludo."
+<  }
+
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 2,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 101
+private
+u 2
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 101,
+<    "reply_to_message_id": 3,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 3
+public
+u 1
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 4,
+<    "text": "Bonvenon. Aliaj ludantoj tajpu \/aligxi por aliĝi al la ludo aŭ tajpu \/komenci por komenci ĝin.\n\nLa ludo estas: Puĉo\n\nLa aktualaj ludantoj estas:\nAlice"
+<  }
+
+u 2
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 5,
+<    "text": "Bonvenon. Aliaj ludantoj tajpu \/aligxi por aliĝi al la ludo aŭ tajpu \/komenci por komenci ĝin.\n\nLa ludo estas: Puĉo\n\nLa aktualaj ludantoj estas:\nAlice kaj Bob"
+<  }
+
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_markup":
+<      {
+<        "inline_keyboard":
+<          [
+<            [
+<              {
+<                "callback_data": "game_type:0",
+<                "text": "Originala"
+<              }
+<            ],
+<            [
+<              {
+<                "callback_data": "game_type:1",
+<                "text": "Inspektisto"
+<              }
+<            ],
+<            [
+<              {
+<                "callback_data": "game_type:2",
+<                "text": "Reformacio"
+<              }
+<            ],
+<            [
+<              {
+<                "callback_data": "game_type:3",
+<                "text": "Reformacio + Inspektisto"
+<              }
+<            ]
+<          ]
+<      },
+<    "text": "Bonvolu elekti kiun version de la ludo vi volas ludi."
+<  }
+
+cb game_type:0
+
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "1"
+<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 2,
+# Message reporting which cards the player has. It will contain random
+# cards so we can’t verify it.
+<<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 1,
+# Message reporting which cards the player has. It will contain random
+# cards so we can’t verify it.
+<<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "text": "La elektita versio estas: Originala"
+<  }
+
+<sendMessage:
+<  {
+<<  }
+
+# Test sending callback data from a non existant player
+u 100
+cb poop
+
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "2"
+<  }
+
+# Callback data for a game that hasn’t started yet
+c 10
+m /pucxo
+<sendMessage:
+<  {
+<<  }
+
+cb poop
+
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "3"
+<  }
+
+c 3
+u 1
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 8,
+<    "text": "La ludo estas nuligita."
+<  }
+
+m /start
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_markup":
+<      {
+<        "inline_keyboard":
+<          [
+<            [
+<              {
+<                "callback_data": "creategame:coup",
+<                "text": "Puĉo"
+<              }
+<            ],
+<<          ]
+<      },
+<    "reply_to_message_id": 9,
+<    "text": "Kiun ludon vi volas ludi?"
+<  }
+
+cb creategame:coup
+
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "4"
+<  }
+
+<editMessageReplyMarkup:
+<  {
+<    "chat_id": 3,
+<    "message_id": 9
+<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 9,
+<    "text": "Bonvenon. Aliaj ludantoj tajpu \/aligxi por aliĝi al la ludo aŭ tajpu \/komenci por komenci ĝin.\n\nLa ludo estas: Puĉo\n\nLa aktualaj ludantoj estas:\nAlice"
+<  }
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 10,
+<    "text": "La ludo estas nuligita."
+<  }
+
+m /helpo
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_markup":
+<      {
+<        "inline_keyboard":
+<          [
+<            [
+<              {
+<                "callback_data": "help:coup",
+<                "text": "Puĉo"
+<              }
+<            ],
+<<          ]
+<      },
+<    "reply_to_message_id": 11,
+<    "text": "Por kiu ludo vi volas helpon?"
+<  }
+
+cb help:coup
+
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "5"
+<  }
+
+<deleteMessage:
+<  {
+<    "chat_id": 3,
+<    "message_id": 11
+<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "parse_mode": "HTML",
+<<  }
+
+# Missing : in callback prefix
+cb helpcoup
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "6"
+<  }
+
+# Short callback data
+cb he
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "7"
+<  }
+
+# Non-existant game
+cb creategame:whackamole
+<answerCallbackQuery:
+<  {
+<    "callback_query_id": "8"
+<  }
+
+u 1
+m /vortofesto
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<<  }
+
+# Send a message before the game starts
+m Mi volas ludi!
+
+m /komenci
+
+<sendMessage:
+<<  }
+
+# Send a message from a player not in the game
+u 112
+m Ĉu mi povas aliĝi?
+
+u 1
+m Tro malfrue, kara.
+
+m aaaaaaaaaaaaa
+<sendMessage:
+<<  }
+
+m @testbot aaaaaaaaaaaaa
+<sendMessage:
+<<  }
+
+m @somebody aaaaaaaaaaaaa
+
+m @testbot
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 3,
+<    "reply_to_message_id": 21,
+<    "text": "La ludo estas nuligita."
+<  }
+
+# We have to switch groups every now and then because the messages are
+# rate-limited
+
+c 4
+chat_name SideRoom
+
+m /vortofesto@otherbot
+m /vortofesto@othrbot
+m /vortofesto@testbot
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 24,
+<<  }
+
+m /helpo
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "parse_mode": "HTML",
+<<  }
+
+u 500
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 26,
+<    "text": "Nur ludantoj en la ludo rajtas nuligi ĝin."
+<  }
+
+u 1
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 27,
+<    "text": "La ludo estas nuligita."
+<  }
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 28,
+<    "text": "Aktuale estas neniu ludo en ĉi tiu grupo."
+<  }
+
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 29,
+<<  }
+
+u 2
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 30,
+<    "text": "Aliĝu al la ludo per \/aligxi antaŭ ol komenci ĝin"
+<  }
+
+u 1
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 31,
+<    "text": "Necesas almenaŭ 2 ludantoj por ludi."
+<  }
+
+u 2
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 32,
+<<  }
+
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_markup":
+<      {
+<<      },
+<    "text": "Bonvolu elekti kiun version de la ludo vi volas ludi."
+<  }
+
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 34,
+<    "text": "La ludo jam komenciĝis"
+<  }
+
+c 5
+
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 5,
+<    "reply_to_message_id": 35,
+<    "text": "Vi jam estas en ludo"
+<  }
+
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 5,
+<    "reply_to_message_id": 36,
+<    "text": "Vi jam estas en ludo"
+<  }
+
+c 4
+
+u 501
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 37,
+<    "text": "Antaŭ ol aliĝi al ludo, bonvolu alklaki @testbot kaj sendi mesaĝon por ke mi povu sendi al vi viajn kartojn en privata mesaĝo. Farinte tion, vi povos reveni ĉi tien por aliĝi al ludo."
+<  }
+
+u 1
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_to_message_id": 38,
+<    "text": "La ludo estas nuligita."
+<  }
+
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 4,
+<    "reply_markup":
+<      {
+<<      },
+<    "reply_to_message_id": 39,
+<    "text": "Kiun ludon vi volas ludi?"
+<  }
+
+c 6
+chat_name BigGame
+
+u 1
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 40,
+<<  }
+
+u 2
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 41,
+<<  }
+
+u 3
+user_name Charles
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 42,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 43,
+<<  }
+
+u 4
+user_name David
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 44,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 45,
+<<  }
+
+u 5
+user_name Evan
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 46,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 47,
+<<  }
+
+u 6
+user_name Fred
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 48,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 49,
+<<  }
+
+u 7
+user_name Greg
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 50,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 51,
+<<  }
+
+u 8
+user_name Harry
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 52,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 53,
+<    "text": "Bonvenon. La ludo nun estas plena kaj tuj komenciĝos.\n\nLa ludo estas: Puĉo"
+<  }
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_markup":
+<      {
+<<      },
+<    "text": "Bonvolu elekti kiun version de la ludo vi volas ludi."
+<  }
+
+u 9
+user_name Ivan
+c 100
+private
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 100,
+<    "reply_to_message_id": 54,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+c 6
+public
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 55,
+<    "text": "La ludo jam estas plena"
+<  }
+
+u 8
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 6,
+<    "reply_to_message_id": 56,
+<    "text": "La ludo estas nuligita."
+<  }
+
+c 7
+chat_name AnotherGroup
+u 1
+
+m /vortofesto
+
+<sendMessage:
+<  {
+<    "chat_id": 7,
+<    "reply_to_message_id": 57,
+<<  }
+
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 7,
+<    "parse_mode": "HTML",
+<<  }
+
+u 2
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 7,
+<    "reply_to_message_id": 59,
+<    "text": "La ludo jam komenciĝis"
+<  }
+
+u 1
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 7,
+<    "reply_to_message_id": 60,
+<    "text": "La ludo estas nuligita."
+<  }
+
+c 501
+private
+
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 501,
+<    "reply_to_message_id": 61,
+<    "text": "Por ludi ludon, aldonu la roboton al grupo kun viaj amikoj kaj komencu la ludon tie."
+<  }
+
+m /aligxi
+
+<sendMessage:
+<  {
+<    "chat_id": 501,
+<    "reply_to_message_id": 62,
+<    "text": "Por ludi ludon, aldonu la roboton al grupo kun viaj amikoj kaj komencu la ludon tie."
+<  }
+
+# User deliberately without a name
+u 90
+private
+c 501
+
+m hello
+
+<sendMessage:
+<  {
+<    "chat_id": 501,
+<    "reply_to_message_id": 63,
+<    "text": "Dankon pro la mesaĝo. Vi povas nun aliĝi al ludo en publika grupo."
+<  }
+
+# Group deliberately without a name
+c 8
+public
+
+m /pucxo
+
+<sendMessage:
+<  {
+<    "chat_id": 8,
+<    "reply_to_message_id": 64,
+<    "text": "Bonvenon. Aliaj ludantoj tajpu \/aligxi por aliĝi al la ludo aŭ tajpu \/komenci por komenci ĝin.\n\nLa ludo estas: Puĉo\n\nLa aktualaj ludantoj estas:\nSr.90"
+<  }
+
+m /nuligi
+
+<sendMessage:
+<  {
+<    "chat_id": 8,
+<    "reply_to_message_id": 65,
+<    "text": "La ludo estas nuligita."
+<  }
+
+c 9
+chat_name FinishedGame
+u 1
+m /vortofesto
+
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "reply_to_message_id": 66,
+<    "text": "Bonvenon. Aliaj ludantoj tajpu \/aligxi por aliĝi al la ludo aŭ tajpu \/komenci por komenci ĝin.\n\nLa ludo estas: Vortofesto\n\nLa aktualaj ludantoj estas:\nAlice"
+<  }
+
+m /komenci
+
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "parse_mode": "HTML",
+<    "text": "<b>Alice<\/b> ❤️❤️\n\nTajpu vorton kiu enhavas:\n\n<b>A<\/b>"
+<  }
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "parse_mode": "HTML",
+<    "text": "💔 Alice prenis tro da tempo kaj perdis vivon."
+<  }
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "parse_mode": "HTML",
+<    "text": "<b>Alice<\/b> ❤️\n\nTajpu vorton kiu enhavas:\n\n<b>A<\/b>"
+<  }
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "parse_mode": "HTML",
+<    "text": "💥 Alice prenis tro da tempo kaj perdis sian lastan vivon."
+<  }
+<sendMessage:
+<  {
+<    "chat_id": 9,
+<    "parse_mode": "HTML",
+<    "text": "La ludo finiĝis. La venkinto estas…\n\n🏆 <b>Alice<\/b> 🏆"
+<  }
