@@ -38,8 +38,6 @@
 #include "pcx-file-error.h"
 #include "pcx-socket.h"
 
-#define LISTEN_PORT 5061
-
 struct server {
         bool quit;
         int ret;
@@ -1177,6 +1175,33 @@ free_server(struct server *server)
         pcx_free(server);
 }
 
+static bool
+print_listen_port(int sock)
+{
+        struct pcx_netaddress_native native;
+
+        native.length = sizeof native.sockaddr_in6;
+
+        if (getsockname(sock, &native.sockaddr, &native.length) == -1) {
+                fprintf(stderr,
+                        "error getting listen socket address: %s\n",
+                        strerror(errno));
+                return false;
+        }
+
+        struct pcx_netaddress address;
+
+        pcx_netaddress_from_native(&address, &native);
+
+        char *address_string = pcx_netaddress_to_string(&address);
+
+        printf("Listening on %s\n", address_string);
+
+        pcx_free(address_string);
+
+        return true;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1196,7 +1221,7 @@ main(int argc, char **argv)
 
         struct pcx_error *error = NULL;
 
-        server->listen_socket = pcx_listen_socket_create_for_port(LISTEN_PORT,
+        server->listen_socket = pcx_listen_socket_create_for_port(0, /* port */
                                                                   &error);
 
         if (server->listen_socket == -1) {
@@ -1204,6 +1229,11 @@ main(int argc, char **argv)
                         "error creating listen socket: %s\n",
                         error->message);
                 pcx_error_free(error);
+                server->ret = EXIT_FAILURE;
+                goto out;
+        }
+
+        if (!print_listen_port(server->listen_socket)) {
                 server->ret = EXIT_FAILURE;
                 goto out;
         }
