@@ -54,7 +54,7 @@ struct pcx_werewolf {
         struct pcx_buffer buffer;
 
         struct pcx_main_context_source *timeout_source;
-        int next_phase;
+        int current_phase;
 
         enum pcx_werewolf_role extra_cards[PCX_WEREWOLF_N_EXTRA_CARDS];
         uint32_t available_roles;
@@ -310,8 +310,8 @@ next_phase_cb(struct pcx_main_context_source *source,
 
         werewolf->timeout_source = NULL;
 
-        while (werewolf->next_phase < PCX_N_ELEMENTS(roles)) {
-                enum pcx_werewolf_role role = werewolf->next_phase++;
+        while (++werewolf->current_phase < PCX_N_ELEMENTS(roles)) {
+                enum pcx_werewolf_role role = werewolf->current_phase;
 
                 if ((werewolf->available_roles & (1 << role)) &&
                     roles[role].phase_cb) {
@@ -352,6 +352,8 @@ pcx_werewolf_new(const struct pcx_game_callbacks *callbacks,
         werewolf->callbacks = *callbacks;
         werewolf->user_data = user_data;
         pcx_buffer_init(&werewolf->buffer);
+
+        werewolf->current_phase = -1;
 
         werewolf->n_players = n_players;
 
@@ -630,7 +632,7 @@ handle_vote_cb(struct pcx_werewolf *werewolf,
         if (vote == -1)
                 return;
 
-        if (werewolf->next_phase < PCX_N_ELEMENTS(roles))
+        if (werewolf->current_phase != PCX_N_ELEMENTS(roles))
                 return;
 
         if (vote >= werewolf->n_players)
