@@ -1,6 +1,6 @@
 /*
  * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
- * Copyright (C) 2019  Neil Roberts
+ * Copyright (C) 2024  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,30 +18,11 @@
 
 #include "config.h"
 
-#include "pcx-game.h"
+#include "pcx-werewolf-help.h"
 
-#include "pcx-coup.h"
-#include "pcx-snitch.h"
-#include "pcx-love.h"
-#include "pcx-werewolf.h"
-#include "pcx-six.h"
-#include "pcx-fox.h"
-#include "pcx-wordparty.h"
-#include "pcx-chameleon.h"
-#include "pcx-zombie.h"
-#include "pcx-superfight.h"
+#include "pcx-text.h"
 
-const struct pcx_game * const
-pcx_game_list[] = {
-        &pcx_coup_game,
-        &pcx_love_game,
-        &pcx_werewolf_game,
-        &pcx_six_game,
-        &pcx_fox_game,
-        &pcx_wordparty_game,
-        &pcx_chameleon_game,
-        &pcx_zombie_game,
-        &pcx_snitch_game,
-        &pcx_superfight_game,
-        NULL
+const char *
+pcx_werewolf_help[] = {
+        [PCX_TEXT_LANGUAGE_ENGLISH] = "stub",
 };

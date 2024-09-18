@@ -12,7 +12,7 @@ Play Coup, Love Letter and other games with your friends online for free directl
 
 @ENABLED_GAMES@
 
-coup loveletter six fox chameleon zombie snitch superfight
+coup loveletter werewolf six fox chameleon zombie snitch superfight
 
 @HELP@
 
@@ -61,6 +61,10 @@ Snitch
 @LOVE_LETTER_TITLE@
 
 Love Letter
+
+@WEREWOLF_TITLE@
+
+One Night Werewolf
 
 @SIX_TITLE@
 

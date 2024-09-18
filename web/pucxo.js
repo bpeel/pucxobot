@@ -101,6 +101,7 @@ Pucxo.prototype.checkQueryString = function()
 Pucxo.GAMES = [
   { "title": "@COUP_TITLE@", "keyword": "coup" },
   { "title": "@LOVE_LETTER_TITLE@", "keyword": "loveletter", "help": "love" },
+  { "title": "@WEREWOLF_TITLE@", "keyword": "werewolf" },
   { "title": "@SIX_TITLE@", "keyword": "six" },
   { "title": "@FOX_TITLE@", "keyword": "fox" },
   { "title": "@SNITCH_TITLE@", "keyword": "snitch" },

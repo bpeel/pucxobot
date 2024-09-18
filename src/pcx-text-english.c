@@ -32,6 +32,8 @@ pcx_text_english[] = {
         "Snitch",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_WEREWOLF] =
+        "One Night Werewolf",
         [PCX_TEXT_STRING_NAME_SIX] =
         "6 Takes!",
         [PCX_TEXT_STRING_NAME_FOX] =
@@ -54,6 +56,10 @@ pcx_text_english[] = {
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Create a game of Love Letter",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND] =
+        "/werewolf",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND_DESCRIPTION] =
+        "Create a game of One Night Werewolf",
         [PCX_TEXT_STRING_SIX_START_COMMAND] =
         "/six",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
@@ -688,4 +694,49 @@ pcx_text_english[] = {
         "Everybody except %p gets 2 points.",
         [PCX_TEXT_STRING_START_ROUND_BUTTON] =
         "Start the next round",
+        [PCX_TEXT_STRING_SHOW_ROLES] =
+        "The village consists of the following roles:",
+        [PCX_TEXT_STRING_FALL_ASLEEP] =
+        "Everybody looks at their role before falling asleep for the night.",
+        [PCX_TEXT_STRING_TELL_ROLE] =
+        "Your role is:",
+        [PCX_TEXT_STRING_VILLAGER] =
+        "Villager",
+        [PCX_TEXT_STRING_WEREWOLF] =
+        "Werewolf",
+        [PCX_TEXT_STRING_WEREWOLF_PHASE] =
+        "The werewolves wake up and look at each other before going back "
+        "to sleep.",
+        [PCX_TEXT_STRING_WEREWOLVES_ARE] =
+        "The werewolves in the village are:",
+        [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
+        "The sun rises and everyone in the village wakes up and starts "
+        "discussing who they think the werewolves might be. When you are "
+        "ready you can start voting.",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_WEREWOLF] =
+        "If you’ve finished the discussion, you can vote for who you think "
+        "the werewolf is. You can change your mind up until everyone has "
+        "voted.",
+        [PCX_TEXT_STRING_CHANGED_VOTE] =
+        "%s has changed their vote.",
+        [PCX_TEXT_STRING_VOTES_ARE] =
+        "The votes were:",
+        [PCX_TEXT_STRING_NO_ONE_DIES] =
+        "No one got more than one vote so no one dies!",
+        [PCX_TEXT_STRING_NO_WEREWOLVES] =
+        "There were no werewolves at the end of the game!",
+        [PCX_TEXT_STRING_HOWEVER_ONE_WEREWOLF] =
+        "However, %s is a werewolf!",
+        [PCX_TEXT_STRING_HOWEVER_MULTIPLE_WEREWOLVES] =
+        "However, %s are werewolves!",
+        [PCX_TEXT_STRING_SACRIFICE] =
+        "The village has chosen to sacrifice %s.",
+        [PCX_TEXT_STRING_MULTIPLE_SACRIFICES] =
+        "The village has chosen to sacrifice the following people:",
+        [PCX_TEXT_STRING_THEIR_ROLE] =
+        "Their role was:",
+        [PCX_TEXT_STRING_VILLAGERS_WIN] =
+        "🧑‍🌾 The villagers win! 🧑‍🌾",
+        [PCX_TEXT_STRING_WEREWOLVES_WIN] =
+        "🐺 The werewolves win! 🐺",
 };

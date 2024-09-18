@@ -61,6 +61,8 @@ server_src = [
         'pcx-chameleon-list.c',
         'pcx-zombie.c',
         'pcx-zombie-help.c',
+        'pcx-werewolf.c',
+        'pcx-werewolf-help.c',
         'sha1.c',
 ]
 
