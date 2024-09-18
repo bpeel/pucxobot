@@ -28,6 +28,7 @@ struct pcx_werewolf;
 enum pcx_werewolf_role {
         PCX_WEREWOLF_ROLE_VILLAGER,
         PCX_WEREWOLF_ROLE_WEREWOLF,
+        PCX_WEREWOLF_ROLE_SEER,
 };
 
 struct pcx_werewolf_debug_overrides {

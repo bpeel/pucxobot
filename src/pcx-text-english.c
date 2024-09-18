@@ -704,11 +704,22 @@ pcx_text_english[] = {
         "Villager",
         [PCX_TEXT_STRING_WEREWOLF] =
         "Werewolf",
+        [PCX_TEXT_STRING_SEER] =
+        "Seer",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "The werewolves wake up and look at each other before going back "
         "to sleep.",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "The werewolves in the village are:",
+        [PCX_TEXT_STRING_SEER_PHASE] =
+        "The seer wakes up and can look at another player’s card or two of "
+        "the cards that aren’t being used.",
+        [PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER] =
+        "Two cards from the center",
+        [PCX_TEXT_STRING_SHOW_TWO_CARDS_FROM_CENTER] =
+        "Two of the cards from the center are:",
+        [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =
+        "%s’s role is:",
         [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
         "The sun rises and everyone in the village wakes up and starts "
         "discussing who they think the werewolves might be. When you are "

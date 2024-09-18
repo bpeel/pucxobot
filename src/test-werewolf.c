@@ -176,31 +176,48 @@ check_idle(struct test_data *data)
 }
 
 static struct test_data *
-start_basic_game(int n_werewolves)
+start_game_with_cards(int n_players,
+                      const enum pcx_werewolf_role *cards,
+                      const char *village_message)
 {
         struct test_data *data = create_test_data();
 
-        queue_global_message(data,
-                             "The village consists of the following roles:\n"
-                             "\n"
-                             "🧑‍🌾 Villager × 4\n"
-                             "🐺 Werewolf × 3\n"
-                             "\n"
-                             "Everybody looks at their role before falling "
-                             "asleep for the night.");
+        queue_global_message(data, village_message);
 
-        for (int i = 0; i < n_werewolves; i++) {
-                queue_private_message(data,
-                                      i,
-                                      "Your role is: 🐺 Werewolf");
+        for (int i = 0; i < n_players; i++) {
+                const char *role_message = NULL;
+
+                switch (cards[i]) {
+                case PCX_WEREWOLF_ROLE_VILLAGER:
+                        role_message = "Your role is: 🧑‍🌾 Villager";
+                        break;
+                case PCX_WEREWOLF_ROLE_WEREWOLF:
+                        role_message = "Your role is: 🐺 Werewolf";
+                        break;
+                case PCX_WEREWOLF_ROLE_SEER:
+                        role_message = "Your role is: 🔮 Seer";
+                        break;
+                }
+
+                queue_private_message(data, i, role_message);
         }
 
-        for (int i = n_werewolves; i < 4; i++) {
-                queue_private_message(data,
-                                      i,
-                                      "Your role is: 🧑‍🌾 Villager");
-        }
+        if (!start_game(data, n_players, cards))
+                goto error;
 
+        if (!check_idle(data))
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static struct test_data *
+start_basic_game(int n_werewolves)
+{
         enum pcx_werewolf_role override_cards[] = {
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
@@ -217,8 +234,20 @@ start_basic_game(int n_werewolves)
         for (int i = 4; i < 4 + (3 - n_werewolves); i++)
                 override_cards[i] = PCX_WEREWOLF_ROLE_WEREWOLF;
 
-        if (!start_game(data, 4, override_cards))
-                goto error;
+        struct test_data *data =
+                start_game_with_cards(4 /* n_players */,
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 4\n"
+                                      "🐺 Werewolf × 3\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return NULL;
 
         if (!check_idle(data))
                 goto error;
@@ -815,6 +844,299 @@ out:
         return ret;
 }
 
+static struct test_data *
+create_see_player_game(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 3\n"
+                                      "🐺 Werewolf × 3\n"
+                                      "🔮 Seer\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return NULL;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        for (int i = 1; i < 3; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Bob\n"
+                                      "Charles");
+        }
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "The seer wakes up and can look at another "
+                             "player’s card or two of the cards that aren’t "
+                             "being used.");
+
+        struct test_message *message =
+                queue_private_message(data,
+                                      0, /* player */
+                                      "Whose card do you want to see?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "see:0", "Alice");
+        test_message_add_button(message, "see:1", "Bob");
+        test_message_add_button(message, "see:2", "Charles");
+        test_message_add_button(message, "see:3", "David");
+        test_message_add_button(message,
+                                "see:center",
+                                "Two cards from the center");
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_see_player_card(void)
+{
+        struct test_data *data = create_see_player_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              0,
+                              "Bob’s role is: 🐺 Werewolf");
+
+        queue_global_message(data,
+                             "The sun rises and everyone in the village wakes "
+                             "up and starts discussing who they think the "
+                             "werewolves might be. When you are ready you can "
+                             "start voting.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:1");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_see_middle_cards(void)
+{
+        struct test_data *data = create_see_player_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              0,
+                              "Two of the cards from the center are:\n"
+                              "\n"
+                              "🐺 Werewolf\n"
+                              "🧑‍🌾 Villager");
+
+        queue_global_message(data,
+                             "The sun rises and everyone in the village wakes "
+                             "up and starts discussing who they think the "
+                             "werewolves might be. When you are ready you can "
+                             "start voting.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:center");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_seer_in_middle_cards(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 4\n"
+                                      "🐺 Werewolf × 2\n"
+                                      "🔮 Seer\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        for (int i = 0; i < 2; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Alice\n"
+                                      "Bob");
+        }
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "The seer wakes up and can look at another "
+                             "player’s card or two of the cards that aren’t "
+                             "being used.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        /* The bot should wait anywhere between 5 and 15 seconds to
+         * make it look like the seer might be doing something.
+         */
+        test_time_hack_add_time(4);
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(12);
+
+        queue_global_message(data,
+                             "The sun rises and everyone in the village wakes "
+                             "up and starts discussing who they think the "
+                             "werewolves might be. When you are ready you can "
+                             "start voting.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_bad_see(void)
+{
+        struct test_data *data = create_see_player_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  1,
+                                                  "see:0");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:potato");
+
+        if (!check_idle(data))
+                ret = false;
+
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_see_in_wrong_phase(void)
+{
+        struct test_data *data = start_basic_game(2);
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:0");
+
+        if (!check_idle(data))
+                ret = false;
+
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -854,6 +1176,21 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_destroy_game_with_game_over_source())
+                ret = EXIT_FAILURE;
+
+        if (!test_see_player_card())
+                ret = EXIT_FAILURE;
+
+        if (!test_see_middle_cards())
+                ret = EXIT_FAILURE;
+
+        if (!test_seer_in_middle_cards())
+                ret = EXIT_FAILURE;
+
+        if (!test_bad_see())
+                ret = EXIT_FAILURE;
+
+        if (!test_see_in_wrong_phase())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
