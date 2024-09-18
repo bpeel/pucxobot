@@ -275,7 +275,7 @@ skip_to_voting_phase(int n_werewolves)
         test_time_hack_add_time(2);
 
         queue_global_message(data,
-                             "The werewolves wake up and look at each other "
+                             "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
@@ -305,10 +305,9 @@ skip_to_voting_phase(int n_werewolves)
         test_time_hack_add_time(2);
 
         queue_global_message(data,
-                             "The sun rises and everyone in the village wakes "
-                             "up and starts discussing who they think the "
-                             "werewolves might be. When you are ready you can "
-                             "start voting.");
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
 
         if (!test_message_run_queue(&data->message_data))
                 goto error;
@@ -876,7 +875,7 @@ create_see_player_game(void)
         test_time_hack_add_time(11);
 
         queue_global_message(data,
-                             "The werewolves wake up and look at each other "
+                             "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
         for (int i = 1; i < 3; i++) {
@@ -894,7 +893,7 @@ create_see_player_game(void)
         test_time_hack_add_time(11);
 
         queue_global_message(data,
-                             "The seer wakes up and can look at another "
+                             "🔮 The seer wakes up and can look at another "
                              "player’s card or two of the cards that aren’t "
                              "being used.");
 
@@ -936,10 +935,9 @@ test_see_player_card(void)
                               "Bob’s role is: 🐺 Werewolf");
 
         queue_global_message(data,
-                             "The sun rises and everyone in the village wakes "
-                             "up and starts discussing who they think the "
-                             "werewolves might be. When you are ready you can "
-                             "start voting.");
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
@@ -974,10 +972,9 @@ test_see_middle_cards(void)
                               "🧑‍🌾 Villager");
 
         queue_global_message(data,
-                             "The sun rises and everyone in the village wakes "
-                             "up and starts discussing who they think the "
-                             "werewolves might be. When you are ready you can "
-                             "start voting.");
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
@@ -1028,7 +1025,7 @@ test_seer_in_middle_cards(void)
         test_time_hack_add_time(11);
 
         queue_global_message(data,
-                             "The werewolves wake up and look at each other "
+                             "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
         for (int i = 0; i < 2; i++) {
@@ -1048,7 +1045,7 @@ test_seer_in_middle_cards(void)
         test_time_hack_add_time(11);
 
         queue_global_message(data,
-                             "The seer wakes up and can look at another "
+                             "🔮 The seer wakes up and can look at another "
                              "player’s card or two of the cards that aren’t "
                              "being used.");
 
@@ -1070,10 +1067,9 @@ test_seer_in_middle_cards(void)
         test_time_hack_add_time(12);
 
         queue_global_message(data,
-                             "The sun rises and everyone in the village wakes "
-                             "up and starts discussing who they think the "
-                             "werewolves might be. When you are ready you can "
-                             "start voting.");
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
