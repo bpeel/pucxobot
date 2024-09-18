@@ -687,6 +687,9 @@ test_bad_vote(void)
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
                                                   "vote:3/");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "vate:3");
 
         if (!check_idle(data))
                 ret = false;

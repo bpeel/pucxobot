@@ -390,23 +390,22 @@ get_help_cb(enum pcx_text_language language)
 }
 
 static int
-extract_vote(const char *callback_data)
+extract_int(const char *extra_data)
 {
-        if (strncmp(callback_data, "vote:", 5))
+        if (extra_data == NULL)
                 return -1;
 
-        const char *number_start = callback_data + 5;
         const char *p;
         int value = 0;
 
-        for (p = number_start; *p; p++) {
+        for (p = extra_data; *p; p++) {
                 if (*p < '0' || *p > '9')
                         return -1;
 
                 value = value * 10 + *p - '0';
         }
 
-        if (p == number_start)
+        if (p == extra_data)
                 return -1;
 
         return value;
@@ -622,15 +621,11 @@ show_vote_results(struct pcx_werewolf *werewolf)
 }
 
 static void
-handle_callback_data_cb(void *user_data,
-                        int player_num,
-                        const char *callback_data)
+handle_vote_cb(struct pcx_werewolf *werewolf,
+               int player_num,
+               const char *extra_data)
 {
-        struct pcx_werewolf *werewolf = user_data;
-
-        assert(player_num >= 0 && player_num < werewolf->n_players);
-
-        int vote = extract_vote(callback_data);
+        int vote = extract_int(extra_data);
 
         if (vote == -1)
                 return;
@@ -671,6 +666,45 @@ handle_callback_data_cb(void *user_data,
                         message.text = (const char *) werewolf->buffer.data;
                         werewolf->callbacks.send_message(&message,
                                                          werewolf->user_data);
+                }
+        }
+}
+
+static void
+handle_callback_data_cb(void *user_data,
+                        int player_num,
+                        const char *callback_data)
+{
+        struct pcx_werewolf *werewolf = user_data;
+
+        assert(player_num >= 0 && player_num < werewolf->n_players);
+
+        const char *colon = strchr(callback_data, ':');
+        const char *extra_data;
+        size_t command_length;
+
+        if (colon) {
+                command_length = colon - callback_data;
+                extra_data = colon + 1;
+        } else {
+                command_length = strlen(callback_data);
+                extra_data = NULL;
+        }
+
+        static const struct {
+                const char *name;
+                void (* cb)(struct pcx_werewolf *werewolf,
+                            int player_num,
+                            const char *extra_data);
+        } commands[] = {
+                { "vote", handle_vote_cb },
+        };
+
+        for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
+                if (command_length == strlen(commands[i].name) &&
+                    !memcmp(callback_data, commands[i].name, command_length)) {
+                        commands[i].cb(werewolf, player_num, extra_data);
+                        break;
                 }
         }
 }
