@@ -904,7 +904,6 @@ create_see_player_game(void)
                                       "Whose card do you want to see?");
 
         test_message_enable_check_buttons(message);
-        test_message_add_button(message, "see:0", "Alice");
         test_message_add_button(message, "see:1", "Bob");
         test_message_add_button(message, "see:2", "Charles");
         test_message_add_button(message, "see:3", "David");
@@ -1100,8 +1099,13 @@ test_bad_see(void)
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
                                                   "see");
+        /* A non-seer trying to see */
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   1,
+                                                  "see:0");
+        /* The seer can’t see her own card */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
                                                   "see:0");
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,

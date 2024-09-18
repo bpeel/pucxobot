@@ -143,33 +143,39 @@ send_seer_choice(struct pcx_werewolf *werewolf,
                  int seer_player)
 {
         struct pcx_game_button *buttons =
-                pcx_alloc((werewolf->n_players + 1) * sizeof *buttons);
+                pcx_alloc(werewolf->n_players * sizeof *buttons);
+        int button_num = 0;
 
         for (int i = 0; i < werewolf->n_players; i++) {
+                if (i == seer_player)
+                        continue;
+
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
                 pcx_buffer_append_printf(&buf, "see:%i", i);
 
-                buttons[i].text = werewolf->players[i].name;
-                buttons[i].data = (char *) buf.data;
+                buttons[button_num].text = werewolf->players[i].name;
+                buttons[button_num].data = (char *) buf.data;
+
+                button_num++;
         }
 
-        buttons[werewolf->n_players].text =
+        buttons[button_num].text =
                 pcx_text_get(werewolf->language,
                              PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER);
-        buttons[werewolf->n_players].data = "see:center";
+        buttons[button_num].data = "see:center";
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
         message.buttons = buttons;
-        message.n_buttons = werewolf->n_players + 1;
+        message.n_buttons = werewolf->n_players;
         message.target = seer_player;
         message.text = pcx_text_get(werewolf->language,
                                     PCX_TEXT_STRING_WHO_SEE_CARD);
 
         werewolf->callbacks.send_message(&message, werewolf->user_data);
 
-        for (int i = 0; i < werewolf->n_players; i++)
+        for (int i = 0; i < werewolf->n_players - 1; i++)
                 pcx_free((char *) buttons[i].data);
 
         pcx_free(buttons);
@@ -521,6 +527,9 @@ handle_see_player_card(struct pcx_werewolf *werewolf,
                        int player_num,
                        int target)
 {
+        if (target == player_num)
+                return;
+
         pcx_buffer_set_length(&werewolf->buffer, 0);
 
         const char *msg = pcx_text_get(werewolf->language,
