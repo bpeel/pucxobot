@@ -729,6 +729,8 @@ pcx_text_english[] = {
         "voted.",
         [PCX_TEXT_STRING_CHANGED_VOTE] =
         "%s has changed their vote.",
+        [PCX_TEXT_STRING_CANT_VOTE_SELF] =
+        "You can’t vote for yourself.",
         [PCX_TEXT_STRING_VOTES_ARE] =
         "The votes were:",
         [PCX_TEXT_STRING_NO_ONE_DIES] =

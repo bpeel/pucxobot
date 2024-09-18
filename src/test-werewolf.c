@@ -351,17 +351,17 @@ test_vote_one_person_villagers_win(void)
 
         bool ret = true;
 
-        for (int i = 0; i < 3; i++) {
-                if (!send_simple_vote(data, i, 0)) {
-                        ret = false;
-                        goto out;
-                }
+        if (!send_simple_vote(data, 0, 1) ||
+            !send_simple_vote(data, 1, 0) ||
+            !send_simple_vote(data, 2, 0)) {
+                ret = false;
+                goto out;
         }
 
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
+                             "Alice 👉 Bob\n"
                              "Bob 👉 Alice\n"
                              "Charles 👉 Alice\n"
                              "David 👉 Alice\n"
@@ -393,11 +393,11 @@ test_vote_one_person_werewolves_win(void)
 
         bool ret = true;
 
-        for (int i = 0; i < 3; i++) {
-                if (!send_simple_vote(data, i, 2)) {
-                        ret = false;
-                        goto out;
-                }
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 0)) {
+                ret = false;
+                goto out;
         }
 
         queue_global_message(data,
@@ -405,8 +405,8 @@ test_vote_one_person_werewolves_win(void)
                              "\n"
                              "Alice 👉 Charles\n"
                              "Bob 👉 Charles\n"
-                             "Charles 👉 Charles\n"
-                             "David 👉 Alice\n"
+                             "Charles 👉 Alice\n"
+                             "David 👉 Bob\n"
                              "\n"
                              "The village has chosen to sacrifice Charles. "
                              "Their role was: 🧑‍🌾 Villager\n"
@@ -415,7 +415,7 @@ test_vote_one_person_werewolves_win(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 0)) {
+        if (!send_vote(data, 3, 1)) {
                 ret = false;
                 goto out;
         }
@@ -480,7 +480,7 @@ test_vote_multiple_people_werewolves_win(void)
 
         bool ret = true;
 
-        if (!send_simple_vote(data, 0, 2) ||
+        if (!send_simple_vote(data, 0, 3) ||
             !send_simple_vote(data, 1, 2) ||
             !send_simple_vote(data, 2, 3)) {
                 ret = false;
@@ -490,10 +490,10 @@ test_vote_multiple_people_werewolves_win(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Charles\n"
+                             "Alice 👉 David\n"
                              "Bob 👉 Charles\n"
                              "Charles 👉 David\n"
-                             "David 👉 David\n"
+                             "David 👉 Charles\n"
                              "\n"
                              "The village has chosen to sacrifice the "
                              "following people:\n"
@@ -505,7 +505,7 @@ test_vote_multiple_people_werewolves_win(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 3)) {
+        if (!send_vote(data, 3, 2)) {
                 ret = false;
                 goto out;
         }
@@ -525,9 +525,9 @@ test_no_kill_no_werewolves(void)
 
         bool ret = true;
 
-        if (!send_simple_vote(data, 0, 0) ||
-            !send_simple_vote(data, 1, 1) ||
-            !send_simple_vote(data, 2, 2)) {
+        if (!send_simple_vote(data, 0, 1) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 3)) {
                 ret = false;
                 goto out;
         }
@@ -535,10 +535,10 @@ test_no_kill_no_werewolves(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Bob\n"
-                             "Charles 👉 Charles\n"
-                             "David 👉 David\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
                              "\n"
                              "No one got more than one vote so no one dies! "
                              "There were no werewolves at the end of the "
@@ -548,7 +548,7 @@ test_no_kill_no_werewolves(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 3)) {
+        if (!send_vote(data, 3, 0)) {
                 ret = false;
                 goto out;
         }
@@ -568,9 +568,9 @@ test_no_kill_one_werewolf(void)
 
         bool ret = true;
 
-        if (!send_simple_vote(data, 0, 0) ||
-            !send_simple_vote(data, 1, 1) ||
-            !send_simple_vote(data, 2, 2)) {
+        if (!send_simple_vote(data, 0, 1) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 3)) {
                 ret = false;
                 goto out;
         }
@@ -578,10 +578,10 @@ test_no_kill_one_werewolf(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Bob\n"
-                             "Charles 👉 Charles\n"
-                             "David 👉 David\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
                              "\n"
                              "No one got more than one vote so no one dies! "
                              "However, Alice is a werewolf!\n"
@@ -590,7 +590,7 @@ test_no_kill_one_werewolf(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 3)) {
+        if (!send_vote(data, 3, 0)) {
                 ret = false;
                 goto out;
         }
@@ -610,9 +610,9 @@ test_no_kill_two_werewolves(void)
 
         bool ret = true;
 
-        if (!send_simple_vote(data, 0, 0) ||
-            !send_simple_vote(data, 1, 1) ||
-            !send_simple_vote(data, 2, 2)) {
+        if (!send_simple_vote(data, 0, 1) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 3)) {
                 ret = false;
                 goto out;
         }
@@ -620,10 +620,10 @@ test_no_kill_two_werewolves(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Bob\n"
-                             "Charles 👉 Charles\n"
-                             "David 👉 David\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
                              "\n"
                              "No one got more than one vote so no one dies! "
                              "However, Alice and Bob are werewolves!\n"
@@ -632,7 +632,7 @@ test_no_kill_two_werewolves(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 3)) {
+        if (!send_vote(data, 3, 0)) {
                 ret = false;
                 goto out;
         }
@@ -652,9 +652,9 @@ test_no_kill_three_werewolves(void)
 
         bool ret = true;
 
-        if (!send_simple_vote(data, 0, 0) ||
-            !send_simple_vote(data, 1, 1) ||
-            !send_simple_vote(data, 2, 2)) {
+        if (!send_simple_vote(data, 0, 1) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 3)) {
                 ret = false;
                 goto out;
         }
@@ -662,10 +662,10 @@ test_no_kill_three_werewolves(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Bob\n"
-                             "Charles 👉 Charles\n"
-                             "David 👉 David\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
                              "\n"
                              "No one got more than one vote so no one dies! "
                              "However, Alice, Bob and Charles are werewolves!\n"
@@ -674,7 +674,7 @@ test_no_kill_three_werewolves(void)
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
-        if (!send_vote(data, 3, 3)) {
+        if (!send_vote(data, 3, 0)) {
                 ret = false;
                 goto out;
         }
@@ -750,6 +750,28 @@ test_vote_before_voting_phase(void)
 }
 
 static bool
+test_vote_self(void)
+{
+        struct test_data *data = skip_to_voting_phase(2);
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              1,
+                              "You can’t vote for yourself.");
+
+        if (!send_vote(data, 1, 1))
+                ret = false;
+
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
 test_change_vote(void)
 {
         struct test_data *data = skip_to_voting_phase(2);
@@ -760,7 +782,7 @@ test_change_vote(void)
         bool ret = true;
 
         for (int i = 0; i < 3; i++) {
-                if (!send_simple_vote(data, i, 0)) {
+                if (!send_simple_vote(data, i, i + 1)) {
                         ret = false;
                         goto out;
                 }
@@ -781,12 +803,12 @@ test_change_vote(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Alice\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
                              "Charles 👉 Bob\n"
                              "David 👉 Alice\n"
                              "\n"
-                             "The village has chosen to sacrifice Alice. Their "
+                             "The village has chosen to sacrifice Bob. Their "
                              "role was: 🐺 Werewolf\n"
                              "\n"
                              "🧑‍🌾 The villagers win! 🧑‍🌾");
@@ -814,7 +836,7 @@ test_destroy_game_with_game_over_source(void)
         bool ret = true;
 
         for (int i = 0; i < 3; i++) {
-                if (!send_simple_vote(data, i, 0)) {
+                if (!send_simple_vote(data, i, i + 1)) {
                         ret = false;
                         goto out;
                 }
@@ -823,12 +845,12 @@ test_destroy_game_with_game_over_source(void)
         queue_global_message(data,
                              "Everybody voted! The votes were:\n"
                              "\n"
-                             "Alice 👉 Alice\n"
-                             "Bob 👉 Alice\n"
-                             "Charles 👉 Alice\n"
-                             "David 👉 David\n"
+                             "Alice 👉 Bob\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Bob\n"
                              "\n"
-                             "The village has chosen to sacrifice Alice. Their "
+                             "The village has chosen to sacrifice Bob. Their "
                              "role was: 🐺 Werewolf\n"
                              "\n"
                              "🧑‍🌾 The villagers win! 🧑‍🌾");
@@ -836,7 +858,7 @@ test_destroy_game_with_game_over_source(void)
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   3,
-                                                  "vote:3");
+                                                  "vote:1");
 
 out:
         free_test_data(data);
@@ -1170,6 +1192,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_vote_before_voting_phase())
+                ret = EXIT_FAILURE;
+
+        if (!test_vote_self())
                 ret = EXIT_FAILURE;
 
         if (!test_change_vote())

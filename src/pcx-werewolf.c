@@ -786,6 +786,17 @@ show_vote_results(struct pcx_werewolf *werewolf)
 }
 
 static void
+report_vote_for_self(struct pcx_werewolf *werewolf,
+                     int player_num)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_CANT_VOTE_SELF);
+        message.target = player_num;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+}
+
+static void
 handle_vote_cb(struct pcx_werewolf *werewolf,
                int player_num,
                const char *extra_data)
@@ -800,6 +811,11 @@ handle_vote_cb(struct pcx_werewolf *werewolf,
 
         if (vote >= werewolf->n_players)
                 return;
+
+        if (vote == player_num) {
+                report_vote_for_self(werewolf, player_num);
+                return;
+        }
 
         werewolf->players[player_num].vote = vote;
 
