@@ -38,11 +38,6 @@
 #define PCX_WEREWOLF_N_EXTRA_CARDS 3
 #define PCX_WEREWOLF_N_WEREWOLVES 2
 
-enum pcx_werewolf_role {
-        PCX_WEREWOLF_ROLE_VILLAGER,
-        PCX_WEREWOLF_ROLE_WEREWOLF,
-};
-
 struct pcx_werewolf_player {
         char *name;
         enum pcx_werewolf_role role;
@@ -206,7 +201,8 @@ start_voting_cb(struct pcx_main_context_source *source,
 }
 
 static void
-deal_roles(struct pcx_werewolf *werewolf)
+deal_roles(struct pcx_werewolf *werewolf,
+           const enum pcx_werewolf_role *card_overrides)
 {
         enum pcx_werewolf_role cards[PCX_WEREWOLF_MAX_PLAYERS +
                                      PCX_WEREWOLF_N_EXTRA_CARDS];
@@ -229,6 +225,9 @@ deal_roles(struct pcx_werewolf *werewolf)
                 cards[j] = cards[i];
                 cards[i] = t;
         }
+
+        if (card_overrides)
+                memcpy(cards, card_overrides, n_cards * sizeof cards[0]);
 
         /* Give a card to each player */
         for (int i = 0; i < werewolf->n_players; i++)
@@ -337,13 +336,13 @@ next_phase_cb(struct pcx_main_context_source *source,
                                              werewolf);
 }
 
-static void *
-create_game_cb(const struct pcx_config *config,
-               const struct pcx_game_callbacks *callbacks,
-               void *user_data,
-               enum pcx_text_language language,
-               int n_players,
-               const char * const *names)
+struct pcx_werewolf *
+pcx_werewolf_new(const struct pcx_game_callbacks *callbacks,
+                 void *user_data,
+                 enum pcx_text_language language,
+                 int n_players,
+                 const char *const *names,
+                 const struct pcx_werewolf_debug_overrides *overrides)
 {
         assert(n_players > 0 && n_players <= PCX_WEREWOLF_MAX_PLAYERS);
 
@@ -359,13 +358,29 @@ create_game_cb(const struct pcx_config *config,
         for (unsigned i = 0; i < n_players; i++)
                 werewolf->players[i].name = pcx_strdup(names[i]);
 
-        deal_roles(werewolf);
+        deal_roles(werewolf, overrides ? overrides->cards : NULL);
         show_village_roles(werewolf);
         send_roles(werewolf);
 
         queue_next_phase(werewolf, 10);
 
         return werewolf;
+}
+
+static void *
+create_game_cb(const struct pcx_config *config,
+               const struct pcx_game_callbacks *callbacks,
+               void *user_data,
+               enum pcx_text_language language,
+               int n_players,
+               const char * const *names)
+{
+        return pcx_werewolf_new(callbacks,
+                                user_data,
+                                language,
+                                n_players,
+                                names,
+                                NULL /* overrides */);
 }
 
 static char *

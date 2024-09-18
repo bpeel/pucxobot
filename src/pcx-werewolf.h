@@ -23,4 +23,23 @@
 
 extern const struct pcx_game pcx_werewolf_game;
 
+struct pcx_werewolf;
+
+enum pcx_werewolf_role {
+        PCX_WEREWOLF_ROLE_VILLAGER,
+        PCX_WEREWOLF_ROLE_WEREWOLF,
+};
+
+struct pcx_werewolf_debug_overrides {
+        const enum pcx_werewolf_role *cards;
+};
+
+struct pcx_werewolf *
+pcx_werewolf_new(const struct pcx_game_callbacks *callbacks,
+                 void *user_data,
+                 enum pcx_text_language language,
+                 int n_players,
+                 const char *const *names,
+                 const struct pcx_werewolf_debug_overrides *overrides);
+
 #endif /* PCX_WEREWOLF_H */

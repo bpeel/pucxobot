@@ -250,6 +250,29 @@ test_chameleon = executable('test-chameleon', test_chameleon_src,
                             dependencies: [thread_dep])
 test('chameleon', test_chameleon)
 
+test_werewolf_src = [
+        'pcx-buffer.c',
+        'pcx-class-store.c',
+        'pcx-error.c',
+        'pcx-list.c',
+        'pcx-slice.c',
+        'pcx-slab.c',
+        'pcx-text.c',
+        'pcx-util.c',
+        'pcx-werewolf.c',
+        'pcx-werewolf-help.c',
+        'test-message.c',
+        'test-time-hack.c',
+        'test-werewolf.c',
+]
+
+test_werewolf_src += translations
+
+test_werewolf = executable('test-werewolf', test_werewolf_src,
+                            include_directories: configinc,
+                            dependencies: [thread_dep])
+test('werewolf', test_werewolf)
+
 fake_telegram_src = [
         'fake-telegram.c',
         'pcx-main-context.c',
