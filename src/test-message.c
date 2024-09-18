@@ -37,6 +37,8 @@ test_message_player_names[] = {
         "Fred",
         "George",
         "Harry",
+        "Ivan",
+        "James",
 };
 
 static void
