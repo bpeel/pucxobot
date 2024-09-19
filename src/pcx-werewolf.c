@@ -196,20 +196,24 @@ find_player_for_wakeup_role(struct pcx_werewolf *werewolf,
 }
 
 static void
-send_seer_choice(struct pcx_werewolf *werewolf,
-                 int seer_player)
+send_target_choice(struct pcx_werewolf *werewolf,
+                   enum pcx_text_string message_text,
+                   int active_player,
+                   const char *command,
+                   enum pcx_text_string extra_button_text,
+                   const char *extra_button_command)
 {
         struct pcx_game_button *buttons =
                 pcx_alloc(werewolf->n_players * sizeof *buttons);
         int button_num = 0;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (i == seer_player)
+                if (i == active_player)
                         continue;
 
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-                pcx_buffer_append_printf(&buf, "see:%i", i);
+                pcx_buffer_append_printf(&buf, "%s:%i", command, i);
 
                 buttons[button_num].text = werewolf->players[i].name;
                 buttons[button_num].data = (char *) buf.data;
@@ -218,17 +222,15 @@ send_seer_choice(struct pcx_werewolf *werewolf,
         }
 
         buttons[button_num].text =
-                pcx_text_get(werewolf->language,
-                             PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER);
-        buttons[button_num].data = "see:center";
+                pcx_text_get(werewolf->language, extra_button_text);
+        buttons[button_num].data = extra_button_command;
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
         message.buttons = buttons;
         message.n_buttons = werewolf->n_players;
-        message.target = seer_player;
-        message.text = pcx_text_get(werewolf->language,
-                                    PCX_TEXT_STRING_WHO_SEE_CARD);
+        message.target = active_player;
+        message.text = pcx_text_get(werewolf->language, message_text);
 
         werewolf->callbacks.send_message(&message, werewolf->user_data);
 
@@ -236,6 +238,18 @@ send_seer_choice(struct pcx_werewolf *werewolf,
                 pcx_free((char *) buttons[i].data);
 
         pcx_free(buttons);
+}
+
+static void
+send_seer_choice(struct pcx_werewolf *werewolf,
+                 int seer_player)
+{
+        send_target_choice(werewolf,
+                           PCX_TEXT_STRING_WHO_SEE_CARD,
+                           seer_player,
+                           "see",
+                           PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER,
+                           "see:center");
 }
 
 static void
@@ -255,6 +269,35 @@ seer_phase_cb(struct pcx_werewolf *werewolf)
                 send_seer_choice(werewolf, seer_player);
 }
 
+static void
+send_robber_choice(struct pcx_werewolf *werewolf,
+                   int robber_player)
+{
+        send_target_choice(werewolf,
+                           PCX_TEXT_STRING_WHO_TO_ROB,
+                           robber_player,
+                           "rob",
+                           PCX_TEXT_STRING_NOBODY,
+                           "rob:nobody");
+}
+
+static void
+robber_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_ROBBER_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int robber_player =
+                find_player_for_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_ROBBER);
+
+        if (robber_player == -1)
+                queue_next_phase(werewolf, rand() % 10 + 5);
+        else
+                send_robber_choice(werewolf, robber_player);
+}
+
 static const struct pcx_werewolf_role_data
 roles[] = {
         [PCX_WEREWOLF_ROLE_VILLAGER] = {
@@ -270,6 +313,11 @@ roles[] = {
                 .symbol = "🔮",
                 .name = PCX_TEXT_STRING_SEER,
                 .phase_cb = seer_phase_cb,
+        },
+        [PCX_WEREWOLF_ROLE_ROBBER] = {
+                .symbol = "🤏",
+                .name = PCX_TEXT_STRING_ROBBER,
+                .phase_cb = robber_phase_cb,
         },
 };
 
@@ -348,8 +396,10 @@ deal_roles(struct pcx_werewolf *werewolf,
         for (int i = 0; i < PCX_WEREWOLF_N_WEREWOLVES; i++)
                 cards[card_num++] = PCX_WEREWOLF_ROLE_WEREWOLF;
 
-        /* And the seer */
+        /* … the seer */
         cards[card_num++] = PCX_WEREWOLF_ROLE_SEER;
+        /* and the robber */
+        cards[card_num++] = PCX_WEREWOLF_ROLE_ROBBER;
 
         /* The rest of the cards are villagers */
         while (card_num < n_cards)
@@ -632,6 +682,80 @@ handle_see_cb(struct pcx_werewolf *werewolf,
                 handle_see_player_card(werewolf, player_num, target);
         } else {
                 handle_see_center_cards(werewolf, player_num);
+        }
+}
+
+static void
+handle_rob_player_card(struct pcx_werewolf *werewolf,
+                       int player_num,
+                       int target)
+{
+        if (target == player_num)
+                return;
+
+        enum pcx_werewolf_role stolen_role = werewolf->players[target].card;
+
+        pcx_buffer_set_length(&werewolf->buffer, 0);
+
+        const char *msg = pcx_text_get(werewolf->language,
+                                       PCX_TEXT_STRING_STEAL_FROM);
+        pcx_buffer_append_printf(&werewolf->buffer,
+                                 msg,
+                                 werewolf->players[target].name);
+
+        pcx_buffer_append_c(&werewolf->buffer, ' ');
+
+        append_role(werewolf, stolen_role);
+
+        werewolf->players[target].card =
+                werewolf->players[player_num].card;
+        werewolf->players[player_num].card = stolen_role;
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = (const char *) werewolf->buffer.data;
+        message.target = player_num;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        start_next_phase(werewolf);
+}
+
+static void
+handle_rob_nobody(struct pcx_werewolf *werewolf,
+                  int player_num)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_ROBBED_NOBODY);
+        message.target = player_num;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        start_next_phase(werewolf);
+}
+
+static void
+handle_rob_cb(struct pcx_werewolf *werewolf,
+              int player_num,
+              const char *extra_data)
+{
+        if (extra_data == NULL)
+                return;
+
+        if (werewolf->current_phase != PCX_WEREWOLF_ROLE_ROBBER)
+                return;
+
+        if (werewolf->players[player_num].wakeup_role !=
+            PCX_WEREWOLF_ROLE_ROBBER)
+                return;
+
+        if (strcmp(extra_data, "nobody")) {
+                int target = extract_int(extra_data);
+
+                if (target == -1)
+                        return;
+
+                handle_rob_player_card(werewolf, player_num, target);
+        } else {
+                handle_rob_nobody(werewolf, player_num);
         }
 }
 
@@ -939,6 +1063,7 @@ handle_callback_data_cb(void *user_data,
         } commands[] = {
                 { "vote", handle_vote_cb },
                 { "see", handle_see_cb },
+                { "rob", handle_rob_cb },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {

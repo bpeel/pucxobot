@@ -706,6 +706,8 @@ pcx_text_english[] = {
         "Werewolf",
         [PCX_TEXT_STRING_SEER] =
         "Seer",
+        [PCX_TEXT_STRING_ROBBER] =
+        "Robber",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -723,6 +725,18 @@ pcx_text_english[] = {
         "Two of the cards from the center are:",
         [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =
         "%s’s role is:",
+        [PCX_TEXT_STRING_ROBBER_PHASE] =
+        "🤏 The robber wakes up and may swap his card with another player’s "
+        "card. If so he will look at the new card.",
+        [PCX_TEXT_STRING_NOBODY] =
+        "Nobody",
+        [PCX_TEXT_STRING_WHO_TO_ROB] =
+        "Who do you want to rob?",
+        [PCX_TEXT_STRING_STEAL_FROM] =
+        "You take the card in front of %s and give them your card. Their card "
+        "was:",
+        [PCX_TEXT_STRING_ROBBED_NOBODY] =
+        "You keep the card you have and don’t rob anyone.",
         [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
         "🌅 The sun has risen. Everyone in the village wakes up and starts "
         "discussing who they think the werewolves might be.",
