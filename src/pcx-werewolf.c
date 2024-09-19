@@ -435,6 +435,28 @@ troublemaker_phase_cb(struct pcx_werewolf *werewolf)
                 send_troublemaker_choice(werewolf, troublemaker_player);
 }
 
+static void
+drunk_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_DRUNK_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int drunk_player =
+                find_player_for_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_DRUNK);
+
+        if (drunk_player != -1) {
+                enum pcx_werewolf_role temp =
+                        werewolf->players[drunk_player].card;
+                werewolf->players[drunk_player].card =
+                        werewolf->extra_cards[0];
+                werewolf->extra_cards[0] = temp;
+        }
+
+        queue_next_phase(werewolf, 10);
+}
+
 static const struct pcx_werewolf_role_data
 roles[] = {
         [PCX_WEREWOLF_ROLE_VILLAGER] = {
@@ -465,6 +487,11 @@ roles[] = {
                 .symbol = "🐈",
                 .name = PCX_TEXT_STRING_TROUBLEMAKER,
                 .phase_cb = troublemaker_phase_cb,
+        },
+        [PCX_WEREWOLF_ROLE_DRUNK] = {
+                .symbol = "🍺",
+                .name = PCX_TEXT_STRING_DRUNK,
+                .phase_cb = drunk_phase_cb,
         },
 };
 

@@ -220,6 +220,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_TROUBLEMAKER:
                         role_message = "Your role is: 🐈 Troublemaker";
                         break;
+                case PCX_WEREWOLF_ROLE_DRUNK:
+                        role_message = "Your role is: 🍺 Drunk";
+                        break;
                 }
 
                 queue_private_message(data, i, role_message);
@@ -2292,6 +2295,159 @@ out:
         return ret;
 }
 
+static bool
+test_drunk(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_DRUNK,
+                PCX_WEREWOLF_ROLE_ROBBER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 5\n"
+                                      "🤏 Robber\n"
+                                      "🍺 Drunk\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🤏 The robber wakes up and may swap his card "
+                             "with another player’s card. If so he will look "
+                             "at the new card.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(16);
+
+        queue_global_message(data,
+                             "🍺 The drunk wakes up confused and swaps his "
+                             "card with one of the cards in the middle of the "
+                             "table. He no longer knows what role he is.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!skip_to_robber_vote_phase(data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 3) ||
+            !send_simple_vote(data, 1, 3) ||
+            !send_simple_vote(data, 2, 3)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 David\n"
+                             "Bob 👉 David\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
+                             "\n"
+                             "The village has chosen to sacrifice David. "
+                             "Their role was: 🤏 Robber\n"
+                             "\n"
+                             "🐺 The werewolves win! 🐺");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_no_drunk(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_DRUNK,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🍺 Drunk\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🍺 The drunk wakes up confused and swaps his "
+                             "card with one of the cards in the middle of the "
+                             "table. He no longer knows what role he is.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2391,6 +2547,12 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_two_masons())
+                ret = EXIT_FAILURE;
+
+        if (!test_drunk())
+                ret = EXIT_FAILURE;
+
+        if (!test_no_drunk())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());

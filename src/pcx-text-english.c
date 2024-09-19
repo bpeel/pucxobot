@@ -718,6 +718,8 @@ pcx_text_english[] = {
         "Robber",
         [PCX_TEXT_STRING_TROUBLEMAKER] =
         "Troublemaker",
+        [PCX_TEXT_STRING_DRUNK] =
+        "Drunk",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -764,6 +766,9 @@ pcx_text_english[] = {
         "You don’t cause any trouble tonight and don’t swap any cards.",
         [PCX_TEXT_STRING_SWAP_CARDS_OF] =
         "You swap the cards of %s and %s.",
+        [PCX_TEXT_STRING_DRUNK_PHASE] =
+        "🍺 The drunk wakes up confused and swaps his card with one of the "
+        "cards in the middle of the table. He no longer knows what role he is.",
         [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
         "🌅 The sun has risen. Everyone in the village wakes up and starts "
         "discussing who they think the werewolves might be.",
