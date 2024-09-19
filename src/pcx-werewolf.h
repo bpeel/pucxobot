@@ -34,6 +34,7 @@ enum pcx_werewolf_role {
         PCX_WEREWOLF_ROLE_TROUBLEMAKER,
         PCX_WEREWOLF_ROLE_DRUNK,
         PCX_WEREWOLF_ROLE_INSOMNIAC,
+        PCX_WEREWOLF_ROLE_HUNTER,
 };
 
 struct pcx_werewolf_debug_overrides {

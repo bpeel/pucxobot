@@ -226,6 +226,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_INSOMNIAC:
                         role_message = "Your role is: 🥱 Insomniac";
                         break;
+                case PCX_WEREWOLF_ROLE_HUNTER:
+                        role_message = "Your role is: 🔫 Hunter";
+                        break;
                 }
 
                 queue_private_message(data, i, role_message);
@@ -2712,6 +2715,221 @@ out:
         return ret;
 }
 
+static bool
+test_hunter_kills(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_HUNTER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 4\n"
+                                      "🐺 Werewolf × 2\n"
+                                      "🔫 Hunter\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐺 The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        queue_private_message(data,
+                              1,
+                              "You are the only werewolf! You can look "
+                              "at a card in the center of the table. "
+                              "That card is:\n"
+                              "\n"
+                              "🐺 Werewolf");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(61);
+
+        struct test_message *message =
+                queue_global_message(data,
+                                     "If you’ve finished the discussion, you "
+                                     "can vote for who you think the werewolf "
+                                     "is. You can change your mind up until "
+                                     "everyone has voted.");
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "vote:0", "Alice");
+        test_message_add_button(message, "vote:1", "Bob");
+        test_message_add_button(message, "vote:2", "Charles");
+        test_message_add_button(message, "vote:3", "David");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 Charles\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 Bob\n"
+                             "David 👉 Charles\n"
+                             "\n"
+                             "The village has chosen to sacrifice Charles. "
+                             "Their role was: 🔫 Hunter\n"
+                             "\n"
+                             "With his dying breath, the hunter shoots and "
+                             "kills Bob (🐺 Werewolf).\n"
+                             "\n"
+                             "🧑‍🌾 The villagers win! 🧑‍🌾");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 2)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_hunter_doesnt_kill(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_HUNTER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🔫 Hunter\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(61);
+
+        struct test_message *message =
+                queue_global_message(data,
+                                     "If you’ve finished the discussion, you "
+                                     "can vote for who you think the werewolf "
+                                     "is. You can change your mind up until "
+                                     "everyone has voted.");
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "vote:0", "Alice");
+        test_message_add_button(message, "vote:1", "Bob");
+        test_message_add_button(message, "vote:2", "Charles");
+        test_message_add_button(message, "vote:3", "David");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 Charles\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 Bob\n"
+                             "David 👉 Bob\n"
+                             "\n"
+                             "The village has chosen to sacrifice the "
+                             "following people:\n"
+                             "\n"
+                             "Bob (🧑‍🌾 Villager)\n"
+                             "Charles (🔫 Hunter)\n"
+                             "\n"
+                             "Nobody is on the werewolf team so nobody "
+                             "wins 🤦");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2829,6 +3047,12 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_insomniac_in_middle())
+                ret = EXIT_FAILURE;
+
+        if (!test_hunter_kills())
+                ret = EXIT_FAILURE;
+
+        if (!test_hunter_doesnt_kill())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());

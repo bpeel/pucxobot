@@ -615,6 +615,10 @@ roles[] = {
                 .phase_cb = insomniac_phase_cb,
                 .add_card_cb = insomniac_add_card_cb,
         },
+        [PCX_WEREWOLF_ROLE_HUNTER] = {
+                .symbol = "🔫",
+                .name = PCX_TEXT_STRING_HUNTER,
+        },
 };
 
 static void
@@ -1444,9 +1448,48 @@ find_dead_role(struct pcx_werewolf *werewolf,
 }
 
 static void
+check_hunter(struct pcx_werewolf *werewolf,
+             int *death_mask)
+{
+        int hunter = find_dead_role(werewolf,
+                                    *death_mask,
+                                    PCX_WEREWOLF_ROLE_HUNTER);
+
+        if (hunter == -1)
+                return;
+
+        int target = werewolf->players[hunter].vote;
+
+        if ((*death_mask & (1 << target)))
+                return;
+
+        const char *msg = pcx_text_get(werewolf->language,
+                                       PCX_TEXT_STRING_HUNTER_KILLS);
+        const char *split = strstr(msg, "%s");
+
+        assert(split != NULL);
+
+        pcx_buffer_append(&werewolf->buffer, msg, split - msg);
+
+        pcx_buffer_append_string(&werewolf->buffer,
+                                 werewolf->players[target].name);
+        pcx_buffer_append_string(&werewolf->buffer, " (");
+        append_role(werewolf, werewolf->players[target].card);
+        pcx_buffer_append_c(&werewolf->buffer, ')');
+
+        pcx_buffer_append_string(&werewolf->buffer, split + 2);
+
+        pcx_buffer_append_string(&werewolf->buffer, "\n\n");
+
+        *death_mask |= 1 << target;
+}
+
+static void
 add_result_with_death(struct pcx_werewolf *werewolf,
                       int death_mask)
 {
+        check_hunter(werewolf, &death_mask);
+
         if (find_dead_role(werewolf,
                            death_mask,
                            PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {

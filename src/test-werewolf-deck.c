@@ -134,7 +134,7 @@ test_loads_of_cards(void)
                 PCX_WEREWOLF_ROLE_TROUBLEMAKER,
                 PCX_WEREWOLF_ROLE_DRUNK,
                 PCX_WEREWOLF_ROLE_INSOMNIAC,
-                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_HUNTER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,

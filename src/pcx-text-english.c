@@ -722,6 +722,8 @@ pcx_text_english[] = {
         "Drunk",
         [PCX_TEXT_STRING_INSOMNIAC] =
         "Insomniac",
+        [PCX_TEXT_STRING_HUNTER] =
+        "Hunter",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -805,6 +807,8 @@ pcx_text_english[] = {
         "The village has chosen to sacrifice the following people:",
         [PCX_TEXT_STRING_THEIR_ROLE] =
         "Their role was:",
+        [PCX_TEXT_STRING_HUNTER_KILLS] =
+        "With his dying breath, the hunter shoots and kills %s.",
         [PCX_TEXT_STRING_VILLAGERS_WIN] =
         "🧑‍🌾 The villagers win! 🧑‍🌾",
         [PCX_TEXT_STRING_WEREWOLVES_WIN] =
