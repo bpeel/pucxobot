@@ -497,6 +497,81 @@ drunk_phase_cb(struct pcx_werewolf *werewolf)
         queue_next_phase(werewolf, 10);
 }
 
+static void
+send_insomniac_message(struct pcx_werewolf *werewolf,
+                       int insomniac_player)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        enum pcx_werewolf_role current_role =
+                werewolf->players[insomniac_player].card;
+
+        if (current_role == PCX_WEREWOLF_ROLE_INSOMNIAC) {
+                message.text = pcx_text_get(werewolf->language,
+                                            PCX_TEXT_STRING_STILL_INSOMNIAC);
+        } else {
+                pcx_buffer_set_length(&werewolf->buffer, 0);
+                append_text_string(werewolf, PCX_TEXT_STRING_YOU_ARE_NOW);
+                pcx_buffer_append_c(&werewolf->buffer, ' ');
+                append_role(werewolf, current_role);
+                message.text = (const char *) werewolf->buffer.data;
+        }
+
+        message.target = insomniac_player;
+
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+}
+
+static void
+insomniac_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_INSOMNIAC_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int insomniac_player =
+                find_player_for_wakeup_role(werewolf,
+                                            PCX_WEREWOLF_ROLE_INSOMNIAC);
+
+        if (insomniac_player != -1)
+                send_insomniac_message(werewolf, insomniac_player);
+
+        queue_next_phase(werewolf, 10);
+}
+
+static void
+insomniac_add_card_cb(struct pcx_werewolf_deck *deck)
+{
+        /* The insomniac needs one of these cards to also be in the
+         * deck otherwise the card is useless.
+         */
+        int needed_roles =
+                (1 << PCX_WEREWOLF_ROLE_ROBBER) |
+                (1 << PCX_WEREWOLF_ROLE_TROUBLEMAKER);
+
+        for (int i = 0; i < deck->card_num; i++) {
+                if (((1 << deck->cards[i]) & needed_roles)) {
+                        /* One of the cards is already there so we can
+                         * just add the insomniac.
+                         */
+                        add_card_to_deck(deck, PCX_WEREWOLF_ROLE_INSOMNIAC);
+
+                        return;
+                }
+        }
+
+        int available_roles = needed_roles & deck->available_roles;
+
+        /* Can we just add one of the needed roles? */
+        if (available_roles && deck->card_num + 2 <= deck->n_cards) {
+                add_card_to_deck(deck, ffs(available_roles) - 1);
+                add_card_to_deck(deck, PCX_WEREWOLF_ROLE_INSOMNIAC);
+        } else {
+                remove_card_availability(deck, PCX_WEREWOLF_ROLE_INSOMNIAC);
+        }
+}
+
 static const struct pcx_werewolf_role_data
 roles[] = {
         [PCX_WEREWOLF_ROLE_VILLAGER] = {
@@ -533,6 +608,12 @@ roles[] = {
                 .symbol = "🍺",
                 .name = PCX_TEXT_STRING_DRUNK,
                 .phase_cb = drunk_phase_cb,
+        },
+        [PCX_WEREWOLF_ROLE_INSOMNIAC] = {
+                .symbol = "🥱",
+                .name = PCX_TEXT_STRING_INSOMNIAC,
+                .phase_cb = insomniac_phase_cb,
+                .add_card_cb = insomniac_add_card_cb,
         },
 };
 

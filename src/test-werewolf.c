@@ -223,6 +223,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_DRUNK:
                         role_message = "Your role is: 🍺 Drunk";
                         break;
+                case PCX_WEREWOLF_ROLE_INSOMNIAC:
+                        role_message = "Your role is: 🥱 Insomniac";
+                        break;
                 }
 
                 queue_private_message(data, i, role_message);
@@ -2448,6 +2451,220 @@ out:
         return ret;
 }
 
+static bool
+test_still_insomniac(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🥱 Insomniac\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🥱 The insomniac wakes up and checks her card to "
+                             "see if she’s still the insomniac.");
+        queue_private_message(data, 3, "You are still the insomniac");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_no_longer_insomniac(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_ROBBER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 5\n"
+                                      "🤏 Robber\n"
+                                      "🥱 Insomniac\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🤏 The robber wakes up and may swap his card "
+                             "with another player’s card. If so he will look "
+                             "at the new card.");
+
+        struct test_message *message =
+                queue_private_message(data,
+                                      2, /* player */
+                                      "Who do you want to rob?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "rob:0", "Alice");
+        test_message_add_button(message, "rob:1", "Bob");
+        test_message_add_button(message, "rob:3", "David");
+        test_message_add_button(message, "rob:nobody", "Nobody");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_private_message(data,
+                              2,
+                              "You take the card in front of David and give "
+                              "them your card. Their card was: "
+                              "🥱 Insomniac");
+
+        queue_global_message(data,
+                             "🥱 The insomniac wakes up and checks her card to "
+                             "see if she’s still the insomniac.");
+
+        queue_private_message(data,
+                              3,
+                              "Your card is now: 🤏 Robber");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  2,
+                                                  "rob:3");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_insomniac_in_middle(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🥱 Insomniac\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🥱 The insomniac wakes up and checks her card to "
+                             "see if she’s still the insomniac.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2553,6 +2770,15 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_no_drunk())
+                ret = EXIT_FAILURE;
+
+        if (!test_still_insomniac())
+                ret = EXIT_FAILURE;
+
+        if (!test_no_longer_insomniac())
+                ret = EXIT_FAILURE;
+
+        if (!test_insomniac_in_middle())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());

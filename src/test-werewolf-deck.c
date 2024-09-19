@@ -133,6 +133,7 @@ test_loads_of_cards(void)
                 PCX_WEREWOLF_ROLE_ROBBER,
                 PCX_WEREWOLF_ROLE_TROUBLEMAKER,
                 PCX_WEREWOLF_ROLE_DRUNK,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
@@ -141,7 +142,105 @@ test_loads_of_cards(void)
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
+}
+
+static bool
+test_insomniac_robber_already_there(void)
+{
+        enum pcx_werewolf_role cards[6];
+
+        /* Add the seer, the robber and then the insomniac */
+        static const int number_queue[] = { 1, 1, 3 };
+        random_number_queue = number_queue;
+        random_number_queue_length = 3;
+
+        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+
+        enum pcx_werewolf_role expected_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
                 PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_ROBBER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+        };
+
+        return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
+}
+
+static bool
+test_insomniac_troublemaker_already_there(void)
+{
+        enum pcx_werewolf_role cards[6];
+
+        /* Add the seer, the troublemaker and then the insomniac */
+        static const int number_queue[] = { 1, 2, 3 };
+        random_number_queue = number_queue;
+        random_number_queue_length = 3;
+
+        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+
+        enum pcx_werewolf_role expected_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+        };
+
+        return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
+}
+
+static bool
+test_insomniac_force_robber(void)
+{
+        enum pcx_werewolf_role cards[6];
+
+        /* Add the seer and then the insomniac */
+        static const int number_queue[] = { 1, 4 };
+        random_number_queue = number_queue;
+        random_number_queue_length = 2;
+
+        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+
+        enum pcx_werewolf_role expected_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_ROBBER,
+                PCX_WEREWOLF_ROLE_INSOMNIAC,
+        };
+
+        return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
+}
+
+static bool
+test_cant_add_insomniac(void)
+{
+        enum pcx_werewolf_role cards[6];
+
+        /* Add the seer, the drunk and then try to add the insomniac.
+         * This won’t work and then it will end up adding the robber
+         * on it’s own instead.
+         */
+        static const int number_queue[] = { 1, 3, 3, 0 };
+        random_number_queue = number_queue;
+        random_number_queue_length = 4;
+
+        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+
+        enum pcx_werewolf_role expected_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_DRUNK,
+                PCX_WEREWOLF_ROLE_ROBBER,
         };
 
         return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
@@ -159,6 +258,18 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_loads_of_cards())
+                ret = EXIT_FAILURE;
+
+        if (!test_insomniac_robber_already_there())
+                ret = EXIT_FAILURE;
+
+        if (!test_insomniac_troublemaker_already_there())
+                ret = EXIT_FAILURE;
+
+        if (!test_insomniac_force_robber())
+                ret = EXIT_FAILURE;
+
+        if (!test_cant_add_insomniac())
                 ret = EXIT_FAILURE;
 
         return ret;

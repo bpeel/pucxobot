@@ -720,6 +720,8 @@ pcx_text_english[] = {
         "Troublemaker",
         [PCX_TEXT_STRING_DRUNK] =
         "Drunk",
+        [PCX_TEXT_STRING_INSOMNIAC] =
+        "Insomniac",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -769,6 +771,13 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_DRUNK_PHASE] =
         "🍺 The drunk wakes up confused and swaps his card with one of the "
         "cards in the middle of the table. He no longer knows what role he is.",
+        [PCX_TEXT_STRING_INSOMNIAC_PHASE] =
+        "🥱 The insomniac wakes up and checks her card to see if she’s still "
+        "the insomniac.",
+        [PCX_TEXT_STRING_STILL_INSOMNIAC] =
+        "You are still the insomniac",
+        [PCX_TEXT_STRING_YOU_ARE_NOW] =
+        "Your card is now:",
         [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
         "🌅 The sun has risen. Everyone in the village wakes up and starts "
         "discussing who they think the werewolves might be.",
