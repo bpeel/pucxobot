@@ -694,6 +694,12 @@ pcx_text_english[] = {
         "Everybody except %p gets 2 points.",
         [PCX_TEXT_STRING_START_ROUND_BUTTON] =
         "Start the next round",
+        [PCX_TEXT_STRING_WHICH_DECK_MODE] =
+        "Which game mode do you want to play?",
+        [PCX_TEXT_STRING_DECK_MODE_BASIC] =
+        "Basic",
+        [PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE] =
+        "Intermediate",
         [PCX_TEXT_STRING_SHOW_ROLES] =
         "The village consists of the following roles:",
         [PCX_TEXT_STRING_FALL_ASLEEP] =

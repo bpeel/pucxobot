@@ -38,6 +38,16 @@
 #define PCX_WEREWOLF_N_EXTRA_CARDS 3
 #define PCX_WEREWOLF_N_WEREWOLVES 2
 
+#define PCX_WEREWOLF_PICK_MODE_PHASE -2
+#define PCX_WEREWOLF_PICK_WAITING_PHASE -1
+
+enum pcx_werewolf_deck_mode {
+        PCX_WEREWOLF_DECK_MODE_BASIC,
+        PCX_WEREWOLF_DECK_MODE_INTERMEDIATE,
+};
+
+#define PCX_WEREWOLF_N_DECK_MODES 2
+
 struct pcx_werewolf_player {
         char *name;
 
@@ -62,6 +72,8 @@ struct pcx_werewolf {
         enum pcx_text_language language;
         struct pcx_buffer buffer;
 
+        enum pcx_werewolf_deck_mode deck_mode;
+
         struct pcx_main_context_source *timeout_source;
         int current_phase;
 
@@ -71,6 +83,8 @@ struct pcx_werewolf {
         int first_choice;
 
         uint32_t voted_mask;
+
+        enum pcx_werewolf_role *card_overrides;
 };
 
 struct pcx_werewolf_role_data {
@@ -453,13 +467,9 @@ start_voting_cb(struct pcx_main_context_source *source,
 }
 
 static void
-deal_roles(struct pcx_werewolf *werewolf,
-           const enum pcx_werewolf_role *card_overrides)
+make_basic_deck(enum pcx_werewolf_role *cards,
+                int n_cards)
 {
-        enum pcx_werewolf_role cards[PCX_WEREWOLF_MAX_PLAYERS +
-                                     PCX_WEREWOLF_N_EXTRA_CARDS];
-        int n_cards = werewolf->n_players + PCX_WEREWOLF_N_EXTRA_CARDS;
-
         int card_num = 0;
 
         /* Add the werewolves */
@@ -476,6 +486,70 @@ deal_roles(struct pcx_werewolf *werewolf,
         /* The rest of the cards are villagers */
         while (card_num < n_cards)
                 cards[card_num++] = PCX_WEREWOLF_ROLE_VILLAGER;
+}
+
+static void
+make_intermediate_deck(enum pcx_werewolf_role *cards,
+                       int n_cards)
+{
+        int card_num = 0;
+
+        /* Add the werewolves */
+        for (int i = 0; i < PCX_WEREWOLF_N_WEREWOLVES; i++)
+                cards[card_num++] = PCX_WEREWOLF_ROLE_WEREWOLF;
+
+        /* At least one villager for a 3-player game, two for a
+         * 4-player game and three for any other game.
+         */
+        int n_base_villagers = n_cards - PCX_WEREWOLF_N_EXTRA_CARDS - 2;
+
+        if (n_base_villagers > 3)
+                n_base_villagers = 3;
+
+        for (int i = 0; i < n_base_villagers; i++)
+                cards[card_num++] = PCX_WEREWOLF_ROLE_VILLAGER;
+
+        int available_roles =
+                ((1 << (int) PCX_N_ELEMENTS(roles)) - 1) &
+                ~(1 << PCX_WEREWOLF_ROLE_WEREWOLF) &
+                ~(1 << PCX_WEREWOLF_ROLE_VILLAGER);
+
+        /* Add a random selection of the available roles */
+        while (card_num < n_cards && available_roles) {
+                int n_roles = n_bits_in_filter(available_roles);
+                int role_index = rand() % n_roles;
+                int role_mask = available_roles;
+
+                while (role_index--)
+                        role_mask &= ~(1 << (ffs(role_mask) - 1));
+
+                int role = ffs(role_mask) - 1;
+
+                cards[card_num++] = role;
+
+                available_roles &= ~(1 << role);
+        }
+
+        /* The rest of the cards are villagers */
+        while (card_num < n_cards)
+                cards[card_num++] = PCX_WEREWOLF_ROLE_VILLAGER;
+}
+
+static void
+deal_roles(struct pcx_werewolf *werewolf)
+{
+        enum pcx_werewolf_role cards[PCX_WEREWOLF_MAX_PLAYERS +
+                                     PCX_WEREWOLF_N_EXTRA_CARDS];
+        int n_cards = werewolf->n_players + PCX_WEREWOLF_N_EXTRA_CARDS;
+
+        switch (werewolf->deck_mode) {
+        case PCX_WEREWOLF_DECK_MODE_BASIC:
+                make_basic_deck(cards, n_cards);
+                break;
+        case PCX_WEREWOLF_DECK_MODE_INTERMEDIATE:
+                make_intermediate_deck(cards, n_cards);
+                break;
+        }
 
         /* Shuffle the deck */
         for (int i = n_cards - 1; i > 0; i--) {
@@ -485,8 +559,11 @@ deal_roles(struct pcx_werewolf *werewolf,
                 cards[i] = t;
         }
 
-        if (card_overrides)
-                memcpy(cards, card_overrides, n_cards * sizeof cards[0]);
+        if (werewolf->card_overrides) {
+                memcpy(cards,
+                       werewolf->card_overrides,
+                       n_cards * sizeof cards[0]);
+        }
 
         /* Give a card to each player */
         for (int i = 0; i < werewolf->n_players; i++) {
@@ -602,6 +679,34 @@ next_phase_cb(struct pcx_main_context_source *source,
         start_next_phase(werewolf);
 }
 
+static void
+send_pick_deck_mode_message(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        const struct pcx_game_button buttons[] = {
+                {
+                        .text = pcx_text_get(werewolf->language,
+                                             PCX_TEXT_STRING_DECK_MODE_BASIC),
+                        .data = "mode:0",
+                },
+                {
+                        .text =
+                        pcx_text_get(werewolf->language,
+                                     PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE),
+                        .data = "mode:1",
+                },
+        };
+
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_WHICH_DECK_MODE);
+        message.buttons = buttons;
+        message.n_buttons = PCX_N_ELEMENTS(buttons);
+
+        werewolf->callbacks.send_message(&message,
+                                         werewolf->user_data);
+}
+
 struct pcx_werewolf *
 pcx_werewolf_new(const struct pcx_game_callbacks *callbacks,
                  void *user_data,
@@ -619,18 +724,21 @@ pcx_werewolf_new(const struct pcx_game_callbacks *callbacks,
         werewolf->user_data = user_data;
         pcx_buffer_init(&werewolf->buffer);
 
-        werewolf->current_phase = -1;
+        werewolf->current_phase = PCX_WEREWOLF_PICK_MODE_PHASE;
 
         werewolf->n_players = n_players;
+
+        if (overrides && overrides->cards) {
+                werewolf->card_overrides =
+                        pcx_memdup(overrides->cards,
+                                   sizeof (enum pcx_werewolf_role) *
+                                   (PCX_WEREWOLF_N_EXTRA_CARDS + n_players));
+        }
 
         for (unsigned i = 0; i < n_players; i++)
                 werewolf->players[i].name = pcx_strdup(names[i]);
 
-        deal_roles(werewolf, overrides ? overrides->cards : NULL);
-        show_village_roles(werewolf);
-        send_roles(werewolf);
-
-        queue_next_phase(werewolf, 10);
+        send_pick_deck_mode_message(werewolf);
 
         return werewolf;
 }
@@ -924,6 +1032,32 @@ handle_swap_cb(struct pcx_werewolf *werewolf,
         } else {
                 handle_swap_nobody(werewolf, player_num);
         }
+}
+
+static void
+handle_mode_cb(struct pcx_werewolf *werewolf,
+               int player_num,
+               const char *extra_data)
+{
+        if (extra_data == NULL)
+                return;
+
+        if (werewolf->current_phase != PCX_WEREWOLF_PICK_MODE_PHASE)
+                return;
+
+        int mode = extract_int(extra_data);
+
+        if (mode < 0 || mode >= PCX_WEREWOLF_N_DECK_MODES)
+                return;
+
+        werewolf->deck_mode = mode;
+        werewolf->current_phase = PCX_WEREWOLF_PICK_WAITING_PHASE;
+
+        deal_roles(werewolf);
+        show_village_roles(werewolf);
+        send_roles(werewolf);
+
+        queue_next_phase(werewolf, 10);
 }
 
 struct vote_count {
@@ -1232,6 +1366,7 @@ handle_callback_data_cb(void *user_data,
                 { "see", handle_see_cb },
                 { "rob", handle_rob_cb },
                 { "swap", handle_swap_cb },
+                { "mode", handle_mode_cb },
         };
 
         for (unsigned i = 0; i < PCX_N_ELEMENTS(commands); i++) {
@@ -1258,6 +1393,8 @@ free_game_cb(void *user_data)
                 pcx_main_context_remove_source(werewolf->timeout_source);
 
         pcx_buffer_destroy(&werewolf->buffer);
+
+        pcx_free(werewolf->card_overrides);
 
         pcx_free(werewolf);
 }

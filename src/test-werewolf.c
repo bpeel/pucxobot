@@ -100,6 +100,14 @@ start_game(struct test_data *data,
                 .cards = card_overrides,
         };
 
+        struct test_message *message =
+                queue_global_message(data,
+                                     "Which game mode do you want to play?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "mode:0", "Basic");
+        test_message_add_button(message, "mode:1", "Intermediate");
+
         data->werewolf = pcx_werewolf_new(&test_message_callbacks,
                                           &data->message_data,
                                           PCX_TEXT_LANGUAGE_ENGLISH,
@@ -182,6 +190,12 @@ start_game_with_cards(int n_players,
 {
         struct test_data *data = create_test_data();
 
+        if (data == NULL)
+                return NULL;
+
+        if (!start_game(data, n_players, cards))
+                goto error;
+
         queue_global_message(data, village_message);
 
         for (int i = 0; i < n_players; i++) {
@@ -208,10 +222,11 @@ start_game_with_cards(int n_players,
                 queue_private_message(data, i, role_message);
         }
 
-        if (!start_game(data, n_players, cards))
-                goto error;
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "mode:0");
 
-        if (!check_idle(data))
+        if (!test_message_run_queue(&data->message_data))
                 goto error;
 
         return data;
@@ -1232,6 +1247,10 @@ test_action_in_wrong_phase(void)
                                                   0,
                                                   "swap:0");
 
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "mode:0");
+
         if (!check_idle(data))
                 ret = false;
 
@@ -2025,6 +2044,85 @@ test_bad_swap(void)
         return ret;
 }
 
+static bool
+test_intermediate_mode(void)
+{
+        bool ret = true;
+
+        for (int n_players = 3; n_players <= 10; n_players++) {
+                struct test_data *data = create_test_data();
+
+                if (data == NULL)
+                        return false;
+
+                enum pcx_werewolf_role *cards =
+                        pcx_alloc((n_players + 3) * sizeof *cards);
+                for (int i = 0; i < n_players + 3; i++)
+                        cards[i] = PCX_WEREWOLF_ROLE_VILLAGER;
+
+                bool start_ret = start_game(data, n_players, cards);
+
+                pcx_free(cards);
+
+                if (!start_ret) {
+                        ret = false;
+                        goto out;
+                }
+
+                /* Sending invalid modes shouldn’t do anything */
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "mode");
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "mode:2");
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "mode:potato");
+
+                if (!check_idle(data)) {
+                        ret = false;
+                        goto out;
+                }
+
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+                pcx_buffer_append_printf(&buf,
+                                         "The village consists of the "
+                                         "following roles:\n"
+                                         "\n"
+                                         "🧑‍🌾 Villager × %i\n"
+                                         "\n"
+                                         "Everybody looks at their role before "
+                                         "falling asleep for the night.",
+                                         n_players + 3);
+
+                queue_global_message(data, (const char *) buf.data);
+
+                pcx_buffer_destroy(&buf);
+
+                for (int i = 0; i < n_players; i++) {
+                        queue_private_message(data,
+                                              i,
+                                              "Your role is: 🧑‍🌾 Villager");
+                }
+
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "mode:1");
+
+                if (!test_message_run_queue(&data->message_data)) {
+                        ret = false;
+                        goto out;
+                }
+
+        out:
+                free_test_data(data);
+        }
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2112,6 +2210,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_bad_swap())
+                ret = EXIT_FAILURE;
+
+        if (!test_intermediate_mode())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
