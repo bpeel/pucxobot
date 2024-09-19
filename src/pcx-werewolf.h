@@ -28,6 +28,7 @@ struct pcx_werewolf;
 enum pcx_werewolf_role {
         PCX_WEREWOLF_ROLE_VILLAGER,
         PCX_WEREWOLF_ROLE_WEREWOLF,
+        PCX_WEREWOLF_ROLE_MASON,
         PCX_WEREWOLF_ROLE_SEER,
         PCX_WEREWOLF_ROLE_ROBBER,
         PCX_WEREWOLF_ROLE_TROUBLEMAKER,

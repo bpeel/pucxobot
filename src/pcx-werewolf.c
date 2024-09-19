@@ -146,15 +146,16 @@ send_lone_wolf_message(struct pcx_werewolf *werewolf)
 }
 
 static void
-send_wolf_pack_message(struct pcx_werewolf *werewolf)
+send_player_same_role_message(struct pcx_werewolf *werewolf,
+                              enum pcx_text_string message_text,
+                              enum pcx_werewolf_role role)
 {
         pcx_buffer_set_length(&werewolf->buffer, 0);
-        append_text_string(werewolf, PCX_TEXT_STRING_WEREWOLVES_ARE);
+        append_text_string(werewolf, message_text);
         pcx_buffer_append_c(&werewolf->buffer, '\n');
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role ==
-                    PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].wakeup_role == role) {
                         pcx_buffer_append_c(&werewolf->buffer, '\n');
                         pcx_buffer_append_string(&werewolf->buffer,
                                                  werewolf->players[i].name);
@@ -166,13 +167,20 @@ send_wolf_pack_message(struct pcx_werewolf *werewolf)
         message.text = (const char *) werewolf->buffer.data;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role ==
-                    PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].wakeup_role == role) {
                         message.target = i;
                         werewolf->callbacks.send_message(&message,
                                                          werewolf->user_data);
                 }
         }
+}
+
+static void
+send_wolf_pack_message(struct pcx_werewolf *werewolf)
+{
+        send_player_same_role_message(werewolf,
+                                      PCX_TEXT_STRING_WEREWOLVES_ARE,
+                                      PCX_WEREWOLF_ROLE_WEREWOLF);
 }
 
 static void
@@ -291,6 +299,56 @@ send_seer_choice(struct pcx_werewolf *werewolf,
 }
 
 static void
+send_multiple_masons_message(struct pcx_werewolf *werewolf)
+{
+        send_player_same_role_message(werewolf,
+                                      PCX_TEXT_STRING_MASONS_ARE,
+                                      PCX_WEREWOLF_ROLE_MASON);
+}
+
+static void
+send_lone_mason_message(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_LONE_MASON);
+
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].wakeup_role ==
+                    PCX_WEREWOLF_ROLE_MASON) {
+                        message.target = i;
+                        werewolf->callbacks.send_message(&message,
+                                                         werewolf->user_data);
+                        break;
+                }
+        }
+}
+
+static void
+mason_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_MASON_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int n_masons = 0;
+
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].wakeup_role == PCX_WEREWOLF_ROLE_MASON)
+                        n_masons++;
+        }
+
+        if (n_masons == 1)
+                send_lone_mason_message(werewolf);
+        else if (n_masons > 1)
+                send_multiple_masons_message(werewolf);
+
+        queue_next_phase(werewolf, 10);
+}
+
+static void
 seer_phase_cb(struct pcx_werewolf *werewolf)
 {
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
@@ -387,6 +445,11 @@ roles[] = {
                 .symbol = "🐺",
                 .name = PCX_TEXT_STRING_WEREWOLF,
                 .phase_cb = werewolf_phase_cb,
+        },
+        [PCX_WEREWOLF_ROLE_MASON] = {
+                .symbol = "⚒️",
+                .name = PCX_TEXT_STRING_MASON,
+                .phase_cb = mason_phase_cb,
         },
         [PCX_WEREWOLF_ROLE_SEER] = {
                 .symbol = "🔮",
@@ -525,9 +588,19 @@ make_intermediate_deck(enum pcx_werewolf_role *cards,
 
                 int role = ffs(role_mask) - 1;
 
-                cards[card_num++] = role;
-
                 available_roles &= ~(1 << role);
+
+                /* The masons come as a pair so we have to make sure
+                 * there is space for them.
+                 */
+                if (role == PCX_WEREWOLF_ROLE_MASON) {
+                        if (card_num + 2 > n_cards)
+                                continue;
+
+                        cards[card_num++] = role;
+                }
+
+                cards[card_num++] = role;
         }
 
         /* The rest of the cards are villagers */

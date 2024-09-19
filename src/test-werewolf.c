@@ -208,6 +208,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_WEREWOLF:
                         role_message = "Your role is: 🐺 Werewolf";
                         break;
+                case PCX_WEREWOLF_ROLE_MASON:
+                        role_message = "Your role is: ⚒️ Mason";
+                        break;
                 case PCX_WEREWOLF_ROLE_SEER:
                         role_message = "Your role is: 🔮 Seer";
                         break;
@@ -2123,6 +2126,172 @@ test_intermediate_mode(void)
         return ret;
 }
 
+static bool
+test_no_masons(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 5\n"
+                                      "⚒️ Mason × 2\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "⚒️ The masons wake up and look at each other "
+                             "before going back to sleep.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_lone_mason(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 5\n"
+                                      "⚒️ Mason × 2\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "⚒️ The masons wake up and look at each other "
+                             "before going back to sleep.");
+
+        queue_private_message(data,
+                              3,
+                              "You are the only mason.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_two_masons(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_MASON,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 5\n"
+                                      "⚒️ Mason × 2\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return NULL;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "⚒️ The masons wake up and look at each other "
+                             "before going back to sleep.");
+
+        for (int i = 2; i <= 3; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "The masons in the village are:\n"
+                                      "\n"
+                                      "Charles\n"
+                                      "David");
+        }
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -2213,6 +2382,15 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_intermediate_mode())
+                ret = EXIT_FAILURE;
+
+        if (!test_no_masons())
+                ret = EXIT_FAILURE;
+
+        if (!test_lone_mason())
+                ret = EXIT_FAILURE;
+
+        if (!test_two_masons())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());

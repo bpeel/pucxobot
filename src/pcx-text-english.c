@@ -710,6 +710,8 @@ pcx_text_english[] = {
         "Villager",
         [PCX_TEXT_STRING_WEREWOLF] =
         "Werewolf",
+        [PCX_TEXT_STRING_MASON] =
+        "Mason",
         [PCX_TEXT_STRING_SEER] =
         "Seer",
         [PCX_TEXT_STRING_ROBBER] =
@@ -724,6 +726,13 @@ pcx_text_english[] = {
         "the table. That card is:",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "The werewolves in the village are:",
+        [PCX_TEXT_STRING_MASON_PHASE] =
+        "⚒️ The masons wake up and look at each other before going back "
+        "to sleep.",
+        [PCX_TEXT_STRING_LONE_MASON] =
+        "You are the only mason.",
+        [PCX_TEXT_STRING_MASONS_ARE] =
+        "The masons in the village are:",
         [PCX_TEXT_STRING_SEER_PHASE] =
         "🔮 The seer wakes up and can look at another player’s card or two of "
         "the cards that aren’t being used.",
