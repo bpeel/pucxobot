@@ -87,11 +87,39 @@ struct pcx_werewolf {
         enum pcx_werewolf_role *card_overrides;
 };
 
+/* An in-progress deck that is being built up */
+struct pcx_werewolf_deck {
+        enum pcx_werewolf_role *cards;
+        /* Total number of cards that will be added to this deck */
+        int n_cards;
+        /* The current number of cards that are in the deck */
+        int card_num;
+        /* A bitmask of roles that can be added to the deck */
+        int available_roles;
+};
+
 struct pcx_werewolf_role_data {
         const char *symbol;
         enum pcx_text_string name;
         void (* phase_cb)(struct pcx_werewolf *werewof);
+        void (* add_card_cb)(struct pcx_werewolf_deck *deck);
 };
+
+static void
+remove_card_availability(struct pcx_werewolf_deck *deck,
+                         enum pcx_werewolf_role card)
+{
+       deck->available_roles &= ~(1 << card);
+}
+
+static void
+add_card_to_deck(struct pcx_werewolf_deck *deck,
+                 enum pcx_werewolf_role card)
+{
+        assert(deck->card_num < deck->n_cards);
+        deck->cards[deck->card_num++] = card;
+        remove_card_availability(deck, card);
+}
 
 static void
 next_phase_cb(struct pcx_main_context_source *source,
@@ -349,6 +377,18 @@ mason_phase_cb(struct pcx_werewolf *werewolf)
 }
 
 static void
+mason_add_card_cb(struct pcx_werewolf_deck *deck)
+{
+        /* We can only add the mason card if there’s space for two of them */
+        if (deck->card_num + 2 <= deck->n_cards) {
+                add_card_to_deck(deck, PCX_WEREWOLF_ROLE_MASON);
+                add_card_to_deck(deck, PCX_WEREWOLF_ROLE_MASON);
+        } else {
+                remove_card_availability(deck, PCX_WEREWOLF_ROLE_MASON);
+        }
+}
+
+static void
 seer_phase_cb(struct pcx_werewolf *werewolf)
 {
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
@@ -472,6 +512,7 @@ roles[] = {
                 .symbol = "⚒️",
                 .name = PCX_TEXT_STRING_MASON,
                 .phase_cb = mason_phase_cb,
+                .add_card_cb = mason_add_card_cb,
         },
         [PCX_WEREWOLF_ROLE_SEER] = {
                 .symbol = "🔮",
@@ -582,11 +623,15 @@ static void
 make_intermediate_deck(enum pcx_werewolf_role *cards,
                        int n_cards)
 {
-        int card_num = 0;
+        struct pcx_werewolf_deck deck = {
+                .cards = cards,
+                .n_cards = n_cards,
+                .available_roles = (1 << (int) PCX_N_ELEMENTS(roles)) - 1,
+        };
 
         /* Add the werewolves */
         for (int i = 0; i < PCX_WEREWOLF_N_WEREWOLVES; i++)
-                cards[card_num++] = PCX_WEREWOLF_ROLE_WEREWOLF;
+                add_card_to_deck(&deck, PCX_WEREWOLF_ROLE_WEREWOLF);
 
         /* At least one villager for a 3-player game, two for a
          * 4-player game and three for any other game.
@@ -597,42 +642,28 @@ make_intermediate_deck(enum pcx_werewolf_role *cards,
                 n_base_villagers = 3;
 
         for (int i = 0; i < n_base_villagers; i++)
-                cards[card_num++] = PCX_WEREWOLF_ROLE_VILLAGER;
-
-        int available_roles =
-                ((1 << (int) PCX_N_ELEMENTS(roles)) - 1) &
-                ~(1 << PCX_WEREWOLF_ROLE_WEREWOLF) &
-                ~(1 << PCX_WEREWOLF_ROLE_VILLAGER);
+                add_card_to_deck(&deck, PCX_WEREWOLF_ROLE_VILLAGER);
 
         /* Add a random selection of the available roles */
-        while (card_num < n_cards && available_roles) {
-                int n_roles = n_bits_in_filter(available_roles);
+        while (deck.card_num < n_cards && deck.available_roles) {
+                int n_roles = n_bits_in_filter(deck.available_roles);
                 int role_index = rand() % n_roles;
-                int role_mask = available_roles;
+                int role_mask = deck.available_roles;
 
                 while (role_index--)
                         role_mask &= ~(1 << (ffs(role_mask) - 1));
 
                 int role = ffs(role_mask) - 1;
 
-                available_roles &= ~(1 << role);
-
-                /* The masons come as a pair so we have to make sure
-                 * there is space for them.
-                 */
-                if (role == PCX_WEREWOLF_ROLE_MASON) {
-                        if (card_num + 2 > n_cards)
-                                continue;
-
-                        cards[card_num++] = role;
-                }
-
-                cards[card_num++] = role;
+                if (roles[role].add_card_cb)
+                        roles[role].add_card_cb(&deck);
+                else
+                        add_card_to_deck(&deck, role);
         }
 
         /* The rest of the cards are villagers */
-        while (card_num < n_cards)
-                cards[card_num++] = PCX_WEREWOLF_ROLE_VILLAGER;
+        while (deck.card_num < n_cards)
+                add_card_to_deck(&deck, PCX_WEREWOLF_ROLE_VILLAGER);
 }
 
 static void
