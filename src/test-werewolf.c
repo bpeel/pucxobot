@@ -557,6 +557,52 @@ out:
 }
 
 static bool
+test_vote_multiple_people_nobody_wins(void)
+{
+        struct test_data *data = skip_to_voting_phase(0);
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_simple_vote(data, 0, 3) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 3)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 David\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Charles\n"
+                             "\n"
+                             "The village has chosen to sacrifice the "
+                             "following people:\n"
+                             "\n"
+                             "Charles (🧑‍🌾 Villager)\n"
+                             "David (🧑‍🌾 Villager)\n"
+                             "\n"
+                             "Nobody is on the werewolf team so nobody "
+                             "wins 🤦");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 2)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
 test_lone_wolf(void)
 {
         static const enum pcx_werewolf_role override_cards[] = {
@@ -2388,7 +2434,8 @@ test_drunk(void)
                              "The village has chosen to sacrifice David. "
                              "Their role was: 🤏 Robber\n"
                              "\n"
-                             "🐺 The werewolves win! 🐺");
+                             "Nobody is on the werewolf team so nobody "
+                             "wins 🤦");
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
@@ -2680,6 +2727,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_vote_multiple_people_werewolves_win())
+                ret = EXIT_FAILURE;
+
+        if (!test_vote_multiple_people_nobody_wins())
                 ret = EXIT_FAILURE;
 
         if (!test_lone_wolf())

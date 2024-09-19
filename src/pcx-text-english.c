@@ -809,4 +809,6 @@ pcx_text_english[] = {
         "🧑‍🌾 The villagers win! 🧑‍🌾",
         [PCX_TEXT_STRING_WEREWOLVES_WIN] =
         "🐺 The werewolves win! 🐺",
+        [PCX_TEXT_STRING_NOBODY_WINS] =
+        "Nobody is on the werewolf team so nobody wins 🤦",
 };

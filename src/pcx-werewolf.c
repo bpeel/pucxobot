@@ -1414,6 +1414,18 @@ get_death_mask(const struct vote_count *dead_votes,
         return mask;
 }
 
+static bool
+any_player_has_role(struct pcx_werewolf *werewolf,
+                    enum pcx_werewolf_role role)
+{
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].card == role)
+                        return true;
+        }
+
+        return false;
+}
+
 static int
 find_dead_role(struct pcx_werewolf *werewolf,
                int death_mask,
@@ -1438,7 +1450,14 @@ add_result_with_death(struct pcx_werewolf *werewolf,
         if (find_dead_role(werewolf,
                            death_mask,
                            PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {
-                append_text_string(werewolf, PCX_TEXT_STRING_WEREWOLVES_WIN);
+                if (any_player_has_role(werewolf,
+                                        PCX_WEREWOLF_ROLE_WEREWOLF)) {
+                        append_text_string(werewolf,
+                                           PCX_TEXT_STRING_WEREWOLVES_WIN);
+                } else {
+                        append_text_string(werewolf,
+                                           PCX_TEXT_STRING_NOBODY_WINS);
+                }
         } else {
                 append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
         }

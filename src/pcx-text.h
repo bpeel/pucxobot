@@ -409,6 +409,7 @@ enum pcx_text_string {
         PCX_TEXT_STRING_MULTIPLE_SACRIFICES,
         PCX_TEXT_STRING_VILLAGERS_WIN,
         PCX_TEXT_STRING_WEREWOLVES_WIN,
+        PCX_TEXT_STRING_NOBODY_WINS,
 };
 
 const char *
