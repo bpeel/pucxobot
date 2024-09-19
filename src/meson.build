@@ -273,6 +273,24 @@ test_werewolf = executable('test-werewolf', test_werewolf_src,
                             dependencies: [thread_dep])
 test('werewolf', test_werewolf)
 
+test_werewolf_deck_src = [
+        'pcx-buffer.c',
+        'pcx-list.c',
+        'pcx-main-context.c',
+        'pcx-slab.c',
+        'pcx-slice.c',
+        'pcx-text.c',
+        'pcx-util.c',
+        'pcx-werewolf-help.c',
+        'test-werewolf-deck.c',
+]
+
+test_werewolf_deck_src += translations
+
+test_werewolf_deck = executable('test-werewolf-deck', test_werewolf_deck_src,
+                            include_directories: configinc)
+test('werewolf-deck', test_werewolf_deck)
+
 fake_telegram_src = [
         'fake-telegram.c',
         'pcx-main-context.c',
