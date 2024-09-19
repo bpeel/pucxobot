@@ -40,7 +40,16 @@
 
 struct pcx_werewolf_player {
         char *name;
-        enum pcx_werewolf_role role;
+
+        /* Card that the player currently has in front of them. */
+        enum pcx_werewolf_role card;
+        /* Role that the player believes they have for the purposes of
+         * waking up at the right phase. This can be different from
+         * their actual card if someone has changed it during another
+         * phase.
+         */
+        enum pcx_werewolf_role wakeup_role;
+
         int vote;
 };
 
@@ -110,7 +119,8 @@ send_lone_wolf_message(struct pcx_werewolf *werewolf)
         message.text = (const char *) werewolf->buffer.data;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].wakeup_role ==
+                    PCX_WEREWOLF_ROLE_WEREWOLF) {
                         message.target = i;
                         werewolf->callbacks.send_message(&message,
                                                          werewolf->user_data);
@@ -127,7 +137,8 @@ send_wolf_pack_message(struct pcx_werewolf *werewolf)
         pcx_buffer_append_c(&werewolf->buffer, '\n');
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].wakeup_role ==
+                    PCX_WEREWOLF_ROLE_WEREWOLF) {
                         pcx_buffer_append_c(&werewolf->buffer, '\n');
                         pcx_buffer_append_string(&werewolf->buffer,
                                                  werewolf->players[i].name);
@@ -139,7 +150,8 @@ send_wolf_pack_message(struct pcx_werewolf *werewolf)
         message.text = (const char *) werewolf->buffer.data;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].wakeup_role ==
+                    PCX_WEREWOLF_ROLE_WEREWOLF) {
                         message.target = i;
                         werewolf->callbacks.send_message(&message,
                                                          werewolf->user_data);
@@ -158,7 +170,8 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
         int n_werewolves = 0;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF)
+                if (werewolf->players[i].wakeup_role ==
+                    PCX_WEREWOLF_ROLE_WEREWOLF)
                         n_werewolves++;
         }
 
@@ -171,11 +184,11 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
 }
 
 static int
-find_player_for_role(struct pcx_werewolf *werewolf,
-                     enum pcx_werewolf_role role)
+find_player_for_wakeup_role(struct pcx_werewolf *werewolf,
+                            enum pcx_werewolf_role role)
 {
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == role)
+                if (werewolf->players[i].wakeup_role == role)
                         return i;
         }
 
@@ -233,8 +246,8 @@ seer_phase_cb(struct pcx_werewolf *werewolf)
                                     PCX_TEXT_STRING_SEER_PHASE);
         werewolf->callbacks.send_message(&message, werewolf->user_data);
 
-        int seer_player = find_player_for_role(werewolf,
-                                               PCX_WEREWOLF_ROLE_SEER);
+        int seer_player = find_player_for_wakeup_role(werewolf,
+                                                      PCX_WEREWOLF_ROLE_SEER);
 
         if (seer_player == -1)
                 queue_next_phase(werewolf, rand() % 10 + 5);
@@ -354,8 +367,10 @@ deal_roles(struct pcx_werewolf *werewolf,
                 memcpy(cards, card_overrides, n_cards * sizeof cards[0]);
 
         /* Give a card to each player */
-        for (int i = 0; i < werewolf->n_players; i++)
-                werewolf->players[i].role = cards[i];
+        for (int i = 0; i < werewolf->n_players; i++) {
+                werewolf->players[i].wakeup_role = cards[i];
+                werewolf->players[i].card = cards[i];
+        }
 
         /* The rest of the cards are extra */
         memcpy(werewolf->extra_cards,
@@ -372,7 +387,7 @@ show_village_roles(struct pcx_werewolf *werewolf)
         int role_counts[PCX_N_ELEMENTS(roles)] = { 0, };
 
         for (int i = 0; i < werewolf->n_players; i++)
-                role_counts[werewolf->players[i].role]++;
+                role_counts[werewolf->players[i].card]++;
 
         for (int i = 0; i < PCX_WEREWOLF_N_EXTRA_CARDS; i++)
                 role_counts[werewolf->extra_cards[i]]++;
@@ -414,7 +429,7 @@ send_roles(struct pcx_werewolf *werewolf)
 
                 append_text_string(werewolf, PCX_TEXT_STRING_TELL_ROLE);
                 pcx_buffer_append_c(&werewolf->buffer, ' ');
-                append_role(werewolf, werewolf->players[i].role);
+                append_role(werewolf, werewolf->players[i].card);
 
                 struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
@@ -584,7 +599,7 @@ handle_see_player_card(struct pcx_werewolf *werewolf,
 
         pcx_buffer_append_c(&werewolf->buffer, ' ');
 
-        append_role(werewolf, werewolf->players[target].role);
+        append_role(werewolf, werewolf->players[target].card);
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
         message.text = (const char *) werewolf->buffer.data;
@@ -605,7 +620,7 @@ handle_see_cb(struct pcx_werewolf *werewolf,
         if (werewolf->current_phase != PCX_WEREWOLF_ROLE_SEER)
                 return;
 
-        if (werewolf->players[player_num].role != PCX_WEREWOLF_ROLE_SEER)
+        if (werewolf->players[player_num].wakeup_role != PCX_WEREWOLF_ROLE_SEER)
                 return;
 
         if (strcmp(extra_data, "center")) {
@@ -640,7 +655,7 @@ add_multiple_failed_peace_message(struct pcx_werewolf *werewolf)
         int n_werewolves = 0;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF)
+                if (werewolf->players[i].card == PCX_WEREWOLF_ROLE_WEREWOLF)
                         n_werewolves++;
         }
 
@@ -654,7 +669,7 @@ add_multiple_failed_peace_message(struct pcx_werewolf *werewolf)
         pcx_buffer_append(&werewolf->buffer, message, split - message);
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role != PCX_WEREWOLF_ROLE_WEREWOLF)
+                if (werewolf->players[i].card != PCX_WEREWOLF_ROLE_WEREWOLF)
                         continue;
 
                 pcx_buffer_append_string(&werewolf->buffer,
@@ -682,7 +697,7 @@ add_no_one_dies_message(struct pcx_werewolf *werewolf)
         int werewolf_player = -1;
 
         for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF) {
+                if (werewolf->players[i].card == PCX_WEREWOLF_ROLE_WEREWOLF) {
                         if (werewolf_player == -1) {
                                 werewolf_player = i;
                         } else {
@@ -714,7 +729,7 @@ static void
 add_one_death_message(struct pcx_werewolf *werewolf,
                       int dead_player)
 {
-        enum pcx_werewolf_role dead_role = werewolf->players[dead_player].role;
+        enum pcx_werewolf_role dead_role = werewolf->players[dead_player].card;
 
         const char *msg =
                 pcx_text_get(werewolf->language,
@@ -750,10 +765,10 @@ add_multiple_deaths_message(struct pcx_werewolf *werewolf,
 
                 pcx_buffer_append_string(&werewolf->buffer, player->name);
                 pcx_buffer_append_string(&werewolf->buffer, " (");
-                append_role(werewolf, player->role);
+                append_role(werewolf, player->card);
                 pcx_buffer_append_string(&werewolf->buffer, ")\n");
 
-                if (player->role == PCX_WEREWOLF_ROLE_WEREWOLF)
+                if (player->card == PCX_WEREWOLF_ROLE_WEREWOLF)
                         had_werewolf = true;
         }
 
