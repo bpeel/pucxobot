@@ -1379,11 +1379,6 @@ add_one_death_message(struct pcx_werewolf *werewolf,
         pcx_buffer_append_c(&werewolf->buffer, ' ');
         append_role(werewolf, dead_role);
         pcx_buffer_append_string(&werewolf->buffer, "\n\n");
-
-        if (dead_role == PCX_WEREWOLF_ROLE_WEREWOLF)
-                append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
-        else
-                append_text_string(werewolf, PCX_TEXT_STRING_WEREWOLVES_WIN);
 }
 
 static void
@@ -1391,8 +1386,6 @@ add_multiple_deaths_message(struct pcx_werewolf *werewolf,
                             const struct vote_count *dead_votes,
                             int n_dead_votes)
 {
-        bool had_werewolf = false;
-
         append_text_string(werewolf, PCX_TEXT_STRING_MULTIPLE_SACRIFICES);
         pcx_buffer_append_string(&werewolf->buffer, "\n\n");
 
@@ -1404,17 +1397,51 @@ add_multiple_deaths_message(struct pcx_werewolf *werewolf,
                 pcx_buffer_append_string(&werewolf->buffer, " (");
                 append_role(werewolf, player->card);
                 pcx_buffer_append_string(&werewolf->buffer, ")\n");
-
-                if (player->card == PCX_WEREWOLF_ROLE_WEREWOLF)
-                        had_werewolf = true;
         }
 
         pcx_buffer_append_string(&werewolf->buffer, "\n");
+}
 
-        if (had_werewolf)
-                append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
-        else
+static int
+get_death_mask(const struct vote_count *dead_votes,
+               int n_dead_votes)
+{
+        int mask = 0;
+
+        for (int i = 0; i < n_dead_votes; i++)
+                mask |= 1 << dead_votes[i].player_num;
+
+        return mask;
+}
+
+static int
+find_dead_role(struct pcx_werewolf *werewolf,
+               int death_mask,
+               enum pcx_werewolf_role role)
+{
+        while (death_mask) {
+                int player_num = ffs(death_mask) - 1;
+
+                if (werewolf->players[player_num].card == role)
+                        return player_num;
+
+                death_mask &= ~(1 << player_num);
+        }
+
+        return -1;
+}
+
+static void
+add_result_with_death(struct pcx_werewolf *werewolf,
+                      int death_mask)
+{
+        if (find_dead_role(werewolf,
+                           death_mask,
+                           PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {
                 append_text_string(werewolf, PCX_TEXT_STRING_WEREWOLVES_WIN);
+        } else {
+                append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
+        }
 }
 
 static void
@@ -1462,10 +1489,19 @@ show_vote_results(struct pcx_werewolf *werewolf)
         if (n_deaths >= werewolf->n_players) {
                 /* If nobody got more than one vote than no-one dies */
                 add_no_one_dies_message(werewolf);
-        } else if (n_deaths == 1) {
-                add_one_death_message(werewolf, vote_counts[0].player_num);
         } else {
-                add_multiple_deaths_message(werewolf, vote_counts, n_deaths);
+                if (n_deaths == 1) {
+                        add_one_death_message(werewolf,
+                                              vote_counts[0].player_num);
+                } else {
+                        add_multiple_deaths_message(werewolf,
+                                                    vote_counts,
+                                                    n_deaths);
+                }
+
+                int death_mask = get_death_mask(vote_counts, n_deaths);
+
+                add_result_with_death(werewolf, death_mask);
         }
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
