@@ -708,6 +708,8 @@ pcx_text_english[] = {
         "Seer",
         [PCX_TEXT_STRING_ROBBER] =
         "Robber",
+        [PCX_TEXT_STRING_TROUBLEMAKER] =
+        "Troublemaker",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -737,6 +739,16 @@ pcx_text_english[] = {
         "was:",
         [PCX_TEXT_STRING_ROBBED_NOBODY] =
         "You keep the card you have and don’t rob anyone.",
+        [PCX_TEXT_STRING_TROUBLEMAKER_PHASE] =
+        "🐈 The troublemaker wakes up and can swap two players’ cards.",
+        [PCX_TEXT_STRING_FIRST_SWAP] =
+        "Pick the first player whose card you want to swap.",
+        [PCX_TEXT_STRING_SECOND_SWAP] =
+        "Great, now pick the second player whose card you want to swap.",
+        [PCX_TEXT_STRING_SWAPPED_NOBODY] =
+        "You don’t cause any trouble tonight and don’t swap any cards.",
+        [PCX_TEXT_STRING_SWAP_CARDS_OF] =
+        "You swap the cards of %s and %s.",
         [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
         "🌅 The sun has risen. Everyone in the village wakes up and starts "
         "discussing who they think the werewolves might be.",

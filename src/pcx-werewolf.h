@@ -30,6 +30,7 @@ enum pcx_werewolf_role {
         PCX_WEREWOLF_ROLE_WEREWOLF,
         PCX_WEREWOLF_ROLE_SEER,
         PCX_WEREWOLF_ROLE_ROBBER,
+        PCX_WEREWOLF_ROLE_TROUBLEMAKER,
 };
 
 struct pcx_werewolf_debug_overrides {

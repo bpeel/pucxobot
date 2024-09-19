@@ -200,6 +200,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_ROBBER:
                         role_message = "Your role is: 🤏 Robber";
                         break;
+                case PCX_WEREWOLF_ROLE_TROUBLEMAKER:
+                        role_message = "Your role is: 🐈 Troublemaker";
+                        break;
                 }
 
                 queue_private_message(data, i, role_message);
@@ -1225,6 +1228,10 @@ test_action_in_wrong_phase(void)
                                                   0,
                                                   "rob:0");
 
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:0");
+
         if (!check_idle(data))
                 ret = false;
 
@@ -1656,6 +1663,368 @@ test_bad_rob(void)
         return ret;
 }
 
+static struct test_data *
+skip_to_troublemaker_phase(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 3\n"
+                                      "🐺 Werewolf × 3\n"
+                                      "🐈 Troublemaker\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return NULL;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐺 The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        for (int i = 1; i < 3; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Bob\n"
+                                      "Charles");
+        }
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐈 The troublemaker wakes up and can swap two "
+                             "players’ cards.");
+
+        struct test_message *message =
+                queue_private_message(data,
+                                      0, /* player */
+                                      "Pick the first player whose card you "
+                                      "want to swap.");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "swap:1", "Bob");
+        test_message_add_button(message, "swap:2", "Charles");
+        test_message_add_button(message, "swap:3", "David");
+        test_message_add_button(message, "swap:nobody", "Nobody");
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_swap(void)
+{
+        struct test_data *data = skip_to_troublemaker_phase();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        struct test_message *message =
+                queue_private_message(data,
+                                      0,
+                                      "Great, now pick the second player whose "
+                                      "card you want to swap.");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "swap:1", "Bob");
+        test_message_add_button(message, "swap:2", "Charles");
+        test_message_add_button(message, "swap:nobody", "Nobody");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:3");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Trying to swap with the same person should be ignored */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:3");
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_private_message(data,
+                              0,
+                              "You swap the cards of David and Bob.");
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:1");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!skip_to_robber_vote_phase(data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 3) ||
+            !send_simple_vote(data, 1, 3) ||
+            !send_simple_vote(data, 2, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 David\n"
+                             "Bob 👉 David\n"
+                             "Charles 👉 Bob\n"
+                             "David 👉 Bob\n"
+                             "\n"
+                             "The village has chosen to sacrifice the "
+                             "following people:\n"
+                             "\n"
+                             "Bob (🧑‍🌾 Villager)\n"
+                             "David (🐺 Werewolf)\n"
+                             "\n"
+                             "🧑‍🌾 The villagers win! 🧑‍🌾");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 1)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_swap_nobody(void)
+{
+        struct test_data *data = skip_to_troublemaker_phase();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              0,
+                              "You don’t cause any trouble tonight and don’t "
+                              "swap any cards.");
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:nobody");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!skip_to_robber_vote_phase(data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 3) ||
+            !send_simple_vote(data, 1, 0) ||
+            !send_simple_vote(data, 2, 3)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 David\n"
+                             "Bob 👉 Alice\n"
+                             "Charles 👉 David\n"
+                             "David 👉 Alice\n"
+                             "\n"
+                             "The village has chosen to sacrifice the "
+                             "following people:\n"
+                             "\n"
+                             "Alice (🐈 Troublemaker)\n"
+                             "David (🧑‍🌾 Villager)\n"
+                             "\n"
+                             "🐺 The werewolves win! 🐺");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+test_troublemaker_in_middle_cards(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 4\n"
+                                      "🐺 Werewolf × 2\n"
+                                      "🐈 Troublemaker\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐺 The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        for (int i = 0; i < 2; i++) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Alice\n"
+                                      "Bob");
+        }
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐈 The troublemaker wakes up and can swap two "
+                             "players’ cards.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        /* The bot should wait anywhere between 5 and 15 seconds to
+         * make it look like the troublemaker might be doing something.
+         */
+        test_time_hack_add_time(4);
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(12);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_bad_swap(void)
+{
+        struct test_data *data = skip_to_troublemaker_phase();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap");
+        /* A non-troublemaker tring to swap */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  1,
+                                                  "swap:0");
+        /* The troublemaker can’t swap her own card */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:0");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "swap:potato");
+
+        if (!check_idle(data))
+                ret = false;
+
+        free_test_data(data);
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1731,6 +2100,18 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_robber_in_middle_cards())
+                ret = EXIT_FAILURE;
+
+        if (!test_swap())
+                ret = EXIT_FAILURE;
+
+        if (!test_swap_nobody())
+                ret = EXIT_FAILURE;
+
+        if (!test_troublemaker_in_middle_cards())
+                ret = EXIT_FAILURE;
+
+        if (!test_bad_swap())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());
