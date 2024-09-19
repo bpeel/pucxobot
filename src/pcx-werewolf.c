@@ -73,6 +73,10 @@ next_phase_cb(struct pcx_main_context_source *source,
               void *user_data);
 
 static void
+append_role(struct pcx_werewolf *werewolf,
+            enum pcx_werewolf_role role);
+
+static void
 append_text_string(struct pcx_werewolf *werewolf,
                    enum pcx_text_string string)
 {
@@ -94,13 +98,30 @@ queue_next_phase(struct pcx_werewolf *werewolf,
 }
 
 static void
-werewolf_phase_cb(struct pcx_werewolf *werewolf)
+send_lone_wolf_message(struct pcx_werewolf *werewolf)
 {
-        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
-        message.text = pcx_text_get(werewolf->language,
-                                    PCX_TEXT_STRING_WEREWOLF_PHASE);
-        werewolf->callbacks.send_message(&message, werewolf->user_data);
+        pcx_buffer_set_length(&werewolf->buffer, 0);
+        append_text_string(werewolf, PCX_TEXT_STRING_LONE_WOLF);
+        pcx_buffer_append_string(&werewolf->buffer, "\n\n");
+        append_role(werewolf, werewolf->extra_cards[0]);
 
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) werewolf->buffer.data;
+
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF) {
+                        message.target = i;
+                        werewolf->callbacks.send_message(&message,
+                                                         werewolf->user_data);
+                        break;
+                }
+        }
+}
+
+static void
+send_wolf_pack_message(struct pcx_werewolf *werewolf)
+{
         pcx_buffer_set_length(&werewolf->buffer, 0);
         append_text_string(werewolf, PCX_TEXT_STRING_WEREWOLVES_ARE);
         pcx_buffer_append_c(&werewolf->buffer, '\n');
@@ -113,6 +134,8 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
                 }
         }
 
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
         message.text = (const char *) werewolf->buffer.data;
 
         for (int i = 0; i < werewolf->n_players; i++) {
@@ -122,6 +145,27 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
                                                          werewolf->user_data);
                 }
         }
+}
+
+static void
+werewolf_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_WEREWOLF_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int n_werewolves = 0;
+
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].role == PCX_WEREWOLF_ROLE_WEREWOLF)
+                        n_werewolves++;
+        }
+
+        if (n_werewolves == 1)
+                send_lone_wolf_message(werewolf);
+        else if (n_werewolves > 1)
+                send_wolf_pack_message(werewolf);
 
         queue_next_phase(werewolf, 10);
 }

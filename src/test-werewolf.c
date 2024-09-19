@@ -278,21 +278,32 @@ skip_to_voting_phase(int n_werewolves)
                              "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
-        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        if (n_werewolves == 1) {
+                queue_private_message(data,
+                                      0,
+                                      "You are the only werewolf! You can look "
+                                      "at a card in the center of the table. "
+                                      "That card is:\n"
+                                      "\n"
+                                      "🐺 Werewolf");
+        } else {
+                struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
-        pcx_buffer_append_string(&buf, "The werewolves in the village are:\n");
+                pcx_buffer_append_string(&buf,
+                                         "The werewolves in the village "
+                                         "are:\n");
 
-        for (int i = 0; i < n_werewolves; i++) {
-                pcx_buffer_append_printf(&buf,
-                                         "\n%s",
-                                         test_message_player_names[i]);
+                for (int i = 0; i < n_werewolves; i++) {
+                        pcx_buffer_append_printf(&buf,
+                                                 "\n%s",
+                                                 test_message_player_names[i]);
+                }
+
+                for (int i = 0; i < n_werewolves; i++)
+                        queue_private_message(data, i, (const char *) buf.data);
+
+                pcx_buffer_destroy(&buf);
         }
-
-        for (int i = 0; i < n_werewolves; i++) {
-                queue_private_message(data, i, (const char *) buf.data);
-        }
-
-        pcx_buffer_destroy(&buf);
 
         if (!test_message_run_queue(&data->message_data))
                 goto error;
@@ -512,6 +523,62 @@ test_vote_multiple_people_werewolves_win(void)
 
 out:
         free_test_data(data);
+        return ret;
+}
+
+static bool
+test_lone_wolf(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_SEER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 3\n"
+                                      "🐺 Werewolf × 3\n"
+                                      "🔮 Seer\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐺 The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        queue_private_message(data,
+                              3,
+                              "You are the only werewolf! You can look "
+                              "at a card in the center of the table. "
+                              "That card is:\n"
+                              "\n"
+                              "🔮 Seer");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
         return ret;
 }
 
@@ -1174,6 +1241,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_vote_multiple_people_werewolves_win())
+                ret = EXIT_FAILURE;
+
+        if (!test_lone_wolf())
                 ret = EXIT_FAILURE;
 
         if (!test_no_kill_no_werewolves())

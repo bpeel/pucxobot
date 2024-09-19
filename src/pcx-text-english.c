@@ -709,6 +709,9 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
+        [PCX_TEXT_STRING_LONE_WOLF] =
+        "You are the only werewolf! You can look at a card in the center of "
+        "the table. That card is:",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "The werewolves in the village are:",
         [PCX_TEXT_STRING_SEER_PHASE] =
