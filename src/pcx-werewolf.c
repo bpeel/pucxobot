@@ -150,6 +150,18 @@ queue_next_phase(struct pcx_werewolf *werewolf,
                                              werewolf);
 }
 
+static int
+find_player_for_wakeup_role(struct pcx_werewolf *werewolf,
+                            enum pcx_werewolf_role role)
+{
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].wakeup_role == role)
+                        return i;
+        }
+
+        return -1;
+}
+
 static void
 send_lone_wolf_message(struct pcx_werewolf *werewolf)
 {
@@ -174,7 +186,7 @@ send_lone_wolf_message(struct pcx_werewolf *werewolf)
 }
 
 static void
-send_player_same_role_message(struct pcx_werewolf *werewolf,
+make_player_same_role_message(struct pcx_werewolf *werewolf,
                               enum pcx_text_string message_text,
                               enum pcx_werewolf_role role)
 {
@@ -189,6 +201,14 @@ send_player_same_role_message(struct pcx_werewolf *werewolf,
                                                  werewolf->players[i].name);
                 }
         }
+}
+
+static void
+send_player_same_role_message(struct pcx_werewolf *werewolf,
+                              enum pcx_text_string message_text,
+                              enum pcx_werewolf_role role)
+{
+        make_player_same_role_message(werewolf, message_text, role);
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
@@ -235,16 +255,43 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
         queue_next_phase(werewolf, 10);
 }
 
-static int
-find_player_for_wakeup_role(struct pcx_werewolf *werewolf,
-                            enum pcx_werewolf_role role)
+static void
+send_minion_message(struct pcx_werewolf *werewolf,
+                    int minion)
 {
-        for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role == role)
-                        return i;
+        if (find_player_for_wakeup_role(werewolf,
+                                        PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {
+                pcx_buffer_set_length(&werewolf->buffer, 0);
+                append_text_string(werewolf, PCX_TEXT_STRING_NO_WEREWOLVES);
+        } else {
+                make_player_same_role_message(werewolf,
+                                              PCX_TEXT_STRING_WEREWOLVES_ARE,
+                                              PCX_WEREWOLF_ROLE_WEREWOLF);
         }
 
-        return -1;
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.target = minion;
+        message.text = (const char *) werewolf->buffer.data;
+
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+}
+
+static void
+minion_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_MINION_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int minion = find_player_for_wakeup_role(werewolf,
+                                                 PCX_WEREWOLF_ROLE_MINION);
+
+        if (minion != -1)
+                send_minion_message(werewolf, minion);
+
+        queue_next_phase(werewolf, 10);
 }
 
 static int
@@ -582,6 +629,11 @@ roles[] = {
                 .symbol = "🐺",
                 .name = PCX_TEXT_STRING_WEREWOLF,
                 .phase_cb = werewolf_phase_cb,
+        },
+        [PCX_WEREWOLF_ROLE_MINION] = {
+                .symbol = "🦺",
+                .name = PCX_TEXT_STRING_MINION,
+                .phase_cb = minion_phase_cb,
         },
         [PCX_WEREWOLF_ROLE_MASON] = {
                 .symbol = "⚒️",
@@ -1349,7 +1401,8 @@ add_no_one_dies_message(struct pcx_werewolf *werewolf)
         }
 
         if (werewolf_player == -1) {
-                append_text_string(werewolf, PCX_TEXT_STRING_NO_WEREWOLVES);
+                append_text_string(werewolf,
+                                   PCX_TEXT_STRING_NO_WEREWOLVES_AT_END);
                 pcx_buffer_append_string(&werewolf->buffer, "\n\n");
                 append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
         } else {
@@ -1485,6 +1538,46 @@ check_hunter(struct pcx_werewolf *werewolf,
 }
 
 static void
+add_no_dead_werewolf_result(struct pcx_werewolf *werewolf,
+                            int death_mask)
+{
+        bool any_player_werewolf =
+                any_player_has_role(werewolf,
+                                    PCX_WEREWOLF_ROLE_WEREWOLF);
+
+        if (!any_player_werewolf) {
+                append_text_string(werewolf, PCX_TEXT_STRING_NO_WEREWOLVES);
+                pcx_buffer_append_string(&werewolf->buffer, "\n\n");
+        }
+
+        if (find_dead_role(werewolf,
+                           death_mask,
+                           PCX_WEREWOLF_ROLE_MINION) == -1) {
+                bool any_player_minion =
+                        any_player_has_role(werewolf,
+                                            PCX_WEREWOLF_ROLE_MINION);
+
+                if (any_player_werewolf || any_player_minion) {
+                        append_text_string(werewolf,
+                                           any_player_werewolf ?
+                                           PCX_TEXT_STRING_WEREWOLVES_WIN :
+                                           PCX_TEXT_STRING_MINION_WINS);
+                } else {
+                        append_text_string(werewolf,
+                                           PCX_TEXT_STRING_NOBODY_WINS);
+                }
+        } else {
+                if (any_player_werewolf) {
+                        append_text_string(werewolf,
+                                           PCX_TEXT_STRING_WEREWOLVES_WIN);
+                } else {
+                        append_text_string(werewolf,
+                                           PCX_TEXT_STRING_VILLAGERS_WIN);
+                }
+        }
+}
+
+static void
 add_result_with_death(struct pcx_werewolf *werewolf,
                       int death_mask)
 {
@@ -1493,14 +1586,7 @@ add_result_with_death(struct pcx_werewolf *werewolf,
         if (find_dead_role(werewolf,
                            death_mask,
                            PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {
-                if (any_player_has_role(werewolf,
-                                        PCX_WEREWOLF_ROLE_WEREWOLF)) {
-                        append_text_string(werewolf,
-                                           PCX_TEXT_STRING_WEREWOLVES_WIN);
-                } else {
-                        append_text_string(werewolf,
-                                           PCX_TEXT_STRING_NOBODY_WINS);
-                }
+                add_no_dead_werewolf_result(werewolf, death_mask);
         } else {
                 append_text_string(werewolf, PCX_TEXT_STRING_VILLAGERS_WIN);
         }

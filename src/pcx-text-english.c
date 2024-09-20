@@ -710,6 +710,8 @@ pcx_text_english[] = {
         "Villager",
         [PCX_TEXT_STRING_WEREWOLF] =
         "Werewolf",
+        [PCX_TEXT_STRING_MINION] =
+        "Minion",
         [PCX_TEXT_STRING_MASON] =
         "Mason",
         [PCX_TEXT_STRING_SEER] =
@@ -732,6 +734,10 @@ pcx_text_english[] = {
         "the table. That card is:",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "The werewolves in the village are:",
+        [PCX_TEXT_STRING_MINION_PHASE] =
+        "🦺 The minion wakes up and finds out who the werewolves are.",
+        [PCX_TEXT_STRING_NO_WEREWOLVES] =
+        "Nobody is a werewolf!",
         [PCX_TEXT_STRING_MASON_PHASE] =
         "⚒️ The masons wake up and look at each other before going back "
         "to sleep.",
@@ -795,7 +801,7 @@ pcx_text_english[] = {
         "The votes were:",
         [PCX_TEXT_STRING_NO_ONE_DIES] =
         "No one got more than one vote so no one dies!",
-        [PCX_TEXT_STRING_NO_WEREWOLVES] =
+        [PCX_TEXT_STRING_NO_WEREWOLVES_AT_END] =
         "There were no werewolves at the end of the game!",
         [PCX_TEXT_STRING_HOWEVER_ONE_WEREWOLF] =
         "However, %s is a werewolf!",
@@ -813,6 +819,8 @@ pcx_text_english[] = {
         "🧑‍🌾 The villagers win! 🧑‍🌾",
         [PCX_TEXT_STRING_WEREWOLVES_WIN] =
         "🐺 The werewolves win! 🐺",
+        [PCX_TEXT_STRING_MINION_WINS] =
+        "🦺 The minion wins! 🦺",
         [PCX_TEXT_STRING_NOBODY_WINS] =
-        "Nobody is on the werewolf team so nobody wins 🤦",
+        "🤦 Nobody wins 🤦",
 };

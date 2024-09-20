@@ -208,6 +208,9 @@ start_game_with_cards(int n_players,
                 case PCX_WEREWOLF_ROLE_WEREWOLF:
                         role_message = "Your role is: 🐺 Werewolf";
                         break;
+                case PCX_WEREWOLF_ROLE_MINION:
+                        role_message = "Your role is: 🦺 Minion";
+                        break;
                 case PCX_WEREWOLF_ROLE_MASON:
                         role_message = "Your role is: ⚒️ Mason";
                         break;
@@ -590,8 +593,9 @@ test_vote_multiple_people_nobody_wins(void)
                              "Charles (🧑‍🌾 Villager)\n"
                              "David (🧑‍🌾 Villager)\n"
                              "\n"
-                             "Nobody is on the werewolf team so nobody "
-                             "wins 🤦");
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🤦 Nobody wins 🤦");
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
@@ -2437,8 +2441,9 @@ test_drunk(void)
                              "The village has chosen to sacrifice David. "
                              "Their role was: 🤏 Robber\n"
                              "\n"
-                             "Nobody is on the werewolf team so nobody "
-                             "wins 🤦");
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🤦 Nobody wins 🤦");
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
@@ -2914,8 +2919,9 @@ test_hunter_doesnt_kill(void)
                              "Bob (🧑‍🌾 Villager)\n"
                              "Charles (🔫 Hunter)\n"
                              "\n"
-                             "Nobody is on the werewolf team so nobody "
-                             "wins 🤦");
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🤦 Nobody wins 🤦");
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
@@ -2927,6 +2933,323 @@ test_hunter_doesnt_kill(void)
 out:
         free_test_data(data);
 
+        return ret;
+}
+
+static struct test_data *
+set_up_minion_with_no_werewolves_vote(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MINION,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🦺 Minion\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return NULL;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🦺 The minion wakes up and finds out who the "
+                             "werewolves are.");
+
+        queue_private_message(data,
+                              2,
+                              "Nobody is a werewolf!");
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_minion_no_werewolves_villagers_win(void)
+{
+        struct test_data *data = set_up_minion_with_no_werewolves_vote();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 1)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 Charles\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 Bob\n"
+                             "David 👉 Charles\n"
+                             "\n"
+                             "The village has chosen to sacrifice Charles. "
+                             "Their role was: 🦺 Minion\n"
+                             "\n"
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🧑‍🌾 The villagers win! 🧑‍🌾");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 2)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_minion_no_werewolves_minion_wins(void)
+{
+        struct test_data *data = set_up_minion_with_no_werewolves_vote();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 0) ||
+            !send_simple_vote(data, 2, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 Charles\n"
+                             "Bob 👉 Alice\n"
+                             "Charles 👉 Alice\n"
+                             "David 👉 Alice\n"
+                             "\n"
+                             "The village has chosen to sacrifice Alice. "
+                             "Their role was: 🧑‍🌾 Villager\n"
+                             "\n"
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🦺 The minion wins! 🦺");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 0)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+minion_but_dies_but_there_are_werewolves(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_MINION,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 4\n"
+                                      "🐺 Werewolf × 2\n"
+                                      "🦺 Minion\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🐺 The werewolves wake up and look at each other "
+                             "before going back to sleep.");
+
+        queue_private_message(data,
+                              1,
+                              "You are the only werewolf! You can look "
+                              "at a card in the center of the table. "
+                              "That card is:\n"
+                              "\n"
+                              "🐺 Werewolf");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🦺 The minion wakes up and finds out who the "
+                             "werewolves are.");
+
+        queue_private_message(data,
+                              2,
+                              "The werewolves in the village are:\n"
+                              "\n"
+                              "Bob");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        if (!send_simple_vote(data, 0, 2) ||
+            !send_simple_vote(data, 1, 2) ||
+            !send_simple_vote(data, 2, 0)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_global_message(data,
+                             "Everybody voted! The votes were:\n"
+                             "\n"
+                             "Alice 👉 Charles\n"
+                             "Bob 👉 Charles\n"
+                             "Charles 👉 Alice\n"
+                             "David 👉 Charles\n"
+                             "\n"
+                             "The village has chosen to sacrifice Charles. "
+                             "Their role was: 🦺 Minion\n"
+                             "\n"
+                             "🐺 The werewolves win! 🐺");
+
+        test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
+
+        if (!send_vote(data, 3, 2)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+        return ret;
+}
+
+static bool
+minion_in_middle_cards(void)
+{
+        static const enum pcx_werewolf_role override_cards[] = {
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MINION,
+                PCX_WEREWOLF_ROLE_VILLAGER,
+        };
+
+        struct test_data *data =
+                start_game_with_cards(4, /* n_players */
+                                      override_cards,
+                                      "The village consists of the following "
+                                      "roles:\n"
+                                      "\n"
+                                      "🧑‍🌾 Villager × 6\n"
+                                      "🦺 Minion\n"
+                                      "\n"
+                                      "Everybody looks at their role before "
+                                      "falling asleep for the night.");
+
+        if (!data)
+                return false;
+
+        bool ret = true;
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🦺 The minion wakes up and finds out who the "
+                             "werewolves are.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        test_time_hack_add_time(11);
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
         return ret;
 }
 
@@ -3053,6 +3376,18 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_hunter_doesnt_kill())
+                ret = EXIT_FAILURE;
+
+        if (!test_minion_no_werewolves_villagers_win())
+                ret = EXIT_FAILURE;
+
+        if (!test_minion_no_werewolves_minion_wins())
+                ret = EXIT_FAILURE;
+
+        if (!minion_but_dies_but_there_are_werewolves())
+                ret = EXIT_FAILURE;
+
+        if (!minion_in_middle_cards())
                 ret = EXIT_FAILURE;
 
         pcx_main_context_free(pcx_main_context_get_default());

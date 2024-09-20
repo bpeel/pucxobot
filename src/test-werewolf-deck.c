@@ -70,7 +70,7 @@ test_can_add_mason(void)
         /* Skip picking the mason once and then pick it as the last
          * two cards.
          */
-        static const int number_queue[] = { 1, 0 };
+        static const int number_queue[] = { 2, 1 };
         random_number_queue = number_queue;
         random_number_queue_length = 2;
 
@@ -96,9 +96,9 @@ test_cant_add_mason(void)
         /* Skip picking the mason twice and then pick it when there’s
          * only one space left.
          */
-        static const int number_queue[] = { 1, 1, 0 };
+        static const int number_queue[] = { 2, 2, 1, 1 };
         random_number_queue = number_queue;
-        random_number_queue_length = 3;
+        random_number_queue_length = 4;
 
         make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
 
@@ -127,6 +127,7 @@ test_loads_of_cards(void)
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_MINION,
                 PCX_WEREWOLF_ROLE_MASON,
                 PCX_WEREWOLF_ROLE_MASON,
                 PCX_WEREWOLF_ROLE_SEER,
@@ -135,7 +136,6 @@ test_loads_of_cards(void)
                 PCX_WEREWOLF_ROLE_DRUNK,
                 PCX_WEREWOLF_ROLE_INSOMNIAC,
                 PCX_WEREWOLF_ROLE_HUNTER,
-                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
@@ -153,7 +153,7 @@ test_insomniac_robber_already_there(void)
         enum pcx_werewolf_role cards[6];
 
         /* Add the seer, the robber and then the insomniac */
-        static const int number_queue[] = { 1, 1, 3 };
+        static const int number_queue[] = { 2, 2, 4 };
         random_number_queue = number_queue;
         random_number_queue_length = 3;
 
@@ -177,7 +177,7 @@ test_insomniac_troublemaker_already_there(void)
         enum pcx_werewolf_role cards[6];
 
         /* Add the seer, the troublemaker and then the insomniac */
-        static const int number_queue[] = { 1, 2, 3 };
+        static const int number_queue[] = { 2, 3, 4 };
         random_number_queue = number_queue;
         random_number_queue_length = 3;
 
@@ -201,7 +201,7 @@ test_insomniac_force_robber(void)
         enum pcx_werewolf_role cards[6];
 
         /* Add the seer and then the insomniac */
-        static const int number_queue[] = { 1, 4 };
+        static const int number_queue[] = { 2, 5 };
         random_number_queue = number_queue;
         random_number_queue_length = 2;
 
@@ -228,7 +228,7 @@ test_cant_add_insomniac(void)
          * This won’t work and then it will end up adding the robber
          * on it’s own instead.
          */
-        static const int number_queue[] = { 1, 3, 3, 0 };
+        static const int number_queue[] = { 2, 4, 4, 2 };
         random_number_queue = number_queue;
         random_number_queue_length = 4;
 
