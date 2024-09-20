@@ -667,6 +667,10 @@ roles[] = {
                 .phase_cb = insomniac_phase_cb,
                 .add_card_cb = insomniac_add_card_cb,
         },
+        [PCX_WEREWOLF_ROLE_TANNER] = {
+                .symbol = "🙍‍♂️",
+                .name = PCX_TEXT_STRING_TANNER,
+        },
         [PCX_WEREWOLF_ROLE_HUNTER] = {
                 .symbol = "🔫",
                 .name = PCX_TEXT_STRING_HUNTER,
@@ -1578,12 +1582,31 @@ add_no_dead_werewolf_result(struct pcx_werewolf *werewolf,
 }
 
 static void
+add_dead_tanner_result(struct pcx_werewolf *werewolf,
+                       int death_mask)
+{
+        bool any_dead_werewolf =
+                find_dead_role(werewolf,
+                               death_mask,
+                               PCX_WEREWOLF_ROLE_WEREWOLF) != -1;
+
+        append_text_string(werewolf,
+                           any_dead_werewolf ?
+                           PCX_TEXT_STRING_VILLAGE_AND_TANNER_WIN :
+                           PCX_TEXT_STRING_TANNER_WINS);
+}
+
+static void
 add_result_with_death(struct pcx_werewolf *werewolf,
                       int death_mask)
 {
         check_hunter(werewolf, &death_mask);
 
         if (find_dead_role(werewolf,
+                           death_mask,
+                           PCX_WEREWOLF_ROLE_TANNER) != -1) {
+                add_dead_tanner_result(werewolf, death_mask);
+        } else if (find_dead_role(werewolf,
                            death_mask,
                            PCX_WEREWOLF_ROLE_WEREWOLF) == -1) {
                 add_no_dead_werewolf_result(werewolf, death_mask);

@@ -726,6 +726,8 @@ pcx_text_english[] = {
         "Insomniac",
         [PCX_TEXT_STRING_HUNTER] =
         "Hunter",
+        [PCX_TEXT_STRING_TANNER] =
+        "Tanner",
         [PCX_TEXT_STRING_WEREWOLF_PHASE] =
         "🐺 The werewolves wake up and look at each other before going back "
         "to sleep.",
@@ -823,4 +825,8 @@ pcx_text_english[] = {
         "🦺 The minion wins! 🦺",
         [PCX_TEXT_STRING_NOBODY_WINS] =
         "🤦 Nobody wins 🤦",
+        [PCX_TEXT_STRING_VILLAGE_AND_TANNER_WIN] =
+        "🙍‍♂️🧑‍🌾 The tanner AND the villagers win! 🧑‍🌾🙍‍♂️",
+        [PCX_TEXT_STRING_TANNER_WINS] =
+        "🙍‍♂️ The tanner wins! 🙍‍♂️",
 };
