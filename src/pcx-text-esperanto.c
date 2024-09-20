@@ -32,6 +32,8 @@ pcx_text_esperanto[] = {
         "Perfidulo",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Amletero",
+        [PCX_TEXT_STRING_NAME_WEREWOLF] =
+        "Ununokta Homlupo",
         [PCX_TEXT_STRING_NAME_SIX] =
         "6 Prenas",
         [PCX_TEXT_STRING_NAME_FOX] =
@@ -56,6 +58,10 @@ pcx_text_esperanto[] = {
         "/amletero",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Krei ludon de Amletero",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND] =
+        "/homlupo",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND_DESCRIPTION] =
+        "Krei ludon de Ununokta Homlupo",
         [PCX_TEXT_STRING_SIX_START_COMMAND] =
         "/ses",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
@@ -723,4 +729,139 @@ pcx_text_esperanto[] = {
         "Ĉiu krom %p gajnas 2 poentojn.",
         [PCX_TEXT_STRING_START_ROUND_BUTTON] =
         "Komenci sekvan raŭndon",
+        [PCX_TEXT_STRING_WHICH_DECK_MODE] =
+        "Per kiu reĝimo vi volas ludi?",
+        [PCX_TEXT_STRING_DECK_MODE_BASIC] =
+        "Baza",
+        [PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE] =
+        "Meza",
+        [PCX_TEXT_STRING_SHOW_ROLES] =
+        "La vilaĝo konsistas el la sekvaj roluloj:",
+        [PCX_TEXT_STRING_FALL_ASLEEP] =
+        "Ĉiu rigardas sian rolon antaŭ ol ekdormi por la nokto.",
+        [PCX_TEXT_STRING_TELL_ROLE] =
+        "Via rolo estas:",
+        [PCX_TEXT_STRING_VILLAGER] =
+        "Vilaĝano",
+        [PCX_TEXT_STRING_WEREWOLF] =
+        "Homlupo",
+        [PCX_TEXT_STRING_MINION] =
+        "Sbiro",
+        [PCX_TEXT_STRING_MASON] =
+        "Masonisto",
+        [PCX_TEXT_STRING_SEER] =
+        "Klarvidulino",
+        [PCX_TEXT_STRING_ROBBER] =
+        "Ŝtelisto",
+        [PCX_TEXT_STRING_TROUBLEMAKER] =
+        "Petolulo",
+        [PCX_TEXT_STRING_DRUNK] =
+        "Ebriulo",
+        [PCX_TEXT_STRING_INSOMNIAC] =
+        "Sendormulo",
+        [PCX_TEXT_STRING_HUNTER] =
+        "Ĉasisto",
+        [PCX_TEXT_STRING_TANNER] =
+        "Tanisto",
+        [PCX_TEXT_STRING_WEREWOLF_PHASE] =
+        "🐺 La homlupoj vekiĝas kaj rigardas unu la alian antaŭ ol "
+        "reendormiĝi.",
+        [PCX_TEXT_STRING_LONE_WOLF] =
+        "Vi estas la sola homlupo! Vi rajtas rigardi karton de la mezo de la "
+        "tablo. Tiu karto estas:",
+        [PCX_TEXT_STRING_WEREWOLVES_ARE] =
+        "La homlupoj de la vilaĝoj estas:",
+        [PCX_TEXT_STRING_MINION_PHASE] =
+        "🦺 La sbiro vekiĝas kaj ekscias kiuj estas la homlupoj.",
+        [PCX_TEXT_STRING_NO_WEREWOLVES] =
+        "Neniu estas homlupo!",
+        [PCX_TEXT_STRING_MASON_PHASE] =
+        "⚒️ La masonistoj vekiĝas kaj rigardas unu la alian antaŭ ol "
+        "reendormiĝi.",
+        [PCX_TEXT_STRING_LONE_MASON] =
+        "Vi estas la sola masonisto.",
+        [PCX_TEXT_STRING_MASONS_ARE] =
+        "La masonistoj de la vilaĝo estas:",
+        [PCX_TEXT_STRING_SEER_PHASE] =
+        "🔮 La klarvidulino vekiĝas kaj rajtas rigardi karton de aliulo aŭ "
+        "du kartojn de la mezo de la tablo.",
+        [PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER] =
+        "Du kartojn de la tablomezo",
+        [PCX_TEXT_STRING_SHOW_TWO_CARDS_FROM_CENTER] =
+        "Du el la kartoj el la mezo de la tablo estas:",
+        [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =
+        "La rolo de %s estas:",
+        [PCX_TEXT_STRING_ROBBER_PHASE] =
+        "🤏 La ŝtelisto vekiĝas kaj rajtas interŝanĝi sian karton kun tiu de "
+        "alia ludanto. Se li faras tion li rajtas rigardi la karton.",
+        [PCX_TEXT_STRING_WHO_TO_ROB] =
+        "De kiu vi volas ŝteli?",
+        [PCX_TEXT_STRING_NOBODY] =
+        "Neniu",
+        [PCX_TEXT_STRING_STEAL_FROM] =
+        "Vi prenas la karton de antaŭ %s kaj donas al ri la vian. Ria karto "
+        "estis:",
+        [PCX_TEXT_STRING_ROBBED_NOBODY] =
+        "Vi konservas la karton kiun vi jam havas kaj ŝtelas de neniu.",
+        [PCX_TEXT_STRING_TROUBLEMAKER_PHASE] =
+        "🐈 La petolulo vekiĝas kaj rajtas interŝanĝi la kartojn de du aliaj "
+        "ludantoj.",
+        [PCX_TEXT_STRING_FIRST_SWAP] =
+        "Elektu la ludanton kies karton vi volas interŝanĝi.",
+        [PCX_TEXT_STRING_SECOND_SWAP] =
+        "Bone, nun elektu la duan ludanton kies karton vi volas interŝanĝi.",
+        [PCX_TEXT_STRING_SWAPPED_NOBODY] =
+        "Vi ne petolemas ĉi-nokte kaj ne interŝanĝas kartojn.",
+        [PCX_TEXT_STRING_SWAP_CARDS_OF] =
+        "Vi interŝanĝas la kartojn de %s kaj %s.",
+        [PCX_TEXT_STRING_DRUNK_PHASE] =
+        "🍺 La ebriulo vekiĝas konfuzite kaj interŝanĝas sian karton kun unu "
+        "el la mezo de la tablo. Li ne plu scias kiu rolo li estas.",
+        [PCX_TEXT_STRING_INSOMNIAC_PHASE] =
+        "🥱 La sendormulo vekiĝas kaj kontrolas sian karton por vidi ĉu ŝi "
+        "ankoaraŭ estas la sendormulo.",
+        [PCX_TEXT_STRING_STILL_INSOMNIAC] =
+        "Vi ankoraŭ estas la sendormulo.",
+        [PCX_TEXT_STRING_YOU_ARE_NOW] =
+        "Via karto nun estas:",
+        [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
+        "🌅 La suno leviĝas. Ĉiu loĝanto de la vilaĝo vekiĝas kaj komencas "
+        "diskuti pri kiun ri kredas esti homlupo.",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_WEREWOLF] =
+        "Se vi jam finis diskuti, vi povas voĉdoni por tiu kiun vi kredas "
+        "estas homlupo. Vi rajtas ŝanĝi vian voĉon ĝis ĉiu voĉdonos.",
+        [PCX_TEXT_STRING_CHANGED_VOTE] =
+        "%s ŝanĝis sian voĉon.",
+        [PCX_TEXT_STRING_CANT_VOTE_SELF] =
+        "Vi ne rajtas voĉdoni por vi mem.",
+        [PCX_TEXT_STRING_VOTES_ARE] =
+        "La voĉdonoj estis:",
+        [PCX_TEXT_STRING_NO_ONE_DIES] =
+        "Neniu ricevis pli ol unu voĉdonon do neniu mortas!",
+        [PCX_TEXT_STRING_NO_WEREWOLVES_AT_END] =
+        "Estis neniu homlupo je la fino de la ludo!",
+        [PCX_TEXT_STRING_HOWEVER_ONE_WEREWOLF] =
+        "Tamen, %s estas homlupo!",
+        [PCX_TEXT_STRING_HOWEVER_MULTIPLE_WEREWOLVES] =
+        "Tamen, %s estas homlupoj!",
+        [PCX_TEXT_STRING_THEIR_ROLE] =
+        "Ria rolo estis:",
+        [PCX_TEXT_STRING_SACRIFICE] =
+        "La vilaĝo elektis linĉi %s.",
+        [PCX_TEXT_STRING_MULTIPLE_SACRIFICES] =
+        "La vilaĝo elektis linĉi la jenajn homojn:",
+        [PCX_TEXT_STRING_HUNTER_KILLS] =
+        "Mortante, la ĉasisto pafas kaj mortigas %s.",
+        [PCX_TEXT_STRING_VILLAGERS_WIN] =
+        "🧑‍🌾 La vilaĝanoj venkis! 🧑‍🌾",
+        [PCX_TEXT_STRING_WEREWOLVES_WIN] =
+        "🐺 La homlupoj venkis! 🐺",
+        [PCX_TEXT_STRING_MINION_WINS] =
+        "🦺 La sbiro venkis! 🦺",
+        [PCX_TEXT_STRING_NOBODY_WINS] =
+        "🤦 Neniu venkis 🤦",
+        [PCX_TEXT_STRING_VILLAGE_AND_TANNER_WIN] =
+        "🙍‍♂️🧑‍🌾 La tanisto KAJ la vilaĝanoj venkis! 🧑‍🌾🙍‍♂️",
+        [PCX_TEXT_STRING_TANNER_WINS] =
+        "🙍‍♂️ La tanisto venkis! 🙍‍♂️",
 };

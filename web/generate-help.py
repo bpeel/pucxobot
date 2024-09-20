@@ -55,8 +55,7 @@ LANGUAGES = [
          "La ludoj de ĉi tiu retejo ankaŭ estas ludeblaj ĉe Telegram per "
          "<a href=\"https://t.me/pucxobot\">@pucxobot</a>.",
          "La programkodo estas disponebla ĉe "
-         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["werewolf"])),
+         "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>."),
     Lang("fr", "french", "Aide", "Sommaire", "À propos",
          "Les jeux de ce site sont aussi disponibles sur Telegram avec le bot "
          "<a href=\"https://t.me/complotbot\">@complotbot</a>.",
