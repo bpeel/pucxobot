@@ -11,6 +11,10 @@
 <          "description": "Krei ludon de Amletero"
 <        },
 <        {
+<          "command": "homlupo",
+<          "description": "Krei ludon de Ununokta Homlupo"
+<        },
+<        {
 <          "command": "ses",
 <          "description": "Krei ludon de 6 Prenas"
 <        },
