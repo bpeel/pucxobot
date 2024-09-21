@@ -61,8 +61,7 @@ LANGUAGES = [
          "<a href=\"https://t.me/complotbot\">@complotbot</a>.",
          "Le code source est disponible sur "
          "<a href=\"https://github.com/bpeel/pucxobot\">Github</a>.",
-         skip_games=set(["superfight", "fox", "wordparty", "chameleon",
-                         "werewolf"])),
+         skip_games=set(["superfight", "fox", "wordparty", "chameleon"])),
 ]
 
 GAMES = [ "coup", "love", "werewolf", "six", "fox", "wordparty", "chameleon",

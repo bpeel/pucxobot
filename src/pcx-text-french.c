@@ -32,6 +32,8 @@ pcx_text_french[] = {
         "Balance",
         [PCX_TEXT_STRING_NAME_LOVE] =
         "Love Letter",
+        [PCX_TEXT_STRING_NAME_WEREWOLF] =
+        "Loup-garou pour une nuit",
         [PCX_TEXT_STRING_NAME_SIX] =
         "6 qui prend !",
         [PCX_TEXT_STRING_NAME_ZOMBIE] =
@@ -48,6 +50,10 @@ pcx_text_french[] = {
         "/letter",
         [PCX_TEXT_STRING_LOVE_START_COMMAND_DESCRIPTION] =
         "Créer un jeu de Love Letter",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND] =
+        "/loupgarou",
+        [PCX_TEXT_STRING_WEREWOLF_START_COMMAND_DESCRIPTION] =
+        "Créer un jeu de Loup-garou pour une nuit",
         [PCX_TEXT_STRING_SIX_START_COMMAND] =
         "/six",
         [PCX_TEXT_STRING_SIX_START_COMMAND_DESCRIPTION] =
@@ -561,4 +567,168 @@ pcx_text_french[] = {
         "%s a au moins %i points et termine la partie.",
         [PCX_TEXT_STRING_WINS_PLAIN] =
         "🏆 %s remporte la partie !",
+        [PCX_TEXT_STRING_PLAYER_VOTED] =
+        "%s a voté",
+        [PCX_TEXT_STRING_EVERYBODY_VOTED] =
+        "Tout le monde a voté !",
+        [PCX_TEXT_STRING_WHICH_DECK_MODE] =
+        "Dans quel scénario voulez-vous jouer ?",
+        [PCX_TEXT_STRING_DECK_MODE_BASIC] =
+        "La Première nuit",
+        [PCX_TEXT_STRING_DECK_MODE_MOONSTRUCK] =
+        "Pleine lune",
+        [PCX_TEXT_STRING_DECK_MODE_LONELY_NIGHT] =
+        "Nuit solitaire",
+        [PCX_TEXT_STRING_DECK_MODE_CONFUSION] =
+        "Confusion",
+        [PCX_TEXT_STRING_DECK_MODE_PAYBACK] =
+        "Bénéfice",
+        [PCX_TEXT_STRING_DECK_MODE_SECRET_COMPANIONS] =
+        "Mystérieux compagnons",
+        [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
+        "Incertitudes",
+        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
+        "Alliance dans la pénombre",
+        [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
+        "Anarchie",
+        [PCX_TEXT_STRING_SHOW_ROLES] =
+        "Le village se compose des rôles suivantes :",
+        [PCX_TEXT_STRING_FALL_ASLEEP] =
+        "Tout le monde regarde son rôle avant de s’endormir pour la nuit.",
+        [PCX_TEXT_STRING_TELL_ROLE] =
+        "Votre rôle est :",
+        [PCX_TEXT_STRING_VILLAGER] =
+        "Villageois",
+        [PCX_TEXT_STRING_WEREWOLF] =
+        "Loup-garou",
+        [PCX_TEXT_STRING_MINION] =
+        "Sbire",
+        [PCX_TEXT_STRING_MASON] =
+        "Franc-maçon",
+        [PCX_TEXT_STRING_SEER] =
+        "Voyante",
+        [PCX_TEXT_STRING_ROBBER] =
+        "Voleur",
+        [PCX_TEXT_STRING_TROUBLEMAKER] =
+        "Noiseuse",
+        [PCX_TEXT_STRING_DRUNK] =
+        "Soûlard",
+        [PCX_TEXT_STRING_INSOMNIAC] =
+        "Insomniaque",
+        [PCX_TEXT_STRING_HUNTER] =
+        "Chasseur",
+        [PCX_TEXT_STRING_TANNER] =
+        "Tanneur",
+        [PCX_TEXT_STRING_WEREWOLF_PHASE] =
+        "🐺 Les loups-garous se réveillent et se regardent avant de se "
+        "rendormir.",
+        [PCX_TEXT_STRING_LONE_WOLF] =
+        "Vous êtes le seul loup-garou ! Vous pouvez regarder une carte du "
+        "centre de la table. Quelle carte voulez-vous voir ?",
+        [PCX_TEXT_STRING_CENTER_CARD_IS] =
+        "La carte que vous avez choisie est %c :",
+        [PCX_TEXT_STRING_WEREWOLVES_ARE] =
+        "Les loups-garous du village sont :",
+        [PCX_TEXT_STRING_MINION_PHASE] =
+        "🦺 Le sbire se réveille et découvre qui sont les loups-garous.",
+        [PCX_TEXT_STRING_NO_WEREWOLVES] =
+        "Personne n’est un loup-garou !",
+        [PCX_TEXT_STRING_MASON_PHASE] =
+        "⚒️ Les franc-maçons se réveillent et se regardent avant de se "
+        "rendormir.",
+        [PCX_TEXT_STRING_LONE_MASON] =
+        "Vous êtes le seul franc-maçon.",
+        [PCX_TEXT_STRING_MASONS_ARE] =
+        "Les franc-maçons du village sont :",
+        [PCX_TEXT_STRING_SEER_PHASE] =
+        "🔮 La voyante se réveille. Elle peut regarder la carte d’un·e autre "
+        "joueur·euse ou deux cartes du centre de la table.",
+        [PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER] =
+        "Deux cartes du centre",
+        [PCX_TEXT_STRING_SEE_WHICH_CENTER_CARDS] =
+        "Quelles deux cartes du centre voulez-vous voir ?",
+        [PCX_TEXT_STRING_SHOW_TWO_CARDS_FROM_CENTER] =
+        "Deux des cartes du centre sont :",
+        [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =
+        "Le rôle de %s est :",
+        [PCX_TEXT_STRING_ROBBER_PHASE] =
+        "🤏 Le voleur se réveille. Il peut échanger sa carte avec celle d’un·e "
+        "autre joueur·euse. S’il le fait il regardera la nouvelle carte.",
+        [PCX_TEXT_STRING_WHO_TO_ROB] =
+        "À qui voulez-vous voler ?",
+        [PCX_TEXT_STRING_NOBODY] =
+        "Personne",
+        [PCX_TEXT_STRING_STEAL_FROM] =
+        "Vous prenez la carte en face de %s et lui donnez votre carte. "
+        "Sa carte était :",
+        [PCX_TEXT_STRING_ROBBED_NOBODY] =
+        "Vous gardez la carte que vous avez déjà et vous ne volez à personne.",
+        [PCX_TEXT_STRING_TROUBLEMAKER_PHASE] =
+        "🐈 La noiseuse se réveille. Elle peut échanger les cartes de deux "
+        "autres joueur·euses.",
+        [PCX_TEXT_STRING_FIRST_SWAP] =
+        "Choisissez la première personne dont vous voulez échanger la carte.",
+        [PCX_TEXT_STRING_SECOND_SWAP] =
+        "Très bien, maintenant choisissez la deuxième personne dont vous "
+        "voulez échanger la carte.",
+        [PCX_TEXT_STRING_SWAPPED_NOBODY] =
+        "Vous décidez de ne pas faire de bêtise ce soir et vous n’échangez "
+        "aucune carte.",
+        [PCX_TEXT_STRING_SWAP_CARDS_OF] =
+        "Vous échangez les cartes de %s et %s.",
+        [PCX_TEXT_STRING_DRUNK_PHASE] =
+        "🍺 Le soûlard se réveille un peu perdu. Il échange sa carte avec une "
+        "des cartes du centre de la table. Il ne sait plus quel rôle il a.",
+        [PCX_TEXT_STRING_WHICH_CARD_DO_YOU_WANT] =
+        "Quelle carte du centre voulez-vous ?",
+        [PCX_TEXT_STRING_YOU_TAKE_CARD] =
+        "Vous prenez la carte %c",
+        [PCX_TEXT_STRING_INSOMNIAC_PHASE] =
+        "🥱 L’insomniaque se réveille. Elle regarde sa carte pour voir si elle "
+        "est toujours l’insomniaque.",
+        [PCX_TEXT_STRING_STILL_INSOMNIAC] =
+        "Vous êtes toujours l’insomniaque",
+        [PCX_TEXT_STRING_YOU_ARE_NOW] =
+        "Votre carte est maintenant :",
+        [PCX_TEXT_STRING_EVERYONE_WAKES_UP] =
+        "🌅 Le soleil se lève. Tous les habitants du village se réveillent et "
+        "commencent à discuter sur qui pourrait être un loup-garou.",
+        [PCX_TEXT_STRING_YOU_CAN_VOTE_FOR_A_WEREWOLF] =
+        "Si vous avez fini la discussion, vous pouvez voter pour qui vous "
+        "croyez être un loup-garou. Vous pouvez changer d’avis jusqu’à ce que "
+        "tout le monde ait voté.",
+        [PCX_TEXT_STRING_CHANGED_VOTE] =
+        "%s a changé son vote.",
+        [PCX_TEXT_STRING_CANT_VOTE_SELF] =
+        "Vous ne pouvez pas voter pour vous-même.",
+        [PCX_TEXT_STRING_VOTES_ARE] =
+        "Les votes étaient :",
+        [PCX_TEXT_STRING_NO_ONE_DIES] =
+        "Personne n’a eu plus d’un vote, donc personne ne meurt !",
+        [PCX_TEXT_STRING_NO_WEREWOLVES_AT_END] =
+        "Il n’y a pas de loup-garou à la fin du jeu !",
+        [PCX_TEXT_STRING_HOWEVER_ONE_WEREWOLF] =
+        "Par contre, %s est un loup-garou !",
+        [PCX_TEXT_STRING_HOWEVER_MULTIPLE_WEREWOLVES] =
+        "Par contre, %s sont des loups-garous !",
+        [PCX_TEXT_STRING_THEIR_ROLE] =
+        "Son rôle était :",
+        [PCX_TEXT_STRING_SACRIFICE] =
+        "Le village a choisi de sacrifier %s.",
+        [PCX_TEXT_STRING_MULTIPLE_SACRIFICES] =
+        "Le village a choisi de sacrifier les personnes suivantes :",
+        [PCX_TEXT_STRING_HUNTER_KILLS] =
+        "Avant de mourir, le chasseur tire sur %s qui meurt aussi.",
+        [PCX_TEXT_STRING_VILLAGERS_WIN] =
+        "🧑‍🌾 Les villageois gagnent ! 🧑‍🌾",
+        [PCX_TEXT_STRING_WEREWOLVES_WIN] =
+        "🐺 Les loups-garous gagnent ! 🐺",
+        [PCX_TEXT_STRING_MINION_WINS] =
+        "🦺 Le sbire gagne ! 🦺",
+        [PCX_TEXT_STRING_NOBODY_WINS] =
+        "🤦 Personne ne gagne 🤦",
+        [PCX_TEXT_STRING_VILLAGE_AND_TANNER_WIN] =
+        "🙍‍♂️🧑‍🌾 Le tanneur ET les villageois gagnent ! 🧑‍🌾🙍‍♂️",
+        [PCX_TEXT_STRING_TANNER_WINS] =
+        "🙍‍♂️ Le tanneur gagne ! 🙍‍♂️",
 };
