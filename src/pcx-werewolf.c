@@ -1386,7 +1386,10 @@ handle_wolf_see_cb(struct pcx_werewolf *werewolf,
         pcx_buffer_append_c(&werewolf->buffer, ' ');
         append_role(werewolf, werewolf->extra_cards[target]);
 
-        send_buffer_to_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_WEREWOLF);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.target = player_num;
+        message.text = (const char *) werewolf->buffer.data;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
 
         start_next_phase(werewolf);
 }
