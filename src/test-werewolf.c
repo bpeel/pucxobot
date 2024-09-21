@@ -1034,8 +1034,8 @@ create_see_player_game(void)
                 PCX_WEREWOLF_ROLE_WEREWOLF,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_WEREWOLF,
-                PCX_WEREWOLF_ROLE_VILLAGER,
-                PCX_WEREWOLF_ROLE_VILLAGER,
+                PCX_WEREWOLF_ROLE_TANNER,
+                PCX_WEREWOLF_ROLE_HUNTER,
         };
 
         struct test_data *data =
@@ -1044,9 +1044,11 @@ create_see_player_game(void)
                                       "The village consists of the following "
                                       "roles:\n"
                                       "\n"
-                                      "🧑‍🌾 Villager × 3\n"
+                                      "🧑‍🌾 Villager\n"
                                       "🐺 Werewolf × 3\n"
                                       "🔮 Seer\n"
+                                      "🙍‍♂️ Tanner\n"
+                                      "🔫 Hunter\n"
                                       "\n"
                                       "Everybody looks at their role before "
                                       "falling asleep for the night.");
@@ -1136,10 +1138,43 @@ out:
         return ret;
 }
 
-static bool
-test_see_middle_cards(void)
+static struct test_data *
+create_see_center_cards_game(void)
 {
         struct test_data *data = create_see_player_game();
+
+        if (data == NULL)
+                return NULL;
+
+        struct test_message *message =
+                queue_private_message(data,
+                                      0,
+                                      "Which two cards from the center do you "
+                                      "want to see?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "see:19", "A+B");
+        test_message_add_button(message, "see:21", "A+C");
+        test_message_add_button(message, "see:22", "B+C");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:center");
+
+        if (!test_message_run_queue(&data->message_data))
+                goto error;
+
+        return data;
+
+error:
+        free_test_data(data);
+        return NULL;
+}
+
+static bool
+test_see_center_cards_ab(void)
+{
+        struct test_data *data = create_see_center_cards_game();
 
         if (data == NULL)
                 return false;
@@ -1150,8 +1185,8 @@ test_see_middle_cards(void)
                               0,
                               "Two of the cards from the center are:\n"
                               "\n"
-                              "🐺 Werewolf\n"
-                              "🧑‍🌾 Villager");
+                              "A: 🐺 Werewolf\n"
+                              "B: 🙍‍♂️ Tanner");
 
         queue_global_message(data,
                              "🌅 The sun has risen. Everyone in the village "
@@ -1160,7 +1195,81 @@ test_see_middle_cards(void)
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
-                                                  "see:center");
+                                                  "see:19");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_see_center_cards_ac(void)
+{
+        struct test_data *data = create_see_center_cards_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              0,
+                              "Two of the cards from the center are:\n"
+                              "\n"
+                              "A: 🐺 Werewolf\n"
+                              "C: 🔫 Hunter");
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:21");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+out:
+        free_test_data(data);
+
+        return ret;
+}
+
+static bool
+test_see_center_cards_bc(void)
+{
+        struct test_data *data = create_see_center_cards_game();
+
+        if (data == NULL)
+                return false;
+
+        bool ret = true;
+
+        queue_private_message(data,
+                              0,
+                              "Two of the cards from the center are:\n"
+                              "\n"
+                              "B: 🙍‍♂️ Tanner\n"
+                              "C: 🔫 Hunter");
+
+        queue_global_message(data,
+                             "🌅 The sun has risen. Everyone in the village "
+                             "wakes up and starts discussing who they think "
+                             "the werewolves might be.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:22");
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
@@ -1288,6 +1397,19 @@ test_bad_see(void)
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
                                                   "see:potato");
+
+        /* Can’t see just one card */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:17");
+        /* Can’t see all three cards */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:23");
+        /* Can’t see the non-existant 4th card */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "see:24");
 
         if (!check_idle(data))
                 ret = false;
@@ -3499,7 +3621,13 @@ main(int argc, char **argv)
         if (!test_see_player_card())
                 ret = EXIT_FAILURE;
 
-        if (!test_see_middle_cards())
+        if (!test_see_center_cards_ab())
+                ret = EXIT_FAILURE;
+
+        if (!test_see_center_cards_ac())
+                ret = EXIT_FAILURE;
+
+        if (!test_see_center_cards_bc())
                 ret = EXIT_FAILURE;
 
         if (!test_seer_in_middle_cards())

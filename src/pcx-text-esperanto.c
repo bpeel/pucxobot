@@ -801,6 +801,8 @@ pcx_text_esperanto[] = {
         "du kartojn de la mezo de la tablo.",
         [PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER] =
         "Du kartojn de la tablomezo",
+        [PCX_TEXT_STRING_SEE_WHICH_CENTER_CARDS] =
+        "Kiujn du kartojn el la mezo de la tablo vi volas vidi?",
         [PCX_TEXT_STRING_SHOW_TWO_CARDS_FROM_CENTER] =
         "Du el la kartoj el la mezo de la tablo estas:",
         [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =

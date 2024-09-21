@@ -41,6 +41,10 @@
 #define PCX_WEREWOLF_PICK_MODE_PHASE -2
 #define PCX_WEREWOLF_PICK_WAITING_PHASE -1
 
+#define PCX_WEREWOLF_SEE_CENTER_CARDS_FLAG 16
+#define PCX_WEREWOLF_N_SEE_CENTER_CHOICES \
+        (PCX_WEREWOLF_N_EXTRA_CARDS * (PCX_WEREWOLF_N_EXTRA_CARDS - 1) / 2)
+
 struct pcx_werewolf_player {
         char *name;
 
@@ -1215,8 +1219,17 @@ extract_int(const char *extra_data)
 
 static void
 handle_see_center_cards(struct pcx_werewolf *werewolf,
-                        int player_num)
+                        int player_num,
+                        int mask)
 {
+        mask &= ~PCX_WEREWOLF_SEE_CENTER_CARDS_FLAG;
+
+        if ((mask & ~((1 << PCX_WEREWOLF_N_SEE_CENTER_CHOICES) - 1)))
+                return;
+
+        if (n_bits_in_filter(mask) != 2)
+                return;
+
         pcx_buffer_set_length(&werewolf->buffer, 0);
 
         append_text_string(werewolf,
@@ -1224,9 +1237,16 @@ handle_see_center_cards(struct pcx_werewolf *werewolf,
 
         pcx_buffer_append_c(&werewolf->buffer, '\n');
 
-        for (int i = 0; i < 2; i++) {
-                pcx_buffer_append_c(&werewolf->buffer, '\n');
-                append_role(werewolf, werewolf->extra_cards[i]);
+        while (mask) {
+                int card_num = ffs(mask) - 1;
+
+                pcx_buffer_append_printf(&werewolf->buffer,
+                                         "\n"
+                                         "%c: ",
+                                         card_num + 'A');
+                append_role(werewolf, werewolf->extra_cards[card_num]);
+
+                mask &= ~(1 << card_num);
         }
 
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
@@ -1235,6 +1255,27 @@ handle_see_center_cards(struct pcx_werewolf *werewolf,
         werewolf->callbacks.send_message(&message, werewolf->user_data);
 
         start_next_phase(werewolf);
+}
+
+static void
+send_center_card_choice(struct pcx_werewolf *werewolf,
+                        int player_num)
+{
+        static const struct pcx_game_button buttons[] = {
+                { "A+B", "see:19" },
+                { "A+C", "see:21" },
+                { "B+C", "see:22" },
+        };
+
+        assert(PCX_N_ELEMENTS(buttons) == PCX_WEREWOLF_N_SEE_CENTER_CHOICES);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_SEE_WHICH_CENTER_CARDS);
+        message.target = player_num;
+        message.n_buttons = PCX_N_ELEMENTS(buttons);
+        message.buttons = buttons;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
 }
 
 static void
@@ -1285,9 +1326,12 @@ handle_see_cb(struct pcx_werewolf *werewolf,
                 if (target == -1)
                         return;
 
-                handle_see_player_card(werewolf, player_num, target);
+                if ((target & PCX_WEREWOLF_SEE_CENTER_CARDS_FLAG))
+                        handle_see_center_cards(werewolf, player_num, target);
+                else
+                        handle_see_player_card(werewolf, player_num, target);
         } else {
-                handle_see_center_cards(werewolf, player_num);
+                send_center_card_choice(werewolf, player_num);
         }
 }
 

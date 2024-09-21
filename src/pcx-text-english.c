@@ -766,6 +766,8 @@ pcx_text_english[] = {
         "the cards that aren’t being used.",
         [PCX_TEXT_STRING_TWO_CARDS_FROM_THE_CENTER] =
         "Two cards from the center",
+        [PCX_TEXT_STRING_SEE_WHICH_CENTER_CARDS] =
+        "Which two cards from the center do you want to see?",
         [PCX_TEXT_STRING_SHOW_TWO_CARDS_FROM_CENTER] =
         "Two of the cards from the center are:",
         [PCX_TEXT_STRING_SHOW_PLAYER_CARD] =
