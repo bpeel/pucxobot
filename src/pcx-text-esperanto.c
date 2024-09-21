@@ -733,20 +733,20 @@ pcx_text_esperanto[] = {
         "Per kiu reĝimo vi volas ludi?",
         [PCX_TEXT_STRING_DECK_MODE_BASIC] =
         "Baza",
-        [PCX_TEXT_STRING_DECK_MODE_FULL_MOON] =
+        [PCX_TEXT_STRING_DECK_MODE_MOONSTRUCK] =
         "Plenluno",
-        [PCX_TEXT_STRING_DECK_MODE_LONE_WOLF] =
+        [PCX_TEXT_STRING_DECK_MODE_LONELY_NIGHT] =
         "Sola lupo",
         [PCX_TEXT_STRING_DECK_MODE_CONFUSION] =
         "Konfuzo",
-        [PCX_TEXT_STRING_DECK_MODE_PROFIT] =
-        "Profito",
-        [PCX_TEXT_STRING_DECK_MODE_MYSTERIOUS_PARTNERSHIPS] =
-        "Misteraj kunvenoj",
-        [PCX_TEXT_STRING_DECK_MODE_UNCERTAINTY] =
+        [PCX_TEXT_STRING_DECK_MODE_PAYBACK] =
+        "Venĝo",
+        [PCX_TEXT_STRING_DECK_MODE_SECRET_COMPANIONS] =
+        "Sekretaj kunuloj",
+        [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
         "Necerteco",
-        [PCX_TEXT_STRING_DECK_MODE_DARK_ALLEGIANCE] =
-        "Malhela alianco",
+        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
+        "Krepuska alianco",
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarĥio",
         [PCX_TEXT_STRING_SHOW_ROLES] =

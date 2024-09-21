@@ -698,20 +698,20 @@ pcx_text_english[] = {
         "Which game mode do you want to play?",
         [PCX_TEXT_STRING_DECK_MODE_BASIC] =
         "Basic",
-        [PCX_TEXT_STRING_DECK_MODE_FULL_MOON] =
-        "Full moon",
-        [PCX_TEXT_STRING_DECK_MODE_LONE_WOLF] =
-        "Lone wolf",
+        [PCX_TEXT_STRING_DECK_MODE_MOONSTRUCK] =
+        "Moonstruck",
+        [PCX_TEXT_STRING_DECK_MODE_LONELY_NIGHT] =
+        "Lonely night",
         [PCX_TEXT_STRING_DECK_MODE_CONFUSION] =
         "Confusion",
-        [PCX_TEXT_STRING_DECK_MODE_PROFIT] =
-        "Profit",
-        [PCX_TEXT_STRING_DECK_MODE_MYSTERIOUS_PARTNERSHIPS] =
-        "Mysterious partnerships",
-        [PCX_TEXT_STRING_DECK_MODE_UNCERTAINTY] =
-        "Uncertainty",
-        [PCX_TEXT_STRING_DECK_MODE_DARK_ALLEGIANCE] =
-        "Dark allegiance",
+        [PCX_TEXT_STRING_DECK_MODE_PAYBACK] =
+        "Payback",
+        [PCX_TEXT_STRING_DECK_MODE_SECRET_COMPANIONS] =
+        "Secret companions",
+        [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
+        "House of despair",
+        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
+        "Twightlight alliance",
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarchy",
         [PCX_TEXT_STRING_SHOW_ROLES] =

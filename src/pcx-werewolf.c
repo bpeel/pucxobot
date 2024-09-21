@@ -127,7 +127,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_FULL_MOON,
+                .name = PCX_TEXT_STRING_DECK_MODE_MOONSTRUCK,
                 .min_players = 3,
                 .max_players = 6,
                 .n_roles = 6,
@@ -141,7 +141,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_LONE_WOLF,
+                .name = PCX_TEXT_STRING_DECK_MODE_LONELY_NIGHT,
                 .min_players = 3,
                 .max_players = 4,
                 .n_roles = 4,
@@ -171,7 +171,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_PROFIT,
+                .name = PCX_TEXT_STRING_DECK_MODE_PAYBACK,
                 .min_players = 4,
                 .max_players = 7,
                 .n_roles = 8,
@@ -187,7 +187,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_MYSTERIOUS_PARTNERSHIPS,
+                .name = PCX_TEXT_STRING_DECK_MODE_SECRET_COMPANIONS,
                 .min_players = 6,
                 .max_players = 7,
                 .n_roles = 9,
@@ -204,7 +204,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_UNCERTAINTY,
+                .name = PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR,
                 .min_players = 4,
                 .max_players = 10,
                 .n_roles = 12,
@@ -224,7 +224,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_DARK_ALLEGIANCE,
+                .name = PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE,
                 .min_players = 5,
                 .max_players = 10,
                 .n_roles = 11,

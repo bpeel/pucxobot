@@ -107,11 +107,11 @@ start_game(struct test_data *data,
         if (n_players == 4) {
                 test_message_enable_check_buttons(message);
                 test_message_add_button(message, "mode:0", "Basic");
-                test_message_add_button(message, "mode:1", "Full moon");
-                test_message_add_button(message, "mode:2", "Lone wolf");
+                test_message_add_button(message, "mode:1", "Moonstruck");
+                test_message_add_button(message, "mode:2", "Lonely night");
                 test_message_add_button(message, "mode:3", "Confusion");
-                test_message_add_button(message, "mode:4", "Profit");
-                test_message_add_button(message, "mode:6", "Uncertainty");
+                test_message_add_button(message, "mode:4", "Payback");
+                test_message_add_button(message, "mode:6", "House of despair");
                 test_message_add_button(message, "mode:8", "Anarchy");
         }
 
