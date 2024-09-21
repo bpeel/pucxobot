@@ -329,9 +329,23 @@ skip_to_voting_phase(int n_werewolves)
                                       0,
                                       "You are the only werewolf! You can look "
                                       "at a card in the center of the table. "
-                                      "That card is:\n"
-                                      "\n"
-                                      "🐺 Werewolf");
+                                      "Which one do you want to see?");
+
+                if (!test_message_run_queue(&data->message_data))
+                        goto error;
+
+                queue_private_message(data,
+                                      0,
+                                      "The card you picked is B: 🐺 Werewolf");
+
+                queue_global_message(data,
+                                     "🌅 The sun has risen. Everyone in the "
+                                     "village wakes up and starts discussing "
+                                     "who they think the werewolves might be.");
+
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "wolfsee:1");
         } else {
                 struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
 
@@ -349,22 +363,27 @@ skip_to_voting_phase(int n_werewolves)
                         queue_private_message(data, i, (const char *) buf.data);
 
                 pcx_buffer_destroy(&buf);
+
+                if (!test_message_run_queue(&data->message_data))
+                        goto error;
+
+                /* The wolves can’t see center cards when there is
+                 * more than one.
+                 */
+                pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                          0,
+                                                          "wolfsee:2");
+
+                if (!check_idle(data))
+                        goto error;
+
+                queue_global_message(data,
+                                     "🌅 The sun has risen. Everyone in the "
+                                     "village wakes up and starts discussing "
+                                     "who they think the werewolves might be.");
+
+                test_time_hack_add_time(16);
         }
-
-        if (!test_message_run_queue(&data->message_data))
-                goto error;
-
-        test_time_hack_add_time(9);
-
-        if (!check_idle(data))
-                goto error;
-
-        test_time_hack_add_time(2);
-
-        queue_global_message(data,
-                             "🌅 The sun has risen. Everyone in the village "
-                             "wakes up and starts discussing who they think "
-                             "the werewolves might be.");
 
         if (!test_message_run_queue(&data->message_data))
                 goto error;
@@ -656,13 +675,53 @@ test_lone_wolf(void)
                              "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
+        struct test_message *message =
+                queue_private_message(data,
+                                      3,
+                                      "You are the only werewolf! You can look "
+                                      "at a card in the center of the table. "
+                                      "Which one do you want to see?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "wolfsee:0", "A");
+        test_message_add_button(message, "wolfsee:1", "B");
+        test_message_add_button(message, "wolfsee:2", "C");
+
+        if (!test_message_run_queue(&data->message_data)) {
+                ret = false;
+                goto out;
+        }
+
+        /* Bad sees should do nothing */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  2,
+                                                  "wolfsee:2");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "wolfsee");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "wolfsee:potato");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "wolfsee:3");
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
         queue_private_message(data,
                               3,
-                              "You are the only werewolf! You can look "
-                              "at a card in the center of the table. "
-                              "That card is:\n"
-                              "\n"
-                              "🔮 Seer");
+                              "The card you picked is A: 🔮 Seer");
+
+        queue_global_message(data,
+                             "🔮 The seer wakes up and can look at another "
+                             "player’s card or two of the cards that aren’t "
+                             "being used.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "wolfsee:0");
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
@@ -1074,7 +1133,7 @@ create_see_player_game(void)
         if (!test_message_run_queue(&data->message_data))
                 goto error;
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🔮 The seer wakes up and can look at another "
@@ -1333,7 +1392,7 @@ test_seer_in_middle_cards(void)
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🔮 The seer wakes up and can look at another "
@@ -1435,6 +1494,10 @@ test_action_in_wrong_phase(void)
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                   0,
+                                                  "wolfsee:0");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
                                                   "rob:0");
 
         pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
@@ -1500,7 +1563,7 @@ skip_to_robber_phase(void)
         if (!test_message_run_queue(&data->message_data))
                 goto error;
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🤏 The robber wakes up and may swap his card "
@@ -1803,7 +1866,7 @@ test_robber_in_middle_cards(void)
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🤏 The robber wakes up and may swap his card "
@@ -1923,7 +1986,7 @@ skip_to_troublemaker_phase(void)
         if (!test_message_run_queue(&data->message_data))
                 goto error;
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🐈 The troublemaker wakes up and can swap two "
@@ -2166,7 +2229,7 @@ test_troublemaker_in_middle_cards(void)
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🐈 The troublemaker wakes up and can swap two "
@@ -2869,10 +2932,10 @@ test_hunter_kills(void)
 {
         static const enum pcx_werewolf_role override_cards[] = {
                 PCX_WEREWOLF_ROLE_VILLAGER,
-                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_HUNTER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
-                PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
         };
@@ -2883,8 +2946,7 @@ test_hunter_kills(void)
                                       "The village consists of the following "
                                       "roles:\n"
                                       "\n"
-                                      "🧑‍🌾 Villager × 4\n"
-                                      "🐺 Werewolf × 2\n"
+                                      "🧑‍🌾 Villager × 6\n"
                                       "🔫 Hunter\n"
                                       "\n"
                                       "Everybody looks at their role before "
@@ -2894,25 +2956,6 @@ test_hunter_kills(void)
                 return false;
 
         bool ret = true;
-
-        test_time_hack_add_time(11);
-
-        queue_global_message(data,
-                             "🐺 The werewolves wake up and look at each other "
-                             "before going back to sleep.");
-
-        queue_private_message(data,
-                              1,
-                              "You are the only werewolf! You can look "
-                              "at a card in the center of the table. "
-                              "That card is:\n"
-                              "\n"
-                              "🐺 Werewolf");
-
-        if (!test_message_run_queue(&data->message_data)) {
-                ret = false;
-                goto out;
-        }
 
         test_time_hack_add_time(11);
 
@@ -2956,7 +2999,7 @@ test_hunter_kills(void)
                              "Everybody voted! The votes were:\n"
                              "\n"
                              "Alice 🧑‍🌾👉 Charles\n"
-                             "Bob 🐺👉 Charles\n"
+                             "Bob 🧑‍🌾👉 Charles\n"
                              "Charles 🔫👉 Bob\n"
                              "David 🧑‍🌾👉 Charles\n"
                              "\n"
@@ -2964,9 +3007,11 @@ test_hunter_kills(void)
                              "Their role was: 🔫 Hunter\n"
                              "\n"
                              "With his dying breath, the hunter shoots and "
-                             "kills Bob (🐺 Werewolf).\n"
+                             "kills Bob (🧑‍🌾 Villager).\n"
                              "\n"
-                             "🧑‍🌾 The villagers win! 🧑‍🌾");
+                             "Nobody is a werewolf!\n"
+                             "\n"
+                             "🤦 Nobody wins 🤦");
 
         test_message_queue(&data->message_data, TEST_MESSAGE_TYPE_GAME_OVER);
 
@@ -3235,8 +3280,8 @@ minion_but_dies_but_there_are_werewolves(void)
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_WEREWOLF,
                 PCX_WEREWOLF_ROLE_MINION,
-                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
         };
@@ -3265,20 +3310,21 @@ minion_but_dies_but_there_are_werewolves(void)
                              "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
-        queue_private_message(data,
-                              1,
-                              "You are the only werewolf! You can look "
-                              "at a card in the center of the table. "
-                              "That card is:\n"
-                              "\n"
-                              "🐺 Werewolf");
+        for (int i = 1; i <= 3; i += 2) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Bob\n"
+                                      "David");
+        }
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🦺 The minion wakes up and finds out who the "
@@ -3288,7 +3334,8 @@ minion_but_dies_but_there_are_werewolves(void)
                               2,
                               "The werewolves in the village are:\n"
                               "\n"
-                              "Bob");
+                              "Bob\n"
+                              "David");
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
@@ -3320,7 +3367,7 @@ minion_but_dies_but_there_are_werewolves(void)
                              "Alice 🧑‍🌾👉 Charles\n"
                              "Bob 🐺👉 Charles\n"
                              "Charles 🦺👉 Alice\n"
-                             "David 🧑‍🌾👉 Charles\n"
+                             "David 🐺👉 Charles\n"
                              "\n"
                              "The village has chosen to sacrifice Charles. "
                              "Their role was: 🦺 Minion\n"
@@ -3404,8 +3451,8 @@ tanner_and_village_win(void)
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_WEREWOLF,
                 PCX_WEREWOLF_ROLE_TANNER,
-                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_WEREWOLF,
+                PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
                 PCX_WEREWOLF_ROLE_VILLAGER,
         };
@@ -3434,20 +3481,21 @@ tanner_and_village_win(void)
                              "🐺 The werewolves wake up and look at each other "
                              "before going back to sleep.");
 
-        queue_private_message(data,
-                              1,
-                              "You are the only werewolf! You can look "
-                              "at a card in the center of the table. "
-                              "That card is:\n"
-                              "\n"
-                              "🐺 Werewolf");
+        for (int i = 1; i <= 3; i += 2) {
+                queue_private_message(data,
+                                      i,
+                                      "The werewolves in the village are:\n"
+                                      "\n"
+                                      "Bob\n"
+                                      "David");
+        }
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🌅 The sun has risen. Everyone in the village "
@@ -3472,7 +3520,7 @@ tanner_and_village_win(void)
                              "Alice 🧑‍🌾👉 Charles\n"
                              "Bob 🐺👉 Charles\n"
                              "Charles 🙍‍♂️👉 Bob\n"
-                             "David 🧑‍🌾👉 Bob\n"
+                             "David 🐺👉 Bob\n"
                              "\n"
                              "The village has chosen to sacrifice the "
                              "following people:\n"

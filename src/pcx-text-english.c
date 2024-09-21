@@ -747,7 +747,9 @@ pcx_text_english[] = {
         "to sleep.",
         [PCX_TEXT_STRING_LONE_WOLF] =
         "You are the only werewolf! You can look at a card in the center of "
-        "the table. That card is:",
+        "the table. Which one do you want to see?",
+        [PCX_TEXT_STRING_CENTER_CARD_IS] =
+        "The card you picked is %c:",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "The werewolves in the village are:",
         [PCX_TEXT_STRING_MINION_PHASE] =

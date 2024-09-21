@@ -782,7 +782,9 @@ pcx_text_esperanto[] = {
         "reendormiĝi.",
         [PCX_TEXT_STRING_LONE_WOLF] =
         "Vi estas la sola homlupo! Vi rajtas rigardi karton de la mezo de la "
-        "tablo. Tiu karto estas:",
+        "tablo. Kiun karton vi volas vidi?",
+        [PCX_TEXT_STRING_CENTER_CARD_IS] =
+        "La karto kiun vi elektis estas %c:",
         [PCX_TEXT_STRING_WEREWOLVES_ARE] =
         "La homlupoj de la vilaĝoj estas:",
         [PCX_TEXT_STRING_MINION_PHASE] =

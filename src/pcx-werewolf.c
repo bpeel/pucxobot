@@ -333,12 +333,25 @@ send_buffer_to_wakeup_role(struct pcx_werewolf *werewolf,
 static void
 send_lone_wolf_message(struct pcx_werewolf *werewolf)
 {
-        pcx_buffer_set_length(&werewolf->buffer, 0);
-        append_text_string(werewolf, PCX_TEXT_STRING_LONE_WOLF);
-        pcx_buffer_append_string(&werewolf->buffer, "\n\n");
-        append_role(werewolf, werewolf->extra_cards[0]);
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        send_buffer_to_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_WEREWOLF);
+        static const struct pcx_game_button buttons[] = {
+                { .text = "A", .data = "wolfsee:0" },
+                { .text = "B", .data = "wolfsee:1" },
+                { .text = "C", .data = "wolfsee:2" },
+        };
+
+        _Static_assert(PCX_N_ELEMENTS(buttons) == PCX_WEREWOLF_N_EXTRA_CARDS,
+                       "Need to have a button for each extra card");
+
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_LONE_WOLF);
+        message.buttons = buttons;
+        message.n_buttons = PCX_N_ELEMENTS(buttons);
+
+        send_message_to_wakeup_role(werewolf,
+                                    PCX_WEREWOLF_ROLE_WEREWOLF,
+                                    &message);
 }
 
 static void
@@ -377,14 +390,9 @@ send_wolf_pack_message(struct pcx_werewolf *werewolf)
                                       PCX_WEREWOLF_ROLE_WEREWOLF);
 }
 
-static void
-werewolf_phase_cb(struct pcx_werewolf *werewolf)
+static int
+count_wakeup_wolves(struct pcx_werewolf *werewolf)
 {
-        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
-        message.text = pcx_text_get(werewolf->language,
-                                    PCX_TEXT_STRING_WEREWOLF_PHASE);
-        werewolf->callbacks.send_message(&message, werewolf->user_data);
-
         int n_werewolves = 0;
 
         for (int i = 0; i < werewolf->n_players; i++) {
@@ -393,12 +401,26 @@ werewolf_phase_cb(struct pcx_werewolf *werewolf)
                         n_werewolves++;
         }
 
-        if (n_werewolves == 1)
-                send_lone_wolf_message(werewolf);
-        else if (n_werewolves > 1)
-                send_wolf_pack_message(werewolf);
+        return n_werewolves;
+}
 
-        queue_next_phase(werewolf, 10);
+static void
+werewolf_phase_cb(struct pcx_werewolf *werewolf)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.text = pcx_text_get(werewolf->language,
+                                    PCX_TEXT_STRING_WEREWOLF_PHASE);
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        int n_werewolves = count_wakeup_wolves(werewolf);
+
+        if (n_werewolves == 1) {
+                send_lone_wolf_message(werewolf);
+        } else {
+                if (n_werewolves > 1)
+                        send_wolf_pack_message(werewolf);
+                queue_next_phase(werewolf, rand() % 10 + 5);
+        }
 }
 
 static void
@@ -1333,6 +1355,43 @@ handle_see_cb(struct pcx_werewolf *werewolf,
 }
 
 static void
+handle_wolf_see_cb(struct pcx_werewolf *werewolf,
+                   int player_num,
+                   const char *extra_data)
+{
+        if (extra_data == NULL)
+                return;
+
+        if (werewolf->current_phase != PCX_WEREWOLF_ROLE_WEREWOLF)
+                return;
+
+        if (werewolf->players[player_num].wakeup_role !=
+            PCX_WEREWOLF_ROLE_WEREWOLF)
+                return;
+
+        if (count_wakeup_wolves(werewolf) != 1)
+                return;
+
+        int target = extract_int(extra_data);
+
+        if (target < 0 || target >= PCX_WEREWOLF_N_EXTRA_CARDS)
+                return;
+
+        pcx_buffer_set_length(&werewolf->buffer, 0);
+        const char *msg = pcx_text_get(werewolf->language,
+                                       PCX_TEXT_STRING_CENTER_CARD_IS);
+        pcx_buffer_append_printf(&werewolf->buffer,
+                                 msg,
+                                 target + 'A');
+        pcx_buffer_append_c(&werewolf->buffer, ' ');
+        append_role(werewolf, werewolf->extra_cards[target]);
+
+        send_buffer_to_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_WEREWOLF);
+
+        start_next_phase(werewolf);
+}
+
+static void
 handle_rob_player_card(struct pcx_werewolf *werewolf,
                        int player_num,
                        int target)
@@ -1992,6 +2051,7 @@ handle_callback_data_cb(void *user_data,
         } commands[] = {
                 { "vote", handle_vote_cb },
                 { "see", handle_see_cb },
+                { "wolfsee", handle_wolf_see_cb },
                 { "rob", handle_rob_cb },
                 { "swap", handle_swap_cb },
                 { "mode", handle_mode_cb },
