@@ -698,8 +698,8 @@ pcx_text_english[] = {
         "Which game mode do you want to play?",
         [PCX_TEXT_STRING_DECK_MODE_BASIC] =
         "Basic",
-        [PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE] =
-        "Intermediate",
+        [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
+        "Anarchy",
         [PCX_TEXT_STRING_SHOW_ROLES] =
         "The village consists of the following roles:",
         [PCX_TEXT_STRING_FALL_ASLEEP] =

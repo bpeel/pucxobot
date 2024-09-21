@@ -43,7 +43,7 @@
 
 enum pcx_werewolf_deck_mode {
         PCX_WEREWOLF_DECK_MODE_BASIC,
-        PCX_WEREWOLF_DECK_MODE_INTERMEDIATE,
+        PCX_WEREWOLF_DECK_MODE_ANARCHY,
 };
 
 #define PCX_WEREWOLF_N_DECK_MODES 2
@@ -761,8 +761,8 @@ make_basic_deck(enum pcx_werewolf_role *cards,
 }
 
 static void
-make_intermediate_deck(enum pcx_werewolf_role *cards,
-                       int n_cards)
+make_anarchy_deck(enum pcx_werewolf_role *cards,
+                  int n_cards)
 {
         struct pcx_werewolf_deck deck = {
                 .cards = cards,
@@ -818,8 +818,8 @@ deal_roles(struct pcx_werewolf *werewolf)
         case PCX_WEREWOLF_DECK_MODE_BASIC:
                 make_basic_deck(cards, n_cards);
                 break;
-        case PCX_WEREWOLF_DECK_MODE_INTERMEDIATE:
-                make_intermediate_deck(cards, n_cards);
+        case PCX_WEREWOLF_DECK_MODE_ANARCHY:
+                make_anarchy_deck(cards, n_cards);
                 break;
         }
 
@@ -965,7 +965,7 @@ send_pick_deck_mode_message(struct pcx_werewolf *werewolf)
                 {
                         .text =
                         pcx_text_get(werewolf->language,
-                                     PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE),
+                                     PCX_TEXT_STRING_DECK_MODE_ANARCHY),
                         .data = "mode:1",
                 },
         };

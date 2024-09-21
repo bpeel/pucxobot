@@ -733,8 +733,8 @@ pcx_text_esperanto[] = {
         "Per kiu reĝimo vi volas ludi?",
         [PCX_TEXT_STRING_DECK_MODE_BASIC] =
         "Baza",
-        [PCX_TEXT_STRING_DECK_MODE_INTERMEDIATE] =
-        "Meza",
+        [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
+        "Anarĥio",
         [PCX_TEXT_STRING_SHOW_ROLES] =
         "La vilaĝo konsistas el la sekvaj roluloj:",
         [PCX_TEXT_STRING_FALL_ASLEEP] =

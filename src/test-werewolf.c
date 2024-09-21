@@ -106,7 +106,7 @@ start_game(struct test_data *data,
 
         test_message_enable_check_buttons(message);
         test_message_add_button(message, "mode:0", "Basic");
-        test_message_add_button(message, "mode:1", "Intermediate");
+        test_message_add_button(message, "mode:1", "Anarchy");
 
         data->werewolf = pcx_werewolf_new(&test_message_callbacks,
                                           &data->message_data,
@@ -2110,7 +2110,7 @@ test_bad_swap(void)
 }
 
 static bool
-test_intermediate_mode(void)
+test_anarchy_mode(void)
 {
         bool ret = true;
 
@@ -3519,7 +3519,7 @@ main(int argc, char **argv)
         if (!test_bad_swap())
                 ret = EXIT_FAILURE;
 
-        if (!test_intermediate_mode())
+        if (!test_anarchy_mode())
                 ret = EXIT_FAILURE;
 
         if (!test_no_masons())

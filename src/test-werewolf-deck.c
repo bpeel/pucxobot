@@ -74,7 +74,7 @@ test_can_add_mason(void)
         random_number_queue = number_queue;
         random_number_queue_length = 2;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -100,7 +100,7 @@ test_cant_add_mason(void)
         random_number_queue = number_queue;
         random_number_queue_length = 4;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -119,7 +119,7 @@ test_loads_of_cards(void)
 {
         enum pcx_werewolf_role cards[20];
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -157,7 +157,7 @@ test_insomniac_robber_already_there(void)
         random_number_queue = number_queue;
         random_number_queue_length = 3;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -181,7 +181,7 @@ test_insomniac_troublemaker_already_there(void)
         random_number_queue = number_queue;
         random_number_queue_length = 3;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -205,7 +205,7 @@ test_insomniac_force_robber(void)
         random_number_queue = number_queue;
         random_number_queue_length = 2;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
@@ -232,7 +232,7 @@ test_cant_add_insomniac(void)
         random_number_queue = number_queue;
         random_number_queue_length = 4;
 
-        make_intermediate_deck(cards, PCX_N_ELEMENTS(cards));
+        make_anarchy_deck(cards, PCX_N_ELEMENTS(cards));
 
         enum pcx_werewolf_role expected_cards[] = {
                 PCX_WEREWOLF_ROLE_WEREWOLF,
