@@ -306,6 +306,31 @@ find_player_for_wakeup_role(struct pcx_werewolf *werewolf,
 }
 
 static void
+send_message_to_wakeup_role(struct pcx_werewolf *werewolf,
+                            enum pcx_werewolf_role role,
+                            struct pcx_game_message *message)
+{
+        for (int i = 0; i < werewolf->n_players; i++) {
+                if (werewolf->players[i].wakeup_role == role) {
+                        message->target = i;
+                        werewolf->callbacks.send_message(message,
+                                                         werewolf->user_data);
+                }
+        }
+}
+
+static void
+send_buffer_to_wakeup_role(struct pcx_werewolf *werewolf,
+                           enum pcx_werewolf_role role)
+{
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+
+        message.text = (const char *) werewolf->buffer.data;
+
+        send_message_to_wakeup_role(werewolf, role, &message);
+}
+
+static void
 send_lone_wolf_message(struct pcx_werewolf *werewolf)
 {
         pcx_buffer_set_length(&werewolf->buffer, 0);
@@ -313,19 +338,7 @@ send_lone_wolf_message(struct pcx_werewolf *werewolf)
         pcx_buffer_append_string(&werewolf->buffer, "\n\n");
         append_role(werewolf, werewolf->extra_cards[0]);
 
-        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
-
-        message.text = (const char *) werewolf->buffer.data;
-
-        for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role ==
-                    PCX_WEREWOLF_ROLE_WEREWOLF) {
-                        message.target = i;
-                        werewolf->callbacks.send_message(&message,
-                                                         werewolf->user_data);
-                        break;
-                }
-        }
+        send_buffer_to_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_WEREWOLF);
 }
 
 static void
@@ -353,17 +366,7 @@ send_player_same_role_message(struct pcx_werewolf *werewolf,
 {
         make_player_same_role_message(werewolf, message_text, role);
 
-        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
-
-        message.text = (const char *) werewolf->buffer.data;
-
-        for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role == role) {
-                        message.target = i;
-                        werewolf->callbacks.send_message(&message,
-                                                         werewolf->user_data);
-                }
-        }
+        send_buffer_to_wakeup_role(werewolf, role);
 }
 
 static void
@@ -532,15 +535,9 @@ send_lone_mason_message(struct pcx_werewolf *werewolf)
         message.text = pcx_text_get(werewolf->language,
                                     PCX_TEXT_STRING_LONE_MASON);
 
-        for (int i = 0; i < werewolf->n_players; i++) {
-                if (werewolf->players[i].wakeup_role ==
-                    PCX_WEREWOLF_ROLE_MASON) {
-                        message.target = i;
-                        werewolf->callbacks.send_message(&message,
-                                                         werewolf->user_data);
-                        break;
-                }
-        }
+        send_message_to_wakeup_role(werewolf,
+                                    PCX_WEREWOLF_ROLE_MASON,
+                                    &message);
 }
 
 static void
