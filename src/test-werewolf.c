@@ -1508,6 +1508,10 @@ test_action_in_wrong_phase(void)
                                                   0,
                                                   "mode:0");
 
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  0,
+                                                  "take:0");
+
         if (!check_idle(data))
                 ret = false;
 
@@ -2608,17 +2612,53 @@ test_drunk(void)
                              "card with one of the cards in the middle of the "
                              "table. He no longer knows what role he is.");
 
+        struct test_message *message =
+                queue_private_message(data,
+                                      3,
+                                      "Which card from the center do you "
+                                      "want?");
+
+        test_message_enable_check_buttons(message);
+        test_message_add_button(message, "take:0", "A");
+        test_message_add_button(message, "take:1", "B");
+        test_message_add_button(message, "take:2", "C");
+
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
                 goto out;
         }
 
-        test_time_hack_add_time(11);
+        /* Bad takes should do nothing */
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  2,
+                                                  "take:2");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "take");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "take:potato");
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "take:3");
+
+        if (!check_idle(data)) {
+                ret = false;
+                goto out;
+        }
+
+        queue_private_message(data,
+                              3,
+                              "You take card A");
 
         queue_global_message(data,
                              "🌅 The sun has risen. Everyone in the village "
                              "wakes up and starts discussing who they think "
                              "the werewolves might be.");
+
+        pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
+                                                  3,
+                                                  "take:0");
 
         if (!test_message_run_queue(&data->message_data)) {
                 ret = false;
@@ -2695,7 +2735,7 @@ test_no_drunk(void)
 
         bool ret = true;
 
-        test_time_hack_add_time(11);
+        test_time_hack_add_time(16);
 
         queue_global_message(data,
                              "🍺 The drunk wakes up confused and swaps his "

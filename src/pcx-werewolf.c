@@ -696,14 +696,29 @@ drunk_phase_cb(struct pcx_werewolf *werewolf)
                 find_player_for_wakeup_role(werewolf, PCX_WEREWOLF_ROLE_DRUNK);
 
         if (drunk_player != -1) {
-                enum pcx_werewolf_role temp =
-                        werewolf->players[drunk_player].card;
-                werewolf->players[drunk_player].card =
-                        werewolf->extra_cards[0];
-                werewolf->extra_cards[0] = temp;
-        }
+                message.text =
+                        pcx_text_get(werewolf->language,
+                                     PCX_TEXT_STRING_WHICH_CARD_DO_YOU_WANT);
+                message.target = drunk_player;
 
-        queue_next_phase(werewolf, 10);
+                static const struct pcx_game_button buttons[] = {
+                        { .text = "A", .data = "take:0" },
+                        { .text = "B", .data = "take:1" },
+                        { .text = "C", .data = "take:2" },
+                };
+
+                _Static_assert(PCX_N_ELEMENTS(buttons) ==
+                               PCX_WEREWOLF_N_EXTRA_CARDS,
+                               "There needs to be a button for each extra "
+                               "card");
+
+                message.n_buttons = PCX_N_ELEMENTS(buttons);
+                message.buttons = buttons;
+
+                werewolf->callbacks.send_message(&message, werewolf->user_data);
+        } else {
+                queue_next_phase(werewolf, rand() % 10 + 5);
+        }
 }
 
 static void
@@ -1564,6 +1579,44 @@ handle_swap_cb(struct pcx_werewolf *werewolf,
 }
 
 static void
+handle_take_cb(struct pcx_werewolf *werewolf,
+               int player_num,
+               const char *extra_data)
+{
+        if (extra_data == NULL)
+                return;
+
+        if (werewolf->current_phase != PCX_WEREWOLF_ROLE_DRUNK)
+                return;
+
+        if (werewolf->players[player_num].wakeup_role !=
+            PCX_WEREWOLF_ROLE_DRUNK)
+                return;
+
+        int target = extract_int(extra_data);
+
+        if (target < 0 || target >= PCX_WEREWOLF_N_EXTRA_CARDS)
+                return;
+
+        enum pcx_werewolf_role temp = werewolf->players[player_num].card;
+        werewolf->players[player_num].card = werewolf->extra_cards[target];
+        werewolf->extra_cards[target] = temp;
+
+        pcx_buffer_set_length(&werewolf->buffer, 0);
+        pcx_buffer_append_printf(&werewolf->buffer,
+                                 pcx_text_get(werewolf->language,
+                                              PCX_TEXT_STRING_YOU_TAKE_CARD),
+                                 'A' + target);
+
+        struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
+        message.target = player_num;
+        message.text = (const char *) werewolf->buffer.data;
+        werewolf->callbacks.send_message(&message, werewolf->user_data);
+
+        start_next_phase(werewolf);
+}
+
+static void
 handle_mode_cb(struct pcx_werewolf *werewolf,
                int player_num,
                const char *extra_data)
@@ -2057,6 +2110,7 @@ handle_callback_data_cb(void *user_data,
                 { "wolfsee", handle_wolf_see_cb },
                 { "rob", handle_rob_cb },
                 { "swap", handle_swap_cb },
+                { "take", handle_take_cb },
                 { "mode", handle_mode_cb },
         };
 

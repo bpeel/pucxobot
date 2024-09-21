@@ -835,6 +835,10 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_DRUNK_PHASE] =
         "🍺 La ebriulo vekiĝas konfuzite kaj interŝanĝas sian karton kun unu "
         "el la mezo de la tablo. Li ne plu scias kiu rolo li estas.",
+        [PCX_TEXT_STRING_WHICH_CARD_DO_YOU_WANT] =
+        "Kiun karton el la mezo vi volas preni?",
+        [PCX_TEXT_STRING_YOU_TAKE_CARD] =
+        "Vi prenas la karton %c",
         [PCX_TEXT_STRING_INSOMNIAC_PHASE] =
         "🥱 La sendormulo vekiĝas kaj kontrolas sian karton por vidi ĉu ŝi "
         "ankoaraŭ estas la sendormulo.",

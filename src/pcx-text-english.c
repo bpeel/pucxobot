@@ -799,6 +799,10 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_DRUNK_PHASE] =
         "🍺 The drunk wakes up confused and swaps his card with one of the "
         "cards in the middle of the table. He no longer knows what role he is.",
+        [PCX_TEXT_STRING_WHICH_CARD_DO_YOU_WANT] =
+        "Which card from the center do you want?",
+        [PCX_TEXT_STRING_YOU_TAKE_CARD] =
+        "You take card %c",
         [PCX_TEXT_STRING_INSOMNIAC_PHASE] =
         "🥱 The insomniac wakes up and checks her card to see if she’s still "
         "the insomniac.",
