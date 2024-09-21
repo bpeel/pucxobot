@@ -126,6 +126,122 @@ deck_modes[] = {
                         { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
                 },
         },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_FULL_MOON,
+                .min_players = 3,
+                .max_players = 6,
+                .n_roles = 6,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_INSOMNIAC },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                        { 5, PCX_WEREWOLF_ROLE_SEER },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_LONE_WOLF,
+                .min_players = 3,
+                .max_players = 4,
+                .n_roles = 4,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_SEER },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_CONFUSION,
+                .min_players = 3,
+                .max_players = 9,
+                .n_roles = 10,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_DRUNK },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                        { 0, PCX_WEREWOLF_ROLE_INSOMNIAC },
+                        { 5, PCX_WEREWOLF_ROLE_SEER },
+                        { 8, PCX_WEREWOLF_ROLE_MINION },
+                        { 9, PCX_WEREWOLF_ROLE_MASON },
+                        { 9, PCX_WEREWOLF_ROLE_MASON },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_PROFIT,
+                .min_players = 4,
+                .max_players = 7,
+                .n_roles = 8,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_HUNTER },
+                        { 0, PCX_WEREWOLF_ROLE_SEER },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_DRUNK },
+                        { 0, PCX_WEREWOLF_ROLE_INSOMNIAC },
+                        { 5, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_MYSTERIOUS_PARTNERSHIPS,
+                .min_players = 6,
+                .max_players = 7,
+                .n_roles = 9,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_MINION },
+                        { 0, PCX_WEREWOLF_ROLE_HUNTER },
+                        { 0, PCX_WEREWOLF_ROLE_SEER },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                        { 0, PCX_WEREWOLF_ROLE_MASON },
+                        { 0, PCX_WEREWOLF_ROLE_MASON },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_UNCERTAINTY,
+                .min_players = 4,
+                .max_players = 10,
+                .n_roles = 12,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_TANNER },
+                        { 0, PCX_WEREWOLF_ROLE_SEER },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_DRUNK },
+                        { 0, PCX_WEREWOLF_ROLE_INSOMNIAC },
+                        { 5, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                        { 7, PCX_WEREWOLF_ROLE_MASON },
+                        { 7, PCX_WEREWOLF_ROLE_MASON },
+                        { 8, PCX_WEREWOLF_ROLE_HUNTER },
+                        { 9, PCX_WEREWOLF_ROLE_MINION },
+                },
+        },
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_DARK_ALLEGIANCE,
+                .min_players = 5,
+                .max_players = 10,
+                .n_roles = 11,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_MASON },
+                        { 0, PCX_WEREWOLF_ROLE_MASON },
+                        { 0, PCX_WEREWOLF_ROLE_MINION },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                        { 0, PCX_WEREWOLF_ROLE_INSOMNIAC },
+                        { 6, PCX_WEREWOLF_ROLE_DRUNK },
+                        { 7, PCX_WEREWOLF_ROLE_SEER },
+                        { 10, PCX_WEREWOLF_ROLE_TANNER },
+                },
+        },
 };
 
 static void
@@ -997,7 +1113,9 @@ send_pick_deck_mode_message(struct pcx_werewolf *werewolf)
 
         struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
         pcx_buffer_set_length(&buf, 0);
-        pcx_buffer_append_printf(&buf, "mode:%zu", message.n_buttons);
+        pcx_buffer_append_printf(&buf,
+                                 "mode:%zu",
+                                 PCX_N_ELEMENTS(deck_modes));
         buttons[message.n_buttons].text =
                 pcx_text_get(werewolf->language,
                              PCX_TEXT_STRING_DECK_MODE_ANARCHY);

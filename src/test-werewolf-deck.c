@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 static const int *
 random_number_queue;
@@ -246,6 +247,305 @@ test_cant_add_insomniac(void)
         return check_deck(expected_cards, cards, PCX_N_ELEMENTS(cards));
 }
 
+static bool
+test_mode(int deck_mode,
+          int n_players,
+          ...)
+{
+        int n_cards = n_players + PCX_WEREWOLF_N_EXTRA_CARDS;
+        enum pcx_werewolf_role *cards = pcx_alloc(n_cards * sizeof *cards);
+        bool ret = true;
+        va_list ap;
+
+        make_deck_from_mode(cards, deck_modes + deck_mode, n_cards);
+
+        if (n_players < deck_modes[deck_mode].min_players ||
+            n_players > deck_modes[deck_mode].max_players) {
+                fprintf(stderr,
+                        "player range is wrong for deck mode %i",
+                        deck_mode);
+                ret = false;
+        }
+
+        va_start(ap, n_players);
+
+        for (int i = 0; i < n_cards; i++) {
+                enum pcx_werewolf_role expected =
+                        va_arg(ap, enum pcx_werewolf_role);
+
+                if (cards[i] != expected) {
+                        fprintf(stderr,
+                                "for mode %i with %i players, "
+                                "expected %i got %i\n",
+                                deck_mode,
+                                n_players,
+                                expected,
+                                cards[i]);
+                        ret = false;
+                        break;
+                }
+        }
+
+        va_end(ap);
+
+        pcx_free(cards);
+
+        return ret;
+}
+
+static bool
+test_predefined_modes(void)
+{
+        bool ret = true;
+
+        if (!test_mode(0,
+                       3,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(0,
+                       5,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(1,
+                       4,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(1,
+                       6,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(2,
+                       4,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(3,
+                       3,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC))
+                ret = false;
+
+        if (!test_mode(3,
+                       9,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(4,
+                       4,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_HUNTER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC))
+                ret = false;
+
+        if (!test_mode(4,
+                       5,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_HUNTER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER))
+                ret = false;
+
+        if (!test_mode(5,
+                       6,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_HUNTER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON))
+                ret = false;
+
+        if (!test_mode(6,
+                       4,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC))
+                ret = false;
+
+        if (!test_mode(6,
+                       5,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER))
+                ret = false;
+
+        if (!test_mode(6,
+                       7,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON))
+                ret = false;
+
+        if (!test_mode(6,
+                       8,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_HUNTER))
+                ret = false;
+
+        if (!test_mode(6,
+                       10,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_HUNTER,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        if (!test_mode(7,
+                       5,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC))
+                ret = false;
+
+        if (!test_mode(7,
+                       6,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_DRUNK))
+                ret = false;
+
+        if (!test_mode(7,
+                       7,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_SEER))
+                ret = false;
+
+        if (!test_mode(7,
+                       10,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_WEREWOLF,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MASON,
+                       PCX_WEREWOLF_ROLE_MINION,
+                       PCX_WEREWOLF_ROLE_ROBBER,
+                       PCX_WEREWOLF_ROLE_TROUBLEMAKER,
+                       PCX_WEREWOLF_ROLE_INSOMNIAC,
+                       PCX_WEREWOLF_ROLE_DRUNK,
+                       PCX_WEREWOLF_ROLE_SEER,
+                       PCX_WEREWOLF_ROLE_TANNER,
+                       PCX_WEREWOLF_ROLE_VILLAGER,
+                       PCX_WEREWOLF_ROLE_VILLAGER))
+                ret = false;
+
+        return ret;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -270,6 +570,9 @@ main(int argc, char **argv)
                 ret = EXIT_FAILURE;
 
         if (!test_cant_add_insomniac())
+                ret = EXIT_FAILURE;
+
+        if (!test_predefined_modes())
                 ret = EXIT_FAILURE;
 
         return ret;

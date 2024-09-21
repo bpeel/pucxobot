@@ -107,7 +107,12 @@ start_game(struct test_data *data,
         if (n_players == 4) {
                 test_message_enable_check_buttons(message);
                 test_message_add_button(message, "mode:0", "Basic");
-                test_message_add_button(message, "mode:1", "Anarchy");
+                test_message_add_button(message, "mode:1", "Full moon");
+                test_message_add_button(message, "mode:2", "Lone wolf");
+                test_message_add_button(message, "mode:3", "Confusion");
+                test_message_add_button(message, "mode:4", "Profit");
+                test_message_add_button(message, "mode:6", "Uncertainty");
+                test_message_add_button(message, "mode:8", "Anarchy");
         }
 
         data->werewolf = pcx_werewolf_new(&test_message_callbacks,
@@ -2142,10 +2147,16 @@ test_anarchy_mode(void)
                                                           "mode");
                 pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                           0,
-                                                          "mode:2");
+                                                          "mode:9");
                 pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                           0,
                                                           "mode:potato");
+                if (n_players < 5) {
+                        pcx_werewolf_game.handle_callback_data_cb(
+                                data->werewolf,
+                                0,
+                                "mode:7");
+                }
                 if (n_players > 5) {
                         pcx_werewolf_game.handle_callback_data_cb(
                                 data->werewolf,
@@ -2182,7 +2193,7 @@ test_anarchy_mode(void)
 
                 pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                           0,
-                                                          "mode:1");
+                                                          "mode:8");
 
                 if (!test_message_run_queue(&data->message_data)) {
                         ret = false;
