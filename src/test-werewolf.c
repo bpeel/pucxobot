@@ -104,9 +104,11 @@ start_game(struct test_data *data,
                 queue_global_message(data,
                                      "Which game mode do you want to play?");
 
-        test_message_enable_check_buttons(message);
-        test_message_add_button(message, "mode:0", "Basic");
-        test_message_add_button(message, "mode:1", "Anarchy");
+        if (n_players == 4) {
+                test_message_enable_check_buttons(message);
+                test_message_add_button(message, "mode:0", "Basic");
+                test_message_add_button(message, "mode:1", "Anarchy");
+        }
 
         data->werewolf = pcx_werewolf_new(&test_message_callbacks,
                                           &data->message_data,
@@ -2144,6 +2146,12 @@ test_anarchy_mode(void)
                 pcx_werewolf_game.handle_callback_data_cb(data->werewolf,
                                                           0,
                                                           "mode:potato");
+                if (n_players > 5) {
+                        pcx_werewolf_game.handle_callback_data_cb(
+                                data->werewolf,
+                                0,
+                                "mode:0");
+                }
 
                 if (!check_idle(data)) {
                         ret = false;

@@ -41,13 +41,6 @@
 #define PCX_WEREWOLF_PICK_MODE_PHASE -2
 #define PCX_WEREWOLF_PICK_WAITING_PHASE -1
 
-enum pcx_werewolf_deck_mode {
-        PCX_WEREWOLF_DECK_MODE_BASIC,
-        PCX_WEREWOLF_DECK_MODE_ANARCHY,
-};
-
-#define PCX_WEREWOLF_N_DECK_MODES 2
-
 struct pcx_werewolf_player {
         char *name;
 
@@ -72,7 +65,7 @@ struct pcx_werewolf {
         enum pcx_text_language language;
         struct pcx_buffer buffer;
 
-        enum pcx_werewolf_deck_mode deck_mode;
+        int deck_mode;
 
         struct pcx_main_context_source *timeout_source;
         int current_phase;
@@ -103,6 +96,36 @@ struct pcx_werewolf_role_data {
         enum pcx_text_string name;
         void (* phase_cb)(struct pcx_werewolf *werewof);
         void (* add_card_cb)(struct pcx_werewolf_deck *deck);
+};
+;
+struct pcx_werewolf_deck_mode_role {
+        int min_players;
+        enum pcx_werewolf_role role;
+};
+
+struct pcx_werewolf_deck_mode_data {
+        enum pcx_text_string name;
+        int min_players;
+        int max_players;
+        int n_roles;
+        const struct pcx_werewolf_deck_mode_role *roles;
+};
+
+static const struct pcx_werewolf_deck_mode_data
+deck_modes[] = {
+        {
+                .name = PCX_TEXT_STRING_DECK_MODE_BASIC,
+                .min_players = 3,
+                .max_players = 5,
+                .n_roles = 5,
+                .roles = (const struct pcx_werewolf_deck_mode_role[]) {
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_WEREWOLF },
+                        { 0, PCX_WEREWOLF_ROLE_SEER },
+                        { 0, PCX_WEREWOLF_ROLE_ROBBER },
+                        { 0, PCX_WEREWOLF_ROLE_TROUBLEMAKER },
+                },
+        },
 };
 
 static void
@@ -739,21 +762,18 @@ start_voting_cb(struct pcx_main_context_source *source,
 }
 
 static void
-make_basic_deck(enum pcx_werewolf_role *cards,
-                int n_cards)
+make_deck_from_mode(enum pcx_werewolf_role *cards,
+                    const struct pcx_werewolf_deck_mode_data *mode,
+                    int n_cards)
 {
         int card_num = 0;
 
-        /* Add the werewolves */
-        for (int i = 0; i < PCX_WEREWOLF_N_WEREWOLVES; i++)
-                cards[card_num++] = PCX_WEREWOLF_ROLE_WEREWOLF;
-
-        /* … the seer */
-        cards[card_num++] = PCX_WEREWOLF_ROLE_SEER;
-        /* … the robber */
-        cards[card_num++] = PCX_WEREWOLF_ROLE_ROBBER;
-        /* and the troublemaker */
-        cards[card_num++] = PCX_WEREWOLF_ROLE_TROUBLEMAKER;
+        for (int i = 0; i < mode->n_roles; i++) {
+                const struct pcx_werewolf_deck_mode_role *role =
+                        mode->roles + i;
+                if (n_cards - PCX_WEREWOLF_N_EXTRA_CARDS >= role->min_players)
+                        cards[card_num++] = role->role;
+        }
 
         /* The rest of the cards are villagers */
         while (card_num < n_cards)
@@ -814,13 +834,12 @@ deal_roles(struct pcx_werewolf *werewolf)
                                      PCX_WEREWOLF_N_EXTRA_CARDS];
         int n_cards = werewolf->n_players + PCX_WEREWOLF_N_EXTRA_CARDS;
 
-        switch (werewolf->deck_mode) {
-        case PCX_WEREWOLF_DECK_MODE_BASIC:
-                make_basic_deck(cards, n_cards);
-                break;
-        case PCX_WEREWOLF_DECK_MODE_ANARCHY:
+        if (werewolf->deck_mode < PCX_N_ELEMENTS(deck_modes)) {
+                make_deck_from_mode(cards,
+                                    deck_modes + werewolf->deck_mode,
+                                    n_cards);
+        } else {
                 make_anarchy_deck(cards, n_cards);
-                break;
         }
 
         /* Shuffle the deck */
@@ -956,27 +975,44 @@ send_pick_deck_mode_message(struct pcx_werewolf *werewolf)
 {
         struct pcx_game_message message = PCX_GAME_DEFAULT_MESSAGE;
 
-        const struct pcx_game_button buttons[] = {
-                {
-                        .text = pcx_text_get(werewolf->language,
-                                             PCX_TEXT_STRING_DECK_MODE_BASIC),
-                        .data = "mode:0",
-                },
-                {
-                        .text =
-                        pcx_text_get(werewolf->language,
-                                     PCX_TEXT_STRING_DECK_MODE_ANARCHY),
-                        .data = "mode:1",
-                },
-        };
+        struct pcx_game_button buttons[PCX_N_ELEMENTS(deck_modes) + 1];
+
+        for (int i = 0; i < PCX_N_ELEMENTS(deck_modes); i++) {
+                if (werewolf->n_players >= deck_modes[i].min_players &&
+                    werewolf->n_players <= deck_modes[i].max_players) {
+                        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+
+                        pcx_buffer_set_length(&buf, 0);
+                        pcx_buffer_append_printf(&buf, "mode:%i", i);
+
+                        buttons[message.n_buttons].text =
+                                pcx_text_get(werewolf->language,
+                                             deck_modes[i].name);
+                        buttons[message.n_buttons].data =
+                                (const char *) buf.data;
+
+                        message.n_buttons++;
+                }
+        }
+
+        struct pcx_buffer buf = PCX_BUFFER_STATIC_INIT;
+        pcx_buffer_set_length(&buf, 0);
+        pcx_buffer_append_printf(&buf, "mode:%zu", message.n_buttons);
+        buttons[message.n_buttons].text =
+                pcx_text_get(werewolf->language,
+                             PCX_TEXT_STRING_DECK_MODE_ANARCHY);
+        buttons[message.n_buttons].data = (const char *) buf.data;
+        message.n_buttons++;
 
         message.text = pcx_text_get(werewolf->language,
                                     PCX_TEXT_STRING_WHICH_DECK_MODE);
         message.buttons = buttons;
-        message.n_buttons = PCX_N_ELEMENTS(buttons);
 
         werewolf->callbacks.send_message(&message,
                                          werewolf->user_data);
+
+        for (int i = 0; i < message.n_buttons; i++)
+                pcx_free((char *) buttons[i].data);
 }
 
 struct pcx_werewolf *
@@ -1319,8 +1355,18 @@ handle_mode_cb(struct pcx_werewolf *werewolf,
 
         int mode = extract_int(extra_data);
 
-        if (mode < 0 || mode >= PCX_WEREWOLF_N_DECK_MODES)
+        if (mode < 0) {
                 return;
+        } else if (mode < PCX_N_ELEMENTS(deck_modes)) {
+                if (werewolf->n_players < deck_modes[mode].min_players ||
+                    werewolf->n_players > deck_modes[mode].max_players)
+                        return;
+        } else if (mode != PCX_N_ELEMENTS(deck_modes)) {
+                /* The player can select mode
+                 * PCX_N_ELEMENTS(deck_modes) to mean anarchy mode.
+                 */
+                return;
+        }
 
         werewolf->deck_mode = mode;
         werewolf->current_phase = PCX_WEREWOLF_PICK_WAITING_PHASE;
