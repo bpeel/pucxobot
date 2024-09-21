@@ -3274,7 +3274,7 @@ out:
 }
 
 static bool
-minion_but_dies_but_there_are_werewolves(void)
+minion_dies_but_there_are_werewolves(void)
 {
         static const enum pcx_werewolf_role override_cards[] = {
                 PCX_WEREWOLF_ROLE_VILLAGER,
@@ -3753,7 +3753,7 @@ main(int argc, char **argv)
         if (!test_minion_no_werewolves_minion_wins())
                 ret = EXIT_FAILURE;
 
-        if (!minion_but_dies_but_there_are_werewolves())
+        if (!minion_dies_but_there_are_werewolves())
                 ret = EXIT_FAILURE;
 
         if (!minion_in_middle_cards())
