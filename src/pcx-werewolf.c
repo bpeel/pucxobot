@@ -1794,7 +1794,11 @@ show_vote_results(struct pcx_werewolf *werewolf)
         for (int i = 0; i < werewolf->n_players; i++) {
                 pcx_buffer_append_string(&werewolf->buffer,
                                          werewolf->players[i].name);
-                pcx_buffer_append_string(&werewolf->buffer, " 👉 ");
+                pcx_buffer_append_c(&werewolf->buffer, ' ');
+                enum pcx_werewolf_role role = werewolf->players[i].card;
+                pcx_buffer_append_string(&werewolf->buffer,
+                                         roles[role].symbol);
+                pcx_buffer_append_string(&werewolf->buffer, "👉 ");
 
                 int target = werewolf->players[i].vote;
 
