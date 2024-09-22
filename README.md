@@ -1,4 +1,4 @@
-Pucxobot is a Telegram robot and website to play the following games:
+Pucxobot is a Telegram bot and website to play the following games:
 
 * Coup
 * Love Letter

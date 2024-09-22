@@ -216,7 +216,7 @@ set_log_file(const char *filename)
 static void
 usage(void)
 {
-        printf("Pucxobot - a Telegram robot to play games\n"
+        printf("Pucxobot - a Telegram bot to play games\n"
                "usage: pucxobot [options]...\n"
                " -h                   Show this help message\n"
                " -l <file>            Specify a log file. Defaults to stdout.\n"
