@@ -12,8 +12,13 @@ Pucxobot is a Telegram robot and website to play the following games:
 * Superfight
 
 If you just want to test it out on Telegram you can join
-[this group](https://t.me/bluffing). Otherwise you can add
-[@bluffingbot](https://t.me/bluffingbot) to your own group and play.
+[this group](https://t.me/bluffing). Otherwise you can add one of the
+following bots to your own group and play:
+
+* [@bluffingbot](https://t.me/bluffingbot) – English
+* [@pucxobot](https://t.me/pucxobot) – Esperanto
+* [@blefarbot](https://t.me/blefarbot) – Brazilian Portuguese
+* [@complotbot](https://t.me/complotbot) – French
 
 To try the website, go [here](https://gemelo.org/ludoj/en).
 
