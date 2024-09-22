@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Puxcobot - A robot to play Coup in Esperanto (Puĉo)
+# Pucxobot - A robot to play Coup in Esperanto (Puĉo)
 # Copyright (C) 2024  Neil Roberts
 #
 # This program is free software: you can redistribute it and/or modify

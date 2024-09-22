@@ -1,5 +1,5 @@
 /*
- * Puxcobot - A robot to play coup in Esperanto (Puĉo)
+ * Pucxobot - A robot to play coup in Esperanto (Puĉo)
  * Copyright (C) 2019  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify

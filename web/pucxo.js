@@ -1,5 +1,5 @@
 /*
- * Puxcobot - A robot to play Coup in Esperanto (Puĉo)
+ * Pucxobot - A robot to play Coup in Esperanto (Puĉo)
  * Copyright (C) 2020  Neil Roberts
  *
  * This program is free software: you can redistribute it and/or modify
@@ -850,7 +850,7 @@ Pucxo.prototype.onBlurCb = function()
 
 (function ()
  {
-   var puxco;
+   var pucxo;
 
    function loadCb()
    {

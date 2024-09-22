@@ -115,7 +115,7 @@ terminal. However if it is run as a daemon it will instead log to
 the log file by adding an extra section to the config like this:
 
     [general]
-    data_dir = /var/run/puxcobot-data
+    data_dir = /var/run/pucxobot-data
     log_file = /var/log/my-super-log-file
 
 The program needs write access to the data directory in order to store
