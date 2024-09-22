@@ -65,10 +65,10 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WHICH_HELP] =
         "Pour quel jeu voulez-vous de l’aide ?",
         [PCX_TEXT_STRING_TIMEOUT_START] =
-        "Personne n’a rejoint pendant plus que %i minutes. "
+        "Personne n’a rejoint pendant plus de %i minutes. "
         "La partie commencera tout de suite.",
         [PCX_TEXT_STRING_TIMEOUT_ABANDON] =
-        "La partie a été inactive pendant plus que %i minutes "
+        "La partie a été inactive pendant plus de %i minutes "
         "et sera abandonnée.",
         [PCX_TEXT_STRING_NEED_PUBLIC_GROUP] =
         "Pour jouer, ajoutez le bot à un groupe avec vos amis et commencez le "
@@ -76,7 +76,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_SEND_PRIVATE_MESSAGE] =
         "Avant de rejoindre un jeu, veuillez cliquer sur @%s et envoyer un "
         "message pour que j’aie le droit de vous envoyer vos cartes dans un "
-        "message privé. Après avoir fait ça vous pouvez retourner ici pour "
+        "message privé. Après avoir fait ça vous pouvez revenir ici pour "
         "rejoindre un jeu.",
         [PCX_TEXT_STRING_ALREADY_IN_GAME] =
         "Vous êtes déjà dans une partie",
@@ -85,7 +85,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WHICH_GAME] =
         "À quel jeu voulez-vous jouer ?",
         [PCX_TEXT_STRING_GAME_FULL] =
-        "La partie est complete",
+        "La partie est complète",
         [PCX_TEXT_STRING_GAME_ALREADY_STARTED] =
         "La partie a déjà commencé",
         [PCX_TEXT_STRING_NO_GAME] =
@@ -104,7 +104,7 @@ pcx_text_french[] = {
         "Bienvenue. Les autres joueurs peuvent taper /rejoindre pour rejoindre "
         "la partie ou vous pouvez taper /commencer pour la commencer.",
         [PCX_TEXT_STRING_WELCOME_FULL] =
-        "Bienvenue. La partie et maintenant complète et commencera "
+        "Bienvenue. La partie est maintenant complète et commencera "
         "tout de suite.",
         [PCX_TEXT_STRING_WELCOME_BUTTONS] =
         "%s a rejoint la partie. Vous pouvez attendre plus de joueurs ou "
@@ -126,11 +126,11 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_JOIN_BEFORE_START] =
         "Rejoignez la partie en tapant /rejoindre avant de la commencer",
         [PCX_TEXT_STRING_NEED_MIN_PLAYERS] =
-        "Il faut au moins %i joeurs pour jouer",
+        "Il faut au moins %i joueur·euses pour jouer",
         [PCX_TEXT_STRING_JOIN_COMMAND] =
         "/rejoindre",
         [PCX_TEXT_STRING_JOIN_COMMAND_DESCRIPTION] =
-        "Rejoindre un jeu déjà créé",
+        "Rejoindre une partie déjà créée",
         [PCX_TEXT_STRING_START_COMMAND] =
         "/commencer",
         [PCX_TEXT_STRING_START_COMMAND_DESCRIPTION] =
@@ -195,9 +195,9 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_NOONE] =
         "Personne",
         [PCX_TEXT_STRING_WON_1] =
-        "%s a gagné!",
+        "%s a gagné !",
         [PCX_TEXT_STRING_WON_PLURAL] =
-        "%s ont gagné!",
+        "%s ont gagné !",
         [PCX_TEXT_STRING_YOUR_GO] =
         "%s, c’est à vous, que voulez-vous faire ?",
         [PCX_TEXT_STRING_WHICH_CARD_TO_LOSE] =
@@ -269,7 +269,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_WHO_TO_CONVERT] =
         "%s, qui voulez-vous convertir ?",
         [PCX_TEXT_STRING_CONVERTS_SELF] =
-        "%s paie une pièce à l’hospice and se convertit à soi-même.",
+        "%s paie une pièce à l’hospice et se convertit lui-même.",
         [PCX_TEXT_STRING_CONVERTS_SOMEONE_ELSE] =
         "%s paie 2 pièces à l’hospice et convertit %s.",
         [PCX_TEXT_STRING_REALLY_DOING_ASSASSINATION] =
@@ -293,7 +293,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_DOING_INSPECT] =
         "🔍 %s prétend avoir l’inquisiteur et veut consulter une carte de %s",
         [PCX_TEXT_STRING_CHOOSE_CARD_TO_SHOW] =
-        "Quelle carte voulez-vous montrer à %s?",
+        "Quelle carte voulez-vous montrer à %s ?",
         [PCX_TEXT_STRING_OTHER_PLAYER_DECIDING_CAN_KEEP] =
         "%s est en train de décider si vous pouvez garder %s",
         [PCX_TEXT_STRING_SHOWING_CARD] =
@@ -305,7 +305,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_ALLOW_KEEP] =
         "%s a permis à %s de garder la carte qu’il a montrée.",
         [PCX_TEXT_STRING_DONT_ALLOW_KEEP] =
-        "%s a obligé %s de changer la carte qu’il a montrée.",
+        "%s a obligé %s à changer la carte qu’il a montrée.",
         [PCX_TEXT_STRING_REALLY_DOING_STEAL] =
         "Personne n’a bloqué ou mis en doute, %s vole à %s",
         [PCX_TEXT_STRING_SELECT_TARGET_STEAL] =
@@ -345,7 +345,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_ROLE_NAME_MUSCLE] =
         "Costaud",
         [PCX_TEXT_STRING_ROLE_NAME_CON_ARTIST] =
-        "Arnaquer",
+        "Arnaqueur",
         [PCX_TEXT_STRING_ROLE_NAME_LOOKOUT] =
         "Guetteur",
         [PCX_TEXT_STRING_ROLE_NAME_SNITCH] =
@@ -359,12 +359,12 @@ pcx_text_french[] = {
         "Le braquage aura besoin de ces %i personnages :",
         [PCX_TEXT_STRING_DISCUSS_HEIST] =
         "Maintenant vous pouvez discuter entre vous sur quels personnages vous "
-        "aller fournir au braquage. Quand vous serez prêts, choisissez votre "
+        "allez fournir au braquage. Quand vous serez prêts, choisissez votre "
         "carte en secret.",
         [PCX_TEXT_STRING_CARDS_CHOSEN] =
         "Tout le monde a fait son choix ! Les personnages sont :",
         [PCX_TEXT_STRING_NEEDED_CARDS_WERE] =
-        "La cartes requises ont été :",
+        "La cartes requises étaient :",
         [PCX_TEXT_STRING_YOU_CHOSE] =
         "Vous avez choisi :",
         [PCX_TEXT_STRING_WHICH_ROLE] =
@@ -373,7 +373,7 @@ pcx_text_french[] = {
         "Le braquage a réussi ! Tous les joueurs qui n’ont pas choisi "
         "la balance reçoivent %i or.",
         [PCX_TEXT_STRING_HEIST_FAILED] =
-        "Le braquage a échoué ! Tous ce qui n’ont pas choisi la balance "
+        "Le braquage a échoué ! Tous ceux qui n’ont pas choisi la balance "
         "perdent 1 or.",
         [PCX_TEXT_STRING_SNITCH_GAIN_1] =
         "Tous les autres gagnent 1 or.",
@@ -420,7 +420,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_PRINCE_OBJECT] =
         "le prince",
         [PCX_TEXT_STRING_PRINCE_DESCRIPTION] =
-        "Choisissez un joueur (qui peut être vous même) qui défaussera sa main "
+        "Choisissez un joueur (qui peut être vous-même) qui défaussera sa main "
         "et prendra une nouvelle carte.",
         [PCX_TEXT_STRING_KING] =
         "Roi",
@@ -452,12 +452,12 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_N_CARDS] =
         "Pioche : ",
         [PCX_TEXT_STRING_YOUR_GO_NO_QUESTION] =
-        "<b>%p</b>, c’est a vous",
+        "<b>%p</b>, c’est à vous",
         [PCX_TEXT_STRING_DISCARD_WHICH_CARD] =
         "Quelle carte voulez-vous défausser ?",
         [PCX_TEXT_STRING_EVERYONE_PROTECTED] =
-        "%p défausse %C mais tous les autres joueurs sont protegés et il n’a "
-        "pas d’effet.",
+        "%p défausse %C mais tous les autres joueurs sont protegés et la "
+        "carte n’a pas d’effet.",
         [PCX_TEXT_STRING_WHO_GUESS] =
         "À qui voulez-vous diviner la carte ?",
         [PCX_TEXT_STRING_GUESS_WHICH_CARD] =
@@ -467,7 +467,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_GUARD_FAIL] =
         "%p défausse %C et divine à tort que %p a %C.",
         [PCX_TEXT_STRING_WHO_SEE_CARD] =
-        "À qui voulez-vous voir sa carte ?",
+        "À qui voulez-vous voir la carte ?",
         [PCX_TEXT_STRING_SHOWS_CARD] =
         "%p défaussé %C et force %p à montrer sa carte en secret.",
         [PCX_TEXT_STRING_TELL_SPIED_CARD] =
@@ -481,11 +481,11 @@ pcx_text_french[] = {
         "Vous avez %C et %p a %C",
         [PCX_TEXT_STRING_COMPARE_CARDS_EQUAL] =
         "%p a défaussé %C et a comparé sa carte avec celle de %p. "
-        "Les deux cartes étaient égaux et personne n’a perdu la manche.",
+        "Les deux cartes étaient égales et personne n’a perdu la manche.",
         [PCX_TEXT_STRING_DISCARDS_HANDMAID] =
         "%p défausse %C et sera protegé jusqu’à sa prochaine tour.",
         [PCX_TEXT_STRING_WHO_PRINCE] =
-        "À qui voulez-vous faire défausser sa main ?",
+        "À qui voulez-vous faire défausser la main ?",
         [PCX_TEXT_STRING_PRINCE_SELF] =
         "%p a défaussé %C et a forcé lui-même à défausser %C",
         [PCX_TEXT_STRING_PRINCE_OTHER] =
@@ -507,7 +507,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_EVERYBODY_SHOWS_CARD] =
         "La manche se termine et tout le monde montre sa carte :",
         [PCX_TEXT_STRING_SET_ASIDE_CARD] =
-        "La carte cachée a été %c",
+        "La carte cachée était %c",
         [PCX_TEXT_STRING_WINS_ROUND] =
         "💘 %p remporte la manche et gagne de l’affection de la princesse",
         [PCX_TEXT_STRING_WINS_PRINCESS] =
@@ -521,17 +521,17 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_THROW_FIRST_DICE] =
         "<b>%p</b>, c’est à vous, appuyez sur le bouton pour lancer les dés.",
         [PCX_TEXT_STRING_YOUR_DICE_ARE] =
-        "Vos dés sont:",
+        "Vos dés sont :",
         [PCX_TEXT_STRING_THROWING_DICE] =
         "Vous lancez les dés…",
         [PCX_TEXT_STRING_SCORE_SO_FAR] =
-        "Scores jusqu’ici:",
+        "Scores jusqu’ici :",
         [PCX_TEXT_STRING_DICE_IN_HAND] =
         "Dans votre main :",
         [PCX_TEXT_STRING_NO_DICE_IN_HAND] =
         "rien",
         [PCX_TEXT_STRING_REMAINING_DICE_IN_BOX] =
-        "Dés dans la boîte:",
+        "Dés dans la boîte :",
         [PCX_TEXT_STRING_YOU_ARE_DEAD] =
         "Vous vous êtes fait tirer dessus trop de fois et vous perdez tous "
         "vos points de ce tour !",
@@ -592,7 +592,7 @@ pcx_text_french[] = {
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarchie",
         [PCX_TEXT_STRING_SHOW_ROLES] =
-        "Le village se compose des rôles suivantes :",
+        "Le village se compose des rôles suivants :",
         [PCX_TEXT_STRING_FALL_ASLEEP] =
         "Tout le monde regarde son rôle avant de s’endormir pour la nuit.",
         [PCX_TEXT_STRING_TELL_ROLE] =
@@ -655,7 +655,7 @@ pcx_text_french[] = {
         "🤏 Le voleur se réveille. Il peut échanger sa carte avec celle d’un·e "
         "autre joueur·euse. S’il le fait il regardera la nouvelle carte.",
         [PCX_TEXT_STRING_WHO_TO_ROB] =
-        "À qui voulez-vous voler ?",
+        "À qui voulez-vous voler ?",
         [PCX_TEXT_STRING_NOBODY] =
         "Personne",
         [PCX_TEXT_STRING_STEAL_FROM] =
@@ -672,7 +672,7 @@ pcx_text_french[] = {
         "Très bien, maintenant choisissez la deuxième personne dont vous "
         "voulez échanger la carte.",
         [PCX_TEXT_STRING_SWAPPED_NOBODY] =
-        "Vous décidez de ne pas faire de bêtise ce soir et vous n’échangez "
+        "Vous décidez de ne pas faire de noise ce soir et vous n’échangez "
         "aucune carte.",
         [PCX_TEXT_STRING_SWAP_CARDS_OF] =
         "Vous échangez les cartes de %s et %s.",
