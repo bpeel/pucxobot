@@ -587,7 +587,7 @@ pcx_text_french[] = {
         "Mystérieux compagnons",
         [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
         "Incertitudes",
-        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
+        [PCX_TEXT_STRING_DECK_MODE_TWILIGHT_ALLIANCE] =
         "Alliance dans la pénombre",
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarchie",

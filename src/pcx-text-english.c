@@ -710,8 +710,8 @@ pcx_text_english[] = {
         "Secret companions",
         [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
         "House of despair",
-        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
-        "Twightlight alliance",
+        [PCX_TEXT_STRING_DECK_MODE_TWILIGHT_ALLIANCE] =
+        "Twilight alliance",
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarchy",
         [PCX_TEXT_STRING_SHOW_ROLES] =

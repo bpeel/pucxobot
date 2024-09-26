@@ -745,7 +745,7 @@ pcx_text_esperanto[] = {
         "Sekretaj kunuloj",
         [PCX_TEXT_STRING_DECK_MODE_HOUSE_OF_DESPAIR] =
         "Necerteco",
-        [PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE] =
+        [PCX_TEXT_STRING_DECK_MODE_TWILIGHT_ALLIANCE] =
         "Krepuska alianco",
         [PCX_TEXT_STRING_DECK_MODE_ANARCHY] =
         "Anarĥio",

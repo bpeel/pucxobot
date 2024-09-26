@@ -228,7 +228,7 @@ deck_modes[] = {
                 },
         },
         {
-                .name = PCX_TEXT_STRING_DECK_MODE_TWIGHLIGHT_ALLIANCE,
+                .name = PCX_TEXT_STRING_DECK_MODE_TWILIGHT_ALLIANCE,
                 .min_players = 5,
                 .max_players = 10,
                 .n_roles = 11,
