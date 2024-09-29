@@ -717,7 +717,9 @@ pcx_text_english[] = {
         [PCX_TEXT_STRING_SHOW_ROLES] =
         "The village consists of the following roles:",
         [PCX_TEXT_STRING_FALL_ASLEEP] =
-        "Everybody looks at their role before falling asleep for the night.",
+        "Each player is secretly given a role card and the remaining three "
+        "cards rest face down on the table. Everybody looks at their role "
+        "before falling asleep for the night.",
         [PCX_TEXT_STRING_TELL_ROLE] =
         "Your role is:",
         [PCX_TEXT_STRING_VILLAGER] =

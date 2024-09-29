@@ -289,8 +289,11 @@ start_basic_game(int n_werewolves)
                                       "🧑‍🌾 Villager × 4\n"
                                       "🐺 Werewolf × 3\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -661,8 +664,11 @@ test_lone_wolf(void)
                                       "🐺 Werewolf × 3\n"
                                       "🔮 Seer\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -1109,8 +1115,11 @@ create_see_player_game(void)
                                       "🙍‍♂️ Tanner\n"
                                       "🔫 Hunter\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -1364,8 +1373,11 @@ test_seer_in_middle_cards(void)
                                       "🐺 Werewolf × 2\n"
                                       "🔮 Seer\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -1543,8 +1555,11 @@ skip_to_robber_phase(void)
                                       "🐺 Werewolf × 3\n"
                                       "🤏 Robber\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -1842,8 +1857,11 @@ test_robber_in_middle_cards(void)
                                       "🐺 Werewolf × 2\n"
                                       "🤏 Robber\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -1966,8 +1984,11 @@ skip_to_troublemaker_phase(void)
                                       "🐺 Werewolf × 3\n"
                                       "🐈 Troublemaker\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -2205,8 +2226,11 @@ test_troublemaker_in_middle_cards(void)
                                       "🐺 Werewolf × 2\n"
                                       "🐈 Troublemaker\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2366,8 +2390,11 @@ test_anarchy_mode(void)
                                          "\n"
                                          "🧑‍🌾 Villager × %i\n"
                                          "\n"
-                                         "Everybody looks at their role before "
-                                         "falling asleep for the night.",
+                                         "Each player is secretly given a role "
+                                         "card and the remaining three "
+                                         "cards rest face down on the table. "
+                                         "Everybody looks at their role "
+                                         "before falling asleep for the night.",
                                          n_players + 3);
 
                 queue_global_message(data, (const char *) buf.data);
@@ -2418,8 +2445,11 @@ test_no_masons(void)
                                       "🧑‍🌾 Villager × 5\n"
                                       "⚒️ Mason × 2\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2477,8 +2507,11 @@ test_lone_mason(void)
                                       "🧑‍🌾 Villager × 5\n"
                                       "⚒️ Mason × 2\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2528,8 +2561,11 @@ test_two_masons(void)
                                       "🧑‍🌾 Villager × 5\n"
                                       "⚒️ Mason × 2\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -2585,8 +2621,11 @@ test_drunk(void)
                                       "🤏 Robber\n"
                                       "🍺 Drunk\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2727,8 +2766,11 @@ test_no_drunk(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🍺 Drunk\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2775,8 +2817,11 @@ test_still_insomniac(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🥱 Insomniac\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2836,8 +2881,11 @@ test_no_longer_insomniac(void)
                                       "🤏 Robber\n"
                                       "🥱 Insomniac\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2930,8 +2978,11 @@ test_insomniac_in_middle(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🥱 Insomniac\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -2989,8 +3040,11 @@ test_hunter_kills(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🔫 Hunter\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -3088,8 +3142,11 @@ test_hunter_doesnt_kill(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🔫 Hunter\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -3187,8 +3244,11 @@ set_up_minion_with_no_werewolves_vote(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🦺 Minion\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return NULL;
@@ -3336,8 +3396,11 @@ minion_dies_but_there_are_werewolves(void)
                                       "🐺 Werewolf × 2\n"
                                       "🦺 Minion\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -3448,8 +3511,11 @@ minion_in_middle_cards(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🦺 Minion\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -3507,8 +3573,11 @@ tanner_and_village_win(void)
                                       "🐺 Werewolf × 2\n"
                                       "🙍‍♂️ Tanner\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;
@@ -3604,8 +3673,11 @@ tanner_wins(void)
                                       "🧑‍🌾 Villager × 6\n"
                                       "🙍‍♂️ Tanner\n"
                                       "\n"
-                                      "Everybody looks at their role before "
-                                      "falling asleep for the night.");
+                                      "Each player is secretly given a role "
+                                      "card and the remaining three "
+                                      "cards rest face down on the table. "
+                                      "Everybody looks at their role "
+                                      "before falling asleep for the night.");
 
         if (!data)
                 return false;

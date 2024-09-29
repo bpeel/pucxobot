@@ -752,7 +752,8 @@ pcx_text_esperanto[] = {
         [PCX_TEXT_STRING_SHOW_ROLES] =
         "La vilaĝo konsistas el la sekvaj roluloj:",
         [PCX_TEXT_STRING_FALL_ASLEEP] =
-        "Ĉiu rigardas sian rolon antaŭ ol ekdormi por la nokto.",
+        "Ĉiu ludanto ricevas rolkarton kaj la ceteraj tri kartoj restas sur la "
+        "tablo. Ĉiu rigardas sian rolon antaŭ ol ekdormi por la nokto.",
         [PCX_TEXT_STRING_TELL_ROLE] =
         "Via rolo estas:",
         [PCX_TEXT_STRING_VILLAGER] =
