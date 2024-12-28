@@ -130,9 +130,9 @@ def get_game_help(game, lang):
 
     return "\n".join(parts)
 
-for lang in LANGUAGES:
-    with open(lang.code + "/help.html", 'wt', encoding='utf-8') as f:
-        games = [game for game in GAMES if game not in lang.skip_games]
+def generate_html(filename, lang, games):
+    with open(filename, 'wt', encoding='utf-8') as f:
+        games = [game for game in games if game not in lang.skip_games]
 
         print(HEADER.format(lang.help, lang.toc), file=f, end='')
 
@@ -170,3 +170,12 @@ for lang in LANGUAGES:
                       file=f)
 
         print(FOOTER, file=f, end='')
+
+
+for lang in LANGUAGES:
+    generate_html(lang.code + "/help.html", lang, GAMES)
+
+# Wordparty is treated as a standalone game with its own help file
+generate_html("vortofesto/help.html",
+              next(lang for lang in LANGUAGES if lang.code == 'eo'),
+              ['wordparty'])

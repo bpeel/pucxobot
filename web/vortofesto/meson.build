@@ -20,4 +20,6 @@ foreach outfile, infiles : translatable_files
                 command : args,                          
                 install : true,
                 install_dir : web_dir / 'vortofesto')
+
+  install_data('help.html', install_dir : web_dir / 'vortofesto')
 endforeach
